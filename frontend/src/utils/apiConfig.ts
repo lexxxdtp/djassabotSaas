@@ -11,5 +11,6 @@ export const getApiUrl = () => {
         url = `${url}/api`;
     }
 
+    console.log('[API Config] Using API URL:', url); // Debug log for production issues
     return url;
 };
