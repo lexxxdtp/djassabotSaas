@@ -30,7 +30,7 @@ import { useAuth } from '../context/AuthContext';
 // ... (inside component)
 export default function Overview() {
     const navigate = useNavigate();
-    const { token } = useAuth(); // Get token from context
+    const { token, user, tenant } = useAuth(); // Get user and tenant from context
     const [lang, setLang] = useState<'fr' | 'en'>('fr');
     const [greeting, setGreeting] = useState('');
     const [chartData, setChartData] = useState<any[]>([]);
@@ -39,14 +39,16 @@ export default function Overview() {
     useEffect(() => {
         const hour = new Date().getHours();
         const isEvening = hour >= 18 || hour < 5;
-        const name = "Alex";
+
+        // Use user's full name, or first part of it, or tenant business name as fallback
+        const displayName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || tenant?.name || 'Vendeur';
 
         if (lang === 'fr') {
-            setGreeting(`${isEvening ? 'Bonsoir' : 'Bonjour'} ${name}`);
+            setGreeting(`${isEvening ? 'Bonsoir' : 'Bonjour'} ${displayName}`);
         } else {
-            setGreeting(`${isEvening ? 'Good evening' : 'Good morning'} ${name}`);
+            setGreeting(`${isEvening ? 'Good evening' : 'Good morning'} ${displayName}`);
         }
-    }, [lang]);
+    }, [lang, user, tenant]);
 
     useEffect(() => {
         if (!token) return;

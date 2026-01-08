@@ -12,7 +12,7 @@ const router = express.Router();
  */
 router.post('/signup', async (req: Request, res: Response) => {
     try {
-        const { businessName, email, phone, password, businessType } = req.body;
+        const { businessName, email, phone, password, businessType, fullName, birthDate } = req.body;
 
         // Validation - au moins email OU phone
         if (!businessName || !password) {
@@ -80,6 +80,8 @@ router.post('/signup', async (req: Request, res: Response) => {
             tenantId: tenant.id,
             email: email || null,
             phone: phone || null,
+            fullName: fullName || undefined,
+            birthDate: birthDate || undefined,
             passwordHash,
             role: 'owner'
         });

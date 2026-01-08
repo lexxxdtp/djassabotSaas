@@ -79,6 +79,8 @@ export interface User {
     tenantId: string;
     email?: string; // Optional now, can use phone instead
     phone?: string; // Format: +225XXXXXXXXXX
+    full_name?: string;
+    birth_date?: Date;
     passwordHash: string;
     role: 'owner' | 'admin' | 'staff';
     emailVerified: boolean;

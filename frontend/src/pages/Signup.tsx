@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, ArrowRight, Mail, Lock, Store, Phone } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Mail, Lock, Store, Phone, User, Calendar } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../utils/apiConfig';
@@ -10,6 +10,8 @@ const Signup: React.FC = () => {
         businessName: '',
         email: '',
         phone: '',
+        fullName: '',
+        birthDate: '',
         password: '',
         confirmPassword: ''
     });
@@ -70,6 +72,8 @@ const Signup: React.FC = () => {
                     businessName: formData.businessName,
                     email: usePhone ? null : formData.email,
                     phone: finalPhone,
+                    fullName: formData.fullName,
+                    birthDate: formData.birthDate,
                     password: formData.password
                 }),
             });
@@ -126,14 +130,45 @@ const Signup: React.FC = () => {
                         </div>
                     </div>
 
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Votre Nom Complet</label>
+                        <div className="relative group">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors w-5 h-5" />
+                            <input
+                                type="text"
+                                name="fullName"
+                                value={formData.fullName}
+                                onChange={handleChange}
+                                placeholder="Jean Kouassi"
+                                required
+                                className="w-full bg-black border border-zinc-700/50 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Date de Naissance</label>
+                        <div className="relative group">
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors w-5 h-5" />
+                            <input
+                                type="date"
+                                name="birthDate"
+                                value={formData.birthDate}
+                                onChange={handleChange}
+                                required
+                                className="w-full bg-black border border-zinc-700/50 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all [&::-webkit-calendar-picker-indicator]:invert"
+                            />
+                        </div>
+                    </div>
+
                     {/* Toggle Email/Téléphone */}
                     <div className="flex gap-2 p-1 bg-black rounded-xl border border-zinc-800">
                         <button
                             type="button"
                             onClick={() => setUsePhone(false)}
                             className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${!usePhone
-                                    ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20'
-                                    : 'text-zinc-500 hover:text-white'
+                                ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20'
+                                : 'text-zinc-500 hover:text-white'
                                 }`}
                         >
                             📧 Email
@@ -142,8 +177,8 @@ const Signup: React.FC = () => {
                             type="button"
                             onClick={() => setUsePhone(true)}
                             className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${usePhone
-                                    ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20'
-                                    : 'text-zinc-500 hover:text-white'
+                                ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20'
+                                : 'text-zinc-500 hover:text-white'
                                 }`}
                         >
                             📱 Téléphone

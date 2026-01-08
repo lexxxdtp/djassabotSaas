@@ -123,6 +123,8 @@ export const createUser = async (data: {
     tenantId: string;
     email?: string | null;
     phone?: string | null;
+    fullName?: string;
+    birthDate?: string;
     passwordHash: string;
     role?: 'owner' | 'admin' | 'staff';
 }): Promise<User> => {
@@ -132,6 +134,8 @@ export const createUser = async (data: {
         tenantId: data.tenantId,
         email: data.email || undefined,
         phone: data.phone || undefined,
+        full_name: data.fullName,
+        birth_date: data.birthDate ? new Date(data.birthDate) : undefined,
         passwordHash: data.passwordHash,
         role: data.role || 'owner',
         emailVerified: false,
