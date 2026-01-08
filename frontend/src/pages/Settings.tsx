@@ -1,13 +1,29 @@
 
 import { useState, useEffect } from 'react';
-import { Bot, Store, Truck, Clock, MapPin, QrCode, Trash2, PlusCircle, CheckCircle } from 'lucide-react';
+import { Bot, Store, Truck, Clock, MapPin, QrCode, Trash2, PlusCircle, CheckCircle, User } from 'lucide-react';
 import WhatsAppConnect from './WhatsAppConnect';
 import AIPlayground from '../components/AIPlayground';
 import { getApiUrl } from '../utils/apiConfig';
 
+import { useAuth } from '../context/AuthContext';
+
 export default function Settings() {
+    const { token, user, login } = useAuth(); // Need login to update context on save
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'identity' | 'business' | 'logistics' | 'whatsapp' | 'simulation'>('identity');
+    const [activeTab, setActiveTab] = useState<'profile' | 'identity' | 'business' | 'logistics' | 'whatsapp' | 'simulation'>('identity');
+
+    // User Profile Config
+    const [userProfile, setUserProfile] = useState<{
+        fullName: string;
+        email: string;
+        phone: string;
+        birthDate: string;
+    }>({
+        fullName: '',
+        email: '',
+        phone: '',
+        birthDate: ''
+    });
 
     const [config, setConfig] = useState<{
         botName: string;
@@ -65,11 +81,10 @@ export default function Settings() {
     const API_URL = getApiUrl();
 
     useEffect(() => {
-        // Fetch Settings with Auth Header
-        const fetchSettings = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) return;
+        if (!token) return;
 
+        // Fetch Business Settings
+        const fetchSettings = async () => {
             try {
                 const res = await fetch(`${API_URL}/settings`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -82,11 +97,34 @@ export default function Settings() {
                 console.error('Failed to fetch settings', error);
             }
         };
+
+        // Fetch User Profile
+        const fetchProfile = async () => {
+            try {
+                const res = await fetch(`${API_URL}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.user) {
+                        setUserProfile({
+                            fullName: data.user.full_name || '',
+                            email: data.user.email || '',
+                            phone: data.user.phone || '',
+                            birthDate: data.user.birth_date ? new Date(data.user.birth_date).toISOString().split('T')[0] : ''
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch profile', error);
+            }
+        };
+
         fetchSettings();
-    }, []);
+        fetchProfile();
+    }, [token]);
 
     const handleSave = async () => {
-        const token = localStorage.getItem('token');
         if (!token) {
             alert('Vous devez être connecté pour sauvegarder.');
             return;
@@ -94,19 +132,45 @@ export default function Settings() {
 
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/settings`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(config)
-            });
+            if (activeTab === 'profile') {
+                // Save User Profile
+                const res = await fetch(`${API_URL}/auth/me`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        full_name: userProfile.fullName,
+                        email: userProfile.email,
+                        phone: userProfile.phone,
+                        birth_date: userProfile.birthDate
+                    })
+                });
 
-            if (res.ok) {
-                alert('Configuration sauvegardée !');
+                if (res.ok) {
+                    const data = await res.json();
+                    alert('Profil mis à jour avec succès !');
+                } else {
+                    const err = await res.json();
+                    alert(err.error || 'Erreur lors de la mise à jour du profil.');
+                }
             } else {
-                alert('Erreur lors de la sauvegarde.');
+                // Save Settings
+                const res = await fetch(`${API_URL}/settings`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(config)
+                });
+
+                if (res.ok) {
+                    alert('Configuration sauvegardée !');
+                } else {
+                    alert('Erreur lors de la sauvegarde.');
+                }
             }
         } catch (e) {
             console.error(e);
@@ -135,7 +199,7 @@ export default function Settings() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-800 pb-6">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Configuration Neurons 🧠</h1>
-                    <p className="text-zinc-500 text-sm">Paramétrez l'intelligence artificielle de votre vendeur.</p>
+                    <p className="text-zinc-500 text-sm">Paramétrez l'intelligence artificielle et votre profil.</p>
                 </div>
                 <button
                     onClick={handleSave}
@@ -149,6 +213,7 @@ export default function Settings() {
 
             {/* Tabs */}
             <div className="flex flex-wrap gap-3 pb-2">
+                <TabButton id="profile" label="Mon Profil" icon={User} />
                 <TabButton id="identity" label="Identité & IA" icon={Bot} />
                 <TabButton id="business" label="Infos Boutique" icon={Store} />
                 <TabButton id="logistics" label="Logistique" icon={Truck} />
@@ -158,6 +223,59 @@ export default function Settings() {
 
             {/* Content */}
             <div className="grid gap-6">
+
+                {/* --- TAB 0: MON PROFIL --- */}
+                {activeTab === 'profile' && (
+                    <div className="space-y-6">
+                        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-8 backdrop-blur-sm">
+                            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
+                                <span className="w-2 h-2 rounded-full bg-purple-500"></span> Mes Informations Personnelles
+                            </h2>
+
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div>
+                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Nom Complet</label>
+                                    <input
+                                        type="text"
+                                        value={userProfile.fullName}
+                                        onChange={e => setUserProfile({ ...userProfile, fullName: e.target.value })}
+                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all placeholder:text-zinc-700"
+                                        placeholder="Votre nom"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Date de Naissance</label>
+                                    <input
+                                        type="date"
+                                        value={userProfile.birthDate}
+                                        onChange={e => setUserProfile({ ...userProfile, birthDate: e.target.value })}
+                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all [&::-webkit-calendar-picker-indicator]:invert"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Téléphone</label>
+                                    <input
+                                        type="text"
+                                        value={userProfile.phone}
+                                        onChange={e => setUserProfile({ ...userProfile, phone: e.target.value })}
+                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all placeholder:text-zinc-700"
+                                        placeholder="+225..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Email (Optionnel)</label>
+                                    <input
+                                        type="email"
+                                        value={userProfile.email}
+                                        onChange={e => setUserProfile({ ...userProfile, email: e.target.value })}
+                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all placeholder:text-zinc-700"
+                                        placeholder="email@exemple.com"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* --- TAB 1: IDENTITY --- */}
                 {activeTab === 'identity' && (

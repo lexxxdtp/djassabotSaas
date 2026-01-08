@@ -257,9 +257,53 @@ router.get('/me', async (req: Request, res: Response) => {
                 whatsappConnected: tenant.whatsappConnected
             }
         });
-
     } catch (error: any) {
         console.error('[Me] Erreur:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+/**
+ * PUT /api/auth/me
+ * Mettre à jour le profil utilisateur
+ */
+router.put('/me', async (req: Request, res: Response) => {
+    try {
+        const { userId } = req;
+        const { full_name, email, phone, birth_date } = req.body;
+
+        if (!userId) {
+            res.status(401).json({ error: 'Non authentifié' });
+            return;
+        }
+
+        const updates: any = {};
+        if (full_name !== undefined) updates.full_name = full_name;
+        if (email !== undefined) updates.email = email;
+        if (phone !== undefined) updates.phone = phone;
+        if (birth_date !== undefined) updates.birth_date = birth_date;
+
+        const updatedUser = await db.updateUser(userId, updates);
+
+        if (!updatedUser) {
+            res.status(404).json({ error: 'Utilisateur introuvable' });
+            return;
+        }
+
+        res.json({
+            success: true,
+            user: {
+                id: updatedUser.id,
+                email: updatedUser.email,
+                phone: updatedUser.phone,
+                full_name: updatedUser.full_name,
+                birth_date: updatedUser.birth_date,
+                role: updatedUser.role
+            }
+        });
+
+    } catch (error: any) {
+        console.error('[Update Me] Erreur:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });

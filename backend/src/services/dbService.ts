@@ -317,6 +317,7 @@ export const db = {
     getUserByEmail: tenantService.getUserByEmail,
     getUserByPhone: tenantService.getUserByPhone,
     getUserById: tenantService.getUserById,
+    updateUser: tenantService.updateUser,
 
     // Subscription Management
     createSubscription: tenantService.createSubscription,

@@ -212,6 +212,31 @@ export const getUserById = async (id: string): Promise<User | null> => {
     return localStore.users.find(u => u.id === id) || null;
 };
 
+export const updateUser = async (id: string, updates: Partial<User>): Promise<User | null> => {
+    try {
+        if (isSupabaseEnabled && supabase) {
+            // Remove sensitive or immutable fields just in case, though Typescript helps
+            const { id: _, tenantId: __, ...safeUpdates } = updates as any;
+
+            const { data, error } = await supabase
+                .from('users')
+                .update(safeUpdates)
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (!error && data) return data;
+        }
+    } catch (e) { }
+
+    const idx = localStore.users.findIndex(u => u.id === id);
+    if (idx !== -1) {
+        localStore.users[idx] = { ...localStore.users[idx], ...updates };
+        return localStore.users[idx];
+    }
+    return null;
+};
+
 /**
  * SUBSCRIPTION MANAGEMENT FUNCTIONS
  */
