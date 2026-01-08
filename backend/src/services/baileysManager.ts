@@ -13,7 +13,7 @@ import fs from 'fs';
 import path from 'path';
 import pino from 'pino';
 import { db } from './dbService';
-import { generateAIResponse, detectPurchaseIntent } from './aiService';
+import { generateAIResponse, detectPurchaseIntent, analyzeImage } from './aiService';
 
 // Logger clean
 const logger = pino({ level: 'error' });
@@ -191,6 +191,29 @@ class WhatsAppManager {
                 }
             }
 
+            // --- IMAGE HANDLING ---
+            if (msg.message?.imageMessage) {
+                console.log(`[Manager] Image received from ${remoteJid}`);
+                try {
+                    const buffer = await downloadMediaMessage(
+                        msg as any,
+                        'buffer',
+                        {}
+                    );
+                    const mimeType = msg.message?.imageMessage?.mimetype || 'image/jpeg';
+                    const caption = msg.message?.imageMessage?.caption || "";
+
+                    const description = await analyzeImage(buffer as Buffer, mimeType, caption);
+                    console.log(`[Manager] Image Analysis: "${description}"`);
+
+                    // Inject into text flow
+                    text = `[User sent an Image] Description: ${description}. Caption: ${caption}`;
+
+                } catch (e) {
+                    console.error("Error downloading/analyzing image", e);
+                }
+            }
+
             if (!text) return; // Ignore non-text/non-audio messages
 
             console.log(`[Manager] Tenant ${tenantId} reçu de ${remoteJid}: ${text}`);
@@ -276,8 +299,9 @@ class WhatsAppManager {
                     });
 
                     await sock.sendMessage(remoteJid, {
+                        image: product.images && product.images.length > 0 ? { url: product.images[0] } : undefined,
                         text: `C'est noté ! J'ai mis ${qty}x ${product.name} de côté pour vous.\n\nLe total est de ${total} FCFA. 🛒\n\nÀ quelle adresse (quartier, ville) doit-on livrer ?`
-                    });
+                    } as any); // Type assertion needed for mixed content support in simple send
 
                     addToHistory(tenantId, remoteJid, 'user', text);
                     addToHistory(tenantId, remoteJid, 'model', `[Checkout initiated for ${product.name}]`);

@@ -40,7 +40,7 @@ export interface Settings {
     emojiLevel: string;
     responseLength: string;
     trainingExamples: { question: string; answer: string }[];
-
+    negotiationEnabled: boolean;
     negotiationFlexibility: number;
     voiceEnabled: boolean;
     systemInstructions: string;

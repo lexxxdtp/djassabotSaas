@@ -331,9 +331,17 @@ const Products: React.FC = () => {
                                     multiple
                                     onChange={async (e) => {
                                         if (!e.target.files) return;
+
+                                        // CHECK: Maximum 5 photos per product
+                                        const remainingSlots = 5 - productForm.images.length;
+                                        if (remainingSlots <= 0) {
+                                            alert('❌ Maximum 5 photos par produit. Supprimez une photo existante pour en ajouter une nouvelle.');
+                                            return;
+                                        }
+
                                         setUploading(true);
                                         try {
-                                            const files = Array.from(e.target.files);
+                                            const files = Array.from(e.target.files).slice(0, remainingSlots); // Limit to remaining slots
                                             const newImages: string[] = [];
 
                                             for (const file of files) {
@@ -356,6 +364,10 @@ const Products: React.FC = () => {
                                                 ...prev,
                                                 images: [...prev.images, ...newImages]
                                             }));
+
+                                            if (files.length < e.target.files.length) {
+                                                alert(`✅ ${files.length} photo(s) ajoutée(s). Limite atteinte (5 max).`);
+                                            }
                                         } catch (error) {
                                             console.error('Upload failed:', error);
                                             alert('Erreur lors de l\'upload des images (Vérifiez votre connexion Supabase)');
@@ -366,6 +378,31 @@ const Products: React.FC = () => {
                                     className="hidden"
                                     id="file-upload"
                                 />
+                                <div className="mt-2">
+                                    <input
+                                        type="text"
+                                        placeholder={productForm.images.length >= 5 ? "Limite atteinte (5 photos max)" : "Ou collez une URL d'image ici..."}
+                                        disabled={productForm.images.length >= 5}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-400 focus:border-orange-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                const val = e.currentTarget.value;
+                                                if (val && productForm.images.length < 5) {
+                                                    setProductForm(prev => ({ ...prev, images: [...prev.images, val] }));
+                                                    e.currentTarget.value = '';
+                                                } else if (productForm.images.length >= 5) {
+                                                    alert('❌ Maximum 5 photos par produit atteint.');
+                                                }
+                                            }
+                                        }}
+                                    />
+                                    <p className="text-[10px] text-zinc-600 mt-1">
+                                        {productForm.images.length >= 5
+                                            ? "🚫 Limite de 5 photos atteinte"
+                                            : `Appuyez sur Entrée pour ajouter l'URL (${5 - productForm.images.length} restantes)`}
+                                    </p>
+                                </div>
                             </div>
 
                             <button

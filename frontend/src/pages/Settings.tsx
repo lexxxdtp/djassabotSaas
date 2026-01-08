@@ -34,6 +34,7 @@ export default function Settings() {
         emojiLevel: string;
         responseLength: string;
         trainingExamples: { question: string; answer: string }[];
+        negotiationEnabled: boolean;
         negotiationFlexibility: number;
         voiceEnabled: boolean;
         systemInstructions: string;
@@ -60,6 +61,7 @@ export default function Settings() {
             { question: '', answer: '' },
             { question: '', answer: '' }
         ],
+        negotiationEnabled: true,
         negotiationFlexibility: 5, // 0 (Strict) to 10 (Flexible)
         voiceEnabled: true,
         systemInstructions: '', // Instructions spécifiques du vendeur
@@ -438,23 +440,40 @@ export default function Settings() {
                                 <span className="w-2 h-2 rounded-full bg-pink-500"></span> Négociation
                             </h2>
                             <div className="space-y-6">
-                                <div>
-                                    <div className="flex justify-between mb-2">
-                                        <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Taux de Flexibilité</label>
-                                        <span className="text-orange-500 font-bold font-mono">{config.negotiationFlexibility * 10}%</span>
+
+                                {/* Toggle Negotiation */}
+                                <div className="flex items-center justify-between bg-black border border-neutral-800 p-4 rounded-lg">
+                                    <div>
+                                        <div className="text-sm font-bold text-white mb-1">Activer la Négociation</div>
+                                        <div className="text-xs text-zinc-500">Si désactivé, l'IA refusera toute baisse de prix.</div>
                                     </div>
-                                    <input
-                                        type="range"
-                                        min="0" max="10" step="1"
-                                        value={config.negotiationFlexibility}
-                                        onChange={e => setConfig({ ...config, negotiationFlexibility: parseInt(e.target.value) })}
-                                        className="w-full h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
-                                    />
-                                    <div className="flex justify-between text-[10px] text-neutral-600 mt-2 uppercase font-bold tracking-widest">
-                                        <span>Strict (0%)</span>
-                                        <span>Open Bar (100%)</span>
-                                    </div>
+                                    <button
+                                        onClick={() => setConfig({ ...config, negotiationEnabled: !config.negotiationEnabled })}
+                                        className={`w-12 h-6 rounded-full p-1 transition-colors ${config.negotiationEnabled ? 'bg-orange-500' : 'bg-zinc-700'}`}
+                                    >
+                                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${config.negotiationEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    </button>
                                 </div>
+
+                                {config.negotiationEnabled && (
+                                    <div>
+                                        <div className="flex justify-between mb-2">
+                                            <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Taux de Flexibilité</label>
+                                            <span className="text-orange-500 font-bold font-mono">{config.negotiationFlexibility * 10}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="0" max="10" step="1"
+                                            value={config.negotiationFlexibility}
+                                            onChange={e => setConfig({ ...config, negotiationFlexibility: parseInt(e.target.value) })}
+                                            className="w-full h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                                        />
+                                        <div className="flex justify-between text-[10px] text-neutral-600 mt-2 uppercase font-bold tracking-widest">
+                                            <span>Strict (0%)</span>
+                                            <span>Open Bar (100%)</span>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div>
                                     <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Message d'accroche (First contact)</label>

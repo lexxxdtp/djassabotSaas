@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS: Settings = {
     responseLength: 'medium',
     trainingExamples: [],
 
+    negotiationEnabled: true,
     negotiationFlexibility: 5,
     voiceEnabled: true,
     systemInstructions: '',
