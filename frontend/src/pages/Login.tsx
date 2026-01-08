@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../utils/apiConfig';
 
 const Login: React.FC = () => {
-    const [email, setEmail] = useState('');
+    const [identifier, setIdentifier] = useState(''); // email OU téléphone (+225XXXXXXXXXX)
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -24,7 +24,7 @@ const Login: React.FC = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    email,
+                    identifier, // Le backend détectera si c'est email ou phone
                     password
                 }),
             });
@@ -65,18 +65,19 @@ const Login: React.FC = () => {
 
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Email</label>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Email ou Téléphone</label>
                         <div className="relative group">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors w-5 h-5" />
                             <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="votre@email.com"
+                                type="text"
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
+                                placeholder="email@exemple.com ou +225XXXXXXXXXX"
                                 required
                                 className="w-full bg-black border border-zinc-700/50 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
                             />
                         </div>
+                        <p className="mt-1 text-xs text-zinc-600">Format téléphone : +225 suivi de 10 chiffres</p>
                     </div>
 
                     <div>

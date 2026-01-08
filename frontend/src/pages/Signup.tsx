@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { ShoppingBag, ArrowRight, Mail, Lock, Store } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Mail, Lock, Store, Phone } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../utils/apiConfig';
 
 const Signup: React.FC = () => {
+    const [usePhone, setUsePhone] = useState(false); // Toggle email/téléphone
     const [formData, setFormData] = useState({
         businessName: '',
         email: '',
-        password: '',
-        confirmPassword: '',
         phone: '',
-        location: 'Abidjan' // Default
+        password: '',
+        confirmPassword: ''
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -24,6 +24,22 @@ const Signup: React.FC = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const formatPhoneNumber = (value: string) => {
+        // Auto-format le numéro: ajoute +225 si manquant
+        let cleaned = value.replace(/\D/g, '');
+
+        if (!value.startsWith('+225') && cleaned.length > 0) {
+            cleaned = '225' + cleaned;
+        }
+
+        return cleaned.startsWith('225') ? '+' + cleaned : value;
+    };
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const formatted = formatPhoneNumber(e.target.value);
+        setFormData({ ...formData, phone: formatted });
+    };
+
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -31,6 +47,25 @@ const Signup: React.FC = () => {
         if (formData.password !== formData.confirmPassword) {
             setError('Les mots de passe ne correspondent pas.');
             return;
+        }
+
+        if (!usePhone && !formData.email) {
+            setError('Veuillez fournir un email.');
+            return;
+        }
+
+        if (usePhone && !formData.phone) {
+            setError('Veuillez fournir un numéro de téléphone.');
+            return;
+        }
+
+        // Validation du format téléphone
+        if (usePhone) {
+            const phoneRegex = /^\+225[0-9]{10}$/;
+            if (!phoneRegex.test(formData.phone)) {
+                setError('Format de téléphone invalide. Utilisez +225 suivi de 10 chiffres.');
+                return;
+            }
         }
 
         setLoading(true);
@@ -41,7 +76,8 @@ const Signup: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     businessName: formData.businessName,
-                    email: formData.email,
+                    email: usePhone ? null : formData.email,
+                    phone: usePhone ? formData.phone : null,
                     password: formData.password
                 }),
             });
@@ -98,21 +134,65 @@ const Signup: React.FC = () => {
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Email</label>
-                        <div className="relative group">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors w-5 h-5" />
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                placeholder="votre@email.com"
-                                required
-                                className="w-full bg-black border border-zinc-700/50 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
-                            />
-                        </div>
+                    {/* Toggle Email/Téléphone */}
+                    <div className="flex gap-2 p-1 bg-black rounded-xl border border-zinc-800">
+                        <button
+                            type="button"
+                            onClick={() => setUsePhone(false)}
+                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${!usePhone
+                                    ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20'
+                                    : 'text-zinc-500 hover:text-white'
+                                }`}
+                        >
+                            📧 Email
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setUsePhone(true)}
+                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${usePhone
+                                    ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20'
+                                    : 'text-zinc-500 hover:text-white'
+                                }`}
+                        >
+                            📱 Téléphone
+                        </button>
                     </div>
+
+                    {/* Champ Email OU Téléphone */}
+                    {!usePhone ? (
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Email</label>
+                            <div className="relative group">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors w-5 h-5" />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    placeholder="votre@email.com"
+                                    required
+                                    className="w-full bg-black border border-zinc-700/50 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Téléphone</label>
+                            <div className="relative group">
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors w-5 h-5" />
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handlePhoneChange}
+                                    placeholder="+225XXXXXXXXXX"
+                                    required
+                                    className="w-full bg-black border border-zinc-700/50 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all font-mono"
+                                />
+                            </div>
+                            <p className="mt-1 text-xs text-zinc-600">Format : +225 suivi de 10 chiffres</p>
+                        </div>
+                    )}
 
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Mot de Passe</label>
@@ -125,9 +205,11 @@ const Signup: React.FC = () => {
                                 onChange={handleChange}
                                 placeholder="••••••••"
                                 required
+                                minLength={8}
                                 className="w-full bg-black border border-zinc-700/50 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
                             />
                         </div>
+                        <p className="mt-1 text-xs text-zinc-600">Minimum 8 caractères</p>
                     </div>
 
                     <div>
@@ -149,7 +231,7 @@ const Signup: React.FC = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-orange-500 hover:bg-orange-600 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 shadow-lg shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 shadow-lg shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
                     >
                         <span>{loading ? 'Création en cours...' : 'S\'inscrire'}</span>
                         {!loading && <ArrowRight className="w-5 h-5" />}
