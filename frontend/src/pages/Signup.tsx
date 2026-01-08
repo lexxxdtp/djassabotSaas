@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, ArrowRight, User, Mail, Lock, Phone, MapPin, Store } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Mail, Lock, Store } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../utils/apiConfig';

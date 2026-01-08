@@ -7,7 +7,7 @@ import { getApiUrl } from '../utils/apiConfig';
 
 const WhatsAppConnect: React.FC = () => {
     const { token } = useAuth();
-    const { tenant } = useAuth();
+    // const { tenant } = useAuth(); // Unused
     const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
     const [qr, setQr] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
