@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShoppingBag, ArrowRight, Mail, Lock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl } from '../utils/apiConfig';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -11,7 +12,7 @@ const Login: React.FC = () => {
 
     const navigate = useNavigate();
     const { login } = useAuth();
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const API_URL = getApiUrl();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
-import { ShoppingBag, ArrowRight, Mail, Lock, Store } from 'lucide-react';
+import { ShoppingBag, ArrowRight, User, Mail, Lock, Phone, MapPin, Store } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl } from '../utils/apiConfig';
 
 const Signup: React.FC = () => {
     const [formData, setFormData] = useState({
         businessName: '',
-        userEmail: '',
+        email: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        phone: '',
+        location: 'Abidjan' // Default
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
     const { login } = useAuth();
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const API_URL = getApiUrl();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -38,7 +41,7 @@ const Signup: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     businessName: formData.businessName,
-                    email: formData.userEmail,
+                    email: formData.email,
                     password: formData.password
                 }),
             });
@@ -61,7 +64,6 @@ const Signup: React.FC = () => {
     };
 
     return (
-
         <div className="min-h-screen bg-black flex items-center justify-center p-4">
             <div className="bg-zinc-900 p-8 rounded-2xl w-full max-w-md border border-zinc-800 shadow-2xl shadow-orange-500/5">
                 <div className="text-center mb-8">
@@ -102,8 +104,8 @@ const Signup: React.FC = () => {
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors w-5 h-5" />
                             <input
                                 type="email"
-                                name="userEmail"
-                                value={formData.userEmail}
+                                name="email"
+                                value={formData.email}
                                 onChange={handleChange}
                                 placeholder="votre@email.com"
                                 required

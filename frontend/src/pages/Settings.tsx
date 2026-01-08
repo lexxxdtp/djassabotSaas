@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Bot, Store, Truck, Clock, MapPin, QrCode, Trash2, PlusCircle, CheckCircle } from 'lucide-react';
 import WhatsAppConnect from './WhatsAppConnect';
 import AIPlayground from '../components/AIPlayground';
+import { getApiUrl } from '../utils/apiConfig';
 
 export default function Settings() {
     const [loading, setLoading] = useState(false);
@@ -61,7 +62,7 @@ export default function Settings() {
         acceptedPayments: ['wave', 'om', 'cash'],
     });
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const API_URL = getApiUrl();
 
     useEffect(() => {
         // Fetch Settings with Auth Header

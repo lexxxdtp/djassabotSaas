@@ -3,13 +3,15 @@ import { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import { RefreshCw, CheckCircle, LogOut, Smartphone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl } from '../utils/apiConfig';
 
 const WhatsAppConnect: React.FC = () => {
     const { token } = useAuth();
+    const { tenant } = useAuth();
     const [status, setStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
     const [qr, setQr] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const API_URL = getApiUrl();
 
     const fetchStatus = async () => {
         try {

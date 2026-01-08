@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Trash2, Smartphone, Bot } from 'lucide-react';
+import { getApiUrl } from '../utils/apiConfig';
 
 export default function AIPlayground() {
     const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string }[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const API_URL = getApiUrl();
 
     // Auto-scroll to bottom
     useEffect(() => {
