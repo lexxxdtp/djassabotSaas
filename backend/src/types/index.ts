@@ -8,6 +8,7 @@ export interface Product {
     images: string[];
     description: string;
     stock: number;
+    minPrice?: number; // Lowest acceptable price for negotiation
 }
 
 export interface CartItem {

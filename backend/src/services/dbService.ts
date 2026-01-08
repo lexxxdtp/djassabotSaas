@@ -46,7 +46,7 @@ const DEFAULT_SETTINGS: Settings = {
 };
 
 const DEFAULT_PRODUCTS: Product[] = [
-    { id: '1', name: 'Bazin Riche', price: 15000, stock: 10, images: ['https://images.unsplash.com/photo-1595461135849-bf08dc936ba9?auto=format&fit=crop&q=60'], description: 'Bazin riche de qualité supérieure.' },
+    { id: '1', name: 'Bazin Riche', price: 15000, minPrice: 13000, stock: 10, images: ['https://images.unsplash.com/photo-1595461135849-bf08dc936ba9?auto=format&fit=crop&q=60'], description: 'Bazin riche de qualité supérieure.' },
     { id: '2', name: 'Mèche Humaine', price: 45000, stock: 5, images: ['https://images.unsplash.com/photo-1595461135849-bf08dc936ba9?auto=format&fit=crop&q=60'], description: 'Mèches naturelles 100% humaines.' },
 ];
 
@@ -242,14 +242,15 @@ export const db = {
         );
     },
 
-    addToCart: async (userId: string, product: Product, quantity: number = 1) => {
-        if (!localData.carts[userId]) localData.carts[userId] = [];
+    addToCart: async (tenantId: string, userId: string, product: Product, quantity: number = 1) => {
+        const key = `${tenantId}:${userId}`;
+        if (!localData.carts[key]) localData.carts[key] = [];
 
-        const existing = localData.carts[userId].find(item => item.productId === product.id);
+        const existing = localData.carts[key].find(item => item.productId === product.id);
         if (existing) {
             existing.quantity += quantity;
         } else {
-            localData.carts[userId].push({
+            localData.carts[key].push({
                 productId: product.id,
                 productName: product.name,
                 quantity,
@@ -257,15 +258,17 @@ export const db = {
             });
         }
         saveData();
-        return localData.carts[userId];
+        return localData.carts[key];
     },
 
-    getCart: async (userId: string) => {
-        return localData.carts[userId] || [];
+    getCart: async (tenantId: string, userId: string) => {
+        const key = `${tenantId}:${userId}`;
+        return localData.carts[key] || [];
     },
 
-    clearCart: async (userId: string) => {
-        localData.carts[userId] = [];
+    clearCart: async (tenantId: string, userId: string) => {
+        const key = `${tenantId}:${userId}`;
+        localData.carts[key] = [];
         saveData();
     },
 

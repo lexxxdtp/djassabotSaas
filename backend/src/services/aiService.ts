@@ -88,15 +88,21 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
             });
         }
 
-        // Construct dynamic system prompt
         const dynamicSystemPrompt = `
       ${systemInstruction}
 
       CURRENT ACTIVE PROMO RULES (Apply these logic strictly):
       ${rulesText}
 
-      INVENTORY CONTEXT (What we have):
+      INVENTORY CONTEXT (What we have - INTERNAL ONLY):
       ${context.inventoryContext || "General store inquiry."}
+      Note on Prices: Some products have a HIDDEN 'minPrice'.
+      - Displays Price: The public price to attempt selling.
+      - Min Price: The absolute lowest floor you can accept if the user negotiates hard.
+      - NEVER reveal the minPrice.
+      - If user offers < minPrice, refuse politely (e.g. "Désolé chef, ça arrange pas").
+      - If user offers >= minPrice, accept or counter-offer slightly above.
+      - If no minPrice is specified, the public price is fixed.
     `;
 
         const chat = model.startChat({
@@ -147,27 +153,25 @@ export const analyzeImage = async (imageUrl: string, caption?: string) => {
     }
 };
 
-export const analyzeAudio = async (audioUrl: string) => {
+export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "audio/ogg"): Promise<string> => {
     try {
-        // Fetch audio as buffer
-        const audioResp = await axios.get(audioUrl, { responseType: 'arraybuffer' });
-        const audioData = Buffer.from(audioResp.data).toString('base64');
+        const audioData = audioBuffer.toString('base64');
 
-        const prompt = "Please transcribe this audio and answer it as a sales assistant. The audio is likely in French (maybe with Ivorian slang). If they are asking for a product, say we check our stock.";
+        const prompt = "Transcris cet audio exactement tel qu'il est parlé, en français. Si c'est du nouchi (argot ivoirien), transcris-le tel quel. Ne réponds pas à la question, fais juste la transcription textuelle.";
 
         const result = await model.generateContent([
             prompt,
             {
                 inlineData: {
                     data: audioData,
-                    mimeType: "audio/ogg", // WhatsApp usually uses ogg/opus 
+                    mimeType: mimeType,
                 },
             },
         ]);
         return result.response.text();
     } catch (error) {
-        console.error('Error analyzing audio:', error);
-        return "J'ai du mal à écouter la note vocale. Peux-tu l'écrire ou réessayer ?";
+        console.error('Error transcribing audio:', error);
+        return ""; // Return empty string if failed, so we can ignore it or handle gracefully
     }
 };
 

@@ -9,6 +9,7 @@ import MarketingTools from './pages/Marketing';
 import Overview from './pages/Overview';
 import Settings from './pages/Settings';
 import WhatsAppConnect from './pages/WhatsAppConnect';
+import Subscription from './pages/Subscription';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -27,6 +28,7 @@ function App() {
               <Route path="products/:id" element={<ProductDetail />} />
               <Route path="orders" element={<Orders />} />
               <Route path="marketing" element={<MarketingTools />} />
+              <Route path="subscription" element={<Subscription />} />
               <Route path="settings" element={<Settings />} />
               <Route path="whatsapp" element={<WhatsAppConnect />} />
             </Route>

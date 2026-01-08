@@ -5,7 +5,8 @@ import makeWASocket, {
     makeCacheableSignalKeyStore,
     WASocket,
     Contact,
-    proto
+    proto,
+    downloadMediaMessage
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import fs from 'fs';
@@ -152,42 +153,154 @@ class WhatsAppManager {
             if (!msg.key || !msg.key.remoteJid) return;
 
             const remoteJid = msg.key.remoteJid;
-            const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+            let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
 
-            if (!text) return; // Ignorer les messages non-texte pour l'instant
+            // --- AUDIO HANDLING ---
+            if (msg.message?.audioMessage) {
+                console.log(`[Manager] Audio received from ${remoteJid}`);
+                try {
+                    // Check if transcribeAudio is available (dynamic import context)
+                    const { transcribeAudio } = await import('./aiService');
+
+                    const buffer = await downloadMediaMessage(
+                        msg as any,
+                        'buffer',
+                        {}
+                    );
+
+                    const mimeType = msg.message?.audioMessage?.mimetype || 'audio/ogg';
+                    if (buffer instanceof Buffer) {
+                        // Default to ogg if mimetype contains 'ogg' or 'opus', otherwise try to pass as is or map?
+                        // Gemini is flexible. Let's pass what we get.
+                        const transcription = await transcribeAudio(buffer, mimeType);
+                        console.log(`[Manager] Audio Transcribed: "${transcription}"`);
+
+                        // If transcription valid, treat as text
+                        if (transcription) {
+                            text = transcription;
+                            // Optional: Send a receipts/reaction instead of text?
+                            // await sock.sendMessage(remoteJid, { text: `(Transcription: "${transcription}")` }); 
+                        } else {
+                            await sock.sendMessage(remoteJid, { text: "Je n'ai pas réussi à écouter votre message vocal. Pouvez-vous l'écrire ?" });
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error downloading/transcribing audio", e);
+                    return;
+                }
+            }
+
+            if (!text) return; // Ignore non-text/non-audio messages
 
             console.log(`[Manager] Tenant ${tenantId} reçu de ${remoteJid}: ${text}`);
 
             // Mark read & Typing
             await sock.readMessages([msg.key]);
+
+            // Simuler une "vraie" pause de réflexion humaine (500ms - 2s)
+            await new Promise(r => setTimeout(r, Math.random() * 1500 + 500));
             await sock.sendPresenceUpdate('composing', remoteJid);
 
-            // --- DEBUT LOGIQUE METIER TENANT ---
+            // Import dynamique pour éviter les cycles si besoin, ou utiliser les imports existants
+            // Note: Assurez-vous que ces imports existent en haut du fichier
+            const { getSession, updateSession, addToHistory, clearHistory } = await import('./sessionService');
+            // const { db } = await import('./dbService'); // Déjà importé
+            // const { generateAIResponse, detectPurchaseIntent } = await import('./aiService'); // Déjà importé
 
-            // 1. Récupérer le contexte du Tenant
+            // 1. Récupérer la session utilisateur (Multi-Tenant Key)
+            const session = getSession(tenantId, remoteJid);
+
+            // 2. Gestion des états (Machine à états simple)
+
+            // CAS A : En attente de l'adresse pour finaliser la commande
+            if (session.state === 'WAITING_FOR_ADDRESS') {
+                const address = text;
+                const tempOrder = session.tempOrder;
+
+                if (!tempOrder) {
+                    await sock.sendMessage(remoteJid, { text: "Oups, j'ai perdu votre panier. Pouvez-vous recommencer ?" });
+                    updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined });
+                    return;
+                }
+
+                // Créer la commande
+                const order = await db.createOrder(tenantId, remoteJid, tempOrder.items, tempOrder.total, address);
+
+                // TODO: Générer lien de paiement Wave ici si activé
+                // const paymentLink = ... 
+
+                await sock.sendMessage(remoteJid, {
+                    text: `✅ Merci ! Commande validée.\n\n📍 Livraison: ${address}\n💰 Total: ${tempOrder.total} FCFA\n\nNous vous contacterons très bientôt pour la livraison.`
+                });
+
+                // Notifier le vendeur (via Socket interne, Email, ou Push) ou juste log pour l'instant
+                console.log(`[ORDER] Nouvelle commande pour Tenant ${tenantId} de ${remoteJid}`);
+
+                // Nettoyer
+                await db.clearCart(tenantId, remoteJid);
+                clearHistory(tenantId, remoteJid);
+                updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined, reminderSent: false });
+                return;
+            }
+
+            // CAS B : Flux Normal (IDLE)
+
+            // 3. Récupérer le contexte du Tenant pour l'IA
             const settings = await db.getSettings(tenantId);
             const products = await db.getProducts(tenantId);
+            const productContext = products.map(p => `${p.name} (${p.price} FCFA)`).join(', ');
 
-            // 2. Construire le contexte 'Inventaire'
+            // 4. Détection d'Intention (Achat vs Discussion)
+            const intentData = await detectPurchaseIntent(text, productContext);
+
+            if (intentData.intent === 'BUY' && intentData.productName) {
+                // Trouver le produit exact
+                const product = await db.getProductByName(tenantId, intentData.productName);
+
+                if (product) {
+                    // Ajouter au panier
+                    const qty = intentData.quantity || 1;
+                    const cart = await db.addToCart(tenantId, remoteJid, product, qty);
+
+                    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+                    // Passer en mode "Checkout"
+                    updateSession(tenantId, remoteJid, {
+                        state: 'WAITING_FOR_ADDRESS',
+                        tempOrder: {
+                            items: cart,
+                            total: total,
+                            summary: `${qty}x ${product.name}`
+                        }
+                    });
+
+                    await sock.sendMessage(remoteJid, {
+                        text: `C'est noté ! J'ai mis ${qty}x ${product.name} de côté pour vous.\n\nLe total est de ${total} FCFA. 🛒\n\nÀ quelle adresse (quartier, ville) doit-on livrer ?`
+                    });
+
+                    addToHistory(tenantId, remoteJid, 'user', text);
+                    addToHistory(tenantId, remoteJid, 'model', `[Checkout initiated for ${product.name}]`);
+                    return;
+                }
+            }
+
+            // 5. Réponse IA Standard (Chat / Info produit / Négociation)
             const inventoryContext = products.map(p =>
-                `- ${p.name} (${p.price} FCFA): ${p.stock > 0 ? 'En stock' : 'Épuisé'}`
+                `- ${p.name}: Public Price ${p.price} FCFA ${p.minPrice ? `(Min: ${p.minPrice})` : ''} | ${p.stock > 0 ? 'En stock' : 'Épuisé'}`
             ).join('\n');
-
-            // 3. Détection d'intention (Achat ?)
-            // Note: On pourrait passer le msg à l'AI direct, 
-            // mais l'intent detection rapide permet de gérer le panier
-
-            // TODO: Intégrer la logique panier ici (sessionService adapté multi-tenant)
-            // Pour l'instant, réponse AI simple
 
             const aiResponse = await generateAIResponse(text, {
                 settings,
                 inventoryContext,
-                // history: ... (TODO: Ajouter historyService per tenant)
+                history: session.history
             });
 
-            // 4. Envoyer la réponse
             await sock.sendMessage(remoteJid, { text: aiResponse });
+
+            // Mise à jour de l'historique
+            addToHistory(tenantId, remoteJid, 'user', text);
+            addToHistory(tenantId, remoteJid, 'model', aiResponse);
 
         } catch (error) {
             console.error(`[Manager] Erreur traitement message pour Tenant ${tenantId}:`, error);
@@ -217,3 +330,19 @@ class WhatsAppManager {
 
 // Singleton export
 export const whatsappManager = new WhatsAppManager();
+
+export const startAllTenantInstances = async () => {
+    console.log('[Startup] Vérification des tenants WhatsApp...');
+    const tenants = await db.getActiveTenants();
+
+    for (const tenant of tenants) {
+        // Support camelCase (local) or snake_case (potential supabase raw)
+        const isConnected = tenant.whatsappConnected || (tenant as any).whatsapp_connected === true;
+        const status = tenant.whatsappStatus || (tenant as any).whatsapp_status;
+
+        if (isConnected || status === 'connected') {
+            console.log(`[Startup] Démarrage du bot pour tenant ${tenant.id} (${tenant.name})`);
+            await whatsappManager.createSession(tenant.id);
+        }
+    }
+};

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { sendTextMessage, getMediaUrl } from '../services/whatsappService';
-import { generateAIResponse, analyzeImage, analyzeAudio, detectPurchaseIntent } from '../services/aiService';
+import { generateAIResponse, analyzeImage, transcribeAudio, detectPurchaseIntent } from '../services/aiService';
 import { db } from '../services/dbService';
 import { generateWavePaymentLink } from '../services/paymentService';
 import { notifyMerchant } from '../services/notificationService';
@@ -50,7 +50,7 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                     const textBody = message.text.body;
                     console.log(`Received text from ${from}: ${textBody}`);
 
-                    const session = getSession(from);
+                    const session = getSession(DEFAULT_TENANT_ID, from);
 
                     // 1. Check if waiting for delivery info
                     if (session.state === 'WAITING_FOR_ADDRESS') {
@@ -66,7 +66,7 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                         await sendTextMessage(from, `Merci ! Livraison prévue à : ${address}. 🚚\n\nVotre total est de ${tempOrder.total} FCFA.\nCliquez ici pour payer : ${paymentLink}`);
                         await notifyMerchant('ORDER', `Nouvelle commande de ${from} !\nArticles: ${tempOrder.summary}\nTotal: ${tempOrder.total}\nLivraison: ${address}`);
 
-                        clearHistory(from); // Reset session after order
+                        clearHistory(DEFAULT_TENANT_ID, from); // Reset session after order
                         return;
                     }
 
@@ -81,13 +81,13 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                         const product = await db.getProductByName(DEFAULT_TENANT_ID, intentData.productName);
                         if (product) {
                             // Add to cart (cart is per user, not per tenant in current implementation)
-                            const cart = await db.addToCart(from, product, intentData.quantity || 1);
+                            const cart = await db.addToCart(DEFAULT_TENANT_ID, from, product, intentData.quantity || 1);
 
                             // Calculate Total
                             const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
                             // Ask for delivery address instead of sending link immediately
-                            updateSession(from, {
+                            updateSession(DEFAULT_TENANT_ID, from, {
                                 state: 'WAITING_FOR_ADDRESS',
                                 tempOrder: {
                                     total,
@@ -132,8 +132,8 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                         await sendTextMessage(from, aiReply);
 
                         // Update History
-                        addToHistory(from, 'user', textBody);
-                        addToHistory(from, 'model', aiReply);
+                        addToHistory(DEFAULT_TENANT_ID, from, 'user', textBody);
+                        addToHistory(DEFAULT_TENANT_ID, from, 'model', aiReply);
                     }
                 }
                 else if (type === 'image') {
@@ -149,23 +149,39 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                     await sendTextMessage(from, analysis);
 
                     // Add to session history as context
-                    addToHistory(from, 'user', `[User sent an image of: ${analysis}]`);
-                    addToHistory(from, 'model', analysis);
+                    addToHistory(DEFAULT_TENANT_ID, from, 'user', `[User sent an image of: ${analysis}]`);
+                    addToHistory(DEFAULT_TENANT_ID, from, 'model', analysis);
                 }
                 else if (type === 'audio') {
                     const audioId = message.audio.id;
+                    const session = getSession(DEFAULT_TENANT_ID, from);
                     console.log(`Received audio from ${from}, ID: ${audioId}`);
 
                     // Get URL
+                    // Analyze Audio
                     const audioUrl = await getMediaUrl(audioId);
 
-                    // Analyze Audio
-                    const audioReply = await analyzeAudio(audioUrl);
-                    await sendTextMessage(from, audioReply);
+                    // Download Audio Buffer
+                    const axios = require('axios'); // Ensure axios is available
+                    const audioResp = await axios.get(audioUrl, { responseType: 'arraybuffer' });
+                    const audioBuffer = Buffer.from(audioResp.data);
+
+                    // Transcribe
+                    const transcription = await transcribeAudio(audioBuffer);
+                    console.log(`[Audio] Transcribed: "${transcription}"`);
+
+                    // Generate AI Response based on transcription
+                    // Reuse existing context logic if possible, or just simple response for now to fix the break
+                    const aiReply = await generateAIResponse(transcription, {
+                        history: session.history,
+                        settings: await db.getSettings(DEFAULT_TENANT_ID)
+                    });
+
+                    await sendTextMessage(from, aiReply);
 
                     // Add to session history
-                    addToHistory(from, 'user', `[Audio Message Transcription]`);
-                    addToHistory(from, 'model', audioReply);
+                    addToHistory(DEFAULT_TENANT_ID, from, 'user', `[Audio]: ${transcription}`);
+                    addToHistory(DEFAULT_TENANT_ID, from, 'model', aiReply);
                 }
                 else {
                     console.log(`Received unhandled message type: ${type}`);

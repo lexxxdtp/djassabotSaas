@@ -24,8 +24,12 @@ const StatCard = ({ title, value, change, icon: Icon, subtitle }: any) => (
     </div>
 );
 
+import { useAuth } from '../context/AuthContext';
+
+// ... (inside component)
 export default function Overview() {
     const navigate = useNavigate();
+    const { token } = useAuth(); // Get token from context
     const [lang, setLang] = useState<'fr' | 'en'>('fr');
     const [greeting, setGreeting] = useState('');
     const [chartData, setChartData] = useState<any[]>([]);
@@ -44,13 +48,22 @@ export default function Overview() {
     }, [lang]);
 
     useEffect(() => {
+        if (!token) return;
+
         const fetchData = async () => {
             try {
-                const res = await fetch('/api/orders');
+                // Header is already added in previous step's replacement block which starts here
+                const res = await fetch('/api/orders', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 if (res.ok) {
                     const orders = await res.json();
 
                     // Process Data
+                    // ... (rest of the logic remains)
+
                     const last7Days = Array.from({ length: 7 }, (_, i) => {
                         const d = new Date();
                         d.setDate(d.getDate() - (6 - i));

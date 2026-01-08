@@ -2,10 +2,11 @@
 import { useState, useEffect } from 'react';
 import { Bot, Store, Truck, Clock, MapPin, QrCode, Trash2, PlusCircle, CheckCircle } from 'lucide-react';
 import WhatsAppConnect from './WhatsAppConnect';
+import AIPlayground from '../components/AIPlayground';
 
 export default function Settings() {
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'identity' | 'business' | 'logistics' | 'whatsapp'>('identity');
+    const [activeTab, setActiveTab] = useState<'identity' | 'business' | 'logistics' | 'whatsapp' | 'simulation'>('identity');
 
     const [config, setConfig] = useState<{
         botName: string;
@@ -151,6 +152,7 @@ export default function Settings() {
                 <TabButton id="business" label="Infos Boutique" icon={Store} />
                 <TabButton id="logistics" label="Logistique" icon={Truck} />
                 <TabButton id="whatsapp" label="Connexion" icon={QrCode} />
+                <TabButton id="simulation" label="Test & Simulation" icon={Bot} />
             </div>
 
             {/* Content */}
@@ -481,6 +483,42 @@ export default function Settings() {
                 {activeTab === 'whatsapp' && (
                     <div className="space-y-6">
                         <WhatsAppConnect />
+                    </div>
+                )}
+
+                {/* --- TAB 4: SIMULATION --- */}
+                {activeTab === 'simulation' && (
+                    <div className="space-y-6">
+                        <div className="grid md:grid-cols-3 gap-6">
+                            {/* Left Col: Explainer */}
+                            <div className="md:col-span-1 space-y-6">
+                                <div className="bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-900/50 rounded-xl p-6">
+                                    <h3 className="text-white font-bold text-lg mb-2">Zone de Test</h3>
+                                    <p className="text-zinc-400 text-sm leading-relaxed">
+                                        Testez votre bot en temps réel. Les modifications faites dans "Identité" ou "Logistique" sont prises en compte immédiatement ici.
+                                    </p>
+                                    <ul className="mt-4 space-y-2 text-xs text-zinc-500">
+                                        <li className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                            Simulation d'achat
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                            Test de la personnalité
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                            Vérification des règles
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* Right Col: Chat Interface */}
+                            <div className="md:col-span-2">
+                                <AIPlayground />
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

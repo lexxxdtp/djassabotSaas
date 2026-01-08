@@ -3,11 +3,13 @@ import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, ShoppingBag, Settings, LogOut, Package, Share2, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import UserProfileModal from '../components/UserProfileModal';
 
 const DashboardLayout: React.FC = () => {
-    const { logout, user } = useAuth();
+    const { logout, user, tenant } = useAuth();
     const navigate = useNavigate();
     const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+    const [userModalOpen, setUserModalOpen] = React.useState(false);
 
     const handleLogout = () => {
         logout();
@@ -24,6 +26,8 @@ const DashboardLayout: React.FC = () => {
 
     return (
         <div className="flex h-screen bg-black text-slate-200 font-sans">
+            <UserProfileModal isOpen={userModalOpen} onClose={() => setUserModalOpen(false)} />
+
             {/* Sidebar Desktop */}
             <aside className="hidden md:flex flex-col w-64 bg-zinc-950 border-r border-zinc-800">
                 <div className="p-6 border-b border-zinc-800">
@@ -56,21 +60,33 @@ const DashboardLayout: React.FC = () => {
                     ))}
                 </nav>
 
-                <div className="p-4 border-t border-zinc-800">
-                    <div className="flex items-center gap-3 px-4 py-3 mb-2 rounded-lg hover:bg-zinc-900/50 transition-colors">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-orange-500 font-bold border border-zinc-700">
-                            {(user as any)?.name?.[0] || 'U'}
+                <div className="p-4 border-t border-zinc-800 space-y-2">
+                    {/* User Profile Trigger */}
+                    <button
+                        onClick={() => setUserModalOpen(true)}
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-lg bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all group text-left"
+                    >
+                        <div className="relative">
+                            <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-orange-500 font-bold border border-zinc-700 group-hover:border-orange-500/50 transition-colors">
+                                {tenant?.name?.[0] || user?.email?.[0] || 'U'}
+                            </div>
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-black rounded-full flex items-center justify-center border border-zinc-800">
+                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                            </div>
                         </div>
-                        <div className="overflow-hidden">
-                            <p className="text-sm font-medium text-white truncate">{(user as any)?.name}</p>
-                            <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
+                        <div className="overflow-hidden flex-1">
+                            <p className="text-sm font-bold text-white truncate group-hover:text-orange-500 transition-colors">{tenant?.name || 'Mon Business'}</p>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] bg-orange-500/10 text-orange-500 px-1.5 py-0.5 rounded border border-orange-500/20 font-mono uppercase truncate max-w-full">{user?.email}</span>
+                            </div>
                         </div>
-                    </div>
+                    </button>
+
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-zinc-500 hover:text-red-400 transition-colors"
+                        className="w-full flex items-center gap-2 px-4 py-2 text-xs text-zinc-500 hover:text-red-400 transition-colors justify-center"
                     >
-                        <LogOut size={16} />
+                        <LogOut size={14} />
                         Déconnexion
                     </button>
                 </div>

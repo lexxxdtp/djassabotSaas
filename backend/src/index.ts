@@ -3,7 +3,10 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import webhookRoutes from './routes/webhookRoutes';
 import whatsappRoutes from './routes/whatsappRoutes';
+import { startAllTenantInstances } from './services/baileysManager';
 import authRoutes from './routes/authRoutes';
+import aiRoutes from './routes/aiRoutes';
+import './jobs/abandonedCart'; // Start Cron Jobs
 import { db } from './services/dbService';
 import { authenticateTenant } from './middleware/auth';
 
@@ -30,6 +33,7 @@ app.use('/api/auth', authRoutes);
 
 // Protected Routes
 app.use('/api/whatsapp', whatsappRoutes); // Auth handled inside router
+app.use('/api/ai', aiRoutes); // New AI Simulation Routes
 
 // Webhooks (Public but should be AFTER specific routes)
 // TEMPORARY: Commented out to debug routing issue
@@ -123,6 +127,9 @@ app.get('/', (req: Request, res: Response) => {
     res.send('WhatsApp Commerce Bot Backend is running');
 });
 
-app.listen(port, () => {
+app.listen(port, async () => {
     console.log(`[server]: Server is running at http://localhost:${port}`);
+
+    // Start all active tenant WhatsApp sessions
+    await startAllTenantInstances();
 });

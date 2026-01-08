@@ -1,9 +1,9 @@
 
 import { useState } from 'react';
-import { Megaphone, Users, Calendar, Send, Sparkles, Tag, MessageCircle } from 'lucide-react';
+import { Megaphone, Users, Calendar, Send, Sparkles, Tag, MessageCircle, ShoppingCart, TimerReset, Clock } from 'lucide-react';
 
 export default function MarketingTools() {
-    const [activeTab, setActiveTab] = useState<'broadcast' | 'coupons'>('broadcast');
+    const [activeTab, setActiveTab] = useState<'broadcast' | 'coupons' | 'abandoned'>('broadcast');
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in zoom-in duration-300">
@@ -36,26 +36,26 @@ export default function MarketingTools() {
                     </div>
                 </div>
                 <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl flex items-center space-x-4 hover:border-orange-500/30 transition-colors">
-                    <div className="p-3 bg-purple-500/10 rounded-xl text-purple-500 border border-purple-500/20">
-                        <Tag size={24} />
+                    <div className="p-3 bg-rose-500/10 rounded-xl text-rose-500 border border-rose-500/20">
+                        <ShoppingCart size={24} />
                     </div>
                     <div>
-                        <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Coupons Actifs</p>
-                        <h3 className="text-2xl font-bold text-white font-mono">3</h3>
-                        <p className="text-xs text-zinc-500">145 utilisations</p>
+                        <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Paniers Sauvés</p>
+                        <h3 className="text-2xl font-bold text-white font-mono">12</h3>
+                        <p className="text-xs text-emerald-500 font-bold">+45,000 FCFA</p>
                     </div>
                 </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex space-x-6 border-b border-zinc-800 pb-1">
+            <div className="flex space-x-6 border-b border-zinc-800 pb-1 overflow-x-auto">
                 <button
                     onClick={() => setActiveTab('broadcast')}
-                    className={`pb-3 px-2 text-sm font-bold uppercase tracking-wide transition-all relative ${activeTab === 'broadcast' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}
+                    className={`pb-3 px-2 text-sm font-bold uppercase tracking-wide transition-all relative whitespace-nowrap ${activeTab === 'broadcast' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}
                 >
                     <div className="flex items-center space-x-2">
                         <Megaphone size={18} />
-                        <span>Diffusion (Broadcast)</span>
+                        <span>Diffusion</span>
                     </div>
                     {activeTab === 'broadcast' && (
                         <div className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-500" />
@@ -63,13 +63,25 @@ export default function MarketingTools() {
                 </button>
                 <button
                     onClick={() => setActiveTab('coupons')}
-                    className={`pb-3 px-2 text-sm font-bold uppercase tracking-wide transition-all relative ${activeTab === 'coupons' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}
+                    className={`pb-3 px-2 text-sm font-bold uppercase tracking-wide transition-all relative whitespace-nowrap ${activeTab === 'coupons' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}
                 >
                     <div className="flex items-center space-x-2">
                         <Tag size={18} />
                         <span>Codes Promo</span>
                     </div>
                     {activeTab === 'coupons' && (
+                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-500" />
+                    )}
+                </button>
+                <button
+                    onClick={() => setActiveTab('abandoned')}
+                    className={`pb-3 px-2 text-sm font-bold uppercase tracking-wide transition-all relative whitespace-nowrap ${activeTab === 'abandoned' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}
+                >
+                    <div className="flex items-center space-x-2">
+                        <TimerReset size={18} />
+                        <span>Paniers Abandonnés</span>
+                    </div>
+                    {activeTab === 'abandoned' && (
                         <div className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-500" />
                     )}
                 </button>
@@ -81,8 +93,10 @@ export default function MarketingTools() {
                 <div className="lg:col-span-2 space-y-6">
                     {activeTab === 'broadcast' ? (
                         <BroadcastForm />
-                    ) : (
+                    ) : activeTab === 'coupons' ? (
                         <CouponForm />
+                    ) : (
+                        <AbandonedCartsView />
                     )}
                 </div>
 
@@ -210,3 +224,65 @@ function CouponForm() {
         </div>
     );
 }
+
+function AbandonedCartsView() {
+    return (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <div className="w-1 h-6 bg-rose-500 rounded-full"></div>
+                    RELANCE AUTOMATIQUE
+                </h2>
+                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-bold border border-emerald-500/20 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                    ACTIF
+                </span>
+            </div>
+
+            <div className="bg-black/50 border border-zinc-800 rounded-xl p-4">
+                <div className="flex items-start gap-4">
+                    <div className="p-3 bg-zinc-800 rounded-lg text-zinc-400">
+                        <Clock size={24} />
+                    </div>
+                    <div>
+                        <h3 className="text-white font-bold text-sm">Règle de relance</h3>
+                        <p className="text-zinc-500 text-xs mt-1">
+                            Si un client ajoute des articles au panier mais ne valide pas après <strong className="text-white">30 minutes</strong>, le bot envoie un message de rappel amical.
+                        </p>
+                    </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-zinc-800 grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1">Délai (min)</label>
+                        <input type="number" value="30" disabled className="bg-zinc-900 text-zinc-400 px-3 py-2 rounded-lg text-sm w-full border border-zinc-800" />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1">Message</label>
+                        <input type="text" value="👋 Vous avez oublié quelque chose ?" disabled className="bg-zinc-900 text-zinc-400 px-3 py-2 rounded-lg text-sm w-full border border-zinc-800" />
+                    </div>
+                </div>
+            </div>
+
+            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mt-6 mb-3">Dernières Relances</h3>
+            <div className="space-y-3">
+                {[1, 2, 3].map((_, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-black border border-zinc-800/50 rounded-xl hover:border-zinc-700 transition-colors">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">
+                                225
+                            </div>
+                            <div>
+                                <p className="text-white text-sm font-medium">07 09 ** ** 92</p>
+                                <p className="text-zinc-600 text-xs">Il y a {i * 15 + 5} min • Panier: 15,000 F</p>
+                            </div>
+                        </div>
+                        <span className="text-emerald-500 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded">Récupéré ✅</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+
+
