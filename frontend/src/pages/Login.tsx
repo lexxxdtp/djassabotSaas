@@ -20,11 +20,18 @@ const Login: React.FC = () => {
         setLoading(true);
 
         try {
+            // Auto-detect phone number format (10 digits)
+            let formattedIdentifier = identifier;
+            const isTenDigitNumber = /^\d{10}$/.test(identifier);
+            if (isTenDigitNumber) {
+                formattedIdentifier = `+225${identifier}`;
+            }
+
             const response = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    identifier, // Le backend détectera si c'est email ou phone
+                    identifier: formattedIdentifier,
                     password
                 }),
             });
@@ -72,12 +79,12 @@ const Login: React.FC = () => {
                                 type="text"
                                 value={identifier}
                                 onChange={(e) => setIdentifier(e.target.value)}
-                                placeholder="email@exemple.com ou +225XXXXXXXXXX"
+                                placeholder="email@exemple.com ou 0707XXXXXX"
                                 required
                                 className="w-full bg-black border border-zinc-700/50 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
                             />
                         </div>
-                        <p className="mt-1 text-xs text-zinc-600">Format téléphone : +225 suivi de 10 chiffres</p>
+
                     </div>
 
                     <div>

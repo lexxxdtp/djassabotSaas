@@ -24,20 +24,12 @@ const Signup: React.FC = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const formatPhoneNumber = (value: string) => {
-        // Auto-format le numéro: ajoute +225 si manquant
-        let cleaned = value.replace(/\D/g, '');
-
-        if (!value.startsWith('+225') && cleaned.length > 0) {
-            cleaned = '225' + cleaned;
-        }
-
-        return cleaned.startsWith('225') ? '+' + cleaned : value;
-    };
-
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const formatted = formatPhoneNumber(e.target.value);
-        setFormData({ ...formData, phone: formatted });
+        // Ne garder que les chiffres
+        const cleaned = e.target.value.replace(/\D/g, '');
+        // Limiter à 10 chiffres max
+        const truncated = cleaned.slice(0, 10);
+        setFormData({ ...formData, phone: truncated });
     };
 
     const handleSignup = async (e: React.FormEvent) => {
@@ -59,25 +51,25 @@ const Signup: React.FC = () => {
             return;
         }
 
-        // Validation du format téléphone
-        if (usePhone) {
-            const phoneRegex = /^\+225[0-9]{10}$/;
-            if (!phoneRegex.test(formData.phone)) {
-                setError('Format de téléphone invalide. Utilisez +225 suivi de 10 chiffres.');
-                return;
-            }
+        // Validation du format téléphone (doit avoir 10 chiffres)
+        if (usePhone && formData.phone.length !== 10) {
+            setError('Le numéro de téléphone doit contenir 10 chiffres.');
+            return;
         }
 
         setLoading(true);
 
         try {
+            // Formater pour le backend : ajouter +225 automatiquement
+            const finalPhone = usePhone ? `+225${formData.phone}` : null;
+
             const response = await fetch(`${API_URL}/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     businessName: formData.businessName,
                     email: usePhone ? null : formData.email,
-                    phone: usePhone ? formData.phone : null,
+                    phone: finalPhone,
                     password: formData.password
                 }),
             });
@@ -179,18 +171,23 @@ const Signup: React.FC = () => {
                         <div>
                             <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Téléphone</label>
                             <div className="relative group">
-                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-orange-500 transition-colors w-5 h-5" />
+                                {/* Préfixe Fixe +225 visualisé à l'intérieur de l'input */}
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none z-10">
+                                    <Phone className="text-zinc-500 w-5 h-5" />
+                                    <span className="text-zinc-400 font-bold font-mono text-sm border-r border-zinc-700 pr-2">+225</span>
+                                </div>
                                 <input
                                     type="tel"
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handlePhoneChange}
-                                    placeholder="+225XXXXXXXXXX"
+                                    placeholder="0709483812"
                                     required
-                                    className="w-full bg-black border border-zinc-700/50 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all font-mono"
+                                    maxLength={10}
+                                    className="w-full bg-black border border-zinc-700/50 rounded-xl py-3 pl-[90px] pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all font-mono text-lg tracking-wide"
                                 />
                             </div>
-                            <p className="mt-1 text-xs text-zinc-600">Format : +225 suivi de 10 chiffres</p>
+                            <p className="mt-1 text-xs text-zinc-600">Entrez les 10 chiffres de votre numéro</p>
                         </div>
                     )}
 
