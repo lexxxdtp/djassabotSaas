@@ -27,14 +27,19 @@ CREATE TABLE IF NOT EXISTS tenants (
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
-    email TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE,
+    phone TEXT UNIQUE, -- Format: +225XXXXXXXXXX (10 chiffres après +225)
     password_hash TEXT NOT NULL,
     role TEXT DEFAULT 'owner' CHECK (role IN ('owner', 'admin', 'staff')),
-    created_at TIMESTAMP DEFAULT NOW()
+    email_verified BOOLEAN DEFAULT false,
+    phone_verified BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT email_or_phone CHECK (email IS NOT NULL OR phone IS NOT NULL)
 );
 
 CREATE INDEX idx_users_tenant_id ON users(tenant_id);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_phone ON users(phone);
 
 -- ==========================================
 -- 3. TABLE SUBSCRIPTIONS

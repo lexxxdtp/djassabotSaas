@@ -121,17 +121,21 @@ export const updateTenantQRCode = async (tenantId: string, qrCode: string): Prom
 
 export const createUser = async (data: {
     tenantId: string;
-    email: string;
+    email?: string | null;
+    phone?: string | null;
     passwordHash: string;
     role?: 'owner' | 'admin' | 'staff';
 }): Promise<User> => {
-    console.log('[createUser] Called for:', data.email);
+    console.log('[createUser] Called for:', data.email || data.phone);
     const user: User = {
         id: uuidv4(),
         tenantId: data.tenantId,
-        email: data.email,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
         passwordHash: data.passwordHash,
         role: data.role || 'owner',
+        emailVerified: false,
+        phoneVerified: false,
         createdAt: new Date()
     };
 
@@ -170,6 +174,22 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
     } catch (e) { }
 
     return localStore.users.find(u => u.email === email) || null;
+};
+
+export const getUserByPhone = async (phone: string): Promise<User | null> => {
+    try {
+        if (isSupabaseEnabled && supabase) {
+            const { data, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('phone', phone)
+                .single();
+
+            if (!error) return data;
+        }
+    } catch (e) { }
+
+    return localStore.users.find(u => u.phone === phone) || null;
 };
 
 export const getUserById = async (id: string): Promise<User | null> => {

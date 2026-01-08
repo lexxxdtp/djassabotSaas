@@ -8,17 +8,36 @@ const router = express.Router();
 /**
  * POST /api/auth/signup
  * Créer un nouveau tenant + utilisateur
+ * Accepte email OU phone (+225XXXXXXXXXX)
  */
 router.post('/signup', async (req: Request, res: Response) => {
     try {
-        const { businessName, email, password, businessType } = req.body;
+        const { businessName, email, phone, password, businessType } = req.body;
 
-        // Validation
-        if (!businessName || !email || !password) {
+        // Validation - au moins email OU phone
+        if (!businessName || !password) {
             res.status(400).json({
-                error: 'Tous les champs sont requis (businessName, email, password)'
+                error: 'Le nom du commerce et le mot de passe sont requis'
             });
             return;
+        }
+
+        if (!email && !phone) {
+            res.status(400).json({
+                error: 'Vous devez fournir un email ou un numéro de téléphone'
+            });
+            return;
+        }
+
+        // Validation du format téléphone ivoirien (+225XXXXXXXXXX = 10 chiffres)
+        if (phone) {
+            const phoneRegex = /^\+225[0-9]{10}$/;
+            if (!phoneRegex.test(phone)) {
+                res.status(400).json({
+                    error: 'Format de téléphone invalide. Utilisez: +225XXXXXXXXXX (10 chiffres)'
+                });
+                return;
+            }
         }
 
         if (password.length < 8) {
@@ -28,11 +47,21 @@ router.post('/signup', async (req: Request, res: Response) => {
             return;
         }
 
-        // Vérifier si l'email existe déjà
-        const existingUser = await db.getUserByEmail(email);
-        if (existingUser) {
-            res.status(409).json({ error: 'Cet email est déjà utilisé' });
-            return;
+        // Vérifier si l'email/phone existe déjà
+        if (email) {
+            const existingUser = await db.getUserByEmail(email);
+            if (existingUser) {
+                res.status(409).json({ error: 'Cet email est déjà utilisé' });
+                return;
+            }
+        }
+
+        if (phone) {
+            const existingUser = await db.getUserByPhone(phone);
+            if (existingUser) {
+                res.status(409).json({ error: 'Ce numéro de téléphone est déjà utilisé' });
+                return;
+            }
         }
 
         // 1. Créer le tenant
@@ -49,12 +78,13 @@ router.post('/signup', async (req: Request, res: Response) => {
         // 3. Créer l'utilisateur
         const user = await db.createUser({
             tenantId: tenant.id,
-            email,
+            email: email || null,
+            phone: phone || null,
             passwordHash,
             role: 'owner'
         });
 
-        console.log(`[Signup] ✅ User créé: ${user.id} - ${email}`);
+        console.log(`[Signup] ✅ User créé: ${user.id} - ${email || phone}`);
 
         // 4. Créer les settings par défaut
         await db.createDefaultSettings(tenant.id, businessName);
@@ -71,7 +101,7 @@ router.post('/signup', async (req: Request, res: Response) => {
         const token = generateToken({
             tenantId: tenant.id,
             userId: user.id,
-            email: user.email
+            email: user.email || user.phone || ''
         });
 
         res.status(201).json({
@@ -100,25 +130,32 @@ router.post('/signup', async (req: Request, res: Response) => {
 
 /**
  * POST /api/auth/login
- * Connexion d'un utilisateur
+ * Connexion d'un utilisateur (email OU téléphone)
  */
 router.post('/login', async (req: Request, res: Response) => {
     try {
-        const { email, password } = req.body;
+        const { identifier, password } = req.body; // identifier peut être email ou phone
 
         // Validation
-        if (!email || !password) {
+        if (!identifier || !password) {
             res.status(400).json({
-                error: 'Email et mot de passe requis'
+                error: 'Email/Téléphone et mot de passe requis'
             });
             return;
         }
 
-        // 1. Récupérer l'utilisateur
-        const user = await db.getUserByEmail(email);
+        // 1. Détecter si c'est un email ou un téléphone
+        const isPhone = identifier.startsWith('+225');
+        let user = null;
+
+        if (isPhone) {
+            user = await db.getUserByPhone(identifier);
+        } else {
+            user = await db.getUserByEmail(identifier);
+        }
 
         if (!user) {
-            res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+            res.status(401).json({ error: 'Identifiant ou mot de passe incorrect' });
             return;
         }
 
@@ -126,7 +163,7 @@ router.post('/login', async (req: Request, res: Response) => {
         const validPassword = await bcrypt.compare(password, user.passwordHash);
 
         if (!validPassword) {
-            res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+            res.status(401).json({ error: 'Identifiant ou mot de passe incorrect' });
             return;
         }
 
@@ -148,12 +185,12 @@ router.post('/login', async (req: Request, res: Response) => {
 
         // 5. Générer le JWT
         const token = generateToken({
-            tenantId: user.tenantId,
+            tenantId: tenant.id,
             userId: user.id,
-            email: user.email
+            email: user.email || user.phone || ''
         });
 
-        console.log(`[Login] ✅ ${email} connecté (Tenant: ${tenant.name})`);
+        console.log(`[Login] ✅ ${user.email || user.phone} connecté (Tenant: ${tenant.name})`);
 
         res.json({
             success: true,
@@ -168,6 +205,7 @@ router.post('/login', async (req: Request, res: Response) => {
             user: {
                 id: user.id,
                 email: user.email,
+                phone: user.phone,
                 role: user.role
             }
         });

@@ -77,9 +77,12 @@ export interface Tenant {
 export interface User {
     id: string;
     tenantId: string;
-    email: string;
+    email?: string; // Optional now, can use phone instead
+    phone?: string; // Format: +225XXXXXXXXXX
     passwordHash: string;
     role: 'owner' | 'admin' | 'staff';
+    emailVerified: boolean;
+    phoneVerified: boolean;
     createdAt: Date;
 }
 
