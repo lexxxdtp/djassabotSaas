@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, X, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import { getApiUrl } from '../utils/apiConfig';
 
 const Products: React.FC = () => {
     const navigate = useNavigate();
@@ -27,8 +28,9 @@ const Products: React.FC = () => {
     // Fetch Products
     const fetchProducts = async () => {
         try {
+            const API_URL = getApiUrl();
             const token = localStorage.getItem('token');
-            const res = await fetch('/api/products', {
+            const res = await fetch(`${API_URL}/products`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -84,8 +86,9 @@ const Products: React.FC = () => {
     const confirmDelete = async () => {
         if (!deleteProductId) return;
         try {
+            const API_URL = getApiUrl();
             const token = localStorage.getItem('token');
-            await fetch(`/api/products/${deleteProductId}`, {
+            await fetch(`${API_URL}/products/${deleteProductId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -112,6 +115,7 @@ const Products: React.FC = () => {
                 images: productForm.images
             };
 
+            const API_URL = getApiUrl();
             const token = localStorage.getItem('token');
             const headers = {
                 'Content-Type': 'application/json',
@@ -120,14 +124,14 @@ const Products: React.FC = () => {
 
             if (editingId) {
                 // Update
-                await fetch(`/api/products/${editingId}`, {
+                await fetch(`${API_URL}/products/${editingId}`, {
                     method: 'PUT',
                     headers,
                     body: JSON.stringify(payload)
                 });
             } else {
                 // Create
-                await fetch('/api/products', {
+                await fetch(`${API_URL}/products`, {
                     method: 'POST',
                     headers,
                     body: JSON.stringify(payload)

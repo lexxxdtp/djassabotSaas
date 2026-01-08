@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { ShoppingBag, CheckCircle, Clock, MapPin, X } from 'lucide-react';
+import { getApiUrl } from '../utils/apiConfig';
 
 interface Order {
     id: string;
@@ -18,8 +19,9 @@ export default function Orders() {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
     useEffect(() => {
+        const API_URL = getApiUrl();
         const token = localStorage.getItem('token');
-        fetch('/api/orders', {
+        fetch(`${API_URL}/orders`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }

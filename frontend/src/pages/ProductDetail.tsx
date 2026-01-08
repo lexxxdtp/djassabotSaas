@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Trash2, Image as ImageIcon, X, Plus } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import { getApiUrl } from '../utils/apiConfig';
 
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -29,7 +30,8 @@ const ProductDetail: React.FC = () => {
                 // I should check if GET /api/products/:id exists.
                 // Assuming it might NOT, I'll try to fetch from /api/products and filter.
 
-                const res = await fetch('/api/products');
+                const API_URL = getApiUrl();
+                const res = await fetch(`${API_URL}/products`);
                 const data = await res.json();
                 const found = data.find((p: any) => p.id === id);
                 if (found) {
@@ -53,7 +55,8 @@ const ProductDetail: React.FC = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await fetch(`/api/products/${id}`, {
+            const API_URL = getApiUrl();
+            await fetch(`${API_URL}/products/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -74,7 +77,8 @@ const ProductDetail: React.FC = () => {
     const handleDelete = async () => {
         if (!confirm('Voulez-vous vraiment supprimer ce produit ?')) return;
         try {
-            await fetch(`/api/products/${id}`, { method: 'DELETE' });
+            const API_URL = getApiUrl();
+            await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
             navigate('/dashboard/products');
         } catch (error) {
             console.error('Error deleting product', error);

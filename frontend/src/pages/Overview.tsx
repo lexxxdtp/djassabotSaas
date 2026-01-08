@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, DollarSign, ShoppingCart, Activity, Globe } from 'lucide-react';
+import { getApiUrl } from '../utils/apiConfig';
 
 const StatCard = ({ title, value, change, icon: Icon, subtitle }: any) => (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-orange-500/30 transition-all group shadow-sm hover:shadow-orange-500/10">
@@ -52,8 +53,9 @@ export default function Overview() {
 
         const fetchData = async () => {
             try {
+                const API_URL = getApiUrl();
                 // Header is already added in previous step's replacement block which starts here
-                const res = await fetch('/api/orders', {
+                const res = await fetch(`${API_URL}/orders`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
