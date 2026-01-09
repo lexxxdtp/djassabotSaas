@@ -118,7 +118,7 @@ export const db = {
             userId,
             items,
             total,
-            status: 'PAID',
+            status: 'PENDING',
             address,
             createdAt
         };
@@ -131,6 +131,15 @@ export const db = {
                     .select()
                     .single();
                 if (error) throw error;
+
+                // Log activity: New Sale
+                await supabase.from('activity_logs').insert([{
+                    tenant_id: tenantId,
+                    type: 'sale',
+                    message: `Nouvelle commande de ${(total).toLocaleString()} FCFA par ${userId}`,
+                    metadata: { orderId: data.id, total }
+                }]);
+
                 return data;
             } catch (e) {
                 console.warn('[DB] Supabase createOrder failed, fallback to local');
