@@ -35,13 +35,11 @@ const ProductDetail: React.FC = () => {
 
     // Variation Templates State
     const [variationTemplates, setVariationTemplates] = useState<any[]>([]);
-    const [loadingTemplates, setLoadingTemplates] = useState(false);
 
     // Load variation templates
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                setLoadingTemplates(true);
                 const token = localStorage.getItem('token');
                 const API_URL = getApiUrl();
                 const res = await fetch(`${API_URL}/variation-templates`, {
@@ -53,8 +51,6 @@ const ProductDetail: React.FC = () => {
                 }
             } catch (error) {
                 console.error('Failed to fetch variation templates', error);
-            } finally {
-                setLoadingTemplates(false);
             }
         };
         fetchTemplates();
@@ -374,40 +370,68 @@ const ProductDetail: React.FC = () => {
                         <div>
                             <label className="block text-sm font-medium text-zinc-400 mb-1">
                                 Stock disponible
-                                {product.variations && product.variations.length > 0 && (
-                                    <span className="ml-2 text-orange-400 text-xs">(Auto-calculé)</span>
-                                )}
+                                {(() => {
+                                    // Helper: Vérifier si le produit a des variations ACTIVES
+                                    const hasActiveVariations = product.variations && product.variations.some((v: ProductVariation) =>
+                                        v.name && v.name.trim() !== '' && v.options && v.options.length > 0
+                                    );
+                                    return hasActiveVariations && (
+                                        <span className="ml-2 text-orange-400 text-xs">(Auto-calculé)</span>
+                                    );
+                                })()}
                             </label>
                             <input
                                 type="number"
                                 min="0"
                                 value={
-                                    // Si le produit a des variations, calculer le stock total automatiquement
-                                    product.variations && product.variations.length > 0
-                                        ? product.variations.reduce((total: number, variation: ProductVariation) => {
-                                            const variationStock = variation.options.reduce((sum, opt) => sum + (opt.stock || 0), 0);
-                                            return total + variationStock;
-                                        }, 0)
-                                        : product.stock
+                                    // Si le produit a des variations ACTIVES, calculer le stock total automatiquement
+                                    (() => {
+                                        const hasActiveVariations = product.variations && product.variations.some((v: ProductVariation) =>
+                                            v.name && v.name.trim() !== '' && v.options && v.options.length > 0
+                                        );
+
+                                        if (hasActiveVariations) {
+                                            return product.variations
+                                                .filter((v: ProductVariation) => v.name && v.name.trim() !== '' && v.options && v.options.length > 0)
+                                                .reduce((total: number, variation: ProductVariation) => {
+                                                    const variationStock = variation.options.reduce((sum, opt) => sum + (opt.stock || 0), 0);
+                                                    return total + variationStock;
+                                                }, 0);
+                                        }
+
+                                        return product.stock;
+                                    })()
                                 }
                                 onChange={e => {
-                                    // N'autoriser la modification que si PAS de variations
-                                    if (!product.variations || product.variations.length === 0) {
+                                    // N'autoriser la modification que si PAS de variations ACTIVES
+                                    const hasActiveVariations = product.variations && product.variations.some((v: ProductVariation) =>
+                                        v.name && v.name.trim() !== '' && v.options && v.options.length > 0
+                                    );
+
+                                    if (!hasActiveVariations) {
                                         const value = Math.max(0, Number(e.target.value) || 0);
                                         setProduct({ ...product, stock: value });
                                     }
                                 }}
-                                disabled={product.variations && product.variations.length > 0}
-                                className={`w-full border rounded-xl p-3 font-mono outline-none ${product.variations && product.variations.length > 0
-                                    ? 'bg-zinc-800 border-zinc-700 text-zinc-400 cursor-not-allowed'
-                                    : 'bg-black border-zinc-700 text-white focus:border-orange-500'
+                                disabled={(() => {
+                                    return product.variations && product.variations.some((v: ProductVariation) =>
+                                        v.name && v.name.trim() !== '' && v.options && v.options.length > 0
+                                    );
+                                })()}
+                                className={`w-full border rounded-xl p-3 font-mono outline-none ${product.variations && product.variations.some((v: ProductVariation) =>
+                                    v.name && v.name.trim() !== '' && v.options && v.options.length > 0
+                                )
+                                        ? 'bg-zinc-800 border-zinc-700 text-zinc-400 cursor-not-allowed'
+                                        : 'bg-black border-zinc-700 text-white focus:border-orange-500'
                                     }`}
                             />
-                            {product.variations && product.variations.length > 0 && (
-                                <p className="text-xs text-zinc-600 mt-1">
-                                    ℹ️ Le stock total est calculé depuis vos variations
-                                </p>
-                            )}
+                            {product.variations && product.variations.some((v: ProductVariation) =>
+                                v.name && v.name.trim() !== '' && v.options && v.options.length > 0
+                            ) && (
+                                    <p className="text-xs text-zinc-600 mt-1">
+                                        ℹ️ Le stock total est calculé depuis vos variations
+                                    </p>
+                                )}
                         </div>
                     </div>
 

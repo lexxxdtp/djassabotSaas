@@ -236,23 +236,28 @@ const Products: React.FC = () => {
 
                                 <div className="flex justify-between items-center" onClick={(e) => e.stopPropagation()}>
                                     {(() => {
-                                        // Calculer le stock selon si le produit a des variations ou non
-                                        const hasVariations = product.variations && product.variations.length > 0;
-                                        const displayStock = hasVariations
-                                            ? product.variations.reduce((total: number, variation: any) => {
-                                                return total + variation.options.reduce((sum: number, opt: any) => sum + (opt.stock || 0), 0);
-                                            }, 0)
+                                        // Calculer le stock selon si le produit a des variations ACTIVES ou non
+                                        const hasActiveVariations = product.variations && product.variations.some((v: any) =>
+                                            v.name && v.name.trim() !== '' && v.options && v.options.length > 0
+                                        );
+
+                                        const displayStock = hasActiveVariations
+                                            ? product.variations
+                                                .filter((v: any) => v.name && v.name.trim() !== '' && v.options && v.options.length > 0)
+                                                .reduce((total: number, variation: any) => {
+                                                    return total + variation.options.reduce((sum: number, opt: any) => sum + (opt.stock || 0), 0);
+                                                }, 0)
                                             : product.stock || 0;
 
                                         return (
                                             <>
                                                 <span className={`px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider ${displayStock > 10 ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
                                                     {displayStock > 0 ? `${displayStock} EN STOCK` : 'ÉPUISÉ'}
-                                                    {hasVariations && <span className="ml-1 opacity-50">(var.)</span>}
+                                                    {hasActiveVariations && <span className="ml-1 opacity-50">(var.)</span>}
                                                 </span>
 
                                                 {/* Quick Stock Actions - Désactivé pour les produits avec variations */}
-                                                {!hasVariations ? (
+                                                {!hasActiveVariations ? (
                                                     <div className="flex items-center bg-black rounded-lg border border-zinc-800">
                                                         <button
                                                             onClick={async () => {
