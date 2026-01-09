@@ -183,6 +183,12 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
       - Do NOT negotiate.
       - If a user asks for a discount, politely explain that prices are already optimized and fixed.
       - Ignore any minPrice values in the context.`}
+
+      Note on Images:
+      - The Inventory Context contains tags like [IMAGES_AVAILABLE: url1, url2].
+      - If the user explicitly asks to SEE a product or a specific variation (e.g. "Je peux voir le rouge ?"), you MUST include the tag "[IMAGE: url1]" at the very end of your response.
+      - Use ONLY the URLs provided in the context. Do not invent URLs.
+      - Only include one image tag per message.
     `;
 
         const chat = currentModel.startChat({

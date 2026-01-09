@@ -517,6 +517,22 @@ class WhatsAppManager {
             // 5. Réponse IA Standard (Chat / Info produit / Négociation)
             const inventoryContext = products.map(p => {
                 let productInfo = `- ${p.name}: ${p.price} FCFA ${p.minPrice ? `(Min: ${p.minPrice})` : ''} | ${p.stock > 0 ? 'En stock' : 'Épuisé'}`;
+
+                // Include Variations Detail (with Image URLs)
+                if (p.variations && p.variations.length > 0) {
+                    p.variations.forEach((v: any) => { // Use 'any' or defined interface
+                        if (v.name && v.options) {
+                            productInfo += `\n  * Variation [${v.name}]:`;
+                            v.options.forEach((opt: any) => {
+                                let imgInfo = opt.images && opt.images.length > 0 ? ` [IMAGES_AVAILABLE: ${opt.images.join(', ')}]` : '';
+                                productInfo += `\n    - Option: "${opt.value}" | Stock: ${opt.stock ?? '∞'} | Prix: ${opt.priceModifier ? (opt.priceModifier > 0 ? '+' : '') + opt.priceModifier : '+0'}${imgInfo}`;
+                            });
+                        }
+                    });
+                } else if (p.images && p.images.length > 0) {
+                    productInfo += ` [MAIN_IMAGES: ${p.images.join(', ')}]`;
+                }
+
                 if (p.aiInstructions) {
                     productInfo += `\n  📋 Consignes: ${p.aiInstructions}`;
                 }
@@ -529,7 +545,22 @@ class WhatsAppManager {
                 history: session.history
             });
 
-            await sock.sendMessage(remoteJid, { text: aiResponse });
+            // Parse response for [IMAGE: url] tag
+            const imageMatch = aiResponse.match(/\[IMAGE:\s*(.*?)\]/);
+
+            if (imageMatch && imageMatch[1]) {
+                const imageUrl = imageMatch[1].trim();
+                const cleanText = aiResponse.replace(/\[IMAGE:.*?\]/g, '').trim();
+
+                // Send Image Message
+                await sock.sendMessage(remoteJid, {
+                    image: { url: imageUrl },
+                    caption: cleanText
+                });
+            } else {
+                // Send Text Message
+                await sock.sendMessage(remoteJid, { text: aiResponse });
+            }
 
             // Mise à jour de l'historique
             await addToHistory(tenantId, remoteJid, 'user', text);
