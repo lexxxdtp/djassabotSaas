@@ -122,26 +122,33 @@ const Products: React.FC = () => {
                 'Authorization': `Bearer ${token}`
             };
 
+            let response;
             if (editingId) {
                 // Update
-                await fetch(`${API_URL}/products/${editingId}`, {
+                response = await fetch(`${API_URL}/products/${editingId}`, {
                     method: 'PUT',
                     headers,
                     body: JSON.stringify(payload)
                 });
             } else {
                 // Create
-                await fetch(`${API_URL}/products`, {
+                response = await fetch(`${API_URL}/products`, {
                     method: 'POST',
                     headers,
                     body: JSON.stringify(payload)
                 });
             }
 
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Erreur lors de la sauvegarde');
+            }
+
             setIsModalOpen(false);
             fetchProducts();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save product', error);
+            alert(`Erreur: ${error.message}`);
         }
     };
 
