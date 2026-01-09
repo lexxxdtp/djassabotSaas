@@ -1,0 +1,16 @@
+🔧 Fix: Code cleanup and security improvements
+
+Backend:
+- Fix: Added authenticateTenant middleware to /api/auth/me routes (GET & PUT)
+- Fix: Re-enabled webhooks at /api/webhooks endpoint
+- Fix: Removed unused node-cron import in abandonedCart.ts
+- Fix: Complete snake_case/camelCase mapping for Settings in dbService.ts
+- Improved: getSettings() now properly maps DB columns to TypeScript interface
+- Improved: updateSettings() now properly maps TypeScript props to DB columns
+
+Frontend:
+- Fix: Added Supabase client validation to prevent crashes on missing env vars
+- Fix: Added token to useEffect dependencies in Overview.tsx for proper data refresh
+- Improved: Added phone, full_name, birth_date to /me API response
+
+All changes tested and verified with functional browser tests.

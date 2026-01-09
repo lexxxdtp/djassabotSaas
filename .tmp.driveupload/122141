@@ -1,0 +1,332 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.startAllTenantInstances = exports.whatsappManager = void 0;
+const baileys_1 = __importStar(require("@whiskeysockets/baileys"));
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+const pino_1 = __importDefault(require("pino"));
+const dbService_1 = require("./dbService");
+const aiService_1 = require("./aiService");
+// Logger clean
+const logger = (0, pino_1.default)({ level: 'error' });
+class WhatsAppManager {
+    constructor() {
+        this.sessions = new Map();
+        this.MAX_RETRIES = 5;
+        // Au démarrage, on pourrait recharger les sessions actives
+        // Pour l'instant on le fera à la demande ou au boot
+    }
+    /**
+     * Initialiser ou récupérer une session pour un tenant
+     */
+    async getSession(tenantId) {
+        return this.sessions.get(tenantId);
+    }
+    /**
+     * Créer une nouvelle connexion pour un tenant
+     */
+    async createSession(tenantId) {
+        // Si session existe et connectée, retourner null (pas besoin de QR)
+        const existing = this.sessions.get(tenantId);
+        if (existing?.status === 'connected')
+            return undefined;
+        // AUTH FOLDER UNIQUE PAR TENANT
+        const authPath = path_1.default.join(__dirname, `../../auth_info_baileys/tenant_${tenantId}`);
+        if (!fs_1.default.existsSync(authPath)) {
+            fs_1.default.mkdirSync(authPath, { recursive: true });
+        }
+        const { state, saveCreds } = await (0, baileys_1.useMultiFileAuthState)(authPath);
+        const { version } = await (0, baileys_1.fetchLatestBaileysVersion)();
+        const sock = (0, baileys_1.default)({
+            version,
+            logger,
+            printQRInTerminal: false, // On gère le QR nous-mêmes via API
+            auth: {
+                creds: state.creds,
+                keys: (0, baileys_1.makeCacheableSignalKeyStore)(state.keys, logger),
+            },
+            browser: ['Tdjaasa Bot', 'Chrome', '1.0.0'],
+            generateHighQualityLinkPreview: true,
+        });
+        // Stocker la session temporairement
+        this.sessions.set(tenantId, {
+            sock,
+            status: 'connecting',
+            retryCount: 0
+        });
+        // Gestion des événements
+        sock.ev.on('creds.update', saveCreds);
+        return new Promise((resolve) => {
+            sock.ev.on('connection.update', async (update) => {
+                const { connection, lastDisconnect, qr } = update;
+                // 1. Gestion du QR Code
+                if (qr) {
+                    console.log(`[Manager] QR Code généré pour Tenant ${tenantId}`);
+                    const session = this.sessions.get(tenantId);
+                    if (session)
+                        session.qr = qr;
+                    // Sauvegarder QR en DB pour le frontend
+                    await dbService_1.db.updateTenantQRCode(tenantId, qr);
+                    resolve(qr); // On retourne le QR dès qu'il est dispo
+                }
+                // 2. Gestion de la Connexion
+                if (connection === 'close') {
+                    const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== baileys_1.DisconnectReason.loggedOut;
+                    console.log(`[Manager] Connexion fermée pour Tenant ${tenantId}. Reconnect: ${shouldReconnect}`);
+                    if (shouldReconnect) {
+                        const session = this.sessions.get(tenantId);
+                        if (session && session.retryCount < this.MAX_RETRIES) {
+                            session.retryCount++;
+                            // Retry simple
+                            this.createSession(tenantId);
+                        }
+                    }
+                    else {
+                        // Logged out
+                        this.sessions.delete(tenantId);
+                        await this.cleanupSession(tenantId);
+                        await dbService_1.db.updateTenantWhatsAppStatus(tenantId, 'disconnected');
+                    }
+                }
+                else if (connection === 'open') {
+                    console.log(`[Manager] ✅ Tenant ${tenantId} connecté à WhatsApp !`);
+                    const session = this.sessions.get(tenantId);
+                    if (session) {
+                        session.status = 'connected';
+                        session.qr = undefined; // Plus besoin de QR
+                        session.retryCount = 0;
+                    }
+                    // Récupérer le numéro de téléphone connecté
+                    const userJid = sock.user?.id;
+                    const phoneNumber = userJid ? userJid.split(':')[0] : undefined;
+                    await dbService_1.db.updateTenantWhatsAppStatus(tenantId, 'connected', phoneNumber);
+                    resolve(undefined); // Connecté, pas de QR à retourner
+                }
+            });
+            // 3. Gestion des Messages Entrants
+            sock.ev.on('messages.upsert', async (m) => {
+                if (m.type !== 'notify')
+                    return;
+                for (const msg of m.messages) {
+                    if (!msg.key.fromMe && m.type === 'notify') {
+                        await this.handleMessage(tenantId, sock, msg);
+                    }
+                }
+            });
+        });
+    }
+    /**
+     * Traitement centralisé des messages par Tenant
+     */
+    async handleMessage(tenantId, sock, msg) {
+        try {
+            if (!msg.key || !msg.key.remoteJid)
+                return;
+            const remoteJid = msg.key.remoteJid;
+            let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+            // --- AUDIO HANDLING ---
+            if (msg.message?.audioMessage) {
+                console.log(`[Manager] Audio received from ${remoteJid}`);
+                try {
+                    // Check if transcribeAudio is available (dynamic import context)
+                    const { transcribeAudio } = await Promise.resolve().then(() => __importStar(require('./aiService')));
+                    const buffer = await (0, baileys_1.downloadMediaMessage)(msg, 'buffer', {});
+                    const mimeType = msg.message?.audioMessage?.mimetype || 'audio/ogg';
+                    if (buffer instanceof Buffer) {
+                        // Default to ogg if mimetype contains 'ogg' or 'opus', otherwise try to pass as is or map?
+                        // Gemini is flexible. Let's pass what we get.
+                        const transcription = await transcribeAudio(buffer, mimeType);
+                        console.log(`[Manager] Audio Transcribed: "${transcription}"`);
+                        // If transcription valid, treat as text
+                        if (transcription) {
+                            text = transcription;
+                            // Optional: Send a receipts/reaction instead of text?
+                            // await sock.sendMessage(remoteJid, { text: `(Transcription: "${transcription}")` }); 
+                        }
+                        else {
+                            await sock.sendMessage(remoteJid, { text: "Je n'ai pas réussi à écouter votre message vocal. Pouvez-vous l'écrire ?" });
+                            return;
+                        }
+                    }
+                }
+                catch (e) {
+                    console.error("Error downloading/transcribing audio", e);
+                    return;
+                }
+            }
+            // --- IMAGE HANDLING ---
+            if (msg.message?.imageMessage) {
+                console.log(`[Manager] Image received from ${remoteJid}`);
+                try {
+                    const buffer = await (0, baileys_1.downloadMediaMessage)(msg, 'buffer', {});
+                    const mimeType = msg.message?.imageMessage?.mimetype || 'image/jpeg';
+                    const caption = msg.message?.imageMessage?.caption || "";
+                    const description = await (0, aiService_1.analyzeImage)(buffer, mimeType, caption);
+                    console.log(`[Manager] Image Analysis: "${description}"`);
+                    // Inject into text flow
+                    text = `[User sent an Image] Description: ${description}. Caption: ${caption}`;
+                }
+                catch (e) {
+                    console.error("Error downloading/analyzing image", e);
+                }
+            }
+            if (!text)
+                return; // Ignore non-text/non-audio messages
+            console.log(`[Manager] Tenant ${tenantId} reçu de ${remoteJid}: ${text}`);
+            // Mark read & Typing
+            await sock.readMessages([msg.key]);
+            // Simuler une "vraie" pause de réflexion humaine (500ms - 2s)
+            await new Promise(r => setTimeout(r, Math.random() * 1500 + 500));
+            await sock.sendPresenceUpdate('composing', remoteJid);
+            // Import dynamique pour éviter les cycles si besoin, ou utiliser les imports existants
+            // Note: Assurez-vous que ces imports existent en haut du fichier
+            const { getSession, updateSession, addToHistory, clearHistory } = await Promise.resolve().then(() => __importStar(require('./sessionService')));
+            // const { db } = await import('./dbService'); // Déjà importé
+            // const { generateAIResponse, detectPurchaseIntent } = await import('./aiService'); // Déjà importé
+            // 1. Récupérer la session utilisateur (Multi-Tenant Key)
+            const session = await getSession(tenantId, remoteJid);
+            // 2. Gestion des états (Machine à états simple)
+            // CAS A : En attente de l'adresse pour finaliser la commande
+            if (session.state === 'WAITING_FOR_ADDRESS') {
+                const address = text;
+                const tempOrder = session.tempOrder;
+                if (!tempOrder) {
+                    await sock.sendMessage(remoteJid, { text: "Oups, j'ai perdu votre panier. Pouvez-vous recommencer ?" });
+                    await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined });
+                    return;
+                }
+                // Créer la commande
+                const order = await dbService_1.db.createOrder(tenantId, remoteJid, tempOrder.items, tempOrder.total, address);
+                // TODO: Générer lien de paiement Wave ici si activé
+                // const paymentLink = ... 
+                await sock.sendMessage(remoteJid, {
+                    text: `✅ Merci ! Commande validée.\n\n📍 Livraison: ${address}\n💰 Total: ${tempOrder.total} FCFA\n\nNous vous contacterons très bientôt pour la livraison.`
+                });
+                // Notifier le vendeur (via Socket interne, Email, ou Push) ou juste log pour l'instant
+                console.log(`[ORDER] Nouvelle commande pour Tenant ${tenantId} de ${remoteJid}`);
+                // Nettoyer
+                await dbService_1.db.clearCart(tenantId, remoteJid);
+                await clearHistory(tenantId, remoteJid);
+                await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined, reminderSent: false });
+                return;
+            }
+            // CAS B : Flux Normal (IDLE)
+            // 3. Récupérer le contexte du Tenant pour l'IA
+            const settings = await dbService_1.db.getSettings(tenantId);
+            const products = await dbService_1.db.getProducts(tenantId);
+            const productContext = products.map(p => `${p.name} (${p.price} FCFA)`).join(', ');
+            // 4. Détection d'Intention (Achat vs Discussion)
+            const intentData = await (0, aiService_1.detectPurchaseIntent)(text, productContext);
+            if (intentData.intent === 'BUY' && intentData.productName) {
+                // Trouver le produit exact
+                const product = await dbService_1.db.getProductByName(tenantId, intentData.productName);
+                if (product) {
+                    // Ajouter au panier
+                    const qty = intentData.quantity || 1;
+                    const cart = await dbService_1.db.addToCart(tenantId, remoteJid, product, qty);
+                    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                    // Passer en mode "Checkout"
+                    await updateSession(tenantId, remoteJid, {
+                        state: 'WAITING_FOR_ADDRESS',
+                        tempOrder: {
+                            items: cart,
+                            total: total,
+                            summary: `${qty}x ${product.name}`
+                        }
+                    });
+                    await sock.sendMessage(remoteJid, {
+                        image: product.images && product.images.length > 0 ? { url: product.images[0] } : undefined,
+                        text: `C'est noté ! J'ai mis ${qty}x ${product.name} de côté pour vous.\n\nLe total est de ${total} FCFA. 🛒\n\nÀ quelle adresse (quartier, ville) doit-on livrer ?`
+                    }); // Type assertion needed for mixed content support in simple send
+                    await addToHistory(tenantId, remoteJid, 'user', text);
+                    await addToHistory(tenantId, remoteJid, 'model', `[Checkout initiated for ${product.name}]`);
+                    return;
+                }
+            }
+            // 5. Réponse IA Standard (Chat / Info produit / Négociation)
+            const inventoryContext = products.map(p => `- ${p.name}: Public Price ${p.price} FCFA ${p.minPrice ? `(Min: ${p.minPrice})` : ''} | ${p.stock > 0 ? 'En stock' : 'Épuisé'}`).join('\n');
+            const aiResponse = await (0, aiService_1.generateAIResponse)(text, {
+                settings,
+                inventoryContext,
+                history: session.history
+            });
+            await sock.sendMessage(remoteJid, { text: aiResponse });
+            // Mise à jour de l'historique
+            await addToHistory(tenantId, remoteJid, 'user', text);
+            await addToHistory(tenantId, remoteJid, 'model', aiResponse);
+        }
+        catch (error) {
+            console.error(`[Manager] Erreur traitement message pour Tenant ${tenantId}:`, error);
+        }
+    }
+    /**
+     * Déconnecter un tenant
+     */
+    async disconnect(tenantId) {
+        const session = this.sessions.get(tenantId);
+        if (session) {
+            session.sock.end(undefined);
+            this.sessions.delete(tenantId);
+        }
+        await this.cleanupSession(tenantId);
+        await dbService_1.db.updateTenantWhatsAppStatus(tenantId, 'disconnected');
+    }
+    async cleanupSession(tenantId) {
+        const authPath = path_1.default.join(__dirname, `../../auth_info_baileys/tenant_${tenantId}`);
+        if (fs_1.default.existsSync(authPath)) {
+            fs_1.default.rmSync(authPath, { recursive: true, force: true });
+        }
+    }
+}
+// Singleton export
+exports.whatsappManager = new WhatsAppManager();
+const startAllTenantInstances = async () => {
+    console.log('[Startup] Vérification des tenants WhatsApp...');
+    const tenants = await dbService_1.db.getActiveTenants();
+    for (const tenant of tenants) {
+        // Support camelCase (local) or snake_case (potential supabase raw)
+        const isConnected = tenant.whatsappConnected || tenant.whatsapp_connected === true;
+        const status = tenant.whatsappStatus || tenant.whatsapp_status;
+        if (isConnected || status === 'connected') {
+            console.log(`[Startup] Démarrage du bot pour tenant ${tenant.id} (${tenant.name})`);
+            await exports.whatsappManager.createSession(tenant.id);
+        }
+    }
+};
+exports.startAllTenantInstances = startAllTenantInstances;

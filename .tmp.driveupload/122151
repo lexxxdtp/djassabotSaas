@@ -1,0 +1,458 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.db = void 0;
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+const tenantService = __importStar(require("./tenantService"));
+const supabase_1 = require("../config/supabase");
+// Local JSON Data Persistence
+const DB_FILE = path_1.default.join(__dirname, '../../database/store.json');
+const DEFAULT_SETTINGS = {
+    botName: 'Awa',
+    language: 'fr',
+    persona: 'friendly',
+    greeting: 'Bonjour ! Je suis Awa, votre assistante virtuelle. Comment puis-je vous aider ?',
+    // Personality defaults
+    politeness: 'informal',
+    emojiLevel: 'medium',
+    responseLength: 'medium',
+    trainingExamples: [],
+    negotiationEnabled: true,
+    negotiationFlexibility: 5,
+    voiceEnabled: true,
+    systemInstructions: '',
+    storeName: 'Ma Boutique Mode',
+    address: 'Cocody Riviera 2, Abidjan',
+    phone: '+225 07 00 00 00 00',
+    hours: '08:00 - 20:00',
+    returnPolicy: 'satisfait_rembourse',
+    deliveryAbidjanPrice: 1500,
+    deliveryInteriorPrice: 3000,
+    freeDeliveryThreshold: 50000,
+    acceptedPayments: ['wave', 'om', 'cash'],
+};
+const DEFAULT_PRODUCTS = [
+    { id: '1', name: 'Bazin Riche', price: 15000, minPrice: 13000, stock: 10, images: ['https://images.unsplash.com/photo-1595461135849-bf08dc936ba9?auto=format&fit=crop&q=60'], description: 'Bazin riche de qualité supérieure.' },
+    { id: '2', name: 'Mèche Humaine', price: 45000, stock: 5, images: ['https://images.unsplash.com/photo-1595461135849-bf08dc936ba9?auto=format&fit=crop&q=60'], description: 'Mèches naturelles 100% humaines.' },
+];
+let localData = {
+    settings: DEFAULT_SETTINGS,
+    products: DEFAULT_PRODUCTS,
+    orders: [],
+    carts: {}
+};
+// Helpers
+const loadData = () => {
+    try {
+        if (fs_1.default.existsSync(DB_FILE)) {
+            const raw = fs_1.default.readFileSync(DB_FILE, 'utf-8');
+            const parsed = JSON.parse(raw);
+            // restore dates
+            if (parsed.orders) {
+                parsed.orders = parsed.orders.map((o) => ({ ...o, createdAt: new Date(o.createdAt) }));
+            }
+            localData = { ...localData, ...parsed }; // Merge to ensure new fields in code exist
+        }
+        else {
+            saveData(); // Create file if not exists
+        }
+    }
+    catch (e) {
+        console.error('Failed to load local database:', e);
+    }
+};
+const saveData = () => {
+    try {
+        const dir = path_1.default.dirname(DB_FILE);
+        if (!fs_1.default.existsSync(dir))
+            fs_1.default.mkdirSync(dir, { recursive: true });
+        fs_1.default.writeFileSync(DB_FILE, JSON.stringify(localData, null, 2), 'utf-8');
+    }
+    catch (e) {
+        console.error('Failed to save local database:', e);
+    }
+};
+// Initialize DB on module load
+loadData();
+// Database Methods
+exports.db = {
+    getOrders: async (tenantId) => {
+        if (supabase_1.isSupabaseEnabled && supabase_1.supabase) {
+            try {
+                const { data, error } = await supabase_1.supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('tenant_id', tenantId)
+                    .order('created_at', { ascending: false });
+                if (error)
+                    throw error;
+                return (data || []).map(o => ({ ...o, createdAt: new Date(o.created_at) }));
+            }
+            catch (e) {
+                console.warn('[DB] Supabase getOrders failed, fallback to local');
+            }
+        }
+        return localData.orders.filter((o) => o.tenantId === tenantId);
+    },
+    createOrder: async (tenantId, userId, items, total, address, createdAt = new Date()) => {
+        const newOrder = {
+            id: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            tenant_id: tenantId,
+            userId,
+            items,
+            total,
+            status: 'PAID',
+            address,
+            createdAt
+        };
+        if (supabase_1.isSupabaseEnabled && supabase_1.supabase) {
+            try {
+                const { data, error } = await supabase_1.supabase
+                    .from('orders')
+                    .insert(newOrder)
+                    .select()
+                    .single();
+                if (error)
+                    throw error;
+                return data;
+            }
+            catch (e) {
+                console.warn('[DB] Supabase createOrder failed, fallback to local');
+            }
+        }
+        localData.orders.push(newOrder);
+        saveData();
+        return newOrder;
+    },
+    getProducts: async (tenantId) => {
+        if (!supabase_1.isSupabaseEnabled || !supabase_1.supabase) {
+            throw new Error('Supabase is not enabled');
+        }
+        try {
+            const { data, error } = await supabase_1.supabase
+                .from('products')
+                .select('*')
+                .eq('tenant_id', tenantId)
+                .order('created_at', { ascending: false });
+            if (error)
+                throw error;
+            return data;
+        }
+        catch (e) {
+            console.error('[DB] Supabase getProducts failed:', e);
+            throw new Error(e.message || 'Failed to fetch products');
+        }
+    },
+    createProduct: async (tenantId, product) => {
+        // Map camelCase to snake_case for DB
+        const dbProduct = {
+            tenant_id: tenantId,
+            name: product.name,
+            price: product.price,
+            stock: product.stock,
+            description: product.description,
+            images: product.images,
+            min_price: product.minPrice // Fix: minPrice -> min_price
+        };
+        if (supabase_1.isSupabaseEnabled && supabase_1.supabase) {
+            try {
+                const { data, error } = await supabase_1.supabase
+                    .from('products')
+                    .insert([dbProduct])
+                    .select()
+                    .single();
+                if (error) {
+                    console.error('[DB] Create Product Error:', error);
+                    throw error;
+                }
+                // Map back to camelCase for app
+                return {
+                    ...data,
+                    minPrice: data.min_price,
+                    tenantId: data.tenant_id
+                };
+            }
+            catch (e) {
+                console.error('[DB] Create Product Failed:', e);
+                throw new Error(`Database Error: ${e.message}`);
+            }
+        }
+        throw new Error('Database unavailable');
+    },
+    updateProduct: async (tenantId, id, updates) => {
+        // Map updates to snake_case
+        const dbUpdates = { ...updates };
+        if (updates.minPrice !== undefined) {
+            dbUpdates.min_price = updates.minPrice;
+            delete dbUpdates.minPrice;
+        }
+        if (supabase_1.isSupabaseEnabled && supabase_1.supabase) {
+            try {
+                const { data, error } = await supabase_1.supabase
+                    .from('products')
+                    .update(dbUpdates)
+                    .eq('id', id)
+                    .eq('tenant_id', tenantId)
+                    .select()
+                    .single();
+                if (error)
+                    return null;
+                // Map back
+                return {
+                    ...data,
+                    minPrice: data.min_price,
+                    tenantId: data.tenant_id
+                };
+            }
+            catch (e) {
+                console.error('[DB] Update Product Failed:', e);
+                throw new Error(`Database Error: ${e.message}`);
+            }
+        }
+        throw new Error('Database unavailable');
+    },
+    deleteProduct: async (tenantId, id) => {
+        if (supabase_1.isSupabaseEnabled && supabase_1.supabase) {
+            try {
+                const { error } = await supabase_1.supabase
+                    .from('products')
+                    .delete()
+                    .eq('id', id)
+                    .eq('tenant_id', tenantId);
+                if (!error)
+                    return true;
+            }
+            catch (e) { }
+        }
+        const index = localData.products.findIndex((p) => p.id === id && p.tenantId === tenantId);
+        if (index === -1)
+            return false;
+        localData.products.splice(index, 1);
+        saveData();
+        return true;
+    },
+    getProductByName: async (tenantId, name) => {
+        if (supabase_1.isSupabaseEnabled && supabase_1.supabase) {
+            try {
+                const { data } = await supabase_1.supabase
+                    .from('products')
+                    .select('*')
+                    .eq('tenant_id', tenantId)
+                    .ilike('name', `%${name}%`)
+                    .limit(1);
+                return data && data.length > 0 ? data[0] : undefined;
+            }
+            catch (e) { }
+        }
+        return localData.products.find((p) => p.tenantId === tenantId && p.name.toLowerCase().includes(name.toLowerCase()));
+    },
+    addToCart: async (tenantId, userId, product, quantity = 1) => {
+        const key = `${tenantId}:${userId}`;
+        if (!localData.carts[key])
+            localData.carts[key] = [];
+        const existing = localData.carts[key].find(item => item.productId === product.id);
+        if (existing) {
+            existing.quantity += quantity;
+        }
+        else {
+            localData.carts[key].push({
+                productId: product.id,
+                productName: product.name,
+                quantity,
+                price: product.price
+            });
+        }
+        saveData();
+        return localData.carts[key];
+    },
+    getCart: async (tenantId, userId) => {
+        const key = `${tenantId}:${userId}`;
+        return localData.carts[key] || [];
+    },
+    clearCart: async (tenantId, userId) => {
+        const key = `${tenantId}:${userId}`;
+        localData.carts[key] = [];
+        saveData();
+    },
+    // Settings Methods
+    getSettings: async (tenantId) => {
+        if (supabase_1.isSupabaseEnabled && supabase_1.supabase) {
+            try {
+                const { data, error } = await supabase_1.supabase
+                    .from('settings')
+                    .select('*')
+                    .eq('tenant_id', tenantId)
+                    .single();
+                if (!error && data) {
+                    // Map snake_case DB columns to camelCase TypeScript interface
+                    return {
+                        botName: data.bot_name,
+                        language: data.language,
+                        persona: data.persona,
+                        greeting: data.greeting,
+                        politeness: data.politeness,
+                        emojiLevel: data.emoji_level,
+                        responseLength: data.response_length,
+                        trainingExamples: data.training_examples || [],
+                        negotiationEnabled: data.negotiation_enabled ?? true,
+                        negotiationFlexibility: data.negotiation_flexibility ?? 5,
+                        voiceEnabled: data.voice_enabled ?? true,
+                        systemInstructions: data.system_instructions || '',
+                        storeName: data.store_name,
+                        address: data.address,
+                        phone: data.phone,
+                        hours: data.hours,
+                        returnPolicy: data.return_policy,
+                        deliveryAbidjanPrice: data.delivery_abidjan_price ?? 1500,
+                        deliveryInteriorPrice: data.delivery_interior_price ?? 3000,
+                        freeDeliveryThreshold: data.free_delivery_threshold ?? 50000,
+                        acceptedPayments: data.accepted_payments || ['wave', 'cash'],
+                    };
+                }
+            }
+            catch (e) { }
+        }
+        return localData.settings; // Fallback for single-tenant local dev
+    },
+    updateSettings: async (tenantId, settings) => {
+        if (supabase_1.isSupabaseEnabled && supabase_1.supabase) {
+            try {
+                // Map camelCase TypeScript properties to snake_case DB columns
+                const dbSettings = { tenant_id: tenantId };
+                if (settings.botName !== undefined)
+                    dbSettings.bot_name = settings.botName;
+                if (settings.language !== undefined)
+                    dbSettings.language = settings.language;
+                if (settings.persona !== undefined)
+                    dbSettings.persona = settings.persona;
+                if (settings.greeting !== undefined)
+                    dbSettings.greeting = settings.greeting;
+                if (settings.politeness !== undefined)
+                    dbSettings.politeness = settings.politeness;
+                if (settings.emojiLevel !== undefined)
+                    dbSettings.emoji_level = settings.emojiLevel;
+                if (settings.responseLength !== undefined)
+                    dbSettings.response_length = settings.responseLength;
+                if (settings.trainingExamples !== undefined)
+                    dbSettings.training_examples = settings.trainingExamples;
+                if (settings.negotiationEnabled !== undefined)
+                    dbSettings.negotiation_enabled = settings.negotiationEnabled;
+                if (settings.negotiationFlexibility !== undefined)
+                    dbSettings.negotiation_flexibility = settings.negotiationFlexibility;
+                if (settings.voiceEnabled !== undefined)
+                    dbSettings.voice_enabled = settings.voiceEnabled;
+                if (settings.systemInstructions !== undefined)
+                    dbSettings.system_instructions = settings.systemInstructions;
+                if (settings.storeName !== undefined)
+                    dbSettings.store_name = settings.storeName;
+                if (settings.address !== undefined)
+                    dbSettings.address = settings.address;
+                if (settings.phone !== undefined)
+                    dbSettings.phone = settings.phone;
+                if (settings.hours !== undefined)
+                    dbSettings.hours = settings.hours;
+                if (settings.returnPolicy !== undefined)
+                    dbSettings.return_policy = settings.returnPolicy;
+                if (settings.deliveryAbidjanPrice !== undefined)
+                    dbSettings.delivery_abidjan_price = settings.deliveryAbidjanPrice;
+                if (settings.deliveryInteriorPrice !== undefined)
+                    dbSettings.delivery_interior_price = settings.deliveryInteriorPrice;
+                if (settings.freeDeliveryThreshold !== undefined)
+                    dbSettings.free_delivery_threshold = settings.freeDeliveryThreshold;
+                if (settings.acceptedPayments !== undefined)
+                    dbSettings.accepted_payments = settings.acceptedPayments;
+                dbSettings.updated_at = new Date();
+                const { data, error } = await supabase_1.supabase
+                    .from('settings')
+                    .upsert(dbSettings, { onConflict: 'tenant_id' })
+                    .select()
+                    .single();
+                if (!error && data) {
+                    // Map back to camelCase for return
+                    return {
+                        botName: data.bot_name,
+                        language: data.language,
+                        persona: data.persona,
+                        greeting: data.greeting,
+                        politeness: data.politeness,
+                        emojiLevel: data.emoji_level,
+                        responseLength: data.response_length,
+                        trainingExamples: data.training_examples || [],
+                        negotiationEnabled: data.negotiation_enabled ?? true,
+                        negotiationFlexibility: data.negotiation_flexibility ?? 5,
+                        voiceEnabled: data.voice_enabled ?? true,
+                        systemInstructions: data.system_instructions || '',
+                        storeName: data.store_name,
+                        address: data.address,
+                        phone: data.phone,
+                        hours: data.hours,
+                        returnPolicy: data.return_policy,
+                        deliveryAbidjanPrice: data.delivery_abidjan_price ?? 1500,
+                        deliveryInteriorPrice: data.delivery_interior_price ?? 3000,
+                        freeDeliveryThreshold: data.free_delivery_threshold ?? 50000,
+                        acceptedPayments: data.accepted_payments || ['wave', 'cash'],
+                    };
+                }
+            }
+            catch (e) {
+                console.error('[DB] Update Settings Error:', e);
+            }
+        }
+        localData.settings = { ...localData.settings, ...settings };
+        saveData();
+        return localData.settings;
+    },
+    // Tenant Management (Re-exported from centralized tenantService)
+    createTenant: tenantService.createTenant,
+    getTenantById: tenantService.getTenantById,
+    getActiveTenants: tenantService.getActiveTenants,
+    updateTenantWhatsAppStatus: tenantService.updateTenantWhatsAppStatus,
+    updateTenantQRCode: tenantService.updateTenantQRCode,
+    // User Management
+    createUser: tenantService.createUser,
+    getUserByEmail: tenantService.getUserByEmail,
+    getUserByPhone: tenantService.getUserByPhone,
+    getUserById: tenantService.getUserById,
+    updateUser: tenantService.updateUser,
+    // Subscription Management
+    createSubscription: tenantService.createSubscription,
+    getSubscriptionByTenantId: tenantService.getSubscriptionByTenantId,
+    // Default Settings Creation
+    createDefaultSettings: tenantService.createDefaultSettings
+};

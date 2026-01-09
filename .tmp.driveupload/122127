@@ -1,0 +1,170 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.receiveWebhook = exports.verifyWebhook = void 0;
+const whatsappService_1 = require("../services/whatsappService");
+const aiService_1 = require("../services/aiService");
+const dbService_1 = require("../services/dbService");
+const paymentService_1 = require("../services/paymentService");
+const notificationService_1 = require("../services/notificationService");
+const sessionService_1 = require("../services/sessionService");
+const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+// TODO: For multi-tenant, we need to map phone numbers to tenantIds
+// For now, use a default tenant for testing
+const DEFAULT_TENANT_ID = 'default-tenant-id';
+// Verify Webhook (GET)
+const verifyWebhook = (req, res) => {
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+    if (mode && token) {
+        if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+            console.log('WEBHOOK_VERIFIED');
+            res.status(200).send(challenge);
+        }
+        else {
+            res.sendStatus(403);
+        }
+    }
+    else {
+        res.sendStatus(400);
+    }
+};
+exports.verifyWebhook = verifyWebhook;
+// Receive Message (POST)
+const receiveWebhook = async (req, res) => {
+    const body = req.body;
+    console.log('Incoming webhook:', JSON.stringify(body, null, 2));
+    if (body.object) {
+        // Ack immediately
+        res.status(200).send('EVENT_RECEIVED');
+        if (body.entry && body.entry[0].changes && body.entry[0].changes[0].value.messages && body.entry[0].changes[0].value.messages[0]) {
+            const message = body.entry[0].changes[0].value.messages[0];
+            const from = message.from;
+            const type = message.type;
+            try {
+                if (type === 'text') {
+                    const textBody = message.text.body;
+                    console.log(`Received text from ${from}: ${textBody}`);
+                    const session = await (0, sessionService_1.getSession)(DEFAULT_TENANT_ID, from);
+                    // 1. Check if waiting for delivery info
+                    if (session.state === 'WAITING_FOR_ADDRESS') {
+                        const address = textBody;
+                        const tempOrder = session.tempOrder;
+                        // Generate Payment Link
+                        const paymentLink = await (0, paymentService_1.generateWavePaymentLink)(tempOrder.total, `ORDER-${Date.now()}`);
+                        // Save to DB (with default tenant for now)
+                        await dbService_1.db.createOrder(DEFAULT_TENANT_ID, from, tempOrder.items || [], tempOrder.total, address);
+                        await (0, whatsappService_1.sendTextMessage)(from, `Merci ! Livraison prévue à : ${address}. 🚚\n\nVotre total est de ${tempOrder.total} FCFA.\nCliquez ici pour payer : ${paymentLink}`);
+                        await (0, notificationService_1.notifyMerchant)('ORDER', `Nouvelle commande de ${from} !\nArticles: ${tempOrder.summary}\nTotal: ${tempOrder.total}\nLivraison: ${address}`);
+                        await (0, sessionService_1.clearHistory)(DEFAULT_TENANT_ID, from); // Reset session after order
+                        return;
+                    }
+                    // 2. Get Product Context & Detect Intent
+                    const products = await dbService_1.db.getProducts(DEFAULT_TENANT_ID);
+                    const productContext = products.map(p => `${p.name} (${p.price} FCFA)`).join(', ');
+                    const intentData = await (0, aiService_1.detectPurchaseIntent)(textBody, productContext);
+                    if (intentData.intent === 'BUY' && intentData.productName) {
+                        // Handle Purchase
+                        const product = await dbService_1.db.getProductByName(DEFAULT_TENANT_ID, intentData.productName);
+                        if (product) {
+                            // Add to cart (cart is per user, not per tenant in current implementation)
+                            const cart = await dbService_1.db.addToCart(DEFAULT_TENANT_ID, from, product, intentData.quantity || 1);
+                            // Calculate Total
+                            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                            // Ask for delivery address instead of sending link immediately
+                            await (0, sessionService_1.updateSession)(DEFAULT_TENANT_ID, from, {
+                                state: 'WAITING_FOR_ADDRESS',
+                                tempOrder: {
+                                    total,
+                                    summary: `${intentData.quantity || 1}x ${product.name}`,
+                                    items: cart
+                                }
+                            });
+                            await (0, whatsappService_1.sendTextMessage)(from, `J'ai ajouté ${intentData.quantity || 1}x ${product.name} au panier (Total: ${total} FCFA). 🛒\n\nÀ quelle adresse (quartier/ville) doit-on livrer ?`);
+                        }
+                        else {
+                            await (0, whatsappService_1.sendTextMessage)(from, `Je ne trouve pas "${intentData.productName}" en stock. Voulez-vous voir le catalogue ?`);
+                        }
+                    }
+                    else {
+                        // Handover Trigger
+                        if (textBody.toLowerCase().includes('humain') || textBody.toLowerCase().includes('vendeuse')) {
+                            await (0, whatsappService_1.sendTextMessage)(from, `Je transfère votre message à la patronne. Elle vous répond dès que possible ! ⏳`);
+                            await (0, notificationService_1.notifyMerchant)('HANDOVER', `Le client ${from} demande à parler à un humain.\nDernier message: "${textBody}"`);
+                            return;
+                        }
+                        // Normal Chat with Negotiation & History
+                        const mockRules = [
+                            { description: "Promo Volume", condition: "Achat de 2 articles ou plus", action: "15% de réduction sur le total" },
+                            { description: "Promo Client Fidèle", condition: "Si le client insiste poliment", action: "5% de réduction extra" }
+                        ];
+                        // Pass inventory info to AI
+                        const inventoryInfo = `We have in stock: ${productContext}`;
+                        // Get Settings
+                        const settings = await dbService_1.db.getSettings(DEFAULT_TENANT_ID);
+                        // Use History
+                        const aiReply = await (0, aiService_1.generateAIResponse)(textBody, {
+                            rules: mockRules,
+                            inventoryContext: inventoryInfo,
+                            history: session.history,
+                            settings: settings
+                        });
+                        await (0, whatsappService_1.sendTextMessage)(from, aiReply);
+                        // Update History
+                        await (0, sessionService_1.addToHistory)(DEFAULT_TENANT_ID, from, 'user', textBody);
+                        await (0, sessionService_1.addToHistory)(DEFAULT_TENANT_ID, from, 'model', aiReply);
+                    }
+                }
+                else if (type === 'image') {
+                    const imageId = message.image.id;
+                    const caption = message.image.caption;
+                    console.log(`Received image from ${from}, ID: ${imageId}`);
+                    // Get URL
+                    const imageUrl = await (0, whatsappService_1.getMediaUrl)(imageId);
+                    // Analyze with AI
+                    const analysis = await (0, aiService_1.analyzeImage)(imageUrl, caption);
+                    await (0, whatsappService_1.sendTextMessage)(from, analysis);
+                    // Add to session history as context
+                    await (0, sessionService_1.addToHistory)(DEFAULT_TENANT_ID, from, 'user', `[User sent an image of: ${analysis}]`);
+                    await (0, sessionService_1.addToHistory)(DEFAULT_TENANT_ID, from, 'model', analysis);
+                }
+                else if (type === 'audio') {
+                    const audioId = message.audio.id;
+                    const session = await (0, sessionService_1.getSession)(DEFAULT_TENANT_ID, from);
+                    console.log(`Received audio from ${from}, ID: ${audioId}`);
+                    // Get URL
+                    // Analyze Audio
+                    const audioUrl = await (0, whatsappService_1.getMediaUrl)(audioId);
+                    // Download Audio Buffer
+                    const axios = require('axios'); // Ensure axios is available
+                    const audioResp = await axios.get(audioUrl, { responseType: 'arraybuffer' });
+                    const audioBuffer = Buffer.from(audioResp.data);
+                    // Transcribe
+                    const transcription = await (0, aiService_1.transcribeAudio)(audioBuffer);
+                    console.log(`[Audio] Transcribed: "${transcription}"`);
+                    // Generate AI Response based on transcription
+                    // Reuse existing context logic if possible, or just simple response for now to fix the break
+                    const aiReply = await (0, aiService_1.generateAIResponse)(transcription, {
+                        history: session.history,
+                        settings: await dbService_1.db.getSettings(DEFAULT_TENANT_ID)
+                    });
+                    await (0, whatsappService_1.sendTextMessage)(from, aiReply);
+                    // Add to session history
+                    await (0, sessionService_1.addToHistory)(DEFAULT_TENANT_ID, from, 'user', `[Audio]: ${transcription}`);
+                    await (0, sessionService_1.addToHistory)(DEFAULT_TENANT_ID, from, 'model', aiReply);
+                }
+                else {
+                    console.log(`Received unhandled message type: ${type}`);
+                    await (0, whatsappService_1.sendTextMessage)(from, `Désolé, je ne gère pas encore ce type de message.`);
+                }
+            }
+            catch (error) {
+                console.error('Error processing message:', error);
+            }
+        }
+    }
+    else {
+        res.sendStatus(404);
+    }
+};
+exports.receiveWebhook = receiveWebhook;

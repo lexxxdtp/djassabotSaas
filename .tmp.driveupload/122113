@@ -1,0 +1,83 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_1 = require("../middleware/auth");
+const dbService_1 = require("../services/dbService");
+const aiService_1 = require("../services/aiService");
+// Import session service directly to avoid circular dependency issues if any
+const sessionService_1 = require("../services/sessionService");
+const router = (0, express_1.Router)();
+// Toutes les routes IA nécessitent une auth
+router.use(auth_1.authenticateTenant);
+/**
+ * Endpoint de simulation de chat pour le Playground
+ * POST /api/ai/simulate
+ * Body: { message: string, sessionId?: string }
+ */
+router.post('/simulate', async (req, res) => {
+    try {
+        const { message, sessionId } = req.body;
+        const tenantId = req.tenantId; // Injecté par le middleware
+        // Utiliser une session ID dédiée à la simulation (ex: "sim-tenantID")
+        // ou permettre plusieurs sessions de test via sessionId
+        const simUserId = sessionId || `sim-${tenantId}`;
+        if (!message) {
+            res.status(400).json({ error: 'Message requis' });
+            return;
+        }
+        console.log(`[AI Sim] Tenant ${tenantId} msg: ${message}`);
+        // 1. Récupérer le contexte
+        const settings = await dbService_1.db.getSettings(tenantId);
+        const products = await dbService_1.db.getProducts(tenantId);
+        // 2. Récupérer la session (historique)
+        const session = await (0, sessionService_1.getSession)(tenantId, simUserId);
+        // 3. Logique simplifiée du bot (similaire à waManager mais focus réponse texte)
+        const productContext = products.map(p => `${p.name} (${p.price} FCFA)`).join(', ');
+        // --- Détection d'intention (Achat ?) ---
+        const intentData = await (0, aiService_1.detectPurchaseIntent)(message, productContext);
+        let responseText = '';
+        let action = null; // Pour dire au frontend qu'une action spéciale a eu lieu (ex: ajout panier)
+        if (intentData.intent === 'BUY' && intentData.productName) {
+            const product = await dbService_1.db.getProductByName(tenantId, intentData.productName);
+            if (product) {
+                const qty = intentData.quantity || 1;
+                const total = product.price * qty;
+                responseText = `[SIMULATION] J'ai ajouté ${qty}x ${product.name} au panier (Total: ${total} FCFA). 🛒\n\nÀ quelle adresse (quartier, ville) doit-on livrer ?`;
+                action = { type: 'ADD_TO_CART', product, quantity: qty };
+                // Mettre à jour l'état session pour que le prochain message soit l'adresse
+                await (0, sessionService_1.updateSession)(tenantId, simUserId, { state: 'WAITING_FOR_ADDRESS' });
+                await (0, sessionService_1.addToHistory)(tenantId, simUserId, 'user', message);
+                await (0, sessionService_1.addToHistory)(tenantId, simUserId, 'model', responseText);
+                res.json({ response: responseText, action });
+                return;
+            }
+        }
+        // --- Réponse IA Standard ---
+        const inventoryContext = products.map(p => `- ${p.name} (${p.price} FCFA): ${p.stock > 0 ? 'En stock' : 'Épuisé'}`).join('\n');
+        responseText = await (0, aiService_1.generateAIResponse)(message, {
+            settings,
+            inventoryContext,
+            history: session.history
+        });
+        // update history
+        await (0, sessionService_1.addToHistory)(tenantId, simUserId, 'user', message);
+        await (0, sessionService_1.addToHistory)(tenantId, simUserId, 'model', responseText);
+        res.json({ response: responseText });
+    }
+    catch (error) {
+        console.error('Erreur simulation IA:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+/**
+ * Reset de la session de simulation
+ * POST /api/ai/reset
+ */
+router.post('/reset', async (req, res) => {
+    const { sessionId } = req.body;
+    const tenantId = req.tenantId;
+    const simUserId = sessionId || `sim-${tenantId}`;
+    await (0, sessionService_1.clearHistory)(tenantId, simUserId);
+    res.json({ success: true, message: 'Mémoire effacée' });
+});
+exports.default = router;

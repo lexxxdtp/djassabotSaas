@@ -1,0 +1,45 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getMediaUrl = exports.sendTextMessage = void 0;
+const axios_1 = __importDefault(require("axios"));
+const WHATSAPP_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
+const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
+const WHATSAPP_API_URL = `https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages`;
+const sendTextMessage = async (to, body) => {
+    try {
+        const response = await axios_1.default.post(WHATSAPP_API_URL, {
+            messaging_product: 'whatsapp',
+            to: to,
+            text: { body: body },
+        }, {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+            },
+        });
+        return response.data;
+    }
+    catch (error) {
+        console.error('Error sending message:', error.response ? error.response.data : error.message);
+        throw error;
+    }
+};
+exports.sendTextMessage = sendTextMessage;
+const getMediaUrl = async (mediaId) => {
+    try {
+        const response = await axios_1.default.get(`https://graph.facebook.com/v21.0/${mediaId}`, {
+            headers: {
+                Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+            },
+        });
+        return response.data.url;
+    }
+    catch (error) {
+        console.error('Error getting media URL:', error.response ? error.response.data : error.message);
+        throw error;
+    }
+};
+exports.getMediaUrl = getMediaUrl;

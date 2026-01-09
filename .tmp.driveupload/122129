@@ -1,0 +1,123 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const dotenv_1 = __importDefault(require("dotenv"));
+const cors_1 = __importDefault(require("cors"));
+const webhookRoutes_1 = __importDefault(require("./routes/webhookRoutes"));
+const whatsappRoutes_1 = __importDefault(require("./routes/whatsappRoutes"));
+const baileysManager_1 = require("./services/baileysManager");
+const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
+const aiRoutes_1 = __importDefault(require("./routes/aiRoutes"));
+require("./jobs/abandonedCart"); // Start Cron Jobs
+const dbService_1 = require("./services/dbService");
+const auth_1 = require("./middleware/auth");
+dotenv_1.default.config();
+// Global Error Handlers
+process.on('uncaughtException', (err) => {
+    console.error('UNCAUGHT EXCEPTION:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('UNHANDLED REJECTION:', reason);
+});
+const app = (0, express_1.default)();
+const port = process.env.PORT || 3000;
+// Middleware
+app.use((0, cors_1.default)()); // Enable CORS for frontend development
+app.use(express_1.default.json());
+// Public Routes (No authentication required)
+// IMPORTANT: Register specific routes BEFORE catch-all routes
+app.use('/api/auth', authRoutes_1.default);
+// Protected Routes
+app.use('/api/whatsapp', whatsappRoutes_1.default); // Auth handled inside router
+app.use('/api/ai', aiRoutes_1.default); // New AI Simulation Routes
+// Webhooks (Public but should be AFTER specific routes)
+app.use('/api/webhooks', webhookRoutes_1.default);
+// Settings (Protected by JWT)
+app.get('/api/settings', auth_1.authenticateTenant, async (req, res) => {
+    const settings = await dbService_1.db.getSettings(req.tenantId);
+    res.json(settings);
+});
+app.post('/api/settings', auth_1.authenticateTenant, async (req, res) => {
+    try {
+        const settings = await dbService_1.db.updateSettings(req.tenantId, req.body);
+        res.json(settings);
+    }
+    catch (e) {
+        console.error('[API] Settings Error:', e);
+        res.status(500).json({ error: e.message || 'Failed to update settings' });
+    }
+});
+// Orders (Protected by JWT)
+app.get('/api/orders', auth_1.authenticateTenant, async (req, res) => {
+    const orders = await dbService_1.db.getOrders(req.tenantId);
+    res.json(orders);
+});
+// Products (Protected by JWT)
+app.get('/api/products', auth_1.authenticateTenant, async (req, res) => {
+    const products = await dbService_1.db.getProducts(req.tenantId);
+    res.json(products);
+});
+app.post('/api/products', auth_1.authenticateTenant, async (req, res) => {
+    try {
+        const product = await dbService_1.db.createProduct(req.tenantId, req.body);
+        res.json(product);
+    }
+    catch (e) {
+        console.error('[API] Create Product Error:', e);
+        res.status(500).json({ error: e.message || 'Failed to create product' });
+    }
+});
+app.put('/api/products/:id', auth_1.authenticateTenant, async (req, res) => {
+    try {
+        const product = await dbService_1.db.updateProduct(req.tenantId, req.params.id, req.body);
+        if (product)
+            res.json(product);
+        else
+            res.status(404).json({ error: 'Product not found' });
+    }
+    catch (e) {
+        console.error('[API] Update Product Error:', e);
+        res.status(500).json({ error: e.message || 'Failed' });
+    }
+});
+app.delete('/api/products/:id', auth_1.authenticateTenant, async (req, res) => {
+    try {
+        const success = await dbService_1.db.deleteProduct(req.tenantId, req.params.id);
+        res.json({ success });
+    }
+    catch (e) {
+        console.error('[API] Delete Product Error:', e);
+        res.status(500).json({ error: e.message || 'Failed' });
+    }
+});
+// Debug seed endpoint (Protected - only for authenticated users to seed THEIR data)
+app.post('/api/debug/seed', auth_1.authenticateTenant, async (req, res) => {
+    const products = [
+        { id: '1', name: 'Bazin Riche', price: 15000 },
+        { id: '2', name: 'Mèche Humaine', price: 45000 },
+        { id: '3', name: 'Perruque Lisse', price: 25000 },
+        { id: '4', name: 'Tissage Brésilien', price: 30000 },
+        { id: '5', name: 'Chaussure Talon', price: 14000 }
+    ];
+    for (let i = 0; i < 40; i++) {
+        const p = products[Math.floor(Math.random() * products.length)];
+        const qty = Math.floor(Math.random() * 3) + 1;
+        const date = new Date();
+        date.setDate(date.getDate() - Math.floor(Math.random() * 7)); // Last 7 days
+        await dbService_1.db.createOrder(req.tenantId, // Use authenticated tenant ID
+        '22507000000', [{ productId: p.id, quantity: qty, productName: p.name, price: p.price }], p.price * qty, 'Abidjan', date);
+    }
+    console.log(`[Seed] ✅ Créé 40 commandes pour tenant ${req.tenantId}`);
+    res.json({ success: true, count: 40 });
+});
+app.get('/', (req, res) => {
+    res.send('WhatsApp Commerce Bot Backend is running');
+});
+app.listen(port, async () => {
+    console.log(`[server]: Server is running at http://localhost:${port}`);
+    // Start all active tenant WhatsApp sessions
+    await (0, baileysManager_1.startAllTenantInstances)();
+});
