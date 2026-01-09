@@ -94,9 +94,10 @@ export const getTenantById = async (id: string): Promise<Tenant | null> => {
                 };
             }
         }
-    } catch (e) { }
-
-    return localStore.tenants.find(t => t.id === id) || null;
+    } catch (e) {
+        console.error('[getTenantById] Error:', e);
+    }
+    return null;
 };
 
 export const getActiveTenants = async (): Promise<Tenant[]> => {
@@ -122,9 +123,10 @@ export const getActiveTenants = async (): Promise<Tenant[]> => {
                 }));
             }
         }
-    } catch (e) { }
-
-    return localStore.tenants.filter(t => ['active', 'trial'].includes(t.status));
+    } catch (e) {
+        console.error('[getActiveTenants] Error:', e);
+    }
+    return [];
 };
 
 export const updateTenantWhatsAppStatus = async (
@@ -144,14 +146,8 @@ export const updateTenantWhatsAppStatus = async (
                 })
                 .eq('id', tenantId);
         }
-    } catch (e) { }
-
-    const tenant = localStore.tenants.find(t => t.id === tenantId);
-    if (tenant) {
-        tenant.whatsappConnected = status === 'connected';
-        tenant.whatsappStatus = status;
-        tenant.whatsappPhoneNumber = phoneNumber;
-        tenant.updatedAt = new Date();
+    } catch (e) {
+        console.error('[updateTenantWhatsAppStatus] Error:', e);
     }
 };
 
@@ -252,9 +248,10 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
                 };
             }
         }
-    } catch (e) { }
-
-    return localStore.users.find(u => u.email === email) || null;
+    } catch (e) {
+        console.error('[getUserByEmail] Error:', e);
+    }
+    return null;
 };
 
 export const getUserByPhone = async (phone: string): Promise<User | null> => {
@@ -282,9 +279,10 @@ export const getUserByPhone = async (phone: string): Promise<User | null> => {
                 };
             }
         }
-    } catch (e) { }
-
-    return localStore.users.find(u => u.phone === phone) || null;
+    } catch (e) {
+        console.error('[getUserByPhone] Error:', e);
+    }
+    return null;
 };
 
 export const getUserById = async (id: string): Promise<User | null> => {
@@ -312,9 +310,10 @@ export const getUserById = async (id: string): Promise<User | null> => {
                 };
             }
         }
-    } catch (e) { }
-
-    return localStore.users.find(u => u.id === id) || null;
+    } catch (e) {
+        console.error('[getUserById] Error:', e);
+    }
+    return null;
 };
 
 export const updateUser = async (id: string, updates: Partial<User>): Promise<User | null> => {
@@ -353,12 +352,8 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
                 };
             }
         }
-    } catch (e) { }
-
-    const idx = localStore.users.findIndex(u => u.id === id);
-    if (idx !== -1) {
-        localStore.users[idx] = { ...localStore.users[idx], ...updates };
-        return localStore.users[idx];
+    } catch (e) {
+        console.error('[updateUser] Error:', e);
     }
     return null;
 };
@@ -432,9 +427,10 @@ export const getSubscriptionByTenantId = async (tenantId: string): Promise<Subsc
 
             if (!error) return data;
         }
-    } catch (e) { }
-
-    return localStore.subscriptions.find(s => s.tenantId === tenantId) || null;
+    } catch (e) {
+        console.error('[getSubscriptionByTenantId] Error:', e);
+    }
+    return null;
 };
 
 /**
