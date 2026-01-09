@@ -25,6 +25,8 @@ const Login: React.FC = () => {
             const isTenDigitNumber = /^\d{10}$/.test(identifier);
             if (isTenDigitNumber) {
                 formattedIdentifier = `+225${identifier}`;
+            } else {
+                formattedIdentifier = identifier.toLowerCase().trim();
             }
 
             const response = await fetch(`${API_URL}/auth/login`, {

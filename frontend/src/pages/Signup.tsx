@@ -43,6 +43,12 @@ const Signup: React.FC = () => {
             return;
         }
 
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+        if (!passwordRegex.test(formData.password)) {
+            setError('Le mot de passe doit contenir 8 caractères minimum, une majuscule et un chiffre.');
+            return;
+        }
+
         if (!usePhone && !formData.email) {
             setError('Veuillez fournir un email.');
             return;
@@ -70,7 +76,7 @@ const Signup: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     businessName: formData.businessName,
-                    email: usePhone ? null : formData.email,
+                    email: usePhone ? null : formData.email.toLowerCase().trim(),
                     phone: finalPhone,
                     fullName: formData.fullName,
                     birthDate: formData.birthDate,

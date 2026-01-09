@@ -40,16 +40,18 @@ router.post('/signup', async (req: Request, res: Response) => {
             }
         }
 
-        if (password.length < 8) {
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+        if (!passwordRegex.test(password)) {
             res.status(400).json({
-                error: 'Le mot de passe doit contenir au moins 8 caractères'
+                error: 'Le mot de passe doit contenir au moins 8 caractères, une majuscule et un chiffre'
             });
             return;
         }
 
         // Vérifier si l'email/phone existe déjà
-        if (email) {
-            const existingUser = await db.getUserByEmail(email);
+        const normalizedEmail = email ? email.toLowerCase().trim() : null;
+        if (normalizedEmail) {
+            const existingUser = await db.getUserByEmail(normalizedEmail);
             if (existingUser) {
                 res.status(409).json({ error: 'Cet email est déjà utilisé' });
                 return;
@@ -78,7 +80,7 @@ router.post('/signup', async (req: Request, res: Response) => {
         // 3. Créer l'utilisateur
         const user = await db.createUser({
             tenantId: tenant.id,
-            email: email || null,
+            email: normalizedEmail,
             phone: phone || null,
             fullName: fullName || undefined,
             birthDate: birthDate || undefined,
@@ -153,7 +155,8 @@ router.post('/login', async (req: Request, res: Response) => {
         if (isPhone) {
             user = await db.getUserByPhone(identifier);
         } else {
-            user = await db.getUserByEmail(identifier);
+            const normalizedIdentifier = identifier.toLowerCase().trim();
+            user = await db.getUserByEmail(normalizedIdentifier);
         }
 
         if (!user) {
