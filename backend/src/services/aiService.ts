@@ -4,8 +4,9 @@ import axios from 'axios';
 
 dotenv.config();
 
-const apiKey = process.env.GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(apiKey || '');
+// FORCE INJECTION FOR PROD TEST (Temporary)
+const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyDsSwajHqvQgZ__B0M6GnsM5xeY0mk7X5k';
+const genAI = new GoogleGenerativeAI(apiKey);
 
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
 
