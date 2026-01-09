@@ -42,6 +42,9 @@ create table if not exists products (
   description text,
   images text[] default '{}',
   min_price numeric,
+  -- Variations/Déclinaisons (e.g., Size, Color, Flavor)
+  -- Format: [{ "name": "Taille", "values": ["S", "M", "L", "XL"] }, { "name": "Saveur", "values": ["Nutella", "Oreo"] }]
+  variations jsonb default '[]',
   created_at timestamp with time zone default timezone('utc', now())
 );
 

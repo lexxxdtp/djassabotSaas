@@ -1,5 +1,11 @@
 // Core Business Types
 
+// Variation/Déclinaison type for flexible product options
+export interface ProductVariation {
+    name: string;      // e.g., "Taille", "Couleur", "Saveur"
+    values: string[];  // e.g., ["S", "M", "L", "XL"] or ["Rouge", "Bleu", "Vert"]
+}
+
 export interface Product {
     id: string;
     tenantId?: string; // Optional for legacy compatibility
@@ -9,6 +15,7 @@ export interface Product {
     description: string;
     stock: number;
     minPrice?: number; // Lowest acceptable price for negotiation
+    variations?: ProductVariation[]; // Optional variations/déclinaisons
 }
 
 export interface CartItem {

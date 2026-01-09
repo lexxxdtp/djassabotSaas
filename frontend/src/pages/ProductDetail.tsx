@@ -1,9 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Trash2, Image as ImageIcon, X, Plus } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Image as ImageIcon, X, Plus, Tags } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { getApiUrl } from '../utils/apiConfig';
+
+// Interface for product variations/déclinaisons
+interface ProductVariation {
+    name: string;      // e.g., "Taille", "Couleur", "Saveur"
+    values: string[];  // e.g., ["S", "M", "L", "XL"]
+}
 
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -15,7 +21,8 @@ const ProductDetail: React.FC = () => {
         price: '',
         stock: '',
         description: '',
-        images: []
+        images: [],
+        variations: [] as ProductVariation[]
     });
 
     useEffect(() => {
@@ -45,7 +52,8 @@ const ProductDetail: React.FC = () => {
                 if (found) {
                     setProduct({
                         ...found,
-                        images: found.images || []
+                        images: found.images || [],
+                        variations: found.variations || []
                     });
                 } else {
                     navigate('/dashboard/products');
@@ -139,6 +147,48 @@ const ProductDetail: React.FC = () => {
             console.error('Upload failed', error);
             alert('Erreur upload');
         }
+    };
+
+    // === Variation Management Functions ===
+    const addVariation = () => {
+        setProduct({
+            ...product,
+            variations: [...(product.variations || []), { name: '', values: [] }]
+        });
+    };
+
+    const removeVariation = (index: number) => {
+        setProduct({
+            ...product,
+            variations: product.variations.filter((_: ProductVariation, i: number) => i !== index)
+        });
+    };
+
+    const updateVariationName = (index: number, name: string) => {
+        const newVariations = [...product.variations];
+        newVariations[index] = { ...newVariations[index], name };
+        setProduct({ ...product, variations: newVariations });
+    };
+
+    const addVariationValue = (varIndex: number, value: string) => {
+        if (!value.trim()) return;
+        const newVariations = [...product.variations];
+        if (!newVariations[varIndex].values.includes(value.trim())) {
+            newVariations[varIndex] = {
+                ...newVariations[varIndex],
+                values: [...newVariations[varIndex].values, value.trim()]
+            };
+            setProduct({ ...product, variations: newVariations });
+        }
+    };
+
+    const removeVariationValue = (varIndex: number, valueIndex: number) => {
+        const newVariations = [...product.variations];
+        newVariations[varIndex] = {
+            ...newVariations[varIndex],
+            values: newVariations[varIndex].values.filter((_: string, i: number) => i !== valueIndex)
+        };
+        setProduct({ ...product, variations: newVariations });
     };
 
     if (loading) return <div className="text-white p-8">Chargement...</div>;
@@ -256,9 +306,109 @@ const ProductDetail: React.FC = () => {
                         <textarea
                             value={product.description}
                             onChange={e => setProduct({ ...product, description: e.target.value })}
-                            className="w-full bg-black border border-zinc-700 rounded-xl p-4 text-white focus:border-orange-500 outline-none min-h-[200px] leading-relaxed"
+                            className="w-full bg-black border border-zinc-700 rounded-xl p-4 text-white focus:border-orange-500 outline-none min-h-[150px] leading-relaxed"
                             placeholder="Décrivez votre produit..."
                         />
+                    </div>
+
+                    {/* === Section Déclinaisons === */}
+                    <div className="border-t border-zinc-800 pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Tags size={20} className="text-orange-500" />
+                                <h3 className="text-white font-semibold">Déclinaisons / Variations</h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={addVariation}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-orange-500/10 text-orange-500 rounded-lg hover:bg-orange-500/20 transition-colors text-sm"
+                            >
+                                <Plus size={16} />
+                                Ajouter une déclinaison
+                            </button>
+                        </div>
+
+                        <p className="text-zinc-500 text-sm mb-4">
+                            Définissez des options comme Taille, Couleur, Saveur, etc. Ex: Taille → S, M, L, XL
+                        </p>
+
+                        {product.variations && product.variations.length > 0 ? (
+                            <div className="space-y-4">
+                                {product.variations.map((variation: ProductVariation, varIndex: number) => (
+                                    <div key={varIndex} className="bg-black border border-zinc-800 rounded-xl p-4">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <input
+                                                type="text"
+                                                value={variation.name}
+                                                onChange={(e) => updateVariationName(varIndex, e.target.value)}
+                                                placeholder="Nom (ex: Taille, Couleur, Saveur)"
+                                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-orange-500 outline-none text-sm"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeVariation(varIndex)}
+                                                className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                title="Supprimer cette déclinaison"
+                                            >
+                                                <X size={18} />
+                                            </button>
+                                        </div>
+
+                                        {/* Values/Options */}
+                                        <div className="flex flex-wrap gap-2 mb-3">
+                                            {variation.values.map((value: string, valueIndex: number) => (
+                                                <span
+                                                    key={valueIndex}
+                                                    className="inline-flex items-center gap-1 px-3 py-1 bg-zinc-800 text-zinc-300 rounded-full text-sm group"
+                                                >
+                                                    {value}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeVariationValue(varIndex, valueIndex)}
+                                                        className="text-zinc-500 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+
+                                        {/* Add new value input */}
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Ajouter une valeur (ex: XL, Rouge, Nutella)"
+                                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-orange-500 outline-none text-sm"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        addVariationValue(varIndex, (e.target as HTMLInputElement).value);
+                                                        (e.target as HTMLInputElement).value = '';
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    const input = (e.target as HTMLElement).previousElementSibling as HTMLInputElement;
+                                                    addVariationValue(varIndex, input.value);
+                                                    input.value = '';
+                                                }}
+                                                className="px-3 py-2 bg-zinc-800 text-zinc-400 rounded-lg hover:bg-zinc-700 hover:text-white transition-colors text-sm"
+                                            >
+                                                <Plus size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 bg-black border border-dashed border-zinc-800 rounded-xl">
+                                <Tags size={32} className="mx-auto text-zinc-700 mb-2" />
+                                <p className="text-zinc-500 text-sm">Aucune déclinaison définie</p>
+                                <p className="text-zinc-600 text-xs mt-1">Cliquez sur "Ajouter une déclinaison" pour commencer</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

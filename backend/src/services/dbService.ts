@@ -170,7 +170,8 @@ export const db = {
             stock: product.stock,
             description: product.description,
             images: product.images,
-            min_price: product.minPrice // Fix: minPrice -> min_price
+            min_price: product.minPrice,
+            variations: product.variations || [] // Add variations support
         };
 
         if (isSupabaseEnabled && supabase) {
@@ -188,7 +189,8 @@ export const db = {
                 return {
                     ...data,
                     minPrice: data.min_price,
-                    tenantId: data.tenant_id
+                    tenantId: data.tenant_id,
+                    variations: data.variations || []
                 } as Product;
             } catch (e: any) {
                 console.error('[DB] Create Product Failed:', e);
@@ -206,6 +208,7 @@ export const db = {
             dbUpdates.min_price = updates.minPrice;
             delete dbUpdates.minPrice;
         }
+        // variations is already in correct format (JSON), no mapping needed
 
         if (isSupabaseEnabled && supabase) {
             try {
@@ -222,7 +225,8 @@ export const db = {
                 return {
                     ...data,
                     minPrice: data.min_price,
-                    tenantId: data.tenant_id
+                    tenantId: data.tenant_id,
+                    variations: data.variations || []
                 } as Product;
             } catch (e: any) {
                 console.error('[DB] Update Product Failed:', e);
