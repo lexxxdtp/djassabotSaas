@@ -33,6 +33,9 @@ const ProductDetail: React.FC = () => {
         aiInstructions: ''
     });
 
+    // Variations Toggle State
+    const [variationsEnabled, setVariationsEnabled] = useState(false);
+
     // Variation Templates State
     const [variationTemplates, setVariationTemplates] = useState<any[]>([]);
 
@@ -81,12 +84,19 @@ const ProductDetail: React.FC = () => {
                 const data = await res.json();
                 const found = data.find((p: any) => p.id === id);
                 if (found) {
-                    setProduct({
+                    const productData = {
                         ...found,
                         images: found.images || [],
                         variations: found.variations || [],
                         aiInstructions: found.aiInstructions || found.ai_instructions || ''
-                    });
+                    };
+                    setProduct(productData);
+
+                    // Auto-enable variations toggle if product has active variations
+                    const hasActiveVariations = productData.variations && productData.variations.some((v: any) =>
+                        v.name && v.name.trim() !== '' && v.options && v.options.length > 0
+                    );
+                    setVariationsEnabled(hasActiveVariations);
                 } else {
                     navigate('/dashboard/products');
                 }
@@ -421,8 +431,8 @@ const ProductDetail: React.FC = () => {
                                 className={`w-full border rounded-xl p-3 font-mono outline-none ${product.variations && product.variations.some((v: ProductVariation) =>
                                     v.name && v.name.trim() !== '' && v.options && v.options.length > 0
                                 )
-                                        ? 'bg-zinc-800 border-zinc-700 text-zinc-400 cursor-not-allowed'
-                                        : 'bg-black border-zinc-700 text-white focus:border-orange-500'
+                                    ? 'bg-zinc-800 border-zinc-700 text-zinc-400 cursor-not-allowed'
+                                    : 'bg-black border-zinc-700 text-white focus:border-orange-500'
                                     }`}
                             />
                             {product.variations && product.variations.some((v: ProductVariation) =>
@@ -465,182 +475,224 @@ const ProductDetail: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* === Section Déclinaisons === */}
+                    {/* === Section Déclinaisons avec Toggle === */}
                     <div className="border-t border-zinc-800 pt-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <Tags size={20} className="text-orange-500" />
-                                <h3 className="text-white font-semibold">Déclinaisons / Variations</h3>
+                        <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Tags size={20} className="text-orange-500" />
+                                    <h3 className="text-white font-semibold">Déclinaisons / Variations</h3>
+
+                                    {/* Toggle Switch */}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const newState = !variationsEnabled;
+                                            setVariationsEnabled(newState);
+                                            // Si on désactive, vider les variations
+                                            if (!newState) {
+                                                setProduct({ ...product, variations: [] });
+                                            }
+                                        }}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${variationsEnabled ? 'bg-orange-500' : 'bg-zinc-700'
+                                            }`}
+                                    >
+                                        <span
+                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${variationsEnabled ? 'translate-x-6' : 'translate-x-1'
+                                                }`}
+                                        />
+                                    </button>
+
+                                    <span className={`text-xs font-medium ${variationsEnabled ? 'text-orange-400' : 'text-zinc-500'}`}>
+                                        {variationsEnabled ? 'Activé' : 'Désactivé'}
+                                    </span>
+                                </div>
+
+                                {/* Texte explicatif */}
+                                <p className="text-zinc-500 text-sm leading-relaxed">
+                                    {variationsEnabled ? (
+                                        <>Votre produit est décliné en plusieurs versions (ex: Taille, Couleur). Le stock total est calculé automatiquement.</>
+                                    ) : (
+                                        <>Activez cette option si votre produit existe en plusieurs versions (tailles, couleurs, saveurs, etc.).</>
+                                    )}
+                                </p>
                             </div>
-                            <button
-                                type="button"
-                                onClick={addVariation}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-orange-500/10 text-orange-500 rounded-lg hover:bg-orange-500/20 transition-colors text-sm"
-                            >
-                                <Plus size={16} />
-                                Ajouter une déclinaison
-                            </button>
                         </div>
 
-                        <p className="text-zinc-500 text-sm mb-4">
-                            Définissez des options comme Taille, Couleur, Saveur, etc. Ex: Taille → S, M, L, XL
-                        </p>
+                        {/* Section variations (visible seulement si activé) */}
+                        {variationsEnabled && (
+                            <>
+                                <div className="flex items-center justify-between mb-4 pt-4 border-t border-zinc-800">
+                                    <p className="text-zinc-400 text-sm">
+                                        Définissez des options comme Taille, Couleur, Saveur, etc.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={addVariation}
+                                        className="flex items-center gap-1 px-3 py-1.5 bg-orange-500/10 text-orange-500 rounded-lg hover:bg-orange-500/20 transition-colors text-sm"
+                                    >
+                                        <Plus size={16} />
+                                        Ajouter une déclinaison
+                                    </button>
+                                </div>
 
-                        {product.variations && product.variations.length > 0 ? (
-                            <div className="space-y-4">
-                                {product.variations.map((variation: ProductVariation, varIndex: number) => (
-                                    <div key={varIndex} className="bg-black border border-zinc-800 rounded-xl p-4">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            {/* Dropdown de Sélection de Template */}
-                                            {variation.name === '' || !variationTemplates.find(t => t.name === variation.name) ? (
-                                                <div className="flex-1 flex gap-2">
-                                                    <select
-                                                        value={variation.name}
-                                                        onChange={(e) => {
-                                                            if (e.target.value === '__custom__') {
-                                                                // Keep empty to allow custom input
-                                                                return;
-                                                            }
-                                                            updateVariationName(varIndex, e.target.value);
-                                                        }}
-                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-orange-500 outline-none text-sm"
-                                                    >
-                                                        <option value="">Sélectionner un type...</option>
-                                                        {variationTemplates.map((template, idx) => (
-                                                            <option key={idx} value={template.name}>
-                                                                {template.name} {template.isSystem ? '' : '(Personnalisé)'}
-                                                            </option>
-                                                        ))}
-                                                        <option value="__custom__">➕ Autre (Personnalisé)</option>
-                                                    </select>
-                                                    {variation.name === '' && (
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Nom personnalisé..."
-                                                            onBlur={async (e) => {
-                                                                if (e.target.value.trim()) {
-                                                                    updateVariationName(varIndex, e.target.value.trim());
-                                                                    // Sauvegarder le template si des options existent
-                                                                    if (variation.options && variation.options.length > 0) {
-                                                                        await saveVariationTemplate(e.target.value.trim(), variation.options);
+                                {product.variations && product.variations.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {product.variations.map((variation: ProductVariation, varIndex: number) => (
+                                            <div key={varIndex} className="bg-black border border-zinc-800 rounded-xl p-4">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    {/* Dropdown de Sélection de Template */}
+                                                    {variation.name === '' || !variationTemplates.find(t => t.name === variation.name) ? (
+                                                        <div className="flex-1 flex gap-2">
+                                                            <select
+                                                                value={variation.name}
+                                                                onChange={(e) => {
+                                                                    if (e.target.value === '__custom__') {
+                                                                        // Keep empty to allow custom input
+                                                                        return;
                                                                     }
-                                                                }
-                                                            }}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                                                                    updateVariationName(varIndex, e.currentTarget.value.trim());
-                                                                }
-                                                            }}
-                                                            className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-orange-500 outline-none text-sm"
-                                                        />
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <div className="flex-1 px-3 py-2 bg-zinc-900/50 border border-zinc-700 rounded-lg text-white text-sm flex items-center justify-between">
-                                                    <span>{variation.name}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => updateVariationName(varIndex, '')}
-                                                        className="text-xs text-zinc-500 hover:text-orange-500"
-                                                    >
-                                                        Changer
-                                                    </button>
-                                                </div>
-                                            )}
-                                            <button
-                                                type="button"
-                                                onClick={() => removeVariation(varIndex)}
-                                                className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                                title="Supprimer cette déclinaison"
-                                            >
-                                                <X size={18} />
-                                            </button>
-                                        </div>
-
-                                        {/* Options with stock and price */}
-                                        {variation.options && variation.options.length > 0 && (
-                                            <div className="space-y-2 mb-3">
-                                                <div className="grid grid-cols-12 gap-2 text-xs text-zinc-500 px-2">
-                                                    <div className="col-span-4">Valeur</div>
-                                                    <div className="col-span-3">Stock</div>
-                                                    <div className="col-span-4">Prix (+/-)</div>
-                                                    <div className="col-span-1"></div>
-                                                </div>
-                                                {variation.options.map((option: VariationOption, optIndex: number) => (
-                                                    <div key={optIndex} className="grid grid-cols-12 gap-2 items-center bg-zinc-900/50 rounded-lg p-2">
-                                                        <div className="col-span-4">
-                                                            <span className="text-white text-sm font-medium">{option.value}</span>
+                                                                    updateVariationName(varIndex, e.target.value);
+                                                                }}
+                                                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-orange-500 outline-none text-sm"
+                                                            >
+                                                                <option value="">Sélectionner un type...</option>
+                                                                {variationTemplates.map((template, idx) => (
+                                                                    <option key={idx} value={template.name}>
+                                                                        {template.name} {template.isSystem ? '' : '(Personnalisé)'}
+                                                                    </option>
+                                                                ))}
+                                                                <option value="__custom__">➕ Autre (Personnalisé)</option>
+                                                            </select>
+                                                            {variation.name === '' && (
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Nom personnalisé..."
+                                                                    onBlur={async (e) => {
+                                                                        if (e.target.value.trim()) {
+                                                                            updateVariationName(varIndex, e.target.value.trim());
+                                                                            // Sauvegarder le template si des options existent
+                                                                            if (variation.options && variation.options.length > 0) {
+                                                                                await saveVariationTemplate(e.target.value.trim(), variation.options);
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                                                            updateVariationName(varIndex, e.currentTarget.value.trim());
+                                                                        }
+                                                                    }}
+                                                                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-orange-500 outline-none text-sm"
+                                                                />
+                                                            )}
                                                         </div>
-                                                        <div className="col-span-3">
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                value={option.stock ?? ''}
-                                                                onChange={(e) => updateVariationOption(varIndex, optIndex, 'stock', e.target.value ? Math.max(0, Number(e.target.value)) : undefined)}
-                                                                placeholder="∞"
-                                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
-                                                            />
-                                                        </div>
-                                                        <div className="col-span-4 flex items-center">
-                                                            <span className="text-zinc-500 text-xs mr-1">FCFA</span>
-                                                            <input
-                                                                type="number"
-                                                                value={option.priceModifier ?? 0}
-                                                                onChange={(e) => updateVariationOption(varIndex, optIndex, 'priceModifier', Number(e.target.value))}
-                                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
-                                                            />
-                                                        </div>
-                                                        <div className="col-span-1 flex justify-end">
+                                                    ) : (
+                                                        <div className="flex-1 px-3 py-2 bg-zinc-900/50 border border-zinc-700 rounded-lg text-white text-sm flex items-center justify-between">
+                                                            <span>{variation.name}</span>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => removeVariationOption(varIndex, optIndex)}
-                                                                className="text-zinc-500 hover:text-red-500 transition-colors p-1"
+                                                                onClick={() => updateVariationName(varIndex, '')}
+                                                                className="text-xs text-zinc-500 hover:text-orange-500"
                                                             >
-                                                                <X size={14} />
+                                                                Changer
                                                             </button>
                                                         </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeVariation(varIndex)}
+                                                        className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                        title="Supprimer cette déclinaison"
+                                                    >
+                                                        <X size={18} />
+                                                    </button>
+                                                </div>
 
-                                        {/* Add new option input */}
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="text"
-                                                placeholder="Ajouter une option (ex: XL, Rouge, Nutella)"
-                                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-orange-500 outline-none text-sm"
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        addVariationOption(varIndex, (e.target as HTMLInputElement).value);
-                                                        (e.target as HTMLInputElement).value = '';
-                                                    }
-                                                }}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    const input = (e.target as HTMLElement).closest('div')?.querySelector('input') as HTMLInputElement;
-                                                    if (input) {
-                                                        addVariationOption(varIndex, input.value);
-                                                        input.value = '';
-                                                    }
-                                                }}
-                                                className="px-3 py-2 bg-zinc-800 text-zinc-400 rounded-lg hover:bg-zinc-700 hover:text-white transition-colors text-sm"
-                                            >
-                                                <Plus size={16} />
-                                            </button>
-                                        </div>
+                                                {/* Options with stock and price */}
+                                                {variation.options && variation.options.length > 0 && (
+                                                    <div className="space-y-2 mb-3">
+                                                        <div className="grid grid-cols-12 gap-2 text-xs text-zinc-500 px-2">
+                                                            <div className="col-span-4">Valeur</div>
+                                                            <div className="col-span-3">Stock</div>
+                                                            <div className="col-span-4">Prix (+/-)</div>
+                                                            <div className="col-span-1"></div>
+                                                        </div>
+                                                        {variation.options.map((option: VariationOption, optIndex: number) => (
+                                                            <div key={optIndex} className="grid grid-cols-12 gap-2 items-center bg-zinc-900/50 rounded-lg p-2">
+                                                                <div className="col-span-4">
+                                                                    <span className="text-white text-sm font-medium">{option.value}</span>
+                                                                </div>
+                                                                <div className="col-span-3">
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0"
+                                                                        value={option.stock ?? ''}
+                                                                        onChange={(e) => updateVariationOption(varIndex, optIndex, 'stock', e.target.value ? Math.max(0, Number(e.target.value)) : undefined)}
+                                                                        placeholder="∞"
+                                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
+                                                                    />
+                                                                </div>
+                                                                <div className="col-span-4 flex items-center">
+                                                                    <span className="text-zinc-500 text-xs mr-1">FCFA</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={option.priceModifier ?? 0}
+                                                                        onChange={(e) => updateVariationOption(varIndex, optIndex, 'priceModifier', Number(e.target.value))}
+                                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
+                                                                    />
+                                                                </div>
+                                                                <div className="col-span-1 flex justify-end">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeVariationOption(varIndex, optIndex)}
+                                                                        className="text-zinc-500 hover:text-red-500 transition-colors p-1"
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Add new option input */}
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Ajouter une option (ex: XL, Rouge, Nutella)"
+                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-orange-500 outline-none text-sm"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                addVariationOption(varIndex, (e.target as HTMLInputElement).value);
+                                                                (e.target as HTMLInputElement).value = '';
+                                                            }
+                                                        }}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            const input = (e.target as HTMLElement).closest('div')?.querySelector('input') as HTMLInputElement;
+                                                            if (input) {
+                                                                addVariationOption(varIndex, input.value);
+                                                                input.value = '';
+                                                            }
+                                                        }}
+                                                        className="px-3 py-2 bg-zinc-800 text-zinc-400 rounded-lg hover:bg-zinc-700 hover:text-white transition-colors text-sm"
+                                                    >
+                                                        <Plus size={16} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-8 bg-black border border-dashed border-zinc-800 rounded-xl">
-                                <Tags size={32} className="mx-auto text-zinc-700 mb-2" />
-                                <p className="text-zinc-500 text-sm">Aucune déclinaison définie</p>
-                                <p className="text-zinc-600 text-xs mt-1">Cliquez sur "Ajouter une déclinaison" pour commencer</p>
-                            </div>
+                                ) : (
+                                    <div className="text-center py-8 bg-black border border-dashed border-zinc-800 rounded-xl">
+                                        <Tags size={32} className="mx-auto text-zinc-700 mb-2" />
+                                        <p className="text-zinc-500 text-sm">Aucune déclinaison définie</p>
+                                        <p className="text-zinc-600 text-xs mt-1">Cliquez sur "Ajouter une déclinaison" pour commencer</p>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
