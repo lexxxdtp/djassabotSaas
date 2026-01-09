@@ -1,9 +1,21 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Image as ImageIcon, Tags } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { getApiUrl } from '../utils/apiConfig';
+
+// Types for variations
+interface VariationOption {
+    value: string;
+    stock?: number;
+    priceModifier?: number;
+}
+
+interface ProductVariation {
+    name: string;
+    options: VariationOption[];
+}
 
 const Products: React.FC = () => {
     const navigate = useNavigate();
@@ -21,7 +33,8 @@ const Products: React.FC = () => {
         price: '',
         stock: '',
         description: '',
-        images: [] as string[]
+        images: [] as string[],
+        variations: [] as ProductVariation[]
     });
     const [uploading, setUploading] = useState(false);
 
@@ -59,7 +72,7 @@ const Products: React.FC = () => {
     // Open Modal for Create
     const openCreateModal = () => {
         setEditingId(null);
-        setProductForm({ name: '', price: '', stock: '', description: '', images: [] });
+        setProductForm({ name: '', price: '', stock: '', description: '', images: [], variations: [] });
         setIsModalOpen(true);
     };
 
@@ -71,7 +84,8 @@ const Products: React.FC = () => {
             price: product.price,
             stock: product.stock,
             description: product.description || '',
-            images: product.images || []
+            images: product.images || [],
+            variations: product.variations || []
         });
         setIsModalOpen(true);
     };
@@ -112,7 +126,8 @@ const Products: React.FC = () => {
                 price: Number(productForm.price),
                 stock: Number(productForm.stock),
                 description: productForm.description,
-                images: productForm.images
+                images: productForm.images,
+                variations: productForm.variations
             };
 
             const API_URL = getApiUrl();
@@ -410,6 +425,103 @@ const Products: React.FC = () => {
                                             : `Appuyez sur Entrée pour ajouter l'URL (${5 - productForm.images.length} restantes)`}
                                     </p>
                                 </div>
+                            </div>
+
+                            {/* Section Déclinaisons */}
+                            <div className="border-t border-zinc-800 pt-4 mt-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Tags size={16} className="text-orange-500" />
+                                        <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Déclinaisons</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setProductForm({
+                                            ...productForm,
+                                            variations: [...productForm.variations, { name: '', options: [] }]
+                                        })}
+                                        className="text-xs text-orange-500 hover:text-orange-400 flex items-center gap-1"
+                                    >
+                                        <Plus size={14} />
+                                        Ajouter
+                                    </button>
+                                </div>
+
+                                {productForm.variations.length === 0 ? (
+                                    <p className="text-zinc-600 text-xs">Optionnel: Taille, Couleur, Saveur...</p>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {productForm.variations.map((variation, varIdx) => (
+                                            <div key={varIdx} className="bg-black border border-zinc-800 rounded-lg p-3">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <input
+                                                        type="text"
+                                                        value={variation.name}
+                                                        onChange={(e) => {
+                                                            const newVars = [...productForm.variations];
+                                                            newVars[varIdx].name = e.target.value;
+                                                            setProductForm({ ...productForm, variations: newVars });
+                                                        }}
+                                                        placeholder="Nom (ex: Taille)"
+                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setProductForm({
+                                                                ...productForm,
+                                                                variations: productForm.variations.filter((_, i) => i !== varIdx)
+                                                            });
+                                                        }}
+                                                        className="text-red-500 hover:text-red-400 p-1"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+
+                                                {/* Options */}
+                                                <div className="flex flex-wrap gap-1 mb-2">
+                                                    {variation.options.map((opt, optIdx) => (
+                                                        <span key={optIdx} className="inline-flex items-center gap-1 px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded text-xs">
+                                                            {opt.value}
+                                                            {opt.priceModifier ? ` (${opt.priceModifier > 0 ? '+' : ''}${opt.priceModifier})` : ''}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newVars = [...productForm.variations];
+                                                                    newVars[varIdx].options = newVars[varIdx].options.filter((_, i) => i !== optIdx);
+                                                                    setProductForm({ ...productForm, variations: newVars });
+                                                                }}
+                                                                className="text-zinc-500 hover:text-red-500"
+                                                            >
+                                                                <X size={10} />
+                                                            </button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+
+                                                {/* Add option input */}
+                                                <input
+                                                    type="text"
+                                                    placeholder="Ajouter option (ex: XL) + Entrée"
+                                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-white text-xs focus:border-orange-500 outline-none"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            const val = e.currentTarget.value.trim();
+                                                            if (val) {
+                                                                const newVars = [...productForm.variations];
+                                                                newVars[varIdx].options = [...newVars[varIdx].options, { value: val, stock: undefined, priceModifier: 0 }];
+                                                                setProductForm({ ...productForm, variations: newVars });
+                                                                e.currentTarget.value = '';
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             <button
