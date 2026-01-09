@@ -27,6 +27,28 @@ const port = process.env.PORT || 3000;
 app.use(cors()); // Enable CORS for frontend development
 app.use(express.json());
 
+// DEBUG: Dump all products to verify DB connection
+import { supabase } from './config/supabase';
+app.get('/api/debug/dump-products', async (req: Request, res: Response) => {
+    try {
+        console.log('[DEBUG] Dumping all products...');
+        if (!supabase) {
+            res.status(500).json({ error: 'Supabase not initialized' });
+            return;
+        }
+        const { data, error } = await supabase.from('products').select('*');
+        res.json({
+            count: data?.length,
+            data,
+            error,
+            env_url: process.env.SUPABASE_URL // Check which project is connected
+        });
+    } catch (e: any) {
+        console.error('[DEBUG] Dump failed:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Public Routes (No authentication required)
 // IMPORTANT: Register specific routes BEFORE catch-all routes
 app.use('/api/auth', authRoutes);

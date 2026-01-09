@@ -143,21 +143,22 @@ export const db = {
     },
 
     getProducts: async (tenantId: string): Promise<Product[]> => {
-        if (isSupabaseEnabled && supabase) {
-            try {
-                const { data, error } = await supabase
-                    .from('products')
-                    .select('*')
-                    .eq('tenant_id', tenantId)
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-                return data as Product[];
-            } catch (e) {
-                console.warn('[DB] Supabase getProducts failed, fallback to local');
-            }
+        if (!isSupabaseEnabled || !supabase) {
+            throw new Error('Supabase is not enabled');
         }
-        return localData.products.filter((p: any) => p.tenantId === tenantId);
+        try {
+            const { data, error } = await supabase
+                .from('products')
+                .select('*')
+                .eq('tenant_id', tenantId)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            return data as Product[];
+        } catch (e: any) {
+            console.error('[DB] Supabase getProducts failed:', e);
+            throw new Error(e.message || 'Failed to fetch products');
+        }
     },
 
     createProduct: async (tenantId: string, product: Omit<Product, 'id'>): Promise<Product> => {
