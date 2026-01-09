@@ -46,11 +46,41 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
 
         let responseText = '';
         let action = null; // Pour dire au frontend qu'une action spéciale a eu lieu (ex: ajout panier)
+        let images: string[] = []; // Images à afficher dans le simulateur
+
+        // --- Vérifier si l'utilisateur demande des photos/images ---
+        const askingForPhotos = /photo|image|voir|montre|catalogue|galerie/i.test(message);
+
+        if (askingForPhotos && !intentData.productName) {
+            // Montrer le catalogue avec toutes les images
+            const productsWithImages = products.filter(p => p.images && p.images.length > 0);
+            if (productsWithImages.length > 0) {
+                images = productsWithImages.flatMap(p => p.images || []).slice(0, 6); // Max 6 images
+                responseText = `[SIMULATION] Voici notre catalogue ! 📸\n\n${productsWithImages.map(p => `• ${p.name} - ${p.price} FCFA`).join('\n')}\n\nQuel produit vous intéresse ?`;
+                action = { type: 'SHOW_CATALOG', products: productsWithImages };
+
+                await addToHistory(tenantId, simUserId, 'user', message);
+                await addToHistory(tenantId, simUserId, 'model', responseText);
+                res.json({ response: responseText, action, images });
+                return;
+            } else {
+                responseText = `[SIMULATION] Désolé, nous n'avons pas encore de photos dans notre catalogue. Mais je peux vous renseigner sur nos produits ! Que cherchez-vous ?`;
+                await addToHistory(tenantId, simUserId, 'user', message);
+                await addToHistory(tenantId, simUserId, 'model', responseText);
+                res.json({ response: responseText });
+                return;
+            }
+        }
 
         if (intentData.intent === 'BUY' && intentData.productName) {
             const product = await db.getProductByName(tenantId, intentData.productName);
             if (product) {
                 let qty = intentData.quantity || 1;
+
+                // Ajouter l'image du produit à la réponse
+                if (product.images && product.images.length > 0) {
+                    images = product.images.slice(0, 3); // Max 3 images du produit
+                }
 
                 // Vérifier le stock disponible
                 if (product.stock !== undefined && product.stock < qty) {
@@ -66,7 +96,7 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
 
                     await addToHistory(tenantId, simUserId, 'user', message);
                     await addToHistory(tenantId, simUserId, 'model', responseText);
-                    res.json({ response: responseText, action });
+                    res.json({ response: responseText, action, images });
                     return;
                 }
 
@@ -82,7 +112,7 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
                 await addToHistory(tenantId, simUserId, 'user', message);
                 await addToHistory(tenantId, simUserId, 'model', responseText);
 
-                res.json({ response: responseText, action });
+                res.json({ response: responseText, action, images });
                 return;
             }
         }

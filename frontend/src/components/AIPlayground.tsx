@@ -2,8 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Trash2, Smartphone, Bot } from 'lucide-react';
 import { getApiUrl } from '../utils/apiConfig';
 
+interface Message {
+    role: 'user' | 'model';
+    text: string;
+    images?: string[];
+}
+
 export default function AIPlayground() {
-    const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string }[]>([]);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -44,7 +50,11 @@ export default function AIPlayground() {
 
             if (res.ok) {
                 const data = await res.json();
-                setMessages(prev => [...prev, { role: 'model', text: data.response || '...' }]);
+                setMessages(prev => [...prev, {
+                    role: 'model',
+                    text: data.response || '...',
+                    images: data.images || []
+                }]);
             } else {
                 setMessages(prev => [...prev, { role: 'model', text: '❌ Erreur serveur' }]);
             }
@@ -117,6 +127,25 @@ export default function AIPlayground() {
                             ? 'bg-emerald-600 text-white rounded-tr-none'
                             : 'bg-zinc-800 text-zinc-200 rounded-tl-none border border-zinc-700'
                             }`}>
+                            {/* Afficher les images si présentes */}
+                            {msg.images && msg.images.length > 0 && (
+                                <div className="mb-3 grid gap-2" style={{
+                                    gridTemplateColumns: msg.images.length === 1 ? '1fr' : 'repeat(2, 1fr)'
+                                }}>
+                                    {msg.images.map((imgUrl, imgIdx) => (
+                                        <img
+                                            key={imgIdx}
+                                            src={imgUrl}
+                                            alt={`Product ${imgIdx + 1}`}
+                                            className="rounded-lg w-full h-auto object-cover max-h-32 cursor-pointer hover:opacity-90 transition-opacity"
+                                            onClick={() => window.open(imgUrl, '_blank')}
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                             {msg.text.split('\n').map((line, j) => (
                                 <p key={j} className="min-h-[1em]">{line}</p>
                             ))}
