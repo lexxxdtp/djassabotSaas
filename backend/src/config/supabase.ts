@@ -13,26 +13,38 @@ const ENABLE_SUPABASE = true; // ENABLED FOR PRODUCTION
 let supabaseInstance: SupabaseClient | null = null;
 let isConfigured = false;
 
+// CRITICAL FIX: Force connection check
 if (ENABLE_SUPABASE) {
     // Fallback for Railway if env vars are missing but we want to hardcode for test
     const finalUrl = supabaseUrl || 'https://dnglgyviycbpoerywanc.supabase.co';
-    const finalKey = supabaseKey || process.env.VITE_SUPABASE_KEY; // Try to grab from anywhere
+    const finalKey = supabaseKey || process.env.VITE_SUPABASE_KEY;
 
     if (finalUrl && finalKey) {
         try {
+            console.log(`[Config] ⏳ Attempting connection to Supabase at ${finalUrl}...`);
             supabaseInstance = createClient(finalUrl, finalKey);
             isConfigured = true;
-            console.log(`[Config] ✅ Supabase Client Initialized with URL: ${finalUrl}`);
+            console.log(`[Config] ✅ Supabase Client Initialized successfully.`);
         } catch (error) {
-            console.warn('[Config] ⚠️ Supabase initialization failed:', error);
+            console.error('[Config] ❌ FATAL: Supabase initialization failed:', error);
+            // DO NOT FALLBACK IN PROD - THROW ERROR
+            throw new Error('Supabase Connection Failed. Application cannot start without Database.');
         }
     } else {
-        console.warn('[Config] ❌ Supabase keys missing. URL:', finalUrl ? 'SET' : 'MISSING', 'Key:', finalKey ? 'SET' : 'MISSING');
+        console.error('[Config] ❌ FATAL: Supabase keys missing!');
+        console.error(`URL Present: ${!!finalUrl}, Key Present: ${!!finalKey}`);
+        // DO NOT FALLBACK IN PROD - THROW ERROR
+        if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT) {
+            throw new Error('Supabase Configuration Missing in Production.');
+        }
     }
 }
 
 if (!isConfigured) {
-    console.log('[Config] ℹ️ Running in Local Fallback Mode (Supabase disabled or missing keys)');
+    console.warn('[Config] ⚠️ WARNING: Running in Local Fallback Mode (RAM ONLY). Data will be lost on restart.');
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('Local Fallback Mode is NOT allowed in Production.');
+    }
 }
 
 export const supabase = supabaseInstance;
