@@ -232,7 +232,7 @@ class WhatsAppManager {
             // const { generateAIResponse, detectPurchaseIntent } = await import('./aiService'); // Déjà importé
 
             // 1. Récupérer la session utilisateur (Multi-Tenant Key)
-            const session = getSession(tenantId, remoteJid);
+            const session = await getSession(tenantId, remoteJid);
 
             // 2. Gestion des états (Machine à états simple)
 
@@ -243,7 +243,7 @@ class WhatsAppManager {
 
                 if (!tempOrder) {
                     await sock.sendMessage(remoteJid, { text: "Oups, j'ai perdu votre panier. Pouvez-vous recommencer ?" });
-                    updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined });
+                    await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined });
                     return;
                 }
 
@@ -262,8 +262,8 @@ class WhatsAppManager {
 
                 // Nettoyer
                 await db.clearCart(tenantId, remoteJid);
-                clearHistory(tenantId, remoteJid);
-                updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined, reminderSent: false });
+                await clearHistory(tenantId, remoteJid);
+                await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined, reminderSent: false });
                 return;
             }
 
@@ -289,7 +289,7 @@ class WhatsAppManager {
                     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
                     // Passer en mode "Checkout"
-                    updateSession(tenantId, remoteJid, {
+                    await updateSession(tenantId, remoteJid, {
                         state: 'WAITING_FOR_ADDRESS',
                         tempOrder: {
                             items: cart,
@@ -303,8 +303,8 @@ class WhatsAppManager {
                         text: `C'est noté ! J'ai mis ${qty}x ${product.name} de côté pour vous.\n\nLe total est de ${total} FCFA. 🛒\n\nÀ quelle adresse (quartier, ville) doit-on livrer ?`
                     } as any); // Type assertion needed for mixed content support in simple send
 
-                    addToHistory(tenantId, remoteJid, 'user', text);
-                    addToHistory(tenantId, remoteJid, 'model', `[Checkout initiated for ${product.name}]`);
+                    await addToHistory(tenantId, remoteJid, 'user', text);
+                    await addToHistory(tenantId, remoteJid, 'model', `[Checkout initiated for ${product.name}]`);
                     return;
                 }
             }
@@ -323,8 +323,8 @@ class WhatsAppManager {
             await sock.sendMessage(remoteJid, { text: aiResponse });
 
             // Mise à jour de l'historique
-            addToHistory(tenantId, remoteJid, 'user', text);
-            addToHistory(tenantId, remoteJid, 'model', aiResponse);
+            await addToHistory(tenantId, remoteJid, 'user', text);
+            await addToHistory(tenantId, remoteJid, 'model', aiResponse);
 
         } catch (error) {
             console.error(`[Manager] Erreur traitement message pour Tenant ${tenantId}:`, error);

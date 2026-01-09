@@ -50,7 +50,7 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                     const textBody = message.text.body;
                     console.log(`Received text from ${from}: ${textBody}`);
 
-                    const session = getSession(DEFAULT_TENANT_ID, from);
+                    const session = await getSession(DEFAULT_TENANT_ID, from);
 
                     // 1. Check if waiting for delivery info
                     if (session.state === 'WAITING_FOR_ADDRESS') {
@@ -66,7 +66,7 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                         await sendTextMessage(from, `Merci ! Livraison prévue à : ${address}. 🚚\n\nVotre total est de ${tempOrder.total} FCFA.\nCliquez ici pour payer : ${paymentLink}`);
                         await notifyMerchant('ORDER', `Nouvelle commande de ${from} !\nArticles: ${tempOrder.summary}\nTotal: ${tempOrder.total}\nLivraison: ${address}`);
 
-                        clearHistory(DEFAULT_TENANT_ID, from); // Reset session after order
+                        await clearHistory(DEFAULT_TENANT_ID, from); // Reset session after order
                         return;
                     }
 
@@ -87,7 +87,7 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                             const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
                             // Ask for delivery address instead of sending link immediately
-                            updateSession(DEFAULT_TENANT_ID, from, {
+                            await updateSession(DEFAULT_TENANT_ID, from, {
                                 state: 'WAITING_FOR_ADDRESS',
                                 tempOrder: {
                                     total,
@@ -132,8 +132,8 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                         await sendTextMessage(from, aiReply);
 
                         // Update History
-                        addToHistory(DEFAULT_TENANT_ID, from, 'user', textBody);
-                        addToHistory(DEFAULT_TENANT_ID, from, 'model', aiReply);
+                        await addToHistory(DEFAULT_TENANT_ID, from, 'user', textBody);
+                        await addToHistory(DEFAULT_TENANT_ID, from, 'model', aiReply);
                     }
                 }
                 else if (type === 'image') {
@@ -149,12 +149,12 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                     await sendTextMessage(from, analysis);
 
                     // Add to session history as context
-                    addToHistory(DEFAULT_TENANT_ID, from, 'user', `[User sent an image of: ${analysis}]`);
-                    addToHistory(DEFAULT_TENANT_ID, from, 'model', analysis);
+                    await addToHistory(DEFAULT_TENANT_ID, from, 'user', `[User sent an image of: ${analysis}]`);
+                    await addToHistory(DEFAULT_TENANT_ID, from, 'model', analysis);
                 }
                 else if (type === 'audio') {
                     const audioId = message.audio.id;
-                    const session = getSession(DEFAULT_TENANT_ID, from);
+                    const session = await getSession(DEFAULT_TENANT_ID, from);
                     console.log(`Received audio from ${from}, ID: ${audioId}`);
 
                     // Get URL
@@ -180,8 +180,8 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                     await sendTextMessage(from, aiReply);
 
                     // Add to session history
-                    addToHistory(DEFAULT_TENANT_ID, from, 'user', `[Audio]: ${transcription}`);
-                    addToHistory(DEFAULT_TENANT_ID, from, 'model', aiReply);
+                    await addToHistory(DEFAULT_TENANT_ID, from, 'user', `[Audio]: ${transcription}`);
+                    await addToHistory(DEFAULT_TENANT_ID, from, 'model', aiReply);
                 }
                 else {
                     console.log(`Received unhandled message type: ${type}`);

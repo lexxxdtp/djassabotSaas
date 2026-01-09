@@ -161,40 +161,70 @@ export const db = {
     },
 
     createProduct: async (tenantId: string, product: Omit<Product, 'id'>): Promise<Product> => {
-        const productWithTenant: any = { ...product, tenant_id: tenantId };
+        // Map camelCase to snake_case for DB
+        const dbProduct = {
+            tenant_id: tenantId,
+            name: product.name,
+            price: product.price,
+            stock: product.stock,
+            description: product.description,
+            images: product.images,
+            min_price: product.minPrice // Fix: minPrice -> min_price
+        };
 
         if (isSupabaseEnabled && supabase) {
             try {
                 const { data, error } = await supabase
                     .from('products')
-                    .insert([productWithTenant])
+                    .insert([dbProduct])
                     .select()
                     .single();
-                if (error) throw error;
-                return data as Product;
+                if (error) {
+                    console.error('[DB] Create Product Error:', error);
+                    throw error;
+                }
+                // Map back to camelCase for app
+                return {
+                    ...data,
+                    minPrice: data.min_price,
+                    tenantId: data.tenant_id
+                } as Product;
             } catch (e) {
                 console.warn('[DB] Supabase createProduct failed, fallback to local');
             }
         }
 
-        const newProduct = { ...productWithTenant, id: Math.random().toString(36).substr(2, 9), tenantId };
+        const newProduct = { ...product, id: Math.random().toString(36).substr(2, 9), tenantId };
         localData.products.push(newProduct);
         saveData();
         return newProduct;
     },
 
     updateProduct: async (tenantId: string, id: string, updates: Partial<Product>): Promise<Product | null> => {
+        // Map updates to snake_case
+        const dbUpdates: any = { ...updates };
+        if (updates.minPrice !== undefined) {
+            dbUpdates.min_price = updates.minPrice;
+            delete dbUpdates.minPrice;
+        }
+
         if (isSupabaseEnabled && supabase) {
             try {
                 const { data, error } = await supabase
                     .from('products')
-                    .update(updates)
+                    .update(dbUpdates)
                     .eq('id', id)
                     .eq('tenant_id', tenantId)
                     .select()
                     .single();
                 if (error) return null;
-                return data as Product;
+
+                // Map back
+                return {
+                    ...data,
+                    minPrice: data.min_price,
+                    tenantId: data.tenant_id
+                } as Product;
             } catch (e) { }
         }
 

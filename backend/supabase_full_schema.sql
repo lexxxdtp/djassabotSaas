@@ -127,3 +127,38 @@ create policy "Allow All Products" on products for all using (true) with check (
 create policy "Allow All Orders" on orders for all using (true) with check (true);
 create policy "Allow All Settings" on settings for all using (true) with check (true);
 create policy "Allow All Subs" on subscriptions for all using (true) with check (true);
+
+-- 7. Customers Table (CRM for Tenants)
+create table if not exists customers (
+  id uuid default uuid_generate_v4() primary key,
+  tenant_id uuid references tenants(id) on delete cascade not null,
+  phone text not null,
+  name text,
+  total_orders integer default 0,
+  total_spent numeric default 0,
+  last_order_date timestamp with time zone,
+  created_at timestamp with time zone default timezone('utc', now()),
+  unique(tenant_id, phone)
+);
+
+-- 8. Sessions Table (WhatsApp Context & State Persistence)
+create table if not exists sessions (
+  id text primary key, -- Format: "tenant_id:user_phone"
+  tenant_id uuid references tenants(id) on delete cascade not null,
+  user_phone text not null,
+  state text default 'IDLE',
+  history jsonb default '[]',
+  temp_order jsonb,
+  last_interaction timestamp with time zone default timezone('utc', now()),
+  reminder_sent boolean default false,
+  created_at timestamp with time zone default timezone('utc', now()),
+  updated_at timestamp with time zone default timezone('utc', now())
+);
+
+-- Enable RLS for new tables
+alter table customers enable row level security;
+alter table sessions enable row level security;
+
+-- Open Access Policies for new tables (match existing pattern)
+create policy "Allow All Customers" on customers for all using (true) with check (true);
+create policy "Allow All Sessions" on sessions for all using (true) with check (true);

@@ -19,7 +19,7 @@ export const checkAbandonedCarts = async () => {
     try {
         console.log('[AbandonedCart] 🔍 Checking for abandoned carts...');
 
-        const allSessions = getActiveSessions();
+        const allSessions = await getActiveSessions();
         const now = new Date();
 
         let abandonedCount = 0;
@@ -45,7 +45,7 @@ export const checkAbandonedCarts = async () => {
                 if (success) {
                     // Marquer que la relance a été envoyée
                     const { updateSession } = await import('./sessionService');
-                    updateSession(session.tenantId, session.userId, { reminderSent: true });
+                    await updateSession(session.tenantId, session.userId, { reminderSent: true });
                     abandonedCount++;
                 }
             }

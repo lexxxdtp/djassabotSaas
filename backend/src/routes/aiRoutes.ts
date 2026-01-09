@@ -36,7 +36,7 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
         const products = await db.getProducts(tenantId);
 
         // 2. Récupérer la session (historique)
-        const session = getSession(tenantId, simUserId);
+        const session = await getSession(tenantId, simUserId);
 
         // 3. Logique simplifiée du bot (similaire à waManager mais focus réponse texte)
         const productContext = products.map(p => `${p.name} (${p.price} FCFA)`).join(', ');
@@ -57,10 +57,10 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
                 action = { type: 'ADD_TO_CART', product, quantity: qty };
 
                 // Mettre à jour l'état session pour que le prochain message soit l'adresse
-                updateSession(tenantId, simUserId, { state: 'WAITING_FOR_ADDRESS' });
+                await updateSession(tenantId, simUserId, { state: 'WAITING_FOR_ADDRESS' });
 
-                addToHistory(tenantId, simUserId, 'user', message);
-                addToHistory(tenantId, simUserId, 'model', responseText);
+                await addToHistory(tenantId, simUserId, 'user', message);
+                await addToHistory(tenantId, simUserId, 'model', responseText);
 
                 res.json({ response: responseText, action });
                 return;
@@ -79,8 +79,8 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
         });
 
         // update history
-        addToHistory(tenantId, simUserId, 'user', message);
-        addToHistory(tenantId, simUserId, 'model', responseText);
+        await addToHistory(tenantId, simUserId, 'user', message);
+        await addToHistory(tenantId, simUserId, 'model', responseText);
 
         res.json({ response: responseText });
 
@@ -99,7 +99,7 @@ router.post('/reset', async (req: Request, res: Response) => {
     const tenantId = req.tenantId!;
     const simUserId = sessionId || `sim-${tenantId}`;
 
-    clearHistory(tenantId, simUserId);
+    await clearHistory(tenantId, simUserId);
     res.json({ success: true, message: 'Mémoire effacée' });
 });
 

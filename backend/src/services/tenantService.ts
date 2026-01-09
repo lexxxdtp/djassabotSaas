@@ -34,14 +34,36 @@ export const createTenant = async (data: {
     try {
         if (isSupabaseEnabled && supabase) {
             console.log('[createTenant] Attempting Supabase insert...');
+            const dbTenant = {
+                id: tenant.id,
+                name: tenant.name,
+                business_type: tenant.businessType,
+                status: tenant.status,
+                subscription_tier: tenant.subscriptionTier,
+                whatsapp_connected: tenant.whatsappConnected,
+                whatsapp_status: tenant.whatsappStatus,
+                created_at: tenant.createdAt,
+                updated_at: tenant.updatedAt
+            };
+
             const { data: inserted, error } = await supabase
                 .from('tenants')
-                .insert(tenant)
+                .insert(dbTenant)
                 .select()
                 .single();
 
             if (error) throw error;
-            return inserted;
+            // Map back to camelCase not strictly needed as we return the original constructed object usually, 
+            // but if we want the DB truth:
+            return {
+                ...inserted,
+                businessType: inserted.business_type,
+                subscriptionTier: inserted.subscription_tier,
+                whatsappConnected: inserted.whatsapp_connected,
+                whatsappStatus: inserted.whatsapp_status,
+                createdAt: new Date(inserted.created_at),
+                updatedAt: new Date(inserted.updated_at)
+            };
         }
     } catch (e: any) {
         console.warn('[Fallback] Supabase tenant creation failed:', e.message);
@@ -61,7 +83,20 @@ export const getTenantById = async (id: string): Promise<Tenant | null> => {
                 .eq('id', id)
                 .single();
 
-            if (!error) return data;
+            if (!error && data) {
+                return {
+                    id: data.id,
+                    name: data.name,
+                    businessType: data.business_type,
+                    status: data.status,
+                    subscriptionTier: data.subscription_tier,
+                    whatsappConnected: data.whatsapp_connected,
+                    whatsappPhoneNumber: data.whatsapp_phone_number,
+                    whatsappStatus: data.whatsapp_status,
+                    createdAt: new Date(data.created_at),
+                    updatedAt: new Date(data.updated_at)
+                };
+            }
         }
     } catch (e) { }
 
@@ -76,7 +111,20 @@ export const getActiveTenants = async (): Promise<Tenant[]> => {
                 .select('*')
                 .in('status', ['active', 'trial']);
 
-            if (!error) return data || [];
+            if (!error && data) {
+                return data.map(d => ({
+                    id: d.id,
+                    name: d.name,
+                    businessType: d.business_type,
+                    status: d.status,
+                    subscriptionTier: d.subscription_tier,
+                    whatsappConnected: d.whatsapp_connected,
+                    whatsappPhoneNumber: d.whatsapp_phone_number,
+                    whatsappStatus: d.whatsapp_status,
+                    createdAt: new Date(d.created_at),
+                    updatedAt: new Date(d.updated_at)
+                }));
+            }
         }
     } catch (e) { }
 
@@ -146,14 +194,35 @@ export const createUser = async (data: {
     try {
         if (isSupabaseEnabled && supabase) {
             console.log('[createUser] Attempting Supabase insert...');
+            const dbUser = {
+                id: user.id,
+                tenant_id: user.tenantId,
+                email: user.email,
+                phone: user.phone,
+                full_name: user.full_name,
+                birth_date: user.birth_date,
+                password_hash: user.passwordHash,
+                role: user.role,
+                email_verified: user.emailVerified,
+                phone_verified: user.phoneVerified,
+                created_at: user.createdAt
+            };
+
             const { data: inserted, error } = await supabase
                 .from('users')
-                .insert(user)
+                .insert(dbUser)
                 .select()
                 .single();
 
             if (error) throw error;
-            return inserted;
+            return {
+                ...inserted,
+                tenantId: inserted.tenant_id,
+                emailVerified: inserted.email_verified,
+                phoneVerified: inserted.phone_verified,
+                createdAt: new Date(inserted.created_at),
+                passwordHash: inserted.password_hash
+            };
         }
     } catch (e: any) {
         console.warn('[Fallback] Supabase user creation failed:', e.message);
@@ -173,7 +242,21 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
                 .eq('email', email)
                 .single();
 
-            if (!error) return data;
+            if (!error && data) {
+                return {
+                    id: data.id,
+                    tenantId: data.tenant_id,
+                    email: data.email,
+                    phone: data.phone,
+                    full_name: data.full_name,
+                    birth_date: data.birth_date ? new Date(data.birth_date) : undefined,
+                    passwordHash: data.password_hash,
+                    role: data.role,
+                    emailVerified: data.email_verified,
+                    phoneVerified: data.phone_verified,
+                    createdAt: new Date(data.created_at)
+                };
+            }
         }
     } catch (e) { }
 
@@ -189,7 +272,21 @@ export const getUserByPhone = async (phone: string): Promise<User | null> => {
                 .eq('phone', phone)
                 .single();
 
-            if (!error) return data;
+            if (!error && data) {
+                return {
+                    id: data.id,
+                    tenantId: data.tenant_id,
+                    email: data.email,
+                    phone: data.phone,
+                    full_name: data.full_name,
+                    birth_date: data.birth_date ? new Date(data.birth_date) : undefined,
+                    passwordHash: data.password_hash,
+                    role: data.role,
+                    emailVerified: data.email_verified,
+                    phoneVerified: data.phone_verified,
+                    createdAt: new Date(data.created_at)
+                };
+            }
         }
     } catch (e) { }
 
@@ -205,7 +302,21 @@ export const getUserById = async (id: string): Promise<User | null> => {
                 .eq('id', id)
                 .single();
 
-            if (!error) return data;
+            if (!error && data) {
+                return {
+                    id: data.id,
+                    tenantId: data.tenant_id,
+                    email: data.email,
+                    phone: data.phone,
+                    full_name: data.full_name,
+                    birth_date: data.birth_date ? new Date(data.birth_date) : undefined,
+                    passwordHash: data.password_hash,
+                    role: data.role,
+                    emailVerified: data.email_verified,
+                    phoneVerified: data.phone_verified,
+                    createdAt: new Date(data.created_at)
+                };
+            }
         }
     } catch (e) { }
 
@@ -215,17 +326,38 @@ export const getUserById = async (id: string): Promise<User | null> => {
 export const updateUser = async (id: string, updates: Partial<User>): Promise<User | null> => {
     try {
         if (isSupabaseEnabled && supabase) {
-            // Remove sensitive or immutable fields just in case, though Typescript helps
             const { id: _, tenantId: __, ...safeUpdates } = updates as any;
+
+            // Map updates to snake_case if necessary
+            const dbUpdates: any = { ...safeUpdates };
+            if (safeUpdates.emailVerified !== undefined) dbUpdates.email_verified = safeUpdates.emailVerified;
+            if (safeUpdates.phoneVerified !== undefined) dbUpdates.phone_verified = safeUpdates.phoneVerified;
+            // Remove camelCase keys
+            delete dbUpdates.emailVerified;
+            delete dbUpdates.phoneVerified;
 
             const { data, error } = await supabase
                 .from('users')
-                .update(safeUpdates)
+                .update(dbUpdates)
                 .eq('id', id)
                 .select()
                 .single();
 
-            if (!error && data) return data;
+            if (!error && data) {
+                return {
+                    id: data.id,
+                    tenantId: data.tenant_id,
+                    email: data.email,
+                    phone: data.phone,
+                    full_name: data.full_name,
+                    birth_date: data.birth_date ? new Date(data.birth_date) : undefined,
+                    passwordHash: data.password_hash,
+                    role: data.role,
+                    emailVerified: data.email_verified,
+                    phoneVerified: data.phone_verified,
+                    createdAt: new Date(data.created_at)
+                };
+            }
         }
     } catch (e) { }
 
@@ -259,14 +391,32 @@ export const createSubscription = async (data: {
 
     try {
         if (isSupabaseEnabled && supabase) {
+            const dbSub = {
+                id: subscription.id,
+                tenant_id: subscription.tenantId,
+                plan: subscription.plan,
+                status: subscription.status,
+                started_at: subscription.startedAt,
+                expires_at: subscription.expiresAt,
+                auto_renew: subscription.autoRenew
+            };
+
             const { data: inserted, error } = await supabase
                 .from('subscriptions')
-                .insert(subscription)
+                .insert(dbSub)
                 .select()
                 .single();
 
             if (error) throw error;
-            return inserted;
+            return {
+                id: inserted.id,
+                tenantId: inserted.tenant_id,
+                plan: inserted.plan,
+                status: inserted.status,
+                startedAt: new Date(inserted.started_at),
+                expiresAt: new Date(inserted.expires_at),
+                autoRenew: inserted.auto_renew
+            };
         }
     } catch (e) {
         console.warn('[Fallback] Supabase sub creation failed');
