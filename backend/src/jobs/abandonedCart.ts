@@ -1,4 +1,3 @@
-import cron from 'node-cron';
 import { startAbandonedCartCron } from '../services/abandonedCartService';
 
 /**

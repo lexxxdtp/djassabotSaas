@@ -36,8 +36,7 @@ app.use('/api/whatsapp', whatsappRoutes); // Auth handled inside router
 app.use('/api/ai', aiRoutes); // New AI Simulation Routes
 
 // Webhooks (Public but should be AFTER specific routes)
-// TEMPORARY: Commented out to debug routing issue
-// app.use('/api', webhookRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 // Settings (Protected by JWT)
 app.get('/api/settings', authenticateTenant, async (req, res) => {

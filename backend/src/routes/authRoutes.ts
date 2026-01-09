@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { generateToken } from '../middleware/auth';
+import { generateToken, authenticateTenant } from '../middleware/auth';
 import { db } from '../services/dbService';
 
 const router = express.Router();
@@ -228,9 +228,8 @@ router.post('/login', async (req: Request, res: Response) => {
  * GET /api/auth/me
  * Récupérer les infos du user connecté
  */
-router.get('/me', async (req: Request, res: Response) => {
+router.get('/me', authenticateTenant, async (req: Request, res: Response) => {
     try {
-        // Note: Cette route doit être protégée par authenticateTenant middleware
         const { tenantId, userId } = req;
 
         if (!tenantId || !userId) {
@@ -250,6 +249,9 @@ router.get('/me', async (req: Request, res: Response) => {
             user: {
                 id: user.id,
                 email: user.email,
+                phone: user.phone,
+                full_name: user.full_name,
+                birth_date: user.birth_date,
                 role: user.role
             },
             tenant: {
@@ -270,7 +272,7 @@ router.get('/me', async (req: Request, res: Response) => {
  * PUT /api/auth/me
  * Mettre à jour le profil utilisateur
  */
-router.put('/me', async (req: Request, res: Response) => {
+router.put('/me', authenticateTenant, async (req: Request, res: Response) => {
     try {
         const { userId } = req;
         const { full_name, email, phone, birth_date } = req.body;
@@ -304,7 +306,6 @@ router.put('/me', async (req: Request, res: Response) => {
                 role: updatedUser.role
             }
         });
-
     } catch (error: any) {
         console.error('[Update Me] Erreur:', error);
         res.status(500).json({ error: 'Erreur serveur' });

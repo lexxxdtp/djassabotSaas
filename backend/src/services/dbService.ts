@@ -309,7 +309,32 @@ export const db = {
                     .select('*')
                     .eq('tenant_id', tenantId)
                     .single();
-                if (!error && data) return data as Settings;
+                if (!error && data) {
+                    // Map snake_case DB columns to camelCase TypeScript interface
+                    return {
+                        botName: data.bot_name,
+                        language: data.language,
+                        persona: data.persona,
+                        greeting: data.greeting,
+                        politeness: data.politeness,
+                        emojiLevel: data.emoji_level,
+                        responseLength: data.response_length,
+                        trainingExamples: data.training_examples || [],
+                        negotiationEnabled: data.negotiation_enabled ?? true,
+                        negotiationFlexibility: data.negotiation_flexibility ?? 5,
+                        voiceEnabled: data.voice_enabled ?? true,
+                        systemInstructions: data.system_instructions || '',
+                        storeName: data.store_name,
+                        address: data.address,
+                        phone: data.phone,
+                        hours: data.hours,
+                        returnPolicy: data.return_policy,
+                        deliveryAbidjanPrice: data.delivery_abidjan_price ?? 1500,
+                        deliveryInteriorPrice: data.delivery_interior_price ?? 3000,
+                        freeDeliveryThreshold: data.free_delivery_threshold ?? 50000,
+                        acceptedPayments: data.accepted_payments || ['wave', 'cash'],
+                    } as Settings;
+                }
             } catch (e) { }
         }
         return localData.settings; // Fallback for single-tenant local dev
@@ -318,14 +343,66 @@ export const db = {
     updateSettings: async (tenantId: string, settings: Partial<Settings>): Promise<Settings> => {
         if (isSupabaseEnabled && supabase) {
             try {
+                // Map camelCase TypeScript properties to snake_case DB columns
+                const dbSettings: any = { tenant_id: tenantId };
+                if (settings.botName !== undefined) dbSettings.bot_name = settings.botName;
+                if (settings.language !== undefined) dbSettings.language = settings.language;
+                if (settings.persona !== undefined) dbSettings.persona = settings.persona;
+                if (settings.greeting !== undefined) dbSettings.greeting = settings.greeting;
+                if (settings.politeness !== undefined) dbSettings.politeness = settings.politeness;
+                if (settings.emojiLevel !== undefined) dbSettings.emoji_level = settings.emojiLevel;
+                if (settings.responseLength !== undefined) dbSettings.response_length = settings.responseLength;
+                if (settings.trainingExamples !== undefined) dbSettings.training_examples = settings.trainingExamples;
+                if (settings.negotiationEnabled !== undefined) dbSettings.negotiation_enabled = settings.negotiationEnabled;
+                if (settings.negotiationFlexibility !== undefined) dbSettings.negotiation_flexibility = settings.negotiationFlexibility;
+                if (settings.voiceEnabled !== undefined) dbSettings.voice_enabled = settings.voiceEnabled;
+                if (settings.systemInstructions !== undefined) dbSettings.system_instructions = settings.systemInstructions;
+                if (settings.storeName !== undefined) dbSettings.store_name = settings.storeName;
+                if (settings.address !== undefined) dbSettings.address = settings.address;
+                if (settings.phone !== undefined) dbSettings.phone = settings.phone;
+                if (settings.hours !== undefined) dbSettings.hours = settings.hours;
+                if (settings.returnPolicy !== undefined) dbSettings.return_policy = settings.returnPolicy;
+                if (settings.deliveryAbidjanPrice !== undefined) dbSettings.delivery_abidjan_price = settings.deliveryAbidjanPrice;
+                if (settings.deliveryInteriorPrice !== undefined) dbSettings.delivery_interior_price = settings.deliveryInteriorPrice;
+                if (settings.freeDeliveryThreshold !== undefined) dbSettings.free_delivery_threshold = settings.freeDeliveryThreshold;
+                if (settings.acceptedPayments !== undefined) dbSettings.accepted_payments = settings.acceptedPayments;
+                dbSettings.updated_at = new Date();
+
                 const { data, error } = await supabase
                     .from('settings')
-                    .upsert({ tenant_id: tenantId, ...settings })
-                    .eq('tenant_id', tenantId) // This is weird in upsert but ok for now
+                    .upsert(dbSettings, { onConflict: 'tenant_id' })
                     .select()
                     .single();
-                if (!error && data) return data as Settings;
-            } catch (e) { }
+
+                if (!error && data) {
+                    // Map back to camelCase for return
+                    return {
+                        botName: data.bot_name,
+                        language: data.language,
+                        persona: data.persona,
+                        greeting: data.greeting,
+                        politeness: data.politeness,
+                        emojiLevel: data.emoji_level,
+                        responseLength: data.response_length,
+                        trainingExamples: data.training_examples || [],
+                        negotiationEnabled: data.negotiation_enabled ?? true,
+                        negotiationFlexibility: data.negotiation_flexibility ?? 5,
+                        voiceEnabled: data.voice_enabled ?? true,
+                        systemInstructions: data.system_instructions || '',
+                        storeName: data.store_name,
+                        address: data.address,
+                        phone: data.phone,
+                        hours: data.hours,
+                        returnPolicy: data.return_policy,
+                        deliveryAbidjanPrice: data.delivery_abidjan_price ?? 1500,
+                        deliveryInteriorPrice: data.delivery_interior_price ?? 3000,
+                        freeDeliveryThreshold: data.free_delivery_threshold ?? 50000,
+                        acceptedPayments: data.accepted_payments || ['wave', 'cash'],
+                    } as Settings;
+                }
+            } catch (e) {
+                console.error('[DB] Update Settings Error:', e);
+            }
         }
 
         localData.settings = { ...localData.settings, ...settings };
