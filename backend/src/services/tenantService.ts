@@ -66,9 +66,8 @@ export const createTenant = async (data: {
             updatedAt: new Date(inserted.updated_at)
         };
     }
-}
 
-throw new Error('Database connection unavailable (Supabase Disabled).');
+    throw new Error('Database connection unavailable (Supabase Disabled).');
 };
 
 export const getTenantById = async (id: string): Promise<Tenant | null> => {
