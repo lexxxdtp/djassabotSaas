@@ -380,6 +380,7 @@ const ProductDetail: React.FC = () => {
                             </label>
                             <input
                                 type="number"
+                                min="0"
                                 value={
                                     // Si le produit a des variations, calculer le stock total automatiquement
                                     product.variations && product.variations.length > 0
@@ -392,7 +393,8 @@ const ProductDetail: React.FC = () => {
                                 onChange={e => {
                                     // N'autoriser la modification que si PAS de variations
                                     if (!product.variations || product.variations.length === 0) {
-                                        setProduct({ ...product, stock: e.target.value });
+                                        const value = Math.max(0, Number(e.target.value) || 0);
+                                        setProduct({ ...product, stock: value });
                                     }
                                 }}
                                 disabled={product.variations && product.variations.length > 0}
@@ -548,8 +550,9 @@ const ProductDetail: React.FC = () => {
                                                         <div className="col-span-3">
                                                             <input
                                                                 type="number"
+                                                                min="0"
                                                                 value={option.stock ?? ''}
-                                                                onChange={(e) => updateVariationOption(varIndex, optIndex, 'stock', e.target.value ? Number(e.target.value) : undefined)}
+                                                                onChange={(e) => updateVariationOption(varIndex, optIndex, 'stock', e.target.value ? Math.max(0, Number(e.target.value)) : undefined)}
                                                                 placeholder="∞"
                                                                 className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
                                                             />

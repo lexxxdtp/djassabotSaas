@@ -369,8 +369,9 @@ const Products: React.FC = () => {
                                     <input
                                         required
                                         type="number"
+                                        min="0"
                                         value={productForm.stock}
-                                        onChange={e => setProductForm({ ...productForm, stock: e.target.value })}
+                                        onChange={e => setProductForm({ ...productForm, stock: Math.max(0, Number(e.target.value) || 0).toString() })}
                                         className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none placeholder:text-zinc-700 font-mono"
                                         placeholder="10"
                                     />
