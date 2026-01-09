@@ -8,7 +8,7 @@ import { getApiUrl } from '../utils/apiConfig';
 import { useAuth } from '../context/AuthContext';
 
 export default function Settings() {
-    const { token, user, login } = useAuth(); // Need login to update context on save
+    const { token } = useAuth(); // Need login to update context on save
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'profile' | 'identity' | 'business' | 'logistics' | 'whatsapp' | 'simulation'>('identity');
 
@@ -151,7 +151,7 @@ export default function Settings() {
                 });
 
                 if (res.ok) {
-                    const data = await res.json();
+                    const _data = await res.json();
                     alert('Profil mis à jour avec succès !');
                 } else {
                     const err = await res.json();
