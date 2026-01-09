@@ -310,13 +310,40 @@ const ProductDetail: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-400 mb-1">Stock disponible</label>
+                            <label className="block text-sm font-medium text-zinc-400 mb-1">
+                                Stock disponible
+                                {product.variations && product.variations.length > 0 && (
+                                    <span className="ml-2 text-orange-400 text-xs">(Auto-calculé)</span>
+                                )}
+                            </label>
                             <input
                                 type="number"
-                                value={product.stock}
-                                onChange={e => setProduct({ ...product, stock: e.target.value })}
-                                className="w-full bg-black border border-zinc-700 rounded-xl p-3 text-white focus:border-orange-500 outline-none font-mono"
+                                value={
+                                    // Si le produit a des variations, calculer le stock total automatiquement
+                                    product.variations && product.variations.length > 0
+                                        ? product.variations.reduce((total: number, variation: ProductVariation) => {
+                                            const variationStock = variation.options.reduce((sum, opt) => sum + (opt.stock || 0), 0);
+                                            return total + variationStock;
+                                        }, 0)
+                                        : product.stock
+                                }
+                                onChange={e => {
+                                    // N'autoriser la modification que si PAS de variations
+                                    if (!product.variations || product.variations.length === 0) {
+                                        setProduct({ ...product, stock: e.target.value });
+                                    }
+                                }}
+                                disabled={product.variations && product.variations.length > 0}
+                                className={`w-full border rounded-xl p-3 font-mono outline-none ${product.variations && product.variations.length > 0
+                                        ? 'bg-zinc-800 border-zinc-700 text-zinc-400 cursor-not-allowed'
+                                        : 'bg-black border-zinc-700 text-white focus:border-orange-500'
+                                    }`}
                             />
+                            {product.variations && product.variations.length > 0 && (
+                                <p className="text-xs text-zinc-600 mt-1">
+                                    ℹ️ Le stock total est calculé depuis vos variations
+                                </p>
+                            )}
                         </div>
                     </div>
 
