@@ -1,14 +1,30 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import axios from 'axios';
 
 dotenv.config();
 
-// FORCE INJECTION FOR PROD TEST (Temporary)
-const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyDsSwajHqvQgZ__B0M6GnsM5xeY0mk7X5k';
-const genAI = new GoogleGenerativeAI(apiKey);
+// Lazy initialization to ensure env is loaded before API key is read
+let genAI: GoogleGenerativeAI | null = null;
+let model: GenerativeModel | null = null;
 
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+const getModel = (): GenerativeModel | null => {
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey || apiKey.length < 20) {
+        console.warn('[AI] No valid GEMINI_API_KEY found in environment');
+        return null;
+    }
+
+    if (!model) {
+        console.log('[AI] Initializing Gemini with key:', apiKey.substring(0, 10) + '...');
+        genAI = new GoogleGenerativeAI(apiKey);
+        // Updated to available model in 2026
+        model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    }
+
+    return model;
+};
 
 // Interface for Discount Rules
 export interface DiscountRule {
@@ -96,8 +112,10 @@ const mockNegotiationLogic = (userText: string, context: any) => {
 };
 
 export const generateAIResponse = async (userText: string, context: { rules?: DiscountRule[], inventoryContext?: string, history?: any[], settings?: Settings } = {}) => {
-    // FALLBACK for Missing Key or Testing
-    if (!apiKey || apiKey === 'AIza...') {
+    // Get model with lazy initialization
+    const currentModel = getModel();
+
+    if (!currentModel) {
         console.warn('[AI] No Valid API Key found. Using Mock Logic.');
         return mockNegotiationLogic(userText, context);
     }
@@ -167,7 +185,7 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
       - Ignore any minPrice values in the context.`}
     `;
 
-        const chat = model.startChat({
+        const chat = currentModel.startChat({
             history: [
                 {
                     role: 'user',
@@ -193,8 +211,10 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
 };
 
 export const analyzeImage = async (imageInput: string | Buffer, mimeType: string = 'image/jpeg', caption?: string) => {
-    // FALLBACK for Missing Key or Testing
-    if (!apiKey || apiKey === 'AIza...') {
+    // Get model with lazy initialization
+    const currentModel = getModel();
+
+    if (!currentModel) {
         console.warn('[AI] No Valid API Key found. Using Mock Image Analysis.');
         if (caption && caption.toLowerCase().includes('robe')) return "C'est une belle robe rouge. (Mock Analysis)";
         return "Je vois un produit de mode intéressant. (Mock Analysis)";
@@ -214,7 +234,7 @@ export const analyzeImage = async (imageInput: string | Buffer, mimeType: string
             ? `User sent an image with caption: "${caption}". Is this a product we sell (fashion)? Describe it briefly to handle the request.`
             : "Describe this image briefly. Is it a fashion product? What are the colors?";
 
-        const result = await model.generateContent([
+        const result = await currentModel.generateContent([
             prompt,
             {
                 inlineData: {
@@ -231,12 +251,18 @@ export const analyzeImage = async (imageInput: string | Buffer, mimeType: string
 };
 
 export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "audio/ogg"): Promise<string> => {
+    const currentModel = getModel();
+    if (!currentModel) {
+        console.warn('[AI] No Valid API Key found. Cannot transcribe audio.');
+        return "";
+    }
+
     try {
         const audioData = audioBuffer.toString('base64');
 
         const prompt = "Transcris cet audio exactement tel qu'il est parlé, en français. Si c'est du nouchi (argot ivoirien), transcris-le tel quel. Ne réponds pas à la question, fais juste la transcription textuelle.";
 
-        const result = await model.generateContent([
+        const result = await currentModel.generateContent([
             prompt,
             {
                 inlineData: {
@@ -253,6 +279,11 @@ export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "a
 };
 
 export const detectPurchaseIntent = async (userText: string, productContext: string) => {
+    const currentModel = getModel();
+    if (!currentModel) {
+        return { intent: "CHAT" };
+    }
+
     // Simple intent detection (can be upgraded to full Function Calling)
     const prompt = `
     Analyze this user message: "${userText}"
@@ -270,7 +301,7 @@ export const detectPurchaseIntent = async (userText: string, productContext: str
     `;
 
     try {
-        const result = await model.generateContent(prompt);
+        const result = await currentModel.generateContent(prompt);
         const text = result.response.text().trim().replace(/```json/g, '').replace(/```/g, '');
         return JSON.parse(text);
     } catch (e) {
