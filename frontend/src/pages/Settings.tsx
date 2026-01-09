@@ -151,7 +151,7 @@ export default function Settings() {
                 });
 
                 if (res.ok) {
-                    const _data = await res.json();
+                    await res.json();
                     alert('Profil mis à jour avec succès !');
                 } else {
                     const err = await res.json();
