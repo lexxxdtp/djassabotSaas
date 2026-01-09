@@ -51,6 +51,8 @@ create table if not exists products (
   created_at timestamp with time zone default timezone('utc', now())
 );
 
+);
+
 -- 4. Orders Table
 create table if not exists orders (
   id text primary key, -- Custom ID format like ORD-12345
@@ -58,8 +60,18 @@ create table if not exists orders (
   user_id text not null, -- WhatsApp User ID (Phone number)
   items jsonb not null default '[]',
   total numeric not null,
-  status text default 'PENDING' check (status in ('PENDING', 'PAID', 'DELIVERED', 'CANCELLED')),
+  status text default 'PENDING' check (status in ('PENDING', 'CONFIRMED', 'SHIPPING', 'DELIVERED', 'PAID', 'CANCELLED')), -- Expanded statuses
   address text,
+  created_at timestamp with time zone default timezone('utc', now())
+);
+
+-- 5. Activity Logs (The Pulse)
+create table if not exists activity_logs (
+  id uuid default uuid_generate_v4() primary key,
+  tenant_id uuid references tenants(id) on delete cascade not null,
+  type text not null check (type in ('info', 'sale', 'warning', 'action')),
+  message text not null,
+  metadata jsonb default '{}', -- For extra data like 'order_id' or 'product_name'
   created_at timestamp with time zone default timezone('utc', now())
 );
 

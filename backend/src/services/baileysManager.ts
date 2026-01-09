@@ -395,6 +395,9 @@ class WhatsAppManager {
 
                 await addToHistory(tenantId, remoteJid, 'user', text);
                 await addToHistory(tenantId, remoteJid, 'model', `[Variations selected: ${variationsSummary}]`);
+
+                // Log Activity: Checkout Initiated
+                await db.logActivity(tenantId, 'sale', `Nouveau panier : ${tempOrder.quantity}x ${product.name} (${variationsSummary}) - ${total} FCFA`);
                 return;
             }
 
@@ -455,6 +458,8 @@ class WhatsAppManager {
 
                         await addToHistory(tenantId, remoteJid, 'user', text);
                         await addToHistory(tenantId, remoteJid, 'model', `[Variation selection started for ${product.name}]`);
+
+                        await db.logActivity(tenantId, 'action', `Client intéressé par ${product.name} (Choix des options)`);
                         return;
                     }
 
@@ -502,6 +507,9 @@ class WhatsAppManager {
 
                     await addToHistory(tenantId, remoteJid, 'user', text);
                     await addToHistory(tenantId, remoteJid, 'model', `[Checkout initiated for ${product.name}]`);
+
+                    // Log Activity: Checkout Initiated
+                    await db.logActivity(tenantId, 'sale', `Nouveau panier : ${qty}x ${product.name} - ${total} FCFA`);
                     return;
                 }
             }
@@ -526,6 +534,11 @@ class WhatsAppManager {
             // Mise à jour de l'historique
             await addToHistory(tenantId, remoteJid, 'user', text);
             await addToHistory(tenantId, remoteJid, 'model', aiResponse);
+
+            // Log General Interaction if meaningful (avoid overwhelming logs for 'Bonjour')
+            if (aiResponse.length > 20) {
+                // await db.logActivity(tenantId, 'info', `Discussion IA: "${aiResponse.substring(0, 50)}..."`);
+            }
 
         } catch (error) {
             console.error(`[Manager] Erreur traitement message pour Tenant ${tenantId}:`, error);

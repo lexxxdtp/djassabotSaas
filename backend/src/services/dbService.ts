@@ -142,6 +142,35 @@ export const db = {
         return newOrder;
     },
 
+    updateOrderStatus: async (tenantId: string, orderId: string, status: string): Promise<any> => {
+        if (isSupabaseEnabled && supabase) {
+            try {
+                const { data, error } = await supabase
+                    .from('orders')
+                    .update({ status })
+                    .eq('id', orderId)
+                    .eq('tenant_id', tenantId) // Security check
+                    .select()
+                    .single();
+                if (error) throw error;
+
+                // Log the status change
+                await supabase.from('activity_logs').insert([{
+                    tenant_id: tenantId,
+                    type: 'action',
+                    message: `Commande ${orderId.split('-')[1]} passée à ${status}`,
+                    metadata: { orderId, status }
+                }]);
+
+                return data;
+            } catch (e) {
+                console.error('[DB] Update Order Status failed', e);
+                return null;
+            }
+        }
+        return null; // Fallback mock not implemented for complexity
+    },
+
     getProducts: async (tenantId: string): Promise<Product[]> => {
         if (!isSupabaseEnabled || !supabase) {
             throw new Error('Supabase is not enabled');
@@ -452,6 +481,41 @@ export const db = {
         localData.settings = { ...localData.settings, ...settings };
         saveData();
         return localData.settings;
+    },
+
+    // --- ACTIVITY LOGS (THE PULSE) ---
+    logActivity: async (tenantId: string, type: 'info' | 'sale' | 'warning' | 'action', message: string, metadata: any = {}) => {
+        if (isSupabaseEnabled && supabase) {
+            try {
+                await supabase.from('activity_logs').insert([{ tenant_id: tenantId, type, message, metadata }]);
+            } catch (e) { console.error('Log Error', e); }
+        }
+    },
+
+    getRecentActivity: async (tenantId: string, limit: number = 20) => {
+        if (isSupabaseEnabled && supabase) {
+            const { data } = await supabase
+                .from('activity_logs')
+                .select('*')
+                .eq('tenant_id', tenantId)
+                .order('created_at', { ascending: false })
+                .limit(limit);
+            return data || [];
+        }
+        return [];
+    },
+
+    getRecentOrders: async (tenantId: string, limit: number = 5) => {
+        if (isSupabaseEnabled && supabase) {
+            const { data } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('tenant_id', tenantId)
+                .order('created_at', { ascending: false })
+                .limit(limit);
+            return data || [];
+        }
+        return [];
     },
 
     // Tenant Management (Re-exported from centralized tenantService)

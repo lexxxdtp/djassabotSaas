@@ -229,14 +229,70 @@ const Products: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
+
                             <div className="p-5">
                                 <h3 className="text-lg font-bold mb-1 text-white truncate">{product.name}</h3>
                                 <p className="text-orange-500 font-bold mb-4 font-mono text-sm">{Number(product.price).toLocaleString()} FCFA</p>
 
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center" onClick={(e) => e.stopPropagation()}>
                                     <span className={`px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider ${product.stock > 10 ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
                                         {product.stock > 0 ? `${product.stock} EN STOCK` : 'ÉPUISÉ'}
                                     </span>
+
+                                    {/* Quick Stock Actions */}
+                                    <div className="flex items-center bg-black rounded-lg border border-zinc-800">
+                                        <button
+                                            onClick={async () => {
+                                                const newStock = Math.max(0, product.stock - 1);
+                                                // Optimistic update
+                                                setProducts(products.map(p => p.id === product.id ? { ...p, stock: newStock } : p));
+                                                // API Call
+                                                // Note: Ideally we should use a PATCH /inventory endpoint, but PUT /products/:id works if we send full data or partial if backend supports it.
+                                                // Assume current PUT expects full object? Let's check. 
+                                                // Wait, backend's updateProduct usually handles updates. But I need to be careful not to overwrite other fields if race condition.
+                                                // For now, let's fetch current product first then update? No, that's slow.
+                                                // Let's assume sending partial update is handled or we send current state.
+                                                // Since I don't want to re-fetch inside the button click, I'll rely on current 'product' object from map.
+                                                // BUT 'product' object might be missing fields required by backend validation if any?
+                                                // Actually backend updateProduct uses ...req.body, so it's a PATCH effectively for SQL Update?
+                                                // Let's verify dbService.updateProduct... yes it takes Partial<Product>.
+                                                // So I can just send { stock: newStock }.
+                                                const API_URL = getApiUrl();
+                                                const token = localStorage.getItem('token');
+                                                await fetch(`${API_URL}/products/${product.id}`, {
+                                                    method: 'PUT',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'Authorization': `Bearer ${token}`
+                                                    },
+                                                    body: JSON.stringify({ stock: newStock })
+                                                });
+                                            }}
+                                            className="px-2 py-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-l-lg transition-colors"
+                                        >
+                                            -
+                                        </button>
+                                        <span className="text-xs font-mono font-bold w-6 text-center text-white">{product.stock}</span>
+                                        <button
+                                            onClick={async () => {
+                                                const newStock = product.stock + 1;
+                                                setProducts(products.map(p => p.id === product.id ? { ...p, stock: newStock } : p));
+                                                const API_URL = getApiUrl();
+                                                const token = localStorage.getItem('token');
+                                                await fetch(`${API_URL}/products/${product.id}`, {
+                                                    method: 'PUT',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        'Authorization': `Bearer ${token}`
+                                                    },
+                                                    body: JSON.stringify({ stock: newStock })
+                                                });
+                                            }}
+                                            className="px-2 py-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-r-lg transition-colors"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

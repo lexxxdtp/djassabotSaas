@@ -60,6 +60,33 @@ app.get('/api/orders', authenticateTenant, async (req, res) => {
     res.json(orders);
 });
 
+app.put('/api/orders/:id/status', authenticateTenant, async (req, res) => {
+    const { status } = req.body;
+    const updated = await db.updateOrderStatus(req.tenantId!, req.params.id, status);
+    if (updated) res.json(updated);
+    else res.status(400).json({ error: 'Failed to update status' });
+});
+
+// Dashboard: Activity Feed (The Pulse)
+app.get('/api/dashboard/pulse', authenticateTenant, async (req, res) => {
+    try {
+        const logs = await db.getRecentActivity(req.tenantId!, 20);
+        res.json(logs);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch activity logs' });
+    }
+});
+
+// Dashboard: Recent Orders (Widget)
+app.get('/api/dashboard/recent-orders', authenticateTenant, async (req, res) => {
+    try {
+        const orders = await db.getRecentOrders(req.tenantId!, 5);
+        res.json(orders);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch recent orders' });
+    }
+});
+
 // Products (Protected by JWT)
 app.get('/api/products', authenticateTenant, async (req, res) => {
     const products = await db.getProducts(req.tenantId!);
