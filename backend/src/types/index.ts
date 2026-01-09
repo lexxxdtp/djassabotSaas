@@ -1,28 +1,42 @@
 // Core Business Types
 
+// Option within a variation (e.g., "M" in Size, "Red" in Color)
+export interface VariationOption {
+    value: string;          // e.g., "M", "XL", "Rouge", "Nutella"
+    stock?: number;         // Stock for this specific option (optional, uses product.stock if not set)
+    priceModifier?: number; // Price adjustment: +500 for XL, -200 for S, 0 for M (default)
+}
+
 // Variation/Déclinaison type for flexible product options
 export interface ProductVariation {
-    name: string;      // e.g., "Taille", "Couleur", "Saveur"
-    values: string[];  // e.g., ["S", "M", "L", "XL"] or ["Rouge", "Bleu", "Vert"]
+    name: string;               // e.g., "Taille", "Couleur", "Saveur"
+    options: VariationOption[]; // Array of options with individual stock/price
 }
 
 export interface Product {
     id: string;
     tenantId?: string; // Optional for legacy compatibility
     name: string;
-    price: number;
+    price: number;        // Base price
     images: string[];
     description: string;
-    stock: number;
-    minPrice?: number; // Lowest acceptable price for negotiation
+    stock: number;        // Base stock (used if no variation-specific stock)
+    minPrice?: number;    // Lowest acceptable price for negotiation
     variations?: ProductVariation[]; // Optional variations/déclinaisons
+}
+
+// Selected variation for cart/order
+export interface SelectedVariation {
+    name: string;   // "Taille"
+    value: string;  // "XL"
 }
 
 export interface CartItem {
     productId: string;
     quantity: number;
     productName: string;
-    price: number;
+    price: number;  // Final price including variation modifiers
+    selectedVariations?: SelectedVariation[]; // Which variations were selected
 }
 
 export interface Order {

@@ -266,12 +266,43 @@ export const db = {
                     .eq('tenant_id', tenantId)
                     .ilike('name', `%${name}%`)
                     .limit(1);
-                return data && data.length > 0 ? data[0] : undefined;
+                if (data && data.length > 0) {
+                    return {
+                        ...data[0],
+                        minPrice: data[0].min_price,
+                        tenantId: data[0].tenant_id,
+                        variations: data[0].variations || []
+                    };
+                }
+                return undefined;
             } catch (e) { }
         }
         return localData.products.find((p: any) =>
             p.tenantId === tenantId && p.name.toLowerCase().includes(name.toLowerCase())
         );
+    },
+
+    getProductById: async (tenantId: string, id: string): Promise<Product | undefined> => {
+        if (isSupabaseEnabled && supabase) {
+            try {
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('*')
+                    .eq('tenant_id', tenantId)
+                    .eq('id', id)
+                    .single();
+                if (data && !error) {
+                    return {
+                        ...data,
+                        minPrice: data.min_price,
+                        tenantId: data.tenant_id,
+                        variations: data.variations || []
+                    };
+                }
+                return undefined;
+            } catch (e) { }
+        }
+        return localData.products.find((p: any) => p.tenantId === tenantId && p.id === id);
     },
 
     addToCart: async (tenantId: string, userId: string, product: Product, quantity: number = 1) => {

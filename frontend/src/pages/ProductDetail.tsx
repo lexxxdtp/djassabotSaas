@@ -5,10 +5,17 @@ import { ArrowLeft, Save, Trash2, Image as ImageIcon, X, Plus, Tags } from 'luci
 import { supabase } from '../supabaseClient';
 import { getApiUrl } from '../utils/apiConfig';
 
+// Option within a variation (with stock and price modifier)
+interface VariationOption {
+    value: string;          // e.g., "M", "XL", "Rouge"
+    stock?: number;         // Stock for this option
+    priceModifier?: number; // Price adjustment: +500, -200, 0
+}
+
 // Interface for product variations/déclinaisons
 interface ProductVariation {
-    name: string;      // e.g., "Taille", "Couleur", "Saveur"
-    values: string[];  // e.g., ["S", "M", "L", "XL"]
+    name: string;               // e.g., "Taille", "Couleur", "Saveur"
+    options: VariationOption[]; // Array of options with stock/price
 }
 
 const ProductDetail: React.FC = () => {
@@ -153,7 +160,7 @@ const ProductDetail: React.FC = () => {
     const addVariation = () => {
         setProduct({
             ...product,
-            variations: [...(product.variations || []), { name: '', values: [] }]
+            variations: [...(product.variations || []), { name: '', options: [] }]
         });
     };
 
@@ -170,23 +177,33 @@ const ProductDetail: React.FC = () => {
         setProduct({ ...product, variations: newVariations });
     };
 
-    const addVariationValue = (varIndex: number, value: string) => {
+    const addVariationOption = (varIndex: number, value: string) => {
         if (!value.trim()) return;
         const newVariations = [...product.variations];
-        if (!newVariations[varIndex].values.includes(value.trim())) {
+        const existingValues = newVariations[varIndex].options.map((o: VariationOption) => o.value);
+        if (!existingValues.includes(value.trim())) {
             newVariations[varIndex] = {
                 ...newVariations[varIndex],
-                values: [...newVariations[varIndex].values, value.trim()]
+                options: [...newVariations[varIndex].options, { value: value.trim(), stock: undefined, priceModifier: 0 }]
             };
             setProduct({ ...product, variations: newVariations });
         }
     };
 
-    const removeVariationValue = (varIndex: number, valueIndex: number) => {
+    const removeVariationOption = (varIndex: number, optionIndex: number) => {
         const newVariations = [...product.variations];
         newVariations[varIndex] = {
             ...newVariations[varIndex],
-            values: newVariations[varIndex].values.filter((_: string, i: number) => i !== valueIndex)
+            options: newVariations[varIndex].options.filter((_: VariationOption, i: number) => i !== optionIndex)
+        };
+        setProduct({ ...product, variations: newVariations });
+    };
+
+    const updateVariationOption = (varIndex: number, optionIndex: number, field: 'stock' | 'priceModifier', value: number | undefined) => {
+        const newVariations = [...product.variations];
+        newVariations[varIndex].options[optionIndex] = {
+            ...newVariations[varIndex].options[optionIndex],
+            [field]: value
         };
         setProduct({ ...product, variations: newVariations });
     };
@@ -354,35 +371,62 @@ const ProductDetail: React.FC = () => {
                                             </button>
                                         </div>
 
-                                        {/* Values/Options */}
-                                        <div className="flex flex-wrap gap-2 mb-3">
-                                            {variation.values.map((value: string, valueIndex: number) => (
-                                                <span
-                                                    key={valueIndex}
-                                                    className="inline-flex items-center gap-1 px-3 py-1 bg-zinc-800 text-zinc-300 rounded-full text-sm group"
-                                                >
-                                                    {value}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeVariationValue(varIndex, valueIndex)}
-                                                        className="text-zinc-500 hover:text-red-500 transition-colors"
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </span>
-                                            ))}
-                                        </div>
+                                        {/* Options with stock and price */}
+                                        {variation.options && variation.options.length > 0 && (
+                                            <div className="space-y-2 mb-3">
+                                                <div className="grid grid-cols-12 gap-2 text-xs text-zinc-500 px-2">
+                                                    <div className="col-span-4">Valeur</div>
+                                                    <div className="col-span-3">Stock</div>
+                                                    <div className="col-span-4">Prix (+/-)</div>
+                                                    <div className="col-span-1"></div>
+                                                </div>
+                                                {variation.options.map((option: VariationOption, optIndex: number) => (
+                                                    <div key={optIndex} className="grid grid-cols-12 gap-2 items-center bg-zinc-900/50 rounded-lg p-2">
+                                                        <div className="col-span-4">
+                                                            <span className="text-white text-sm font-medium">{option.value}</span>
+                                                        </div>
+                                                        <div className="col-span-3">
+                                                            <input
+                                                                type="number"
+                                                                value={option.stock ?? ''}
+                                                                onChange={(e) => updateVariationOption(varIndex, optIndex, 'stock', e.target.value ? Number(e.target.value) : undefined)}
+                                                                placeholder="∞"
+                                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
+                                                            />
+                                                        </div>
+                                                        <div className="col-span-4 flex items-center">
+                                                            <span className="text-zinc-500 text-xs mr-1">FCFA</span>
+                                                            <input
+                                                                type="number"
+                                                                value={option.priceModifier ?? 0}
+                                                                onChange={(e) => updateVariationOption(varIndex, optIndex, 'priceModifier', Number(e.target.value))}
+                                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
+                                                            />
+                                                        </div>
+                                                        <div className="col-span-1 flex justify-end">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeVariationOption(varIndex, optIndex)}
+                                                                className="text-zinc-500 hover:text-red-500 transition-colors p-1"
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
 
-                                        {/* Add new value input */}
+                                        {/* Add new option input */}
                                         <div className="flex gap-2">
                                             <input
                                                 type="text"
-                                                placeholder="Ajouter une valeur (ex: XL, Rouge, Nutella)"
+                                                placeholder="Ajouter une option (ex: XL, Rouge, Nutella)"
                                                 className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-orange-500 outline-none text-sm"
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') {
                                                         e.preventDefault();
-                                                        addVariationValue(varIndex, (e.target as HTMLInputElement).value);
+                                                        addVariationOption(varIndex, (e.target as HTMLInputElement).value);
                                                         (e.target as HTMLInputElement).value = '';
                                                     }
                                                 }}
@@ -390,9 +434,11 @@ const ProductDetail: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
-                                                    const input = (e.target as HTMLElement).previousElementSibling as HTMLInputElement;
-                                                    addVariationValue(varIndex, input.value);
-                                                    input.value = '';
+                                                    const input = (e.target as HTMLElement).closest('div')?.querySelector('input') as HTMLInputElement;
+                                                    if (input) {
+                                                        addVariationOption(varIndex, input.value);
+                                                        input.value = '';
+                                                    }
                                                 }}
                                                 className="px-3 py-2 bg-zinc-800 text-zinc-400 rounded-lg hover:bg-zinc-700 hover:text-white transition-colors text-sm"
                                             >

@@ -5,7 +5,7 @@ export interface Session {
     userId: string;
     tenantId: string;
     history: { role: 'user' | 'model'; parts: { text: string }[] }[];
-    state: 'IDLE' | 'WAITING_FOR_ADDRESS' | 'WAITING_FOR_NAME';
+    state: 'IDLE' | 'WAITING_FOR_ADDRESS' | 'WAITING_FOR_NAME' | 'WAITING_FOR_VARIATION';
     tempOrder?: any;
     lastInteraction: Date;
     reminderSent?: boolean;

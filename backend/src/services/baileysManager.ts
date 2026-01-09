@@ -14,6 +14,7 @@ import path from 'path';
 import pino from 'pino';
 import { db } from './dbService';
 import { generateAIResponse, detectPurchaseIntent, analyzeImage } from './aiService';
+import { VariationOption } from '../types';
 
 // Logger clean
 const logger = pino({ level: 'error' });
@@ -267,6 +268,136 @@ class WhatsAppManager {
                 return;
             }
 
+            // CAS A.5 : En attente de sélection de variation
+            if (session.state === 'WAITING_FOR_VARIATION') {
+                const tempOrder = session.tempOrder;
+                if (!tempOrder || !tempOrder.productId) {
+                    await sock.sendMessage(remoteJid, { text: "Oups, j'ai perdu votre sélection. Pouvez-vous recommencer ?" });
+                    await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined });
+                    return;
+                }
+
+                // Find the product
+                const product = await db.getProductById(tenantId, tempOrder.productId);
+                if (!product || !product.variations) {
+                    await sock.sendMessage(remoteJid, { text: "Produit non trouvé. Pouvez-vous recommencer ?" });
+                    await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined });
+                    return;
+                }
+
+                const currentVariation = product.variations[tempOrder.variationIndex];
+
+                // Parse user response - could be number or text
+                let selectedOption = null;
+                const userInput = text.trim().toLowerCase();
+
+                // Try to match by number first
+                const numChoice = parseInt(userInput);
+                if (!isNaN(numChoice) && numChoice >= 1 && numChoice <= currentVariation.options.length) {
+                    selectedOption = currentVariation.options[numChoice - 1];
+                } else {
+                    // Try to match by name
+                    selectedOption = currentVariation.options.find(
+                        opt => opt.value.toLowerCase() === userInput ||
+                            opt.value.toLowerCase().includes(userInput)
+                    );
+                }
+
+                if (!selectedOption) {
+                    // Invalid selection
+                    const optionsList = currentVariation.options
+                        .map((opt, i) => `${i + 1}. ${opt.value}`)
+                        .join('\n');
+                    await sock.sendMessage(remoteJid, {
+                        text: `Je n'ai pas compris votre choix. 🤔\n\nVeuillez choisir une ${currentVariation.name.toLowerCase()} :\n\n${optionsList}\n\n👉 Répondez avec le numéro ou le nom.`
+                    });
+                    return;
+                }
+
+                // Check stock for this option
+                if (selectedOption.stock !== undefined && selectedOption.stock < tempOrder.quantity) {
+                    if (selectedOption.stock <= 0) {
+                        await sock.sendMessage(remoteJid, {
+                            text: `Désolé, ${selectedOption.value} est actuellement épuisé. 😔\n\nVeuillez choisir une autre option.`
+                        });
+                        return;
+                    } else {
+                        await sock.sendMessage(remoteJid, {
+                            text: `Désolé, il ne reste que ${selectedOption.stock} en ${selectedOption.value}. 📦\n\nVoulez-vous commander ${selectedOption.stock} au lieu de ${tempOrder.quantity} ?`
+                        });
+                        return;
+                    }
+                }
+
+                // Add selection to tempOrder
+                const newSelectedVariations = [
+                    ...(tempOrder.selectedVariations || []),
+                    { name: currentVariation.name, value: selectedOption.value }
+                ];
+                const priceAdjustment = selectedOption.priceModifier || 0;
+                const nextVariationIndex = tempOrder.variationIndex + 1;
+
+                // Check if there are more variations to ask
+                if (nextVariationIndex < product.variations.length) {
+                    // Ask for next variation
+                    const nextVariation = product.variations[nextVariationIndex];
+                    const optionsList = nextVariation.options
+                        .map((opt, i) => {
+                            let optText = `${i + 1}. ${opt.value}`;
+                            if (opt.priceModifier && opt.priceModifier !== 0) {
+                                optText += ` (${opt.priceModifier > 0 ? '+' : ''}${opt.priceModifier} FCFA)`;
+                            }
+                            return optText;
+                        })
+                        .join('\n');
+
+                    await updateSession(tenantId, remoteJid, {
+                        tempOrder: {
+                            ...tempOrder,
+                            variationIndex: nextVariationIndex,
+                            selectedVariations: newSelectedVariations,
+                            priceAdjustment: (tempOrder.priceAdjustment || 0) + priceAdjustment
+                        }
+                    });
+
+                    await sock.sendMessage(remoteJid, {
+                        text: `Parfait, ${selectedOption.value} ! ✅\n\nQuelle ${nextVariation.name.toLowerCase()} souhaitez-vous ?\n\n${optionsList}`
+                    });
+                    return;
+                }
+
+                // All variations selected - proceed to checkout
+                const finalPrice = tempOrder.basePrice + (tempOrder.priceAdjustment || 0) + priceAdjustment;
+                const total = finalPrice * tempOrder.quantity;
+                const variationsSummary = newSelectedVariations.map(v => `${v.name}: ${v.value}`).join(', ');
+
+                // Create cart item with variations
+                const cartItem = {
+                    productId: product.id,
+                    productName: product.name,
+                    quantity: tempOrder.quantity,
+                    price: finalPrice,
+                    selectedVariations: newSelectedVariations
+                };
+
+                await updateSession(tenantId, remoteJid, {
+                    state: 'WAITING_FOR_ADDRESS',
+                    tempOrder: {
+                        items: [cartItem],
+                        total: total,
+                        summary: `${tempOrder.quantity}x ${product.name} (${variationsSummary})`
+                    }
+                });
+
+                await sock.sendMessage(remoteJid, {
+                    text: `Excellent choix ! 🎉\n\n📦 ${tempOrder.quantity}x ${product.name}\n📝 ${variationsSummary}\n💰 Total: ${total} FCFA\n\nÀ quelle adresse (quartier, ville) doit-on livrer ?`
+                });
+
+                await addToHistory(tenantId, remoteJid, 'user', text);
+                await addToHistory(tenantId, remoteJid, 'model', `[Variations selected: ${variationsSummary}]`);
+                return;
+            }
+
             // CAS B : Flux Normal (IDLE)
 
             // 3. Récupérer le contexte du Tenant pour l'IA
@@ -282,10 +413,53 @@ class WhatsAppManager {
                 const product = await db.getProductByName(tenantId, intentData.productName);
 
                 if (product) {
-                    // Vérifier le stock disponible
                     let qty = intentData.quantity || 1;
 
-                    // Si le stock est insuffisant
+                    // === Check if product has variations ===
+                    if (product.variations && product.variations.length > 0) {
+                        // Product has variations - need to ask customer to choose
+                        const firstVariation = product.variations[0];
+                        const optionsList = firstVariation.options
+                            .map((opt, i) => {
+                                let optText = `${i + 1}. ${opt.value}`;
+                                if (opt.priceModifier && opt.priceModifier !== 0) {
+                                    optText += ` (${opt.priceModifier > 0 ? '+' : ''}${opt.priceModifier} FCFA)`;
+                                }
+                                if (opt.stock !== undefined) {
+                                    optText += opt.stock > 0 ? ` [${opt.stock} en stock]` : ' [Épuisé]';
+                                }
+                                return optText;
+                            })
+                            .join('\n');
+
+                        // Save pending variation selection in session
+                        await updateSession(tenantId, remoteJid, {
+                            state: 'WAITING_FOR_VARIATION',
+                            tempOrder: {
+                                productId: product.id,
+                                productName: product.name,
+                                basePrice: product.price,
+                                quantity: qty,
+                                variationIndex: 0, // Currently asking for first variation
+                                selectedVariations: [],
+                                items: [],
+                                total: 0,
+                                summary: ''
+                            }
+                        });
+
+                        await sock.sendMessage(remoteJid, {
+                            image: product.images && product.images.length > 0 ? { url: product.images[0] } : undefined,
+                            text: `Super choix ! 🎉 ${product.name} à ${product.price} FCFA.\n\nQuelle ${firstVariation.name.toLowerCase()} souhaitez-vous ?\n\n${optionsList}\n\n👉 Répondez avec le numéro ou le nom de votre choix.`
+                        } as any);
+
+                        await addToHistory(tenantId, remoteJid, 'user', text);
+                        await addToHistory(tenantId, remoteJid, 'model', `[Variation selection started for ${product.name}]`);
+                        return;
+                    }
+
+                    // === Product without variations - normal flow ===
+                    // Vérifier le stock disponible
                     if (product.stock !== undefined && product.stock < qty) {
                         if (product.stock <= 0) {
                             // Produit épuisé
@@ -324,7 +498,7 @@ class WhatsAppManager {
                     await sock.sendMessage(remoteJid, {
                         image: product.images && product.images.length > 0 ? { url: product.images[0] } : undefined,
                         text: `C'est noté ! J'ai mis ${qty}x ${product.name} de côté pour vous.\n\nLe total est de ${total} FCFA. 🛒\n\nÀ quelle adresse (quartier, ville) doit-on livrer ?`
-                    } as any); // Type assertion needed for mixed content support in simple send
+                    } as any);
 
                     await addToHistory(tenantId, remoteJid, 'user', text);
                     await addToHistory(tenantId, remoteJid, 'model', `[Checkout initiated for ${product.name}]`);
