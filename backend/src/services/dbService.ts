@@ -527,6 +527,76 @@ export const db = {
         return [];
     },
 
+    // Variation Templates
+    getVariationTemplates: async (tenantId: string) => {
+        if (isSupabaseEnabled && supabase) {
+            try {
+                const { data, error } = await supabase
+                    .from('variation_templates')
+                    .select('*')
+                    .eq('tenant_id', tenantId)
+                    .order('usage_count', { ascending: false })
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                return data || [];
+            } catch (e) {
+                console.error('[DB] Get Variation Templates Error:', e);
+                return [];
+            }
+        }
+        return [];
+    },
+
+    saveVariationTemplate: async (tenantId: string, name: string, defaultOptions: any[]) => {
+        if (isSupabaseEnabled && supabase) {
+            try {
+                // Check if template already exists for this tenant
+                const { data: existing } = await supabase
+                    .from('variation_templates')
+                    .select('*')
+                    .eq('tenant_id', tenantId)
+                    .eq('name', name)
+                    .single();
+
+                if (existing) {
+                    // Update existing template
+                    const { data, error } = await supabase
+                        .from('variation_templates')
+                        .update({
+                            default_options: defaultOptions,
+                            usage_count: (existing.usage_count || 0) + 1
+                        })
+                        .eq('id', existing.id)
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    return data;
+                } else {
+                    // Create new template
+                    const { data, error } = await supabase
+                        .from('variation_templates')
+                        .insert({
+                            tenant_id: tenantId,
+                            name,
+                            default_options: defaultOptions,
+                            usage_count: 1
+                        })
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    return data;
+                }
+            } catch (e) {
+                console.error('[DB] Save Variation Template Error:', e);
+                throw e;
+            }
+        }
+        throw new Error('Supabase not enabled');
+    },
+
     // Tenant Management (Re-exported from centralized tenantService)
     createTenant: tenantService.createTenant,
     getTenantById: tenantService.getTenantById,

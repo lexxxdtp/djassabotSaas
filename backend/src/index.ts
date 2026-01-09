@@ -6,6 +6,7 @@ import whatsappRoutes from './routes/whatsappRoutes';
 import { startAllTenantInstances } from './services/baileysManager';
 import authRoutes from './routes/authRoutes';
 import aiRoutes from './routes/aiRoutes';
+import variationTemplateRoutes from './routes/variationTemplateRoutes';
 import './jobs/abandonedCart'; // Start Cron Jobs
 import { db } from './services/dbService';
 import { authenticateTenant } from './middleware/auth';
@@ -34,6 +35,7 @@ app.use('/api/auth', authRoutes);
 // Protected Routes
 app.use('/api/whatsapp', whatsappRoutes); // Auth handled inside router
 app.use('/api/ai', aiRoutes); // New AI Simulation Routes
+app.use('/api', variationTemplateRoutes); // Variation Templates
 
 // Webhooks (Public but should be AFTER specific routes)
 app.use('/api/webhooks', webhookRoutes);

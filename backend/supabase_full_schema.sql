@@ -75,7 +75,18 @@ create table if not exists activity_logs (
   created_at timestamp with time zone default timezone('utc', now())
 );
 
--- 5. Settings Table
+-- 6. Variation Templates (Réutilisables pour l'UX)
+create table if not exists variation_templates (
+  id uuid default uuid_generate_v4() primary key,
+  tenant_id uuid references tenants(id) on delete cascade not null,
+  name text not null, -- e.g., "Taille", "Couleur Custom Vendeur"
+  default_options jsonb default '[]', -- Format: [{ "value": "M", "stock": 0, "priceModifier": 0 }]
+  usage_count integer default 0, -- Pour trier par popularité
+  created_at timestamp with time zone default timezone('utc', now()),
+  unique(tenant_id, name) -- Éviter les doublons par tenant
+);
+
+-- 7. Settings Table
 create table if not exists settings (
   id uuid default uuid_generate_v4() primary key,
   tenant_id uuid references tenants(id) on delete cascade not null unique,
@@ -114,7 +125,7 @@ create table if not exists settings (
   updated_at timestamp with time zone default timezone('utc', now())
 );
 
--- 6. Subscriptions Table
+-- 8. Subscriptions Table
 create table if not exists subscriptions (
   id uuid default uuid_generate_v4() primary key,
   tenant_id uuid references tenants(id) on delete cascade not null,
@@ -128,25 +139,29 @@ create table if not exists subscriptions (
   created_at timestamp with time zone default timezone('utc', now())
 );
 
--- 7. Enable RLS (Row Level Security) - Optional but recommended
+-- 9. Enable RLS (Row Level Security) - Optional but recommended
 -- For MVP speed, we'll keep it simple but you SHOULD enable policies later
 alter table tenants enable row level security;
 alter table users enable row level security;
 alter table products enable row level security;
 alter table orders enable row level security;
+alter table activity_logs enable row level security;
+alter table variation_templates enable row level security;
 alter table settings enable row level security;
 alter table subscriptions enable row level security;
 
--- 8. OPEN ACCESS POLICIES (FOR MVP ONLY - REMOVE IN PROD V2)
+-- 10. OPEN ACCESS POLICIES (FOR MVP ONLY - REMOVE IN PROD V2)
 -- Allow anyone with the API Key/Service Role to do anything
 create policy "Allow All Tenants" on tenants for all using (true) with check (true);
 create policy "Allow All Users" on users for all using (true) with check (true);
 create policy "Allow All Products" on products for all using (true) with check (true);
 create policy "Allow All Orders" on orders for all using (true) with check (true);
+create policy "Allow All Activity Logs" on activity_logs for all using (true) with check (true);
+create policy "Allow All Variation Templates" on variation_templates for all using (true) with check (true);
 create policy "Allow All Settings" on settings for all using (true) with check (true);
 create policy "Allow All Subs" on subscriptions for all using (true) with check (true);
 
--- 7. Customers Table (CRM for Tenants)
+-- 11. Customers Table (CRM for Tenants)
 create table if not exists customers (
   id uuid default uuid_generate_v4() primary key,
   tenant_id uuid references tenants(id) on delete cascade not null,
@@ -159,7 +174,7 @@ create table if not exists customers (
   unique(tenant_id, phone)
 );
 
--- 8. Sessions Table (WhatsApp Context & State Persistence)
+-- 12. Sessions Table (WhatsApp Context & State Persistence)
 create table if not exists sessions (
   id text primary key, -- Format: "tenant_id:user_phone"
   tenant_id uuid references tenants(id) on delete cascade not null,
