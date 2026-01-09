@@ -49,8 +49,9 @@ app.post('/api/settings', authenticateTenant, async (req, res) => {
     try {
         const settings = await db.updateSettings(req.tenantId!, req.body);
         res.json(settings);
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to update settings' });
+    } catch (e: any) {
+        console.error('[API] Settings Error:', e);
+        res.status(500).json({ error: e.message || 'Failed to update settings' });
     }
 });
 
@@ -70,8 +71,9 @@ app.post('/api/products', authenticateTenant, async (req, res) => {
     try {
         const product = await db.createProduct(req.tenantId!, req.body);
         res.json(product);
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to create product' });
+    } catch (e: any) {
+        console.error('[API] Create Product Error:', e);
+        res.status(500).json({ error: e.message || 'Failed to create product' });
     }
 });
 
@@ -80,8 +82,9 @@ app.put('/api/products/:id', authenticateTenant, async (req, res) => {
         const product = await db.updateProduct(req.tenantId!, req.params.id, req.body);
         if (product) res.json(product);
         else res.status(404).json({ error: 'Product not found' });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed' });
+    } catch (e: any) {
+        console.error('[API] Update Product Error:', e);
+        res.status(500).json({ error: e.message || 'Failed' });
     }
 });
 
@@ -89,8 +92,9 @@ app.delete('/api/products/:id', authenticateTenant, async (req, res) => {
     try {
         const success = await db.deleteProduct(req.tenantId!, req.params.id);
         res.json({ success });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed' });
+    } catch (e: any) {
+        console.error('[API] Delete Product Error:', e);
+        res.status(500).json({ error: e.message || 'Failed' });
     }
 });
 
