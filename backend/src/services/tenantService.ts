@@ -31,47 +31,44 @@ export const createTenant = async (data: {
         updatedAt: new Date()
     };
 
-    try {
-        if (isSupabaseEnabled && supabase) {
-            console.log('[createTenant] Attempting Supabase insert...');
-            const dbTenant = {
-                id: tenant.id,
-                name: tenant.name,
-                business_type: tenant.businessType,
-                status: tenant.status,
-                subscription_tier: tenant.subscriptionTier,
-                whatsapp_connected: tenant.whatsappConnected,
-                whatsapp_status: tenant.whatsappStatus,
-                created_at: tenant.createdAt,
-                updated_at: tenant.updatedAt
-            };
+    if (isSupabaseEnabled && supabase) {
+        console.log('[createTenant] Attempting Supabase insert...');
+        const dbTenant = {
+            id: tenant.id,
+            name: tenant.name,
+            business_type: tenant.businessType,
+            status: tenant.status,
+            subscription_tier: tenant.subscriptionTier,
+            whatsapp_connected: tenant.whatsappConnected,
+            whatsapp_status: tenant.whatsappStatus,
+            created_at: tenant.createdAt,
+            updated_at: tenant.updatedAt
+        };
 
-            const { data: inserted, error } = await supabase
-                .from('tenants')
-                .insert(dbTenant)
-                .select()
-                .single();
+        const { data: inserted, error } = await supabase
+            .from('tenants')
+            .insert(dbTenant)
+            .select()
+            .single();
 
-            if (error) throw error;
-            // Map back to camelCase not strictly needed as we return the original constructed object usually, 
-            // but if we want the DB truth:
-            return {
-                ...inserted,
-                businessType: inserted.business_type,
-                subscriptionTier: inserted.subscription_tier,
-                whatsappConnected: inserted.whatsapp_connected,
-                whatsappStatus: inserted.whatsapp_status,
-                createdAt: new Date(inserted.created_at),
-                updatedAt: new Date(inserted.updated_at)
-            };
+        if (error) {
+            console.error('[createTenant] Supabase Error:', error);
+            throw new Error(`Database Error (Tenants): ${error.message}`);
         }
-    } catch (e: any) {
-        console.warn('[Fallback] Supabase tenant creation failed:', e.message);
-    }
 
-    console.log('[createTenant] Saving to Local Store');
-    localStore.tenants.push(tenant);
-    return tenant;
+        return {
+            ...inserted,
+            businessType: inserted.business_type,
+            subscriptionTier: inserted.subscription_tier,
+            whatsappConnected: inserted.whatsapp_connected,
+            whatsappStatus: inserted.whatsapp_status,
+            createdAt: new Date(inserted.created_at),
+            updatedAt: new Date(inserted.updated_at)
+        };
+    }
+}
+
+throw new Error('Database connection unavailable (Supabase Disabled).');
 };
 
 export const getTenantById = async (id: string): Promise<Tenant | null> => {
@@ -191,46 +188,44 @@ export const createUser = async (data: {
         createdAt: new Date()
     };
 
-    try {
-        if (isSupabaseEnabled && supabase) {
-            console.log('[createUser] Attempting Supabase insert...');
-            const dbUser = {
-                id: user.id,
-                tenant_id: user.tenantId,
-                email: user.email,
-                phone: user.phone,
-                full_name: user.full_name,
-                birth_date: user.birth_date,
-                password_hash: user.passwordHash,
-                role: user.role,
-                email_verified: user.emailVerified,
-                phone_verified: user.phoneVerified,
-                created_at: user.createdAt
-            };
+    if (isSupabaseEnabled && supabase) {
+        console.log('[createUser] Attempting Supabase insert...');
+        const dbUser = {
+            id: user.id,
+            tenant_id: user.tenantId,
+            email: user.email,
+            phone: user.phone,
+            full_name: user.full_name,
+            birth_date: user.birth_date,
+            password_hash: user.passwordHash,
+            role: user.role,
+            email_verified: user.emailVerified,
+            phone_verified: user.phoneVerified,
+            created_at: user.createdAt
+        };
 
-            const { data: inserted, error } = await supabase
-                .from('users')
-                .insert(dbUser)
-                .select()
-                .single();
+        const { data: inserted, error } = await supabase
+            .from('users')
+            .insert(dbUser)
+            .select()
+            .single();
 
-            if (error) throw error;
-            return {
-                ...inserted,
-                tenantId: inserted.tenant_id,
-                emailVerified: inserted.email_verified,
-                phoneVerified: inserted.phone_verified,
-                createdAt: new Date(inserted.created_at),
-                passwordHash: inserted.password_hash
-            };
+        if (error) {
+            console.error('[createUser] Supabase Error:', error);
+            throw new Error(`Database Error (Users): ${error.message}`);
         }
-    } catch (e: any) {
-        console.warn('[Fallback] Supabase user creation failed:', e.message);
+
+        return {
+            ...inserted,
+            tenantId: inserted.tenant_id,
+            emailVerified: inserted.email_verified,
+            phoneVerified: inserted.phone_verified,
+            createdAt: new Date(inserted.created_at),
+            passwordHash: inserted.password_hash
+        };
     }
 
-    console.log('[createUser] Saving to Local Store');
-    localStore.users.push(user);
-    return user;
+    throw new Error('Database connection unavailable (Supabase Disabled).');
 };
 
 export const getUserByEmail = async (email: string): Promise<User | null> => {
@@ -389,41 +384,40 @@ export const createSubscription = async (data: {
         autoRenew: true
     };
 
-    try {
-        if (isSupabaseEnabled && supabase) {
-            const dbSub = {
-                id: subscription.id,
-                tenant_id: subscription.tenantId,
-                plan: subscription.plan,
-                status: subscription.status,
-                started_at: subscription.startedAt,
-                expires_at: subscription.expiresAt,
-                auto_renew: subscription.autoRenew
-            };
+    if (isSupabaseEnabled && supabase) {
+        const dbSub = {
+            id: subscription.id,
+            tenant_id: subscription.tenantId,
+            plan: subscription.plan,
+            status: subscription.status,
+            started_at: subscription.startedAt,
+            expires_at: subscription.expiresAt,
+            auto_renew: subscription.autoRenew
+        };
 
-            const { data: inserted, error } = await supabase
-                .from('subscriptions')
-                .insert(dbSub)
-                .select()
-                .single();
+        const { data: inserted, error } = await supabase
+            .from('subscriptions')
+            .insert(dbSub)
+            .select()
+            .single();
 
-            if (error) throw error;
-            return {
-                id: inserted.id,
-                tenantId: inserted.tenant_id,
-                plan: inserted.plan,
-                status: inserted.status,
-                startedAt: new Date(inserted.started_at),
-                expiresAt: new Date(inserted.expires_at),
-                autoRenew: inserted.auto_renew
-            };
+        if (error) {
+            console.error('[createSubscription] Supabase Error:', error);
+            throw new Error(`Database Error (Sub): ${error.message}`);
         }
-    } catch (e) {
-        console.warn('[Fallback] Supabase sub creation failed');
+
+        return {
+            id: inserted.id,
+            tenantId: inserted.tenant_id,
+            plan: inserted.plan,
+            status: inserted.status,
+            startedAt: new Date(inserted.started_at),
+            expiresAt: new Date(inserted.expires_at),
+            autoRenew: inserted.auto_renew
+        };
     }
 
-    localStore.subscriptions.push(subscription);
-    return subscription;
+    throw new Error('Database connection unavailable (Supabase Disabled).');
 };
 
 export const getSubscriptionByTenantId = async (tenantId: string): Promise<Subscription | null> => {
@@ -462,17 +456,17 @@ export const createDefaultSettings = async (tenantId: string, businessName: stri
         updated_at: new Date()
     };
 
-    try {
-        if (isSupabaseEnabled && supabase) {
-            await supabase
-                .from('settings')
-                .insert(settings);
-            return;
+    if (isSupabaseEnabled && supabase) {
+        const { error } = await supabase
+            .from('settings')
+            .insert(settings);
+
+        if (error) {
+            console.error('[createDefaultSettings] DB Error:', error);
+            throw new Error(`Database Error (Settings): ${error.message}`);
         }
-    } catch (e) {
-        console.warn('[Fallback] Supabase settings creation failed');
+        return;
     }
 
-    // Also save settings to localStore if needed
-    localStore.settings.push(settings);
+    throw new Error('Database connection unavailable (Supabase Disabled).');
 };

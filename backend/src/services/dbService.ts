@@ -189,15 +189,13 @@ export const db = {
                     minPrice: data.min_price,
                     tenantId: data.tenant_id
                 } as Product;
-            } catch (e) {
-                console.warn('[DB] Supabase createProduct failed, fallback to local');
+            } catch (e: any) {
+                console.error('[DB] Create Product Failed:', e);
+                throw new Error(`Database Error: ${e.message}`);
             }
         }
 
-        const newProduct = { ...product, id: Math.random().toString(36).substr(2, 9), tenantId };
-        localData.products.push(newProduct);
-        saveData();
-        return newProduct;
+        throw new Error('Database unavailable');
     },
 
     updateProduct: async (tenantId: string, id: string, updates: Partial<Product>): Promise<Product | null> => {
@@ -225,15 +223,13 @@ export const db = {
                     minPrice: data.min_price,
                     tenantId: data.tenant_id
                 } as Product;
-            } catch (e) { }
+            } catch (e: any) {
+                console.error('[DB] Update Product Failed:', e);
+                throw new Error(`Database Error: ${e.message}`);
+            }
         }
 
-        const product = localData.products.find((p: any) => p.id === id && p.tenantId === tenantId);
-        if (!product) return null;
-
-        Object.assign(product, updates);
-        saveData();
-        return product;
+        throw new Error('Database unavailable');
     },
 
     deleteProduct: async (tenantId: string, id: string): Promise<boolean> => {
