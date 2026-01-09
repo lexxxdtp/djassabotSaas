@@ -171,7 +171,8 @@ export const db = {
             description: product.description,
             images: product.images,
             min_price: product.minPrice,
-            variations: product.variations || [] // Add variations support
+            variations: product.variations || [],
+            ai_instructions: product.aiInstructions || null
         };
 
         if (isSupabaseEnabled && supabase) {
@@ -190,7 +191,8 @@ export const db = {
                     ...data,
                     minPrice: data.min_price,
                     tenantId: data.tenant_id,
-                    variations: data.variations || []
+                    variations: data.variations || [],
+                    aiInstructions: data.ai_instructions
                 } as Product;
             } catch (e: any) {
                 console.error('[DB] Create Product Failed:', e);
@@ -207,6 +209,10 @@ export const db = {
         if (updates.minPrice !== undefined) {
             dbUpdates.min_price = updates.minPrice;
             delete dbUpdates.minPrice;
+        }
+        if (updates.aiInstructions !== undefined) {
+            dbUpdates.ai_instructions = updates.aiInstructions;
+            delete dbUpdates.aiInstructions;
         }
         // variations is already in correct format (JSON), no mapping needed
 
@@ -226,7 +232,8 @@ export const db = {
                     ...data,
                     minPrice: data.min_price,
                     tenantId: data.tenant_id,
-                    variations: data.variations || []
+                    variations: data.variations || [],
+                    aiInstructions: data.ai_instructions
                 } as Product;
             } catch (e: any) {
                 console.error('[DB] Update Product Failed:', e);
@@ -271,7 +278,8 @@ export const db = {
                         ...data[0],
                         minPrice: data[0].min_price,
                         tenantId: data[0].tenant_id,
-                        variations: data[0].variations || []
+                        variations: data[0].variations || [],
+                        aiInstructions: data[0].ai_instructions
                     };
                 }
                 return undefined;
@@ -296,7 +304,8 @@ export const db = {
                         ...data,
                         minPrice: data.min_price,
                         tenantId: data.tenant_id,
-                        variations: data.variations || []
+                        variations: data.variations || [],
+                        aiInstructions: data.ai_instructions
                     };
                 }
                 return undefined;

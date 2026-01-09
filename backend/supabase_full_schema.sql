@@ -43,8 +43,11 @@ create table if not exists products (
   images text[] default '{}',
   min_price numeric,
   -- Variations/Déclinaisons (e.g., Size, Color, Flavor)
-  -- Format: [{ "name": "Taille", "values": ["S", "M", "L", "XL"] }, { "name": "Saveur", "values": ["Nutella", "Oreo"] }]
+  -- Format: [{ "name": "Taille", "options": [{ "value": "S", "stock": 10, "priceModifier": 0 }] }]
   variations jsonb default '[]',
+  -- Special AI instructions for this product (promotions, rules, etc.)
+  -- Example: "Si le client prend 3+, proposer -10% sur le 5ème"
+  ai_instructions text,
   created_at timestamp with time zone default timezone('utc', now())
 );
 

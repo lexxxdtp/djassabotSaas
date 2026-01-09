@@ -29,7 +29,8 @@ const ProductDetail: React.FC = () => {
         stock: '',
         description: '',
         images: [],
-        variations: [] as ProductVariation[]
+        variations: [] as ProductVariation[],
+        aiInstructions: ''
     });
 
     useEffect(() => {
@@ -60,7 +61,8 @@ const ProductDetail: React.FC = () => {
                     setProduct({
                         ...found,
                         images: found.images || [],
-                        variations: found.variations || []
+                        variations: found.variations || [],
+                        aiInstructions: found.aiInstructions || found.ai_instructions || ''
                     });
                 } else {
                     navigate('/dashboard/products');
@@ -323,9 +325,29 @@ const ProductDetail: React.FC = () => {
                         <textarea
                             value={product.description}
                             onChange={e => setProduct({ ...product, description: e.target.value })}
-                            className="w-full bg-black border border-zinc-700 rounded-xl p-4 text-white focus:border-orange-500 outline-none min-h-[150px] leading-relaxed"
+                            className="w-full bg-black border border-zinc-700 rounded-xl p-4 text-white focus:border-orange-500 outline-none min-h-[120px] leading-relaxed"
                             placeholder="Décrivez votre produit..."
                         />
+                    </div>
+
+                    {/* === Consignes IA === */}
+                    <div className="border-t border-zinc-800 pt-5">
+                        <label className="block text-sm font-medium text-orange-400 mb-1">
+                            🤖 Consignes IA (instructions spéciales pour ce produit)
+                        </label>
+                        <textarea
+                            value={product.aiInstructions || ''}
+                            onChange={e => setProduct({ ...product, aiInstructions: e.target.value })}
+                            className="w-full bg-black border border-zinc-700 rounded-xl p-4 text-white focus:border-orange-500 outline-none min-h-[100px] leading-relaxed text-sm"
+                            placeholder="Ex: Si le client en prend 3+, proposer -10% sur le total. À partir de 5, offrir la livraison gratuite."
+                        />
+                        <div className="mt-2 text-zinc-600 text-xs space-y-1">
+                            <p>💡 <strong>Exemples de consignes :</strong></p>
+                            <p>• "Si le client veut 3+, proposer une réduction de 10%"</p>
+                            <p>• "À partir de 10 articles, offrir la livraison gratuite"</p>
+                            <p>• "Suggérer l'accessoire assorti à chaque achat"</p>
+                            <p>• "Pour les commandes avant 12h, proposer livraison le jour même"</p>
+                        </div>
                     </div>
 
                     {/* === Section Déclinaisons === */}

@@ -34,7 +34,8 @@ const Products: React.FC = () => {
         stock: '',
         description: '',
         images: [] as string[],
-        variations: [] as ProductVariation[]
+        variations: [] as ProductVariation[],
+        aiInstructions: ''
     });
     const [uploading, setUploading] = useState(false);
 
@@ -72,7 +73,7 @@ const Products: React.FC = () => {
     // Open Modal for Create
     const openCreateModal = () => {
         setEditingId(null);
-        setProductForm({ name: '', price: '', stock: '', description: '', images: [], variations: [] });
+        setProductForm({ name: '', price: '', stock: '', description: '', images: [], variations: [], aiInstructions: '' });
         setIsModalOpen(true);
     };
 
@@ -85,7 +86,8 @@ const Products: React.FC = () => {
             stock: product.stock,
             description: product.description || '',
             images: product.images || [],
-            variations: product.variations || []
+            variations: product.variations || [],
+            aiInstructions: product.aiInstructions || product.ai_instructions || ''
         });
         setIsModalOpen(true);
     };
@@ -127,7 +129,8 @@ const Products: React.FC = () => {
                 stock: Number(productForm.stock),
                 description: productForm.description,
                 images: productForm.images,
-                variations: productForm.variations
+                variations: productForm.variations,
+                aiInstructions: productForm.aiInstructions
             };
 
             const API_URL = getApiUrl();
@@ -311,11 +314,27 @@ const Products: React.FC = () => {
                             <div>
                                 <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Description</label>
                                 <textarea
-                                    className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none h-24 placeholder:text-zinc-700 resize-none"
+                                    className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none h-20 placeholder:text-zinc-700 resize-none"
                                     placeholder="Détails du produit (matière, coupe, etc.)"
                                     value={productForm.description}
                                     onChange={e => setProductForm({ ...productForm, description: e.target.value })}
                                 />
+                            </div>
+
+                            {/* Consignes IA */}
+                            <div className="border-t border-zinc-800 pt-3 mt-2">
+                                <label className="block text-xs font-semibold text-orange-400 mb-2 uppercase tracking-wide">
+                                    🤖 Consignes IA
+                                </label>
+                                <textarea
+                                    className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none h-20 placeholder:text-zinc-700 resize-none text-sm"
+                                    placeholder="Ex: Si le client prend 3+, proposer -10%. À partir de 5, livraison offerte."
+                                    value={productForm.aiInstructions}
+                                    onChange={e => setProductForm({ ...productForm, aiInstructions: e.target.value })}
+                                />
+                                <p className="text-[10px] text-zinc-600 mt-1">
+                                    L'IA appliquera ces instructions lors des conversations avec les clients.
+                                </p>
                             </div>
 
                             <div>

@@ -507,9 +507,13 @@ class WhatsAppManager {
             }
 
             // 5. Réponse IA Standard (Chat / Info produit / Négociation)
-            const inventoryContext = products.map(p =>
-                `- ${p.name}: Public Price ${p.price} FCFA ${p.minPrice ? `(Min: ${p.minPrice})` : ''} | ${p.stock > 0 ? 'En stock' : 'Épuisé'}`
-            ).join('\n');
+            const inventoryContext = products.map(p => {
+                let productInfo = `- ${p.name}: ${p.price} FCFA ${p.minPrice ? `(Min: ${p.minPrice})` : ''} | ${p.stock > 0 ? 'En stock' : 'Épuisé'}`;
+                if (p.aiInstructions) {
+                    productInfo += `\n  📋 Consignes: ${p.aiInstructions}`;
+                }
+                return productInfo;
+            }).join('\n');
 
             const aiResponse = await generateAIResponse(text, {
                 settings,
