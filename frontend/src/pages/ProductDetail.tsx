@@ -269,7 +269,7 @@ const ProductDetail: React.FC = () => {
         setProduct({ ...product, variations: newVariations });
     };
 
-    const updateVariationOption = (varIndex: number, optionIndex: number, field: 'stock' | 'priceModifier', value: number | undefined) => {
+    const updateVariationOption = (varIndex: number, optionIndex: number, field: 'stock' | 'priceModifier' | 'value', value: number | string | undefined) => {
         const newVariations = [...product.variations];
         newVariations[varIndex].options[optionIndex] = {
             ...newVariations[varIndex].options[optionIndex],
@@ -619,7 +619,12 @@ const ProductDetail: React.FC = () => {
                                                         {variation.options.map((option: VariationOption, optIndex: number) => (
                                                             <div key={optIndex} className="grid grid-cols-12 gap-2 items-center bg-zinc-900/50 rounded-lg p-2">
                                                                 <div className="col-span-4">
-                                                                    <span className="text-white text-sm font-medium">{option.value}</span>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={option.value}
+                                                                        onChange={(e) => updateVariationOption(varIndex, optIndex, 'value', e.target.value)}
+                                                                        className="w-full bg-zinc-800 border-0 border-b border-transparent hover:border-zinc-600 focus:border-orange-500 rounded-none px-0 py-1 text-white text-sm font-medium outline-none transition-colors"
+                                                                    />
                                                                 </div>
                                                                 <div className="col-span-3">
                                                                     <input
