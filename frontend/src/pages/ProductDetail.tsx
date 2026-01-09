@@ -10,6 +10,7 @@ interface VariationOption {
     value: string;          // e.g., "M", "XL", "Rouge"
     stock?: number;         // Stock for this option
     priceModifier?: number; // Price adjustment: +500, -200, 0
+    images?: string[];      // Specific images for this option (max 2)
 }
 
 // Interface for product variations/déclinaisons
@@ -241,7 +242,6 @@ const ProductDetail: React.FC = () => {
                     default_options: options
                 })
             });
-            // Optionally reload templates
         } catch (error) {
             console.error('Failed to save variation template', error);
         }
@@ -269,7 +269,51 @@ const ProductDetail: React.FC = () => {
         setProduct({ ...product, variations: newVariations });
     };
 
-    const updateVariationOption = (varIndex: number, optionIndex: number, field: 'stock' | 'priceModifier' | 'value', value: number | string | undefined) => {
+    const handleVariationImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, varIndex: number, optIndex: number) => {
+        if (!e.target.files?.length) return;
+
+        const files = Array.from(e.target.files);
+        // Only allow up to 2 images total
+        const currentImages = product.variations[varIndex].options[optIndex].images || [];
+        if (currentImages.length + files.length > 2) {
+            alert('Maximum 2 images par déclinaison');
+            return;
+        }
+
+        try {
+            const newImages: string[] = [];
+            for (const file of files) {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `var-${Date.now()}-${Math.random()}.${fileExt}`;
+                const { error } = await supabase.storage
+                    .from('product-images')
+                    .upload(fileName, file);
+
+                if (error) throw error;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('product-images')
+                    .getPublicUrl(fileName);
+
+                newImages.push(publicUrl);
+            }
+
+            // Update variation images
+            updateVariationOption(varIndex, optIndex, 'images', [...currentImages, ...newImages]);
+
+            // Also add to main gallery so they appear at the top
+            setProduct((prev: any) => ({
+                ...prev,
+                images: [...prev.images, ...newImages]
+            }));
+
+        } catch (error) {
+            console.error('Upload failed', error);
+            alert('Erreur upload');
+        }
+    };
+
+    const updateVariationOption = (varIndex: number, optionIndex: number, field: 'stock' | 'priceModifier' | 'value' | 'images', value: number | string | string[] | undefined) => {
         const newVariations = [...product.variations];
         newVariations[varIndex].options[optionIndex] = {
             ...newVariations[varIndex].options[optionIndex],
@@ -611,14 +655,15 @@ const ProductDetail: React.FC = () => {
                                                 {variation.options && variation.options.length > 0 && (
                                                     <div className="space-y-2 mb-3">
                                                         <div className="grid grid-cols-12 gap-2 text-xs text-zinc-500 px-2">
-                                                            <div className="col-span-4">Valeur</div>
-                                                            <div className="col-span-3">Stock</div>
-                                                            <div className="col-span-4">Prix (+/-)</div>
+                                                            <div className="col-span-3">Valeur</div>
+                                                            <div className="col-span-2">Stock</div>
+                                                            <div className="col-span-3">Prix (+/-)</div>
+                                                            <div className="col-span-3">Photos (max 2)</div>
                                                             <div className="col-span-1"></div>
                                                         </div>
                                                         {variation.options.map((option: VariationOption, optIndex: number) => (
                                                             <div key={optIndex} className="grid grid-cols-12 gap-2 items-center bg-zinc-900/50 rounded-lg p-2">
-                                                                <div className="col-span-4">
+                                                                <div className="col-span-3">
                                                                     <input
                                                                         type="text"
                                                                         value={option.value}
@@ -626,7 +671,7 @@ const ProductDetail: React.FC = () => {
                                                                         className="w-full bg-zinc-800 border-0 border-b border-transparent hover:border-zinc-600 focus:border-orange-500 rounded-none px-0 py-1 text-white text-sm font-medium outline-none transition-colors"
                                                                     />
                                                                 </div>
-                                                                <div className="col-span-3">
+                                                                <div className="col-span-2">
                                                                     <input
                                                                         type="number"
                                                                         min="0"
@@ -636,7 +681,7 @@ const ProductDetail: React.FC = () => {
                                                                         className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
                                                                     />
                                                                 </div>
-                                                                <div className="col-span-4 flex items-center">
+                                                                <div className="col-span-3 flex items-center">
                                                                     <span className="text-zinc-500 text-xs mr-1">FCFA</span>
                                                                     <input
                                                                         type="number"
@@ -645,6 +690,39 @@ const ProductDetail: React.FC = () => {
                                                                         className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
                                                                     />
                                                                 </div>
+
+                                                                {/* Photo Upload Area */}
+                                                                <div className="col-span-3 flex items-center gap-2">
+                                                                    {option.images && option.images.map((img, imgIdx) => (
+                                                                        <div key={imgIdx} className="relative w-8 h-8 rounded border border-zinc-700 overflow-hidden group">
+                                                                            <img src={img} alt="" className="w-full h-full object-cover" />
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    // Remove image
+                                                                                    const newImages = option.images?.filter((_, i) => i !== imgIdx);
+                                                                                    updateVariationOption(varIndex, optIndex, 'images', newImages);
+                                                                                }}
+                                                                                className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                            >
+                                                                                <X size={10} className="text-white" />
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+
+                                                                    {(!option.images || option.images.length < 2) && (
+                                                                        <label className="w-8 h-8 flex items-center justify-center bg-zinc-800 border border-zinc-700 border-dashed rounded cursor-pointer hover:border-orange-500 hover:text-orange-500 text-zinc-500 transition-colors">
+                                                                            <ImageIcon size={14} />
+                                                                            <input
+                                                                                type="file"
+                                                                                accept="image/*"
+                                                                                multiple
+                                                                                className="hidden"
+                                                                                onChange={(e) => handleVariationImageUpload(e, varIndex, optIndex)}
+                                                                            />
+                                                                        </label>
+                                                                    )}
+                                                                </div>
+
                                                                 <div className="col-span-1 flex justify-end">
                                                                     <button
                                                                         type="button"
