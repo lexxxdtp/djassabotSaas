@@ -62,7 +62,7 @@ const Products: React.FC = () => {
     const [variationTemplates, setVariationTemplates] = useState<VariationTemplate[]>([]);
 
     // New Option Inputs State (per variation index)
-    const [newOptionInputs, setNewOptionInputs] = useState<Record<number, { name: string; price: string }>>({});
+    const [newOptionInputs, setNewOptionInputs] = useState<Record<number, { name: string; price: string; stock: string }>>({});
 
     const handleAddOption = (varIdx: number) => {
         const inputs = newOptionInputs[varIdx];
@@ -74,7 +74,7 @@ const Products: React.FC = () => {
             {
                 value: inputs.name.trim(),
                 priceModifier: inputs.price ? Number(inputs.price) : 0,
-                stock: undefined
+                stock: inputs.stock ? Number(inputs.stock) : undefined
             }
         ];
         setProductForm({ ...productForm, variations: newVars });
@@ -82,9 +82,25 @@ const Products: React.FC = () => {
         // Reset inputs
         setNewOptionInputs(prev => ({
             ...prev,
-            [varIdx]: { name: '', price: '' }
+            [varIdx]: { name: '', price: '', stock: '' }
         }));
     };
+
+    // Auto-calculate global stock when variations change
+    useEffect(() => {
+        if (variationsEnabled && productForm.variations.length > 0) {
+            let totalStock = 0;
+            productForm.variations.forEach(v => {
+                v.options.forEach(opt => {
+                    if (opt.stock) totalStock += opt.stock;
+                });
+            });
+            // Only update if different to avoid infinite loops if strictly checked, though React state checks usually handle equality.
+            if (productForm.stock !== totalStock.toString()) {
+                setProductForm(prev => ({ ...prev, stock: totalStock.toString() }));
+            }
+        }
+    }, [productForm.variations, variationsEnabled]);
 
     // Fetch Variation Templates
     const fetchVariationTemplates = async () => {
@@ -529,15 +545,19 @@ const Products: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Qqté Stock</label>
+                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">
+                                        Qqté Stock {variationsEnabled && <span className="text-orange-500 text-[10px] ml-1">(Auto)</span>}
+                                    </label>
                                     <input
                                         required
                                         type="number"
                                         min="0"
+                                        disabled={variationsEnabled}
                                         value={productForm.stock}
                                         onChange={e => setProductForm({ ...productForm, stock: Math.max(0, Number(e.target.value) || 0).toString() })}
-                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none placeholder:text-zinc-700 font-mono"
+                                        className={`w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none placeholder:text-zinc-700 font-mono ${variationsEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         placeholder="10"
+                                        title={variationsEnabled ? "Calculé automatiquement via les déclinaisons" : "Stock global"}
                                     />
                                 </div>
                             </div>
@@ -841,6 +861,22 @@ const Products: React.FC = () => {
                                                                         className="bg-transparent border-b border-dashed border-zinc-700 hover:border-zinc-500 focus:border-orange-500 outline-none text-xs text-zinc-400 w-12 font-mono"
                                                                     />
                                                                 </div>
+                                                                <div className="flex items-center gap-0.5" title="Stock déclinaison">
+                                                                    <span className="text-zinc-600 text-xs">#</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        value={opt.stock === undefined ? '' : opt.stock}
+                                                                        placeholder="∞"
+                                                                        onChange={(e) => {
+                                                                            const newVars = [...productForm.variations];
+                                                                            // Treat empty string as undefined (unlimited) or handle 0 explicitly
+                                                                            const val = e.target.value;
+                                                                            newVars[varIdx].options[optIdx].stock = val === '' ? undefined : Number(val);
+                                                                            setProductForm({ ...productForm, variations: newVars });
+                                                                        }}
+                                                                        className="bg-transparent border-b border-dashed border-zinc-700 hover:border-zinc-500 focus:border-orange-500 outline-none text-xs text-blue-400 w-10 font-mono"
+                                                                    />
+                                                                </div>
 
                                                                 <button
                                                                     type="button"
@@ -856,7 +892,7 @@ const Products: React.FC = () => {
                                                             </div>
 
                                                             {/* Right: Images Upload */}
-                                                            <div className="flex items-center gap-1.5">
+                                                            <div className="flex items-center gap-1.5 ml-2">
                                                                 {opt.images && opt.images.map((img, imgIdx) => (
                                                                     <div key={imgIdx} className="relative w-7 h-7 rounded border border-zinc-700 overflow-hidden group">
                                                                         <img src={img} alt="" className="w-full h-full object-cover" />
@@ -914,7 +950,7 @@ const Products: React.FC = () => {
                                                     />
                                                     <input
                                                         type="number"
-                                                        placeholder="+ Prix (FCFA)"
+                                                        placeholder="+ Prix"
                                                         value={newOptionInputs[varIdx]?.price || ''}
                                                         onChange={(e) => {
                                                             const val = e.target.value;
@@ -929,7 +965,27 @@ const Products: React.FC = () => {
                                                                 handleAddOption(varIdx);
                                                             }
                                                         }}
-                                                        className="w-24 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-xs focus:border-orange-500 outline-none"
+                                                        className="w-16 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-xs focus:border-orange-500 outline-none"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Stock"
+                                                        min="0"
+                                                        value={newOptionInputs[varIdx]?.stock || ''}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            setNewOptionInputs(prev => ({
+                                                                ...prev,
+                                                                [varIdx]: { ...prev[varIdx], stock: val }
+                                                            }));
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                handleAddOption(varIdx);
+                                                            }
+                                                        }}
+                                                        className="w-16 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-xs focus:border-orange-500 outline-none"
                                                     />
                                                     <button
                                                         type="button"
