@@ -39,6 +39,27 @@ const Products: React.FC = () => {
     });
     const [uploading, setUploading] = useState(false);
     const [variationsEnabled, setVariationsEnabled] = useState(false);
+    const [variationTemplates, setVariationTemplates] = useState<any[]>([]);
+
+    // Fetch Variation Templates
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const API_URL = getApiUrl();
+                const res = await fetch(`${API_URL}/variation-templates`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setVariationTemplates(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch variation templates', error);
+            }
+        };
+        fetchTemplates();
+    }, []);
 
     // Fetch Products
     const fetchProducts = async () => {
@@ -579,17 +600,30 @@ const Products: React.FC = () => {
                                         {productForm.variations.map((variation, varIdx) => (
                                             <div key={varIdx} className="bg-black border border-zinc-800 rounded-lg p-3">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <input
-                                                        type="text"
+                                                    <select
                                                         value={variation.name}
                                                         onChange={(e) => {
                                                             const newVars = [...productForm.variations];
-                                                            newVars[varIdx].name = e.target.value;
+                                                            const selectedTemplate = variationTemplates.find(t => t.name === e.target.value);
+                                                            if (selectedTemplate && selectedTemplate.default_options) {
+                                                                newVars[varIdx] = {
+                                                                    name: e.target.value,
+                                                                    options: [...selectedTemplate.default_options]
+                                                                };
+                                                            } else {
+                                                                newVars[varIdx].name = e.target.value;
+                                                            }
                                                             setProductForm({ ...productForm, variations: newVars });
                                                         }}
-                                                        placeholder="Nom (ex: Taille)"
-                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
-                                                    />
+                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm focus:border-orange-500 outline-none"
+                                                    >
+                                                        <option value="">Sélectionner un type...</option>
+                                                        {variationTemplates.map((template, idx) => (
+                                                            <option key={idx} value={template.name}>
+                                                                {template.name} {template.isSystem ? '' : '(Custom)'}
+                                                            </option>
+                                                        ))}
+                                                    </select>
                                                     <button
                                                         type="button"
                                                         onClick={() => {
