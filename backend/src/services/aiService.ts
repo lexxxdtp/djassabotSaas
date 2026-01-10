@@ -20,7 +20,7 @@ const getModel = (): GenerativeModel | null => {
     if (!model) {
         console.log('[AI] Initializing Gemini with key:', apiKey.substring(0, 10) + '...');
         genAI = new GoogleGenerativeAI(apiKey);
-        // Updated to available model in 2026
+        // Using Gemini 2.5 Flash (production model)
         model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     }
 
