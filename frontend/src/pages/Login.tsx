@@ -47,8 +47,9 @@ const Login: React.FC = () => {
             login(data.token, data.user, data.tenant);
             navigate('/dashboard');
 
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Une erreur inconnue est survenue";
+            setError(msg);
         } finally {
             setLoading(false);
         }

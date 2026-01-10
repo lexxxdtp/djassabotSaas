@@ -94,8 +94,12 @@ const Signup: React.FC = () => {
             login(data.token, data.user, data.tenant);
             navigate('/dashboard');
 
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("Une erreur inconnue est survenue");
+            }
         } finally {
             setLoading(false);
         }

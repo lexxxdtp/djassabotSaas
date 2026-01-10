@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Bot, Store, Truck, Clock, MapPin, QrCode, Trash2, PlusCircle, CheckCircle, User } from 'lucide-react';
+import { Bot, Store, Clock, MapPin, QrCode, Trash2, PlusCircle, CheckCircle, User } from 'lucide-react';
 import WhatsAppConnect from './WhatsAppConnect';
 import AIPlayground from '../components/AIPlayground';
 import { getApiUrl } from '../utils/apiConfig';
@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 export default function Settings() {
     const { token } = useAuth(); // Need login to update context on save
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'profile' | 'identity' | 'business' | 'logistics' | 'whatsapp' | 'simulation'>('identity');
+    const [activeTab, setActiveTab] = useState<'profile' | 'identity' | 'business' | 'whatsapp' | 'simulation'>('identity');
 
     // User Profile Config
     const [userProfile, setUserProfile] = useState<{
@@ -147,7 +147,7 @@ export default function Settings() {
 
         fetchSettings();
         fetchProfile();
-    }, [token]);
+    }, [token, API_URL]);
 
     const handleSave = async () => {
         if (!token) {
@@ -205,7 +205,9 @@ export default function Settings() {
         }
     };
 
-    const TabButton = ({ id, label, icon: Icon }: any) => (
+    type TabId = 'profile' | 'business' | 'identity' | 'whatsapp' | 'simulation';
+
+    const TabButton = ({ id, label, icon: Icon }: { id: TabId; label: string; icon: React.ElementType }) => (
         <button
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all text-sm border ${activeTab === id
@@ -241,7 +243,6 @@ export default function Settings() {
                 <TabButton id="profile" label="Mon Profil" icon={User} />
                 <TabButton id="identity" label="Identité & IA" icon={Bot} />
                 <TabButton id="business" label="Infos Boutique" icon={Store} />
-                <TabButton id="logistics" label="Logistique" icon={Truck} />
                 <TabButton id="whatsapp" label="Connexion" icon={QrCode} />
                 <TabButton id="simulation" label="Test & Simulation" icon={Bot} />
             </div>
@@ -525,24 +526,45 @@ export default function Settings() {
                                 <span className="w-2 h-2 rounded-full bg-blue-500"></span> Type d'Activité
                             </h2>
                             <div>
-                                <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Secteur d'Activité</label>
-                                <select
-                                    value={config.businessType}
-                                    onChange={e => setConfig({ ...config, businessType: e.target.value })}
-                                    className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
-                                >
-                                    <option value="Mode & Vêtements">Mode & Vêtements (Fashion)</option>
-                                    <option value="Chaussures & Sneakers">Chaussures & Sneakers</option>
-                                    <option value="Beauté & Cosmétiques">Beauté & Cosmétiques</option>
-                                    <option value="Électronique & Gadgets">Électronique & Gadgets</option>
-                                    <option value="Restauration & Fast-Food">Restauration & Fast-Food</option>
-                                    <option value="Épicerie & Supermarché">Épicerie & Supermarché</option>
-                                    <option value="Immobilier & Location">Immobilier & Location</option>
-                                    <option value="Services & Consulting">Services & Consulting</option>
-                                    <option value="Automobile & Pièces">Automobile & Pièces</option>
-                                    <option value="Bijouterie & Accessoires">Bijouterie & Accessoires</option>
-                                    <option value="Autre">Autre (Personnalisé)</option>
-                                </select>
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Secteur d'Activité</label>
+                                    <div className="space-y-3">
+                                        <select
+                                            value={['Mode & Vêtements', 'Chaussures & Sneakers', 'Beauté & Cosmétiques', 'Électronique & Gadgets', 'Restauration & Fast-Food', 'Épicerie & Supermarché', 'Immobilier & Location', 'Services & Consulting', 'Automobile & Pièces', 'Bijouterie & Accessoires'].includes(config.businessType) ? config.businessType : 'Autre'}
+                                            onChange={e => {
+                                                if (e.target.value === 'Autre') {
+                                                    setConfig({ ...config, businessType: '' });
+                                                } else {
+                                                    setConfig({ ...config, businessType: e.target.value });
+                                                }
+                                            }}
+                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
+                                        >
+                                            <option value="Mode & Vêtements">Mode & Vêtements (Fashion)</option>
+                                            <option value="Chaussures & Sneakers">Chaussures & Sneakers</option>
+                                            <option value="Beauté & Cosmétiques">Beauté & Cosmétiques</option>
+                                            <option value="Électronique & Gadgets">Électronique & Gadgets</option>
+                                            <option value="Restauration & Fast-Food">Restauration & Fast-Food</option>
+                                            <option value="Épicerie & Supermarché">Épicerie & Supermarché</option>
+                                            <option value="Immobilier & Location">Immobilier & Location</option>
+                                            <option value="Services & Consulting">Services & Consulting</option>
+                                            <option value="Automobile & Pièces">Automobile & Pièces</option>
+                                            <option value="Bijouterie & Accessoires">Bijouterie & Accessoires</option>
+                                            <option value="Autre">Autre (Personnalisé)</option>
+                                        </select>
+
+                                        {(!['Mode & Vêtements', 'Chaussures & Sneakers', 'Beauté & Cosmétiques', 'Électronique & Gadgets', 'Restauration & Fast-Food', 'Épicerie & Supermarché', 'Immobilier & Location', 'Services & Consulting', 'Automobile & Pièces', 'Bijouterie & Accessoires'].includes(config.businessType)) && (
+                                            <input
+                                                type="text"
+                                                value={config.businessType}
+                                                onChange={e => setConfig({ ...config, businessType: e.target.value })}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:border-orange-500 outline-none placeholder:text-zinc-600 animate-in fade-in slide-in-from-top-2"
+                                                placeholder="Précisez votre activité (ex: Boulangerie Artisanale)..."
+                                                autoFocus
+                                            />
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -636,14 +658,39 @@ export default function Settings() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Coordonnées GPS</label>
-                                        <input
-                                            type="text"
-                                            value={config.gpsCoordinates || ''}
-                                            onChange={e => setConfig({ ...config, gpsCoordinates: e.target.value })}
-                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
-                                            placeholder="5.3600, -3.9000"
-                                        />
+                                        <div>
+                                            <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Coordonnées GPS</label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={config.gpsCoordinates || ''}
+                                                    onChange={e => setConfig({ ...config, gpsCoordinates: e.target.value })}
+                                                    className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                                    placeholder="5.3600, -3.9000"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        if (navigator.geolocation) {
+                                                            navigator.geolocation.getCurrentPosition(
+                                                                (position) => {
+                                                                    const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+                                                                    setConfig({ ...config, gpsCoordinates: coords });
+                                                                },
+                                                                (error) => {
+                                                                    alert('Erreur de géolocalisation: ' + error.message);
+                                                                }
+                                                            );
+                                                        } else {
+                                                            alert('La géolocalisation n\'est pas supportée par ce navigateur.');
+                                                        }
+                                                    }}
+                                                    className="bg-zinc-800 hover:bg-zinc-700 text-white p-3 rounded-lg transition-colors"
+                                                    title="Me géolocaliser"
+                                                >
+                                                    <MapPin size={20} className="text-orange-500" />
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -695,47 +742,8 @@ export default function Settings() {
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
 
-                {/* --- TAB 3: LOGISTICS --- */}
-                {activeTab === 'logistics' && (
-                    <div className="space-y-6">
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8">
-                            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Expédition
-                            </h2>
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Livraison Abidjan</label>
-                                    <input
-                                        type="number"
-                                        value={config.deliveryAbidjanPrice}
-                                        onChange={e => setConfig({ ...config, deliveryAbidjanPrice: parseInt(e.target.value) })}
-                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Livraison Intérieur</label>
-                                    <input
-                                        type="number"
-                                        value={config.deliveryInteriorPrice}
-                                        onChange={e => setConfig({ ...config, deliveryInteriorPrice: parseInt(e.target.value) })}
-                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
-                                    />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Seuil Livraison Gratuite</label>
-                                    <input
-                                        type="number"
-                                        value={config.freeDeliveryThreshold}
-                                        onChange={e => setConfig({ ...config, freeDeliveryThreshold: parseInt(e.target.value) })}
-                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
+                        {/* 5. Paiement */}
                         <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                                 <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Paiement
@@ -777,6 +785,8 @@ export default function Settings() {
                         </div>
                     </div>
                 )}
+
+
 
                 {activeTab === 'whatsapp' && (
                     <div className="space-y-6">

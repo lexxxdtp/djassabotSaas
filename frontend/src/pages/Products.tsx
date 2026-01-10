@@ -19,9 +19,27 @@ interface ProductVariation {
     isCustom?: boolean; // UI flag for custom name input
 }
 
+interface Product {
+    id: string;
+    name: string;
+    price: string | number;
+    stock: number;
+    description?: string;
+    images: string[];
+    variations?: ProductVariation[];
+    aiInstructions?: string;
+    ai_instructions?: string;
+}
+
+interface VariationTemplate {
+    name: string;
+    default_options: { value: string; priceModifier: number }[];
+    isSystem: boolean;
+}
+
 const Products: React.FC = () => {
     const navigate = useNavigate();
-    const [products, setProducts] = useState<any[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -41,7 +59,7 @@ const Products: React.FC = () => {
     });
     const [uploading, setUploading] = useState(false);
     const [variationsEnabled, setVariationsEnabled] = useState(false);
-    const [variationTemplates, setVariationTemplates] = useState<any[]>([]);
+    const [variationTemplates, setVariationTemplates] = useState<VariationTemplate[]>([]);
 
     // Fetch Variation Templates
     const fetchVariationTemplates = async () => {
@@ -52,7 +70,7 @@ const Products: React.FC = () => {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
-                const data = await res.json();
+                const data: VariationTemplate[] = await res.json();
                 setVariationTemplates(data);
             }
         } catch (error) {
@@ -161,22 +179,22 @@ const Products: React.FC = () => {
     };
 
     // Open Modal for Edit
-    const openEditModal = (product: any) => {
+    const openEditModal = (product: Product) => {
         setEditingId(product.id);
         setProductForm({
             name: product.name,
-            price: product.price,
-            stock: product.stock,
+            price: String(product.price),
+            stock: String(product.stock),
             description: product.description || '',
             images: product.images || [],
             variations: product.variations || [],
             aiInstructions: product.aiInstructions || product.ai_instructions || ''
         });
         // Enable variations toggle if product has active variations
-        const hasActiveVariations = product.variations && product.variations.some((v: any) =>
+        const hasActiveVariations = product.variations && product.variations.some((v: ProductVariation) =>
             v.name && v.options && v.options.length > 0
         );
-        setVariationsEnabled(hasActiveVariations);
+        setVariationsEnabled(!!hasActiveVariations);
         setIsModalOpen(true);
     };
 
@@ -279,9 +297,10 @@ const Products: React.FC = () => {
 
             setIsModalOpen(false);
             fetchProducts();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to save product', error);
-            alert(`Erreur: ${error.message}`);
+            const msg = error instanceof Error ? error.message : "Une erreur est survenue";
+            alert(`Erreur: ${msg}`);
         }
     };
 
@@ -352,15 +371,15 @@ const Products: React.FC = () => {
                                 <div className="flex justify-between items-center" onClick={(e) => e.stopPropagation()}>
                                     {(() => {
                                         // Calculer le stock selon si le produit a des variations ACTIVES ou non
-                                        const hasActiveVariations = product.variations && product.variations.some((v: any) =>
+                                        const hasActiveVariations = product.variations && product.variations.some((v: ProductVariation) =>
                                             v.name && v.name.trim() !== '' && v.options && v.options.length > 0
                                         );
 
                                         const displayStock = hasActiveVariations
-                                            ? product.variations
-                                                .filter((v: any) => v.name && v.name.trim() !== '' && v.options && v.options.length > 0)
-                                                .reduce((total: number, variation: any) => {
-                                                    return total + variation.options.reduce((sum: number, opt: any) => sum + (opt.stock || 0), 0);
+                                            ? product.variations!
+                                                .filter((v: ProductVariation) => v.name && v.name.trim() !== '' && v.options && v.options.length > 0)
+                                                .reduce((total: number, variation: ProductVariation) => {
+                                                    return total + variation.options.reduce((sum: number, opt: VariationOption) => sum + (opt.stock || 0), 0);
                                                 }, 0)
                                             : product.stock || 0;
 

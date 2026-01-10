@@ -1,6 +1,73 @@
 import { useState } from 'react';
 import { Check, Shield, Crown } from 'lucide-react';
 
+interface PlanCardProps {
+    title: string;
+    price: string;
+    features: string[];
+    planId: string;
+    recommended?: boolean;
+    currentPlan: string;
+    onUpgrade: (plan: string) => void;
+    loading: boolean;
+}
+
+const PlanCard = ({ title, price, features, planId, recommended = false, currentPlan, onUpgrade, loading }: PlanCardProps) => {
+    const isCurrent = currentPlan === planId;
+
+    return (
+        <div className={`relative flex flex-col p-6 rounded-2xl border ${isCurrent
+            ? 'bg-zinc-900 border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.1)]'
+            : recommended
+                ? 'bg-gradient-to-b from-orange-950/20 to-black border-orange-500/50'
+                : 'bg-black border-zinc-800'
+            } transition-all duration-300 hover:-translate-y-1`}>
+
+            {isCurrent && (
+                <div className="absolute top-0 right-0 bg-emerald-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-xl">
+                    ACTUEL
+                </div>
+            )}
+
+            {recommended && !isCurrent && (
+                <div className="absolute top-0 right-0 bg-orange-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-xl">
+                    POPULAIRE
+                </div>
+            )}
+
+            <div className="mb-4">
+                <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
+                <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold text-white">{price}</span>
+                    <span className="text-zinc-500 text-sm">/mois</span>
+                </div>
+            </div>
+
+            <div className="flex-1 space-y-3 mb-8">
+                {features.map((feat: string, i: number) => (
+                    <div key={i} className="flex items-start gap-3 text-sm text-zinc-400">
+                        <Check size={16} className={`mt-0.5 ${isCurrent ? 'text-emerald-500' : 'text-orange-500'}`} />
+                        <span>{feat}</span>
+                    </div>
+                ))}
+            </div>
+
+            <button
+                onClick={() => !isCurrent && onUpgrade(planId)}
+                disabled={isCurrent || loading}
+                className={`w-full py-3 rounded-lg font-bold text-sm transition-all ${isCurrent
+                    ? 'bg-zinc-800 text-zinc-500 cursor-default'
+                    : recommended
+                        ? 'bg-orange-500 hover:bg-orange-600 text-black shadow-lg shadow-orange-500/20'
+                        : 'bg-white hover:bg-zinc-200 text-black'
+                    }`}
+            >
+                {loading && !isCurrent ? 'Traitement...' : isCurrent ? 'Plan Actif' : 'Choisir ce plan'}
+            </button>
+        </div>
+    );
+};
+
 export default function Subscription() {
     const [currentPlan, setCurrentPlan] = useState('starter');
     const [loading, setLoading] = useState(false);
@@ -13,62 +80,6 @@ export default function Subscription() {
             setLoading(false);
             alert(`Félicitations ! Vous êtes passé au plan ${plan.toUpperCase()}.`);
         }, 1500);
-    };
-
-    const PlanCard = ({ title, price, features, planId, recommended = false }: any) => {
-        const isCurrent = currentPlan === planId;
-
-        return (
-            <div className={`relative flex flex-col p-6 rounded-2xl border ${isCurrent
-                ? 'bg-zinc-900 border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.1)]'
-                : recommended
-                    ? 'bg-gradient-to-b from-orange-950/20 to-black border-orange-500/50'
-                    : 'bg-black border-zinc-800'
-                } transition-all duration-300 hover:-translate-y-1`}>
-
-                {isCurrent && (
-                    <div className="absolute top-0 right-0 bg-emerald-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-xl">
-                        ACTUEL
-                    </div>
-                )}
-
-                {recommended && !isCurrent && (
-                    <div className="absolute top-0 right-0 bg-orange-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-xl">
-                        POPULAIRE
-                    </div>
-                )}
-
-                <div className="mb-4">
-                    <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
-                    <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold text-white">{price}</span>
-                        <span className="text-zinc-500 text-sm">/mois</span>
-                    </div>
-                </div>
-
-                <div className="flex-1 space-y-3 mb-8">
-                    {features.map((feat: string, i: number) => (
-                        <div key={i} className="flex items-start gap-3 text-sm text-zinc-400">
-                            <Check size={16} className={`mt-0.5 ${isCurrent ? 'text-emerald-500' : 'text-orange-500'}`} />
-                            <span>{feat}</span>
-                        </div>
-                    ))}
-                </div>
-
-                <button
-                    onClick={() => !isCurrent && handleUpgrade(planId)}
-                    disabled={isCurrent || loading}
-                    className={`w-full py-3 rounded-lg font-bold text-sm transition-all ${isCurrent
-                        ? 'bg-zinc-800 text-zinc-500 cursor-default'
-                        : recommended
-                            ? 'bg-orange-500 hover:bg-orange-600 text-black shadow-lg shadow-orange-500/20'
-                            : 'bg-white hover:bg-zinc-200 text-black'
-                        }`}
-                >
-                    {loading && !isCurrent ? 'Traitement...' : isCurrent ? 'Plan Actif' : 'Choisir ce plan'}
-                </button>
-            </div>
-        );
     };
 
     return (
@@ -94,6 +105,9 @@ export default function Subscription() {
                         "Commandes illimitées",
                         "Support Email"
                     ]}
+                    currentPlan={currentPlan}
+                    onUpgrade={handleUpgrade}
+                    loading={loading}
                 />
 
                 <PlanCard
@@ -109,6 +123,9 @@ export default function Subscription() {
                         "Statistiques détaillées",
                         "Support Prioritaire"
                     ]}
+                    currentPlan={currentPlan}
+                    onUpgrade={handleUpgrade}
+                    loading={loading}
                 />
 
                 <PlanCard
@@ -123,6 +140,9 @@ export default function Subscription() {
                         "Account Manager dédié",
                         "Formation équipe"
                     ]}
+                    currentPlan={currentPlan}
+                    onUpgrade={handleUpgrade}
+                    loading={loading}
                 />
             </div>
 

@@ -7,8 +7,66 @@ interface UserProfileModalProps {
     onClose: () => void;
 }
 
+interface PlanCardProps {
+    id: string;
+    title: string;
+    price: string;
+    features: string[];
+    recommended?: boolean;
+    currentPlan: string;
+    loading: boolean;
+    onUpgrade: (id: string) => void;
+}
+
+const PlanCard = ({ id, title, price, features, recommended, currentPlan, loading, onUpgrade }: PlanCardProps) => {
+    const isCurrent = currentPlan === id;
+    return (
+        <div
+            className={`relative border rounded-xl p-4 transition-all cursor-pointer hover:border-orange-500/50 ${isCurrent
+                ? 'bg-zinc-900 border-emerald-500 ring-1 ring-emerald-500'
+                : recommended
+                    ? 'bg-gradient-to-b from-orange-950/10 to-black border-orange-500/30'
+                    : 'bg-black border-zinc-800'
+                }`}
+            onClick={() => !isCurrent && onUpgrade(id)}
+        >
+            {isCurrent && (
+                <div className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-bold text-emerald-500 bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    <Check size={10} /> ACTUEL
+                </div>
+            )}
+            {recommended && !isCurrent && (
+                <div className="absolute top-2 right-2 text-[10px] font-bold text-orange-500 bg-orange-950/30 px-2 py-0.5 rounded-full border border-orange-500/20">
+                    POPULAIRE
+                </div>
+            )}
+
+            <h3 className={`font-bold text-sm ${isCurrent ? 'text-emerald-400' : 'text-white'}`}>{title}</h3>
+            <div className="mt-1 mb-3">
+                <span className="text-xl font-bold text-white">{price}</span>
+                <span className="text-xs text-zinc-500">/mois</span>
+            </div>
+
+            <ul className="space-y-1.5">
+                {features.map((f: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-zinc-400">
+                        <span className={`mt-0.5 w-1 h-1 rounded-full ${isCurrent ? 'bg-emerald-500' : 'bg-zinc-600'}`}></span>
+                        {f}
+                    </li>
+                ))}
+            </ul>
+
+            {!isCurrent && (
+                <button disabled={loading} className="mt-4 w-full py-1.5 rounded bg-white text-black text-xs font-bold hover:bg-zinc-200 transition-colors">
+                    {loading ? '...' : 'Choisir'}
+                </button>
+            )}
+        </div>
+    );
+};
+
 export default function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
-    const { user } = useAuth();
+    const { user, tenant } = useAuth();
     const [activeTab, setActiveTab] = useState<'profile' | 'subscription'>('subscription');
     const [currentPlan, setCurrentPlan] = useState('starter');
     const [loading, setLoading] = useState(false);
@@ -25,53 +83,6 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
         }, 1500);
     };
 
-    const PlanCard = ({ id, title, price, features, recommended }: any) => {
-        const isCurrent = currentPlan === id;
-        return (
-            <div
-                className={`relative border rounded-xl p-4 transition-all cursor-pointer hover:border-orange-500/50 ${isCurrent
-                    ? 'bg-zinc-900 border-emerald-500 ring-1 ring-emerald-500'
-                    : recommended
-                        ? 'bg-gradient-to-b from-orange-950/10 to-black border-orange-500/30'
-                        : 'bg-black border-zinc-800'
-                    }`}
-                onClick={() => !isCurrent && handleUpgrade(id)}
-            >
-                {isCurrent && (
-                    <div className="absolute top-2 right-2 flex items-center gap-1 text-[10px] font-bold text-emerald-500 bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                        <Check size={10} /> ACTUEL
-                    </div>
-                )}
-                {recommended && !isCurrent && (
-                    <div className="absolute top-2 right-2 text-[10px] font-bold text-orange-500 bg-orange-950/30 px-2 py-0.5 rounded-full border border-orange-500/20">
-                        POPULAIRE
-                    </div>
-                )}
-
-                <h3 className={`font-bold text-sm ${isCurrent ? 'text-emerald-400' : 'text-white'}`}>{title}</h3>
-                <div className="mt-1 mb-3">
-                    <span className="text-xl font-bold text-white">{price}</span>
-                    <span className="text-xs text-zinc-500">/mois</span>
-                </div>
-
-                <ul className="space-y-1.5">
-                    {features.map((f: string, i: number) => (
-                        <li key={i} className="flex items-start gap-2 text-xs text-zinc-400">
-                            <span className={`mt-0.5 w-1 h-1 rounded-full ${isCurrent ? 'bg-emerald-500' : 'bg-zinc-600'}`}></span>
-                            {f}
-                        </li>
-                    ))}
-                </ul>
-
-                {!isCurrent && (
-                    <button disabled={loading} className="mt-4 w-full py-1.5 rounded bg-white text-black text-xs font-bold hover:bg-zinc-200 transition-colors">
-                        {loading ? '...' : 'Choisir'}
-                    </button>
-                )}
-            </div>
-        );
-    };
-
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
@@ -80,9 +91,9 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                 <div className="md:w-64 bg-black border-r border-zinc-900 p-6 flex flex-col gap-2">
                     <div className="mb-6 flex flex-col items-center text-center">
                         <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center text-2xl font-bold text-zinc-400 mb-3">
-                            {(user as any)?.name?.[0] || 'U'}
+                            {user?.full_name?.[0] || 'U'}
                         </div>
-                        <h3 className="text-white font-bold text-sm truncate w-full">{(user as any)?.name}</h3>
+                        <h3 className="text-white font-bold text-sm truncate w-full">{user?.full_name}</h3>
                         <p className="text-zinc-500 text-xs truncate w-full">{user?.email}</p>
                         <div className="mt-3 px-3 py-1 bg-zinc-900 rounded-full border border-zinc-800 text-[10px] font-mono text-zinc-400 uppercase">
                             {currentPlan} PLAN
@@ -126,6 +137,9 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                                     title="Starter"
                                     price="Gratuit"
                                     features={["1 Bot WhatsApp", "50 Produits", "Support Email"]}
+                                    currentPlan={currentPlan}
+                                    loading={loading}
+                                    onUpgrade={handleUpgrade}
                                 />
                                 <PlanCard
                                     id="pro"
@@ -133,12 +147,18 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                                     price="15.000 FCFA"
                                     recommended={true}
                                     features={["IA Avancée", "Produits Illimités", "Relance Paniers", "Support Prio"]}
+                                    currentPlan={currentPlan}
+                                    loading={loading}
+                                    onUpgrade={handleUpgrade}
                                 />
                                 <PlanCard
                                     id="business"
                                     title="Business"
                                     price="45.000 FCFA"
                                     features={["3 Numéros", "IA Vocale", "API Access", "Manager Dédié"]}
+                                    currentPlan={currentPlan}
+                                    loading={loading}
+                                    onUpgrade={handleUpgrade}
                                 />
                             </div>
 
@@ -166,7 +186,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                                     <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase">Nom Complet</label>
                                     <div className="relative">
                                         <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-                                        <input type="text" defaultValue={(user as any)?.name} className="w-full bg-black border border-zinc-800 rounded p-2.5 pl-9 text-white text-sm focus:border-orange-500 outline-none" />
+                                        <input type="text" defaultValue={user?.full_name} className="w-full bg-black border border-zinc-800 rounded p-2.5 pl-9 text-white text-sm focus:border-orange-500 outline-none" />
                                     </div>
                                 </div>
                                 <div>
@@ -180,7 +200,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                                     <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase">Nom du Business</label>
                                     <div className="relative">
                                         <Building size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-                                        <input type="text" defaultValue={(user as any)?.tenant?.name} className="w-full bg-black border border-zinc-800 rounded p-2.5 pl-9 text-white text-sm focus:border-orange-500 outline-none" />
+                                        <input type="text" defaultValue={tenant?.name} className="w-full bg-black border border-zinc-800 rounded p-2.5 pl-9 text-white text-sm focus:border-orange-500 outline-none" />
                                     </div>
                                 </div>
 

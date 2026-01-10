@@ -13,35 +13,35 @@ const WhatsAppConnect: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const API_URL = getApiUrl();
 
-    const fetchStatus = async () => {
-        try {
-            const res = await fetch(`${API_URL}/whatsapp/status`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (res.status === 401) {
-                return;
-            }
-
-            const data = await res.json();
-            setStatus(data.status);
-            setQr(data.qrCode || null);
-        } catch (error) {
-            console.error('Failed to fetch status', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
         if (!token) return;
+
+        const fetchStatus = async () => {
+            try {
+                const res = await fetch(`${API_URL}/whatsapp/status`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (res.status === 401) {
+                    return;
+                }
+
+                const data = await res.json();
+                setStatus(data.status);
+                setQr(data.qrCode || null);
+            } catch (error) {
+                console.error('Failed to fetch status', error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
         fetchStatus();
         const interval = setInterval(fetchStatus, 3000);
         return () => clearInterval(interval);
-    }, [token]);
+    }, [token, API_URL]);
 
     const handleLogout = async () => {
         if (!confirm('Voulez-vous vraiment déconnecter votre WhatsApp ?')) return;
@@ -55,7 +55,7 @@ const WhatsAppConnect: React.FC = () => {
             });
             setStatus('disconnected');
             setQr(null);
-            fetchStatus();
+            // Polling in useEffect will update status eventually if needed
         } catch (error) {
             console.error('Logout failed', error);
         }

@@ -6,7 +6,15 @@ import { useAuth } from '../context/AuthContext';
 
 // --- COMPONENTS ---
 
-const StatCard = ({ title, value, change, icon: Icon, subtitle }: any) => (
+interface StatCardProps {
+    title: string;
+    value: string;
+    change: string;
+    icon: React.ElementType;
+    subtitle: string;
+}
+
+const StatCard = ({ title, value, change, icon: Icon, subtitle }: StatCardProps) => (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-orange-500/30 transition-all group shadow-sm hover:shadow-orange-500/10">
         <div className="flex justify-between items-start mb-4">
             <div>
@@ -26,7 +34,7 @@ const StatCard = ({ title, value, change, icon: Icon, subtitle }: any) => (
     </div>
 );
 
-const ActivityFeed = ({ logs }: { logs: any[] }) => {
+const ActivityFeed = ({ logs }: { logs: Log[] }) => {
     return (
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-6">
@@ -62,7 +70,7 @@ const ActivityFeed = ({ logs }: { logs: any[] }) => {
     );
 };
 
-const RecentOrders = ({ orders }: { orders: any[] }) => {
+const RecentOrders = ({ orders }: { orders: DashboardOrder[] }) => {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'PENDING': return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20';
@@ -115,7 +123,7 @@ const RecentOrders = ({ orders }: { orders: any[] }) => {
                                         </span>
                                     </td>
                                     <td className="py-3 text-xs text-zinc-500 text-right font-mono">
-                                        {new Date(order.createdAt || order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        {new Date(order.createdAt || order.created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </td>
                                 </tr>
                             ))
@@ -127,27 +135,52 @@ const RecentOrders = ({ orders }: { orders: any[] }) => {
     );
 };
 
+interface DashboardOrder {
+    id: string;
+    total: number;
+    createdAt?: string;
+    created_at?: string;
+    status: string;
+    userId: string;
+    items: unknown[];
+}
+
+interface Log {
+    id: string;
+    type: string;
+    message: string;
+    created_at: string;
+}
+
+interface Stats {
+    revenue: string;
+    orders: number;
+    conversion: number;
+}
+
+interface ChartData {
+    name: string;
+    sales: number;
+}
+
 export default function Overview() {
 
     const { token, user, tenant } = useAuth();
     const [lang, setLang] = useState<'fr' | 'en'>('fr');
-    const [greeting, setGreeting] = useState('');
-    const [chartData, setChartData] = useState<any[]>([]);
-    const [stats, setStats] = useState<any>({ revenue: "0 FCFA", orders: 0, conversion: 3.2 });
+    // greeting calculated on render
+    const [chartData, setChartData] = useState<ChartData[]>([]);
+    const [stats, setStats] = useState<Stats>({ revenue: "0 FCFA", orders: 0, conversion: 3.2 });
 
     // New States
-    const [logs, setLogs] = useState<any[]>([]);
-    const [recentOrders, setRecentOrders] = useState<any[]>([]);
+    const [logs, setLogs] = useState<Log[]>([]);
+    const [recentOrders, setRecentOrders] = useState<DashboardOrder[]>([]);
 
-    useEffect(() => {
-        const hour = new Date().getHours();
-        const isEvening = hour >= 18 || hour < 5;
-        const displayName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || tenant?.name || 'Vendeur';
-        setGreeting(lang === 'fr'
-            ? `${isEvening ? 'Bonsoir' : 'Bonjour'} ${displayName}`
-            : `${isEvening ? 'Good evening' : 'Good morning'} ${displayName}`
-        );
-    }, [lang, user, tenant]);
+    const hour = new Date().getHours();
+    const isEvening = hour >= 18 || hour < 5;
+    const displayName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || tenant?.name || 'Vendeur';
+    const greeting = lang === 'fr'
+        ? `${isEvening ? 'Bonsoir' : 'Bonjour'} ${displayName}`
+        : `${isEvening ? 'Good evening' : 'Good morning'} ${displayName}`;
 
     useEffect(() => {
         if (!token) return;
@@ -166,7 +199,7 @@ export default function Overview() {
                 const resRecent = await fetch(`${API_URL}/dashboard/recent-orders`, { headers: { 'Authorization': `Bearer ${token}` } });
 
                 if (resOrders.ok) {
-                    const orders = await resOrders.json();
+                    const orders: DashboardOrder[] = await resOrders.json();
 
                     // Chart Logic
                     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -177,17 +210,17 @@ export default function Overview() {
                     const daysMap = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
                     const newChartData = last7Days.map(date => {
                         const dayName = daysMap[date.getDay()];
-                        const dayOrders = orders.filter((o: any) => {
-                            const d = new Date(o.createdAt); // Try both camelCase and snake_case if unsure, usually API returns consistent format
+                        const dayOrders = orders.filter(o => {
+                            const d = new Date(o.createdAt || o.created_at || ''); // Try both camelCase and snake_case if unsure, usually API returns consistent format
                             return d.getDate() === date.getDate() && d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear();
                         });
-                        const dayTotal = dayOrders.reduce((sum: number, o: any) => sum + o.total, 0);
+                        const dayTotal = dayOrders.reduce((sum, o) => sum + o.total, 0);
                         return { name: dayName, sales: dayTotal };
                     });
                     setChartData(newChartData);
 
                     // Stats Logic
-                    const totalRevenue = orders.reduce((sum: number, o: any) => sum + o.total, 0);
+                    const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
                     setStats({
                         revenue: new Intl.NumberFormat('fr-FR').format(totalRevenue) + ' FCFA',
                         orders: orders.length,
@@ -257,7 +290,7 @@ export default function Overview() {
                 />
                 <StatCard
                     title={content.orders}
-                    value={stats.orders}
+                    value={String(stats.orders)}
                     change="+8.2%"
                     icon={ShoppingCart}
                     subtitle={content.vs}

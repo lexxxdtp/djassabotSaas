@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, type ReactNode } from 'react';
 
 interface User {
     id: string;
@@ -28,29 +28,24 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [tenant, setTenant] = useState<Tenant | null>(null);
-    const [token, setToken] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        // Init from localStorage
-        const storedToken = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
-        const storedTenant = localStorage.getItem('tenant');
-
-        if (storedToken && storedUser && storedTenant) {
-            try {
-                setToken(storedToken);
-                setUser(JSON.parse(storedUser));
-                setTenant(JSON.parse(storedTenant));
-            } catch (e) {
-                console.error('Failed to parse auth data', e);
-                logout();
-            }
+    const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
+    const [user, setUser] = useState<User | null>(() => {
+        try {
+            const item = localStorage.getItem('user');
+            return item ? JSON.parse(item) : null;
+        } catch {
+            return null;
         }
-        setIsLoading(false);
-    }, []);
+    });
+    const [tenant, setTenant] = useState<Tenant | null>(() => {
+        try {
+            const item = localStorage.getItem('tenant');
+            return item ? JSON.parse(item) : null;
+        } catch {
+            return null;
+        }
+    });
+    const isLoading = false;
 
     const login = (newToken: string, newUser: User, newTenant: Tenant) => {
         setToken(newToken);

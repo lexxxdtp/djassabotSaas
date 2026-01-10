@@ -19,12 +19,30 @@ interface ProductVariation {
     options: VariationOption[]; // Array of options with stock/price
 }
 
+interface Product {
+    id?: string;
+    name: string;
+    price: number | string;
+    stock: number | string;
+    description: string;
+    images: string[];
+    variations: ProductVariation[];
+    aiInstructions: string;
+    ai_instructions?: string; // from DB
+}
+
+interface VariationTemplate {
+    name: string;
+    default_options: { value: string; priceModifier: number }[];
+    isSystem: boolean;
+}
+
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [product, setProduct] = useState<any>({
+    const [product, setProduct] = useState<Product>({
         name: '',
         price: '',
         stock: '',
@@ -38,7 +56,7 @@ const ProductDetail: React.FC = () => {
     const [variationsEnabled, setVariationsEnabled] = useState(false);
 
     // Variation Templates State
-    const [variationTemplates, setVariationTemplates] = useState<any[]>([]);
+    const [variationTemplates, setVariationTemplates] = useState<VariationTemplate[]>([]);
 
     // Load variation templates
     useEffect(() => {
@@ -50,7 +68,7 @@ const ProductDetail: React.FC = () => {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
-                    const data = await res.json();
+                    const data: VariationTemplate[] = await res.json();
                     setVariationTemplates(data);
                 }
             } catch (error) {
@@ -83,9 +101,9 @@ const ProductDetail: React.FC = () => {
                 }
 
                 const data = await res.json();
-                const found = data.find((p: any) => p.id === id);
+                const found = data.find((p: Product) => p.id === id);
                 if (found) {
-                    const productData = {
+                    const productData: Product = {
                         ...found,
                         images: found.images || [],
                         variations: found.variations || [],
@@ -94,7 +112,7 @@ const ProductDetail: React.FC = () => {
                     setProduct(productData);
 
                     // Auto-enable variations toggle if product has active variations
-                    const hasActiveVariations = productData.variations && productData.variations.some((v: any) =>
+                    const hasActiveVariations = productData.variations && productData.variations.some((v: ProductVariation) =>
                         v.name && v.name.trim() !== '' && v.options && v.options.length > 0
                     );
                     setVariationsEnabled(hasActiveVariations);
@@ -302,7 +320,7 @@ const ProductDetail: React.FC = () => {
             updateVariationOption(varIndex, optIndex, 'images', [...currentImages, ...newImages]);
 
             // Also add to main gallery so they appear at the top
-            setProduct((prev: any) => ({
+            setProduct((prev: Product) => ({
                 ...prev,
                 images: [...prev.images, ...newImages]
             }));
@@ -384,7 +402,7 @@ const ProductDetail: React.FC = () => {
                                 <button
                                     onClick={() => setProduct({
                                         ...product,
-                                        images: product.images.filter((_: any, i: number) => i !== idx + 1)
+                                        images: product.images.filter((_: string, i: number) => i !== idx + 1)
                                     })}
                                     className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
