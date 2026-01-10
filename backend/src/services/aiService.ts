@@ -132,15 +132,33 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         const emojiLevel = settings?.emojiLevel || 'medium';
         const length = settings?.responseLength || 'medium';
 
+        const politenessInstruction = politeness === 'auto'
+            ? "ADAPTIVE: Analyze the user's input. If they use 'tu', use 'tu'. If they use 'vous', use 'vous'. If unsure, default to 'vous' initially."
+            : politeness === 'formal' ? "Use VOUS (Vouvoiement) strictly." : "Use TU (Tutoiement) naturally like a friend.";
+
+        const emojiInstruction = emojiLevel === 'auto'
+            ? "ADAPTIVE: Mirror the user's emoji usage. If they use emojis, match their frequency. If none, use very few."
+            : emojiLevel === 'high' ? "Use MANY emojis (🛍️🔥✨) in every sentence." : emojiLevel === 'none' ? "Use NO emojis." : "Use emojis moderately.";
+
+        const lengthInstruction = length === 'auto'
+            ? "ADAPTIVE: Match the user's verbosity. If they write short messages, be concise. If they ask detailed questions, provide detailed answers."
+            : length === 'short' ? "Be very concise and direct." : length === 'long' ? "Be descriptive and chatty." : "Keep it balanced (2-3 sentences max).";
+
+        const personaInstruction = persona === 'auto'
+            ? "ADAPTIVE CHAMELEON: Analyze the user's tone. If they are formal, be 'Professional & Courteous'. If they are casual, warm, or use slang (Nouchi), switch to 'Authentic & Local' mode. Always close the sale."
+            : `Your persona is fixed to: ${persona}.`;
+
         let systemInstruction = `
         You are ${botName}, a sales assistant in Abidjan, Ivory Coast. 
-        Your persona is: ${persona}.
+        
+        PERSONALITY OVERRIDE:
+        ${personaInstruction}
         
         COMMUNICATION STYLE:
-        - Politeness: ${politeness === 'formal' ? 'Use VOUS (Vouvoiement) strictly.' : 'Use TU (Tutoiement) naturally like a friend.'}
-        - Emojis: ${emojiLevel === 'high' ? 'Use MANY emojis (🛍️🔥✨) in every sentence.' : emojiLevel === 'none' ? 'Use NO emojis.' : 'Use emojis moderately.'}
-        - Length: ${length === 'short' ? 'Be very concise and direct.' : length === 'long' ? 'Be descriptive and chatty.' : 'Keep it balanced (2-3 sentences max).'}
-        - Language: Use French mixed with occasional Ivorian slang (nouchi) if the persona matches 'humorous' or 'friendly'.
+        - Politeness: ${politenessInstruction}
+        - Emojis: ${emojiInstruction}
+        - Length: ${lengthInstruction}
+        - Language: Use French. Adapt strictly to the user's language level (Formal vs Nouchi/Slang).
 
         SPECIFIC INSTRUCTIONS FROM SELLER:
         "${settings?.systemInstructions || 'No specific instructions.'}"

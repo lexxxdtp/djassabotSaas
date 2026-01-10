@@ -307,10 +307,11 @@ export default function Settings() {
                                         onChange={e => setConfig({ ...config, persona: e.target.value })}
                                         className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all appearance-none cursor-pointer"
                                     >
-                                        <option value="professional">🤵 Professionnel & Distingué</option>
-                                        <option value="friendly">😊 Amical & Chaleureux</option>
-                                        <option value="humorous">😂 Drôle & Ivoirien (Enjaillement)</option>
-                                        <option value="assertive">🔥 Dynamique & Offensif</option>
+                                        <option value="auto" className="font-bold text-orange-400">✨ Adaptatif (S'adapte au client)</option>
+                                        <option value="professional">Formel & Courtois</option>
+                                        <option value="friendly">Empathique & Accueillant</option>
+                                        <option value="humorous">Authentique & Local</option>
+                                        <option value="assertive">Commercial & Persuasif</option>
                                     </select>
                                 </div>
                             </div>
@@ -324,6 +325,7 @@ export default function Settings() {
                                         onChange={e => setConfig({ ...config, politeness: e.target.value })}
                                         className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
                                     >
+                                        <option value="auto" className="font-bold text-orange-400">✨ Adaptatif (Auto)</option>
                                         <option value="formal">Vous (Vouvoiement)</option>
                                         <option value="informal">Tu (Tutoiement)</option>
                                     </select>
@@ -335,10 +337,11 @@ export default function Settings() {
                                         onChange={e => setConfig({ ...config, emojiLevel: e.target.value })}
                                         className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
                                     >
-                                        <option value="high">🌟 Beaucoup</option>
-                                        <option value="medium">🙂 Modéré</option>
-                                        <option value="low">😐 Rarement</option>
-                                        <option value="none">🚫 Aucun</option>
+                                        <option value="auto" className="font-bold text-orange-400">✨ Adaptatif (Auto)</option>
+                                        <option value="high">Abondant</option>
+                                        <option value="medium">Modéré</option>
+                                        <option value="low">Minimal</option>
+                                        <option value="none">Aucun</option>
                                     </select>
                                 </div>
                                 <div>
@@ -348,9 +351,10 @@ export default function Settings() {
                                         onChange={e => setConfig({ ...config, responseLength: e.target.value })}
                                         className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
                                     >
-                                        <option value="short">⚡️ Concis</option>
-                                        <option value="medium">📝 Équilibré</option>
-                                        <option value="long">📖 Détaillé</option>
+                                        <option value="auto" className="font-bold text-orange-400">✨ Adaptatif (Auto)</option>
+                                        <option value="short">Court & Direct</option>
+                                        <option value="medium">Équilibré</option>
+                                        <option value="long">Détaillé & Explicatif</option>
                                     </select>
                                 </div>
                             </div>
