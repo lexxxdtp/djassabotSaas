@@ -38,6 +38,7 @@ const Products: React.FC = () => {
         aiInstructions: ''
     });
     const [uploading, setUploading] = useState(false);
+    const [variationsEnabled, setVariationsEnabled] = useState(false);
 
     // Fetch Products
     const fetchProducts = async () => {
@@ -74,6 +75,7 @@ const Products: React.FC = () => {
     const openCreateModal = () => {
         setEditingId(null);
         setProductForm({ name: '', price: '', stock: '', description: '', images: [], variations: [], aiInstructions: '' });
+        setVariationsEnabled(false);
         setIsModalOpen(true);
     };
 
@@ -89,6 +91,11 @@ const Products: React.FC = () => {
             variations: product.variations || [],
             aiInstructions: product.aiInstructions || product.ai_instructions || ''
         });
+        // Enable variations toggle if product has active variations
+        const hasActiveVariations = product.variations && product.variations.some((v: any) =>
+            v.name && v.options && v.options.length > 0
+        );
+        setVariationsEnabled(hasActiveVariations);
         setIsModalOpen(true);
     };
 
@@ -332,7 +339,7 @@ const Products: React.FC = () => {
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-lg p-6 relative animate-in fade-in zoom-in duration-200 shadow-2xl shadow-black/50">
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 relative animate-in fade-in zoom-in duration-200 shadow-2xl shadow-black/50">
                         <button
                             onClick={() => setIsModalOpen(false)}
                             className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
@@ -517,28 +524,56 @@ const Products: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Section Déclinaisons */}
+                            {/* Section Déclinaisons avec Toggle */}
                             <div className="border-t border-zinc-800 pt-4 mt-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-2">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
                                         <Tags size={16} className="text-orange-500" />
                                         <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Déclinaisons</span>
+
+                                        {/* Toggle Switch */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newState = !variationsEnabled;
+                                                setVariationsEnabled(newState);
+                                                if (!newState) {
+                                                    setProductForm({ ...productForm, variations: [] });
+                                                }
+                                            }}
+                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${variationsEnabled ? 'bg-orange-500' : 'bg-zinc-700'}`}
+                                        >
+                                            <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${variationsEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
+                                        </button>
+                                        <span className={`text-[10px] ${variationsEnabled ? 'text-orange-400' : 'text-zinc-600'}`}>
+                                            {variationsEnabled ? 'ON' : 'OFF'}
+                                        </span>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setProductForm({
-                                            ...productForm,
-                                            variations: [...productForm.variations, { name: '', options: [] }]
-                                        })}
-                                        className="text-xs text-orange-500 hover:text-orange-400 flex items-center gap-1"
-                                    >
-                                        <Plus size={14} />
-                                        Ajouter
-                                    </button>
+
+                                    {variationsEnabled && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setProductForm({
+                                                ...productForm,
+                                                variations: [...productForm.variations, { name: '', options: [] }]
+                                            })}
+                                            className="text-xs text-orange-500 hover:text-orange-400 flex items-center gap-1"
+                                        >
+                                            <Plus size={14} />
+                                            Ajouter
+                                        </button>
+                                    )}
                                 </div>
 
-                                {productForm.variations.length === 0 ? (
-                                    <p className="text-zinc-600 text-xs">Optionnel: Taille, Couleur, Saveur...</p>
+                                <p className="text-zinc-600 text-[10px] mb-3">
+                                    {variationsEnabled
+                                        ? 'Définissez les options (Taille, Couleur...). Le stock sera géré par variation.'
+                                        : 'Activez si votre produit a des tailles, couleurs, saveurs...'
+                                    }
+                                </p>
+
+                                {!variationsEnabled ? null : productForm.variations.length === 0 ? (
+                                    <p className="text-zinc-500 text-xs py-2 text-center border border-dashed border-zinc-800 rounded-lg">Cliquez sur "Ajouter" pour créer une déclinaison</p>
                                 ) : (
                                     <div className="space-y-3">
                                         {productForm.variations.map((variation, varIdx) => (
