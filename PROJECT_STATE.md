@@ -41,7 +41,7 @@
 PORT=3000
 SUPABASE_URL=https://dnglgyviycbpoerywanc.supabase.co
 SUPABASE_KEY=eyJhbGci... (clé anon publique)
-GEMINI_API_KEY=AIzaSyDZHNr1DNVBUwzN8z0wZGp7R_XwdZi0EO8
+GEMINI_API_KEY=AIzaSy*******************************
 JWT_SECRET=tdjaasa-super-secret-change-in-production (par défaut si non défini)
 MERCHANT_PHONE=2250700000000
 ```
@@ -144,7 +144,7 @@ accepted_payments (text[])
 ### 2026-01-10 - Erreur "Génération de résumé"
 - **Cause:** Clé API Gemini signalée comme leaked (403 Forbidden)
 - **Solution:** Nouvelle clé API générée et mise à jour
-- **Nouvelle clé:** `AIzaSyDZHNr1DNVBUwzN8z0wZGp7R_XwdZi0EO8`
+- **Nouvelle clé:** `AIzaSy*******************************`
 - **Modèle restauré:** `gemini-2.5-flash` (confirmé fonctionnel)
 
 ### 2026-01-10 - Persistance des Settings
