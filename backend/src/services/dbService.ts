@@ -443,10 +443,15 @@ export const db = {
                         voiceEnabled: data.voice_enabled ?? true,
                         systemInstructions: data.system_instructions || '',
                         storeName: data.store_name,
+                        businessType: data.business_type || '',
                         address: data.address,
+                        locationUrl: data.location_url || '',
+                        gpsCoordinates: data.gps_coordinates || '',
                         phone: data.phone,
+                        socialMedia: data.social_media || {},
                         hours: data.hours,
                         returnPolicy: data.return_policy,
+                        policyDescription: data.policy_description || '',
                         deliveryAbidjanPrice: data.delivery_abidjan_price ?? 1500,
                         deliveryInteriorPrice: data.delivery_interior_price ?? 3000,
                         freeDeliveryThreshold: data.free_delivery_threshold ?? 50000,
@@ -476,10 +481,15 @@ export const db = {
                 if (settings.voiceEnabled !== undefined) dbSettings.voice_enabled = settings.voiceEnabled;
                 if (settings.systemInstructions !== undefined) dbSettings.system_instructions = settings.systemInstructions;
                 if (settings.storeName !== undefined) dbSettings.store_name = settings.storeName;
+                if (settings.businessType !== undefined) dbSettings.business_type = settings.businessType;
                 if (settings.address !== undefined) dbSettings.address = settings.address;
+                if (settings.locationUrl !== undefined) dbSettings.location_url = settings.locationUrl;
+                if (settings.gpsCoordinates !== undefined) dbSettings.gps_coordinates = settings.gpsCoordinates;
                 if (settings.phone !== undefined) dbSettings.phone = settings.phone;
+                if (settings.socialMedia !== undefined) dbSettings.social_media = settings.socialMedia;
                 if (settings.hours !== undefined) dbSettings.hours = settings.hours;
                 if (settings.returnPolicy !== undefined) dbSettings.return_policy = settings.returnPolicy;
+                if (settings.policyDescription !== undefined) dbSettings.policy_description = settings.policyDescription;
                 if (settings.deliveryAbidjanPrice !== undefined) dbSettings.delivery_abidjan_price = settings.deliveryAbidjanPrice;
                 if (settings.deliveryInteriorPrice !== undefined) dbSettings.delivery_interior_price = settings.deliveryInteriorPrice;
                 if (settings.freeDeliveryThreshold !== undefined) dbSettings.free_delivery_threshold = settings.freeDeliveryThreshold;
@@ -508,10 +518,15 @@ export const db = {
                         voiceEnabled: data.voice_enabled ?? true,
                         systemInstructions: data.system_instructions || '',
                         storeName: data.store_name,
+                        businessType: data.business_type || '',
                         address: data.address,
+                        locationUrl: data.location_url || '',
+                        gpsCoordinates: data.gps_coordinates || '',
                         phone: data.phone,
+                        socialMedia: data.social_media || {},
                         hours: data.hours,
                         returnPolicy: data.return_policy,
+                        policyDescription: data.policy_description || '',
                         deliveryAbidjanPrice: data.delivery_abidjan_price ?? 1500,
                         deliveryInteriorPrice: data.delivery_interior_price ?? 3000,
                         freeDeliveryThreshold: data.free_delivery_threshold ?? 50000,

@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import axios from 'axios';
+import { Settings } from '../types';
 
 dotenv.config();
 
@@ -59,9 +60,6 @@ NEGOTIATION ENGINE:
 PAYMENT:
 - Payment is done via Wave Link (generated automatically later).
 `;
-
-// Update context interface
-import { Settings } from './dbService';
 
 const mockNegotiationLogic = (userText: string, context: any) => {
     const text = userText.toLowerCase();
@@ -148,8 +146,23 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
             ? "ADAPTIVE CHAMELEON: Analyze the user's tone. If they are formal, be 'Professional & Courteous'. If they are casual, warm, or use slang (Nouchi), switch to 'Authentic & Local' mode. Always close the sale."
             : `Your persona is fixed to: ${persona}.`;
 
+        const storeContext = `
+        STORE IDENTITY (Your Business):
+        - Name: ${settings?.storeName}
+        - Activity: ${settings?.businessType || 'General Retail'}
+        - Location: ${settings?.address}
+        - Google Maps: ${settings?.locationUrl || 'N/A'}
+        - GPS: ${settings?.gpsCoordinates || 'N/A'}
+        - Hours: ${settings?.hours}
+        - Contact: ${settings?.phone}
+        - Return Policy: ${settings?.returnPolicy === 'satisfait_rembourse' ? 'Satisfied or Refunded' : settings?.returnPolicy === 'echange_only' ? 'Exchange Only (No refund)' : 'Final Sale (No return)'}
+        - Detailed Policy/Rules: "${settings?.policyDescription || 'Standard rules.'}"
+        `;
+
         let systemInstruction = `
-        You are ${botName}, a sales assistant in Abidjan, Ivory Coast. 
+        You are ${botName}, a smart sales assistant for ${settings?.storeName} in Abidjan.
+        
+        ${storeContext}
         
         PERSONALITY OVERRIDE:
         ${personaInstruction}
@@ -164,8 +177,8 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         "${settings?.systemInstructions || 'No specific instructions.'}"
 
         GOAL:
-        Sell products, answer questions, and be helpful.
-        NEVER inventive prices. Stick to the Context provided.
+        Sell products, answer questions based on the STORE IDENTITY above, and be helpful.
+        NEVER invent prices. Stick to the Context provided.
         `;
 
         // Add Few-Shot Training Examples if they exist
@@ -332,3 +345,29 @@ export const detectPurchaseIntent = async (userText: string, productContext: str
         return { intent: "CHAT" };
     }
 }
+
+export const generateIdentitySummary = async (settings: Settings) => {
+    const currentModel = getModel();
+    if (!currentModel) return "Impossible de générer le résumé (Pas de clé API configurée).";
+
+    const prompt = `
+    Agis comme le bot défini par ces paramètres. Fais une courte présentation (introspective) de qui tu es, ta mission, ton ton, et tes règles principales.
+    
+    CONFIG:
+    Nom: ${settings.botName}
+    Boutique: ${settings.storeName} (${settings.businessType})
+    Vendeur: ${settings.persona} (Politesse: ${settings.politeness}, Emojis: ${settings.emojiLevel})
+    Politique: ${settings.policyDescription || 'Standard'}
+    Instructions: ${settings.systemInstructions}
+    
+    Réponds à la première personne (Je).
+    `;
+
+    try {
+        const result = await currentModel.generateContent(prompt);
+        return result.response.text();
+    } catch (e) {
+        console.error("Error generating summary:", e);
+        return "Erreur génération résumé.";
+    }
+};

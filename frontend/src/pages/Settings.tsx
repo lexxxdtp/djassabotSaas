@@ -39,10 +39,20 @@ export default function Settings() {
         voiceEnabled: boolean;
         systemInstructions: string;
         storeName: string;
+        businessType: string;
         address: string;
+        locationUrl: string;
+        gpsCoordinates: string;
         phone: string;
+        socialMedia: {
+            facebook: string;
+            instagram: string;
+            tiktok: string;
+            website: string;
+        };
         hours: string;
         returnPolicy: string;
+        policyDescription: string;
         deliveryAbidjanPrice: number;
         deliveryInteriorPrice: number;
         freeDeliveryThreshold: number;
@@ -68,10 +78,20 @@ export default function Settings() {
 
         // Business
         storeName: 'Ma Boutique Mode',
+        businessType: 'Mode & Vêtements', // New
         address: 'Cocody Riviera 2, Abidjan',
+        locationUrl: '', // New: Google Maps URL
+        gpsCoordinates: '', // New
         phone: '+225 07 00 00 00 00',
+        socialMedia: { // New
+            facebook: '',
+            instagram: '',
+            tiktok: '',
+            website: ''
+        },
         hours: '08:00 - 20:00',
-        returnPolicy: 'satisfait_rembourse', // or 'ni_repris'
+        returnPolicy: 'satisfait_rembourse',
+        policyDescription: '', // New: Long text description
 
         // Logistics
         deliveryAbidjanPrice: 1500,
@@ -79,6 +99,9 @@ export default function Settings() {
         freeDeliveryThreshold: 50000,
         acceptedPayments: ['wave', 'om', 'cash'],
     });
+
+    const [aiSummary, setAiSummary] = useState('');
+    const [summarizing, setSummarizing] = useState(false);
 
     const API_URL = getApiUrl();
 
@@ -496,13 +519,100 @@ export default function Settings() {
                 {/* --- TAB 2: BUSINESS --- */}
                 {activeTab === 'business' && (
                     <div className="space-y-6">
+                        {/* 1. Type d'Activité */}
                         <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Point de Vente
+                                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Type d'Activité
+                            </h2>
+                            <div>
+                                <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Secteur d'Activité</label>
+                                <select
+                                    value={config.businessType}
+                                    onChange={e => setConfig({ ...config, businessType: e.target.value })}
+                                    className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
+                                >
+                                    <option value="Mode & Vêtements">Mode & Vêtements (Fashion)</option>
+                                    <option value="Chaussures & Sneakers">Chaussures & Sneakers</option>
+                                    <option value="Beauté & Cosmétiques">Beauté & Cosmétiques</option>
+                                    <option value="Électronique & Gadgets">Électronique & Gadgets</option>
+                                    <option value="Restauration & Fast-Food">Restauration & Fast-Food</option>
+                                    <option value="Épicerie & Supermarché">Épicerie & Supermarché</option>
+                                    <option value="Immobilier & Location">Immobilier & Location</option>
+                                    <option value="Services & Consulting">Services & Consulting</option>
+                                    <option value="Automobile & Pièces">Automobile & Pièces</option>
+                                    <option value="Bijouterie & Accessoires">Bijouterie & Accessoires</option>
+                                    <option value="Autre">Autre (Personnalisé)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* 2. Coordonnées & Réseaux */}
+                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8">
+                            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
+                                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Contacts & Réseaux
                             </h2>
                             <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Téléphone Business</label>
+                                    <input
+                                        type="text"
+                                        value={config.phone}
+                                        onChange={e => setConfig({ ...config, phone: e.target.value })}
+                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                        placeholder="+225..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Site Web</label>
+                                    <input
+                                        type="text"
+                                        value={config.socialMedia?.website || ''}
+                                        onChange={e => setConfig({ ...config, socialMedia: { ...config.socialMedia, website: e.target.value } })}
+                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                        placeholder="https://..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Facebook URL</label>
+                                    <input
+                                        type="text"
+                                        value={config.socialMedia?.facebook || ''}
+                                        onChange={e => setConfig({ ...config, socialMedia: { ...config.socialMedia, facebook: e.target.value } })}
+                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                        placeholder="facebook.com/page..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Instagram URL</label>
+                                    <input
+                                        type="text"
+                                        value={config.socialMedia?.instagram || ''}
+                                        onChange={e => setConfig({ ...config, socialMedia: { ...config.socialMedia, instagram: e.target.value } })}
+                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                        placeholder="instagram.com/user..."
+                                    />
+                                </div>
                                 <div className="md:col-span-2">
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Adresse</label>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">TikTok URL</label>
+                                    <input
+                                        type="text"
+                                        value={config.socialMedia?.tiktok || ''}
+                                        onChange={e => setConfig({ ...config, socialMedia: { ...config.socialMedia, tiktok: e.target.value } })}
+                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                        placeholder="tiktok.com/@user..."
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. Localisation */}
+                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8">
+                            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
+                                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Localisation
+                            </h2>
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Adresse Physique</label>
                                     <div className="relative">
                                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600 w-4 h-4" />
                                         <input
@@ -510,32 +620,78 @@ export default function Settings() {
                                             value={config.address}
                                             onChange={e => setConfig({ ...config, address: e.target.value })}
                                             className="w-full bg-black border border-neutral-800 rounded-lg p-3 pl-10 text-white focus:border-orange-500 outline-none"
+                                            placeholder="Quartier, Ville, Commune..."
                                         />
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Horaires</label>
-                                    <div className="relative">
-                                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600 w-4 h-4" />
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Lien Google Maps</label>
                                         <input
                                             type="text"
-                                            value={config.hours}
-                                            onChange={e => setConfig({ ...config, hours: e.target.value })}
-                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 pl-10 text-white focus:border-orange-500 outline-none"
+                                            value={config.locationUrl || ''}
+                                            onChange={e => setConfig({ ...config, locationUrl: e.target.value })}
+                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                            placeholder="https://maps.google.com/..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Coordonnées GPS</label>
+                                        <input
+                                            type="text"
+                                            value={config.gpsCoordinates || ''}
+                                            onChange={e => setConfig({ ...config, gpsCoordinates: e.target.value })}
+                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                            placeholder="5.3600, -3.9000"
                                         />
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* 4. Politique & Fonctionnement */}
+                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8">
+                            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
+                                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Politique & Fonctionnement
+                            </h2>
+                            <div className="space-y-6">
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Horaires d'Ouverture</label>
+                                        <div className="relative">
+                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600 w-4 h-4" />
+                                            <input
+                                                type="text"
+                                                value={config.hours}
+                                                onChange={e => setConfig({ ...config, hours: e.target.value })}
+                                                className="w-full bg-black border border-neutral-800 rounded-lg p-3 pl-10 text-white focus:border-orange-500 outline-none"
+                                                placeholder="Lun-Sam: 08h-20h"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Politique Retour (Simple)</label>
+                                        <select
+                                            value={config.returnPolicy}
+                                            onChange={e => setConfig({ ...config, returnPolicy: e.target.value })}
+                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
+                                        >
+                                            <option value="satisfait_rembourse">✅ Satisfait ou Remboursé</option>
+                                            <option value="echange_only">🔄 Échange uniquement</option>
+                                            <option value="ni_repris">❌ Vente finale</option>
+                                        </select>
+                                    </div>
+                                </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Politique Retour</label>
-                                    <select
-                                        value={config.returnPolicy}
-                                        onChange={e => setConfig({ ...config, returnPolicy: e.target.value })}
-                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
-                                    >
-                                        <option value="satisfait_rembourse">✅ Satisfait ou Remboursé</option>
-                                        <option value="echange_only">🔄 Échange uniquement</option>
-                                        <option value="ni_repris">❌ Vente finale</option>
-                                    </select>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Fonctionnement Détaillé (Politique)</label>
+                                    <p className="text-[10px] text-zinc-500 mb-2">Décrivez ici comment ça marche : paiement à la livraison ou avant ? expédition jour même ? échanges sous 3 jours ? Ceci aidera l'IA à répondre précisément.</p>
+                                    <textarea
+                                        value={config.policyDescription || ''}
+                                        onChange={e => setConfig({ ...config, policyDescription: e.target.value })}
+                                        rows={6}
+                                        className="w-full bg-black border border-neutral-800 rounded-lg p-4 text-white focus:border-orange-500 outline-none placeholder:text-zinc-700 leading-relaxed text-sm"
+                                        placeholder="Ex: Nous livrons partout à Abidjan sous 24h. Le paiement se fait à la livraison via Wave ou Cash. Pour l'intérieur du pays, paiement avant expédition..."
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -629,15 +785,17 @@ export default function Settings() {
                 )}
 
                 {/* --- TAB 4: SIMULATION --- */}
+                {/* --- TAB 4: SIMULATION --- */}
                 {activeTab === 'simulation' && (
                     <div className="space-y-6">
                         <div className="grid md:grid-cols-3 gap-6">
-                            {/* Left Col: Explainer */}
+                            {/* Left Col: Explainer & Summary */}
                             <div className="md:col-span-1 space-y-6">
+                                {/* Zone d'Explication */}
                                 <div className="bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-900/50 rounded-xl p-6">
                                     <h3 className="text-white font-bold text-lg mb-2">Zone de Test</h3>
                                     <p className="text-zinc-400 text-sm leading-relaxed">
-                                        Testez votre bot en temps réel. Les modifications faites dans "Identité" ou "Logistique" sont prises en compte immédiatement ici.
+                                        Testez votre bot en temps réel.
                                     </p>
                                     <ul className="mt-4 space-y-2 text-xs text-zinc-500">
                                         <li className="flex items-center gap-2">
@@ -648,11 +806,70 @@ export default function Settings() {
                                             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                                             Test de la personnalité
                                         </li>
-                                        <li className="flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                                            Vérification des règles
-                                        </li>
                                     </ul>
+                                </div>
+
+                                {/* Résumé IA Auto-Généré */}
+                                <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                                            <Bot size={16} className="text-purple-500" /> Synthèse IA
+                                        </h3>
+                                        {aiSummary && (
+                                            <button
+                                                onClick={() => {
+                                                    setSummarizing(true);
+                                                    setTimeout(() => { // Mock call
+                                                        // Call API here
+                                                        setSummarizing(false);
+                                                    }, 1000);
+                                                }}
+                                                className="text-[10px] text-zinc-500 hover:text-white"
+                                            >
+                                                Regénérer
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {!aiSummary ? (
+                                        <div className="text-center py-6">
+                                            <p className="text-xs text-zinc-500 mb-4">
+                                                Générez une synthèse pour voir ce que l'IA a compris de votre business.
+                                            </p>
+                                            <button
+                                                onClick={async () => {
+                                                    setSummarizing(true);
+                                                    try {
+                                                        const res = await fetch(`${API_URL}/ai/summarize-identity`, {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                'Content-Type': 'application/json',
+                                                                'Authorization': `Bearer ${token}`
+                                                            },
+                                                            body: JSON.stringify(config) // Send current draft config
+                                                        });
+                                                        const data = await res.json();
+                                                        if (data.summary) setAiSummary(data.summary);
+                                                    } catch (e) {
+                                                        console.error(e);
+                                                    } finally {
+                                                        setSummarizing(false);
+                                                    }
+                                                }}
+                                                disabled={summarizing}
+                                                className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 border border-purple-600/50 px-4 py-2 rounded-lg text-xs font-bold transition-all w-full flex items-center justify-center gap-2"
+                                            >
+                                                {summarizing ? <span className="animate-spin">⏳</span> : <Bot size={14} />}
+                                                {summarizing ? 'Analyse...' : 'Générer le Résumé'}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-black/50 p-4 rounded-lg border border-zinc-800">
+                                            <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap italic">
+                                                "{aiSummary}"
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

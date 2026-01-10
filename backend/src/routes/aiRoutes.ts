@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateTenant } from '../middleware/auth';
 import { db } from '../services/dbService';
-import { generateAIResponse, detectPurchaseIntent } from '../services/aiService';
+import { generateAIResponse, detectPurchaseIntent, generateIdentitySummary } from '../services/aiService';
 // Import session service directly to avoid circular dependency issues if any
 import { getSession, updateSession, addToHistory, clearHistory } from '../services/sessionService';
 
@@ -152,5 +152,20 @@ router.post('/reset', async (req: Request, res: Response) => {
     await clearHistory(tenantId, simUserId);
     res.json({ success: true, message: 'Mémoire effacée' });
 });
+
+/**
+ * Générer un résumé de l'identité du bot (Simulation)
+ * POST /api/ai/summarize-identity
+ */
+router.post('/summarize-identity', async (req: Request, res: Response) => {
+    try {
+        const dummySettings = req.body; // Settings envoyés par le client (draft)
+        const summary = await generateIdentitySummary(dummySettings as any);
+        res.json({ summary });
+    } catch (e: any) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 
 export default router;

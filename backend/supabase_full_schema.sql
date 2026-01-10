@@ -109,10 +109,15 @@ create table if not exists settings (
   
   -- Business
   store_name text,
+  business_type text, -- Added
   address text,
+  location_url text, -- Added (Google Maps Link)
+  gps_coordinates text, -- Added
   phone text,
+  social_media jsonb default '{}', -- Added { facebook, instagram, tiktok, website }
   hours text,
   return_policy text,
+  policy_description text, -- Added (Long text)
   
   -- Logistics
   delivery_abidjan_price numeric default 1500,

@@ -69,10 +69,20 @@ export interface Settings {
 
     // Business
     storeName: string;
+    businessType?: string; // New
     address: string;
+    locationUrl?: string; // New
+    gpsCoordinates?: string; // New
     phone: string;
+    socialMedia?: { // New
+        facebook?: string;
+        instagram?: string;
+        tiktok?: string;
+        website?: string;
+    };
     hours: string;
     returnPolicy: string;
+    policyDescription?: string; // New (Detailed policy)
 
     // Logistics
     deliveryAbidjanPrice: number;
