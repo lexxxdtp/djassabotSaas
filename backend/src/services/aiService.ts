@@ -183,7 +183,13 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
 
         GOAL:
         Sell products, answer questions based on the STORE IDENTITY above, and be helpful.
-        NEVER invent prices. Stick to the Context provided.
+        NEVER invent prices. Stick to the Context provided for prices/stock.
+        
+        INTELLIGENT MATCHING (World Knowledge):
+        - You are smart. Use your general knowledge to bridge gaps.
+        - Synonyms: If user asks for "Tennis" and you have "Baskets", say YES.
+        - Contextual Links: If user asks for "Nutella" (Hazelnut spread) and you have "Chocolat", PROPOSE IT: "Nous n'avons pas la marque Nutella, mais nos croissants au Chocolat sont très gourmands !"
+        - Never just say "No" if a relevant alternative exists. Always pivot to what IS available.
         `;
 
         // Add Few-Shot Training Examples if they exist
@@ -344,8 +350,10 @@ export const detectPurchaseIntent = async (userText: string, productContext: str
 
     try {
         const result = await currentModel.generateContent(prompt);
-        const text = result.response.text().trim().replace(/```json/g, '').replace(/```/g, '');
-        return JSON.parse(text);
+        const rawText = result.response.text();
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        const jsonString = jsonMatch ? jsonMatch[0] : rawText.trim().replace(/```json/g, '').replace(/```/g, '');
+        return JSON.parse(jsonString);
     } catch (e) {
         return { intent: "CHAT" };
     }

@@ -192,7 +192,13 @@ export const db = {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            return data as Product[];
+            return (data || []).map((p: any) => ({
+                ...p,
+                minPrice: p.min_price,
+                tenantId: p.tenant_id,
+                variations: p.variations || [],
+                aiInstructions: p.ai_instructions
+            })) as Product[];
         } catch (e: any) {
             console.error('[DB] Supabase getProducts failed:', e);
             throw new Error(e.message || 'Failed to fetch products');

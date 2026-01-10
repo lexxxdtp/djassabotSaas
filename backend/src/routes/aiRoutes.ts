@@ -39,7 +39,16 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
         const session = await getSession(tenantId, simUserId);
 
         // 3. Logique simplifiée du bot (similaire à waManager mais focus réponse texte)
-        const productContext = products.map(p => `${p.name} (${p.price} FCFA)`).join(', ');
+        const productContext = products.map(p => {
+            let info = `${p.name} (${p.price} FCFA)`;
+            if (p.variations && p.variations.length > 0) {
+                const varText = p.variations.map(v =>
+                    `${v.name}: ${v.options.map(o => o.value).join('/')}`
+                ).join(', ');
+                info += ` [Variations: ${varText}]`;
+            }
+            return info;
+        }).join(', ');
 
         // --- Détection d'intention (Achat ?) ---
         const intentData = await detectPurchaseIntent(message, productContext);
@@ -118,9 +127,24 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
         }
 
         // --- Réponse IA Standard ---
-        const inventoryContext = products.map(p =>
-            `- ${p.name} (${p.price} FCFA): ${p.stock > 0 ? 'En stock' : 'Épuisé'}`
-        ).join('\n');
+        const inventoryContext = products.map(p => {
+            let base = `- ${p.name} (${p.price} FCFA): ${p.stock !== undefined && p.stock <= 0 ? 'Épuisé' : 'En stock'}`;
+
+            // Add Variations details
+            if (p.variations && p.variations.length > 0) {
+                const vars = p.variations.map(v =>
+                    `  * ${v.name}: ${v.options.map(o => o.value).join(', ')}`
+                ).join('\n');
+                base += `\n${vars}`;
+            }
+
+            // Add Image Tags for the System Prompt to pick up
+            if (p.images && p.images.length > 0) {
+                base += ` [IMAGES_AVAILABLE: ${p.images.join(', ')}]`;
+            }
+
+            return base;
+        }).join('\n\n');
 
         responseText = await generateAIResponse(message, {
             settings,
