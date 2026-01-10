@@ -100,7 +100,7 @@ const Products: React.FC = () => {
                 setProductForm(prev => ({ ...prev, stock: totalStock.toString() }));
             }
         }
-    }, [productForm.variations, variationsEnabled]);
+    }, [productForm.variations, variationsEnabled, productForm.stock]);
 
     // Fetch Variation Templates
     const fetchVariationTemplates = async () => {
