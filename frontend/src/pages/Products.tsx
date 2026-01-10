@@ -15,6 +15,7 @@ interface VariationOption {
 interface ProductVariation {
     name: string;
     options: VariationOption[];
+    isCustom?: boolean; // UI flag for custom name input
 }
 
 const Products: React.FC = () => {
@@ -600,30 +601,71 @@ const Products: React.FC = () => {
                                         {productForm.variations.map((variation, varIdx) => (
                                             <div key={varIdx} className="bg-black border border-zinc-800 rounded-lg p-3">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <select
-                                                        value={variation.name}
-                                                        onChange={(e) => {
-                                                            const newVars = [...productForm.variations];
-                                                            const selectedTemplate = variationTemplates.find(t => t.name === e.target.value);
-                                                            if (selectedTemplate && selectedTemplate.default_options) {
-                                                                newVars[varIdx] = {
-                                                                    name: e.target.value,
-                                                                    options: [...selectedTemplate.default_options]
-                                                                };
-                                                            } else {
-                                                                newVars[varIdx].name = e.target.value;
-                                                            }
-                                                            setProductForm({ ...productForm, variations: newVars });
-                                                        }}
-                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm focus:border-orange-500 outline-none"
-                                                    >
-                                                        <option value="">Sélectionner un type...</option>
-                                                        {variationTemplates.map((template, idx) => (
-                                                            <option key={idx} value={template.name}>
-                                                                {template.name} {template.isSystem ? '' : '(Custom)'}
-                                                            </option>
-                                                        ))}
-                                                    </select>
+                                                    {variation.isCustom ? (
+                                                        <div className="flex-1 flex gap-2">
+                                                            <input
+                                                                autoFocus
+                                                                type="text"
+                                                                placeholder="Nom (ex: Motif)"
+                                                                value={variation.name}
+                                                                onChange={(e) => {
+                                                                    const newVars = [...productForm.variations];
+                                                                    newVars[varIdx].name = e.target.value;
+                                                                    setProductForm({ ...productForm, variations: newVars });
+                                                                }}
+                                                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm focus:border-orange-500 outline-none"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newVars = [...productForm.variations];
+                                                                    newVars[varIdx].isCustom = false;
+                                                                    newVars[varIdx].name = '';
+                                                                    newVars[varIdx].options = [];
+                                                                    setProductForm({ ...productForm, variations: newVars });
+                                                                }}
+                                                                className="text-zinc-500 hover:text-white px-2 py-1 bg-zinc-800 rounded text-xs transition-colors"
+                                                            >
+                                                                Liste
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <select
+                                                            value={variation.name}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                const newVars = [...productForm.variations];
+
+                                                                if (val === '__custom__') {
+                                                                    newVars[varIdx].isCustom = true;
+                                                                    newVars[varIdx].name = '';
+                                                                    newVars[varIdx].options = [];
+                                                                } else {
+                                                                    const selectedTemplate = variationTemplates.find(t => t.name === val);
+                                                                    if (selectedTemplate && selectedTemplate.default_options) {
+                                                                        newVars[varIdx] = {
+                                                                            name: val,
+                                                                            options: [...selectedTemplate.default_options],
+                                                                            isCustom: false
+                                                                        };
+                                                                    } else {
+                                                                        newVars[varIdx].name = val;
+                                                                        newVars[varIdx].isCustom = false;
+                                                                    }
+                                                                }
+                                                                setProductForm({ ...productForm, variations: newVars });
+                                                            }}
+                                                            className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm focus:border-orange-500 outline-none"
+                                                        >
+                                                            <option value="">Sélectionner un type...</option>
+                                                            {variationTemplates.map((template, idx) => (
+                                                                <option key={idx} value={template.name}>
+                                                                    {template.name} {template.isSystem ? '' : '(Custom)'}
+                                                                </option>
+                                                            ))}
+                                                            <option value="__custom__" className="font-bold text-orange-500 bg-zinc-900">+ Créer un autre type...</option>
+                                                        </select>
+                                                    )}
                                                     <button
                                                         type="button"
                                                         onClick={() => {
