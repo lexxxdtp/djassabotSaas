@@ -491,7 +491,7 @@ const Products: React.FC = () => {
                                     placeholder="Ex: Robe rouge"
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Prix (FCFA)</label>
                                     <input

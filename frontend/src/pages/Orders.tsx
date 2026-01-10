@@ -39,9 +39,9 @@ interface OrderModalProps {
 
 const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col">
             {/* Header */}
-            <div className="bg-zinc-900 p-6 flex justify-between items-start border-b border-zinc-800">
+            <div className="bg-zinc-900 p-6 flex justify-between items-start border-b border-zinc-800 shrink-0">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
                         <h2 className="text-xl font-bold text-white tracking-tight">COMMANDE #{order.id}</h2>
@@ -59,8 +59,8 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
             </div>
 
             {/* Body */}
-            <div className="p-8 space-y-8 bg-zinc-900/50">
-                <div className="flex gap-3 justify-end">
+            <div className="p-8 space-y-8 bg-zinc-900/50 overflow-y-auto">
+                <div className="flex flex-wrap gap-3 justify-end">
                     {/* Simplified Actions: Confirm or Cancel */}
                     {order.status === 'PENDING' && (
                         <>
@@ -92,7 +92,7 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
                 </div>
 
                 {/* Customer Info */}
-                <div className="grid grid-cols-2 gap-8 p-4 bg-black/40 rounded-xl border border-zinc-800">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 bg-black/40 rounded-xl border border-zinc-800">
                     <div>
                         <h3 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-2">Client</h3>
                         <div className="text-white font-medium font-mono text-sm">{order.userId}</div>
@@ -110,8 +110,8 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
                 {/* Order Items Table */}
                 <div>
                     <h3 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4">Détails Panier</h3>
-                    <div className="w-full overflow-hidden rounded-xl border border-zinc-800 bg-black">
-                        <table className="w-full text-sm text-left">
+                    <div className="w-full overflow-hidden rounded-xl border border-zinc-800 bg-black overflow-x-auto">
+                        <table className="w-full text-sm text-left min-w-[500px]">
                             <thead className="bg-zinc-900/80 text-zinc-500 border-b border-zinc-800">
                                 <tr>
                                     <th className="px-4 py-3 font-medium text-xs uppercase tracking-wider">Produit</th>
@@ -225,7 +225,7 @@ export default function Orders() {
                         </div>
                     ) : (
                         orders.map((order) => (
-                            <div key={order.id} onClick={() => setSelectedOrder(order)} className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 hover:border-blue-500/30 cursor-pointer flex justify-between items-center group transition-all">
+                            <div key={order.id} onClick={() => setSelectedOrder(order)} className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 hover:border-blue-500/30 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center group transition-all gap-4">
                                 <div className="flex items-center gap-4">
                                     <div className={`p-3 rounded-full ${order.status === 'PENDING' ? 'bg-orange-500/10 text-orange-500' : 'bg-zinc-800 text-zinc-400'}`}>
                                         {order.status === 'PENDING' ? <AlertCircle size={20} /> : <Package size={20} />}
@@ -240,10 +240,10 @@ export default function Orders() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-6">
-                                    <div className="text-right">
+                                <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+                                    <div className="text-left sm:text-right">
                                         <div className="font-mono text-white text-lg font-bold">{order.total.toLocaleString()} <span className="text-sm text-zinc-500">FCFA</span></div>
-                                        <div className="text-zinc-600 text-xs">{order.address}</div>
+                                        <div className="text-zinc-600 text-xs truncate max-w-[150px]">{order.address}</div>
                                     </div>
                                     <span className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider border ${getStatusColor(order.status)}`}>
                                         {order.status === 'PENDING' ? 'NOUVELLE' : order.status === 'CONFIRMED' ? 'CONFIRMÉE' : order.status}
