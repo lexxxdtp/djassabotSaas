@@ -61,6 +61,31 @@ const Products: React.FC = () => {
     const [variationsEnabled, setVariationsEnabled] = useState(false);
     const [variationTemplates, setVariationTemplates] = useState<VariationTemplate[]>([]);
 
+    // New Option Inputs State (per variation index)
+    const [newOptionInputs, setNewOptionInputs] = useState<Record<number, { name: string; price: string }>>({});
+
+    const handleAddOption = (varIdx: number) => {
+        const inputs = newOptionInputs[varIdx];
+        if (!inputs || !inputs.name.trim()) return;
+
+        const newVars = [...productForm.variations];
+        newVars[varIdx].options = [
+            ...newVars[varIdx].options,
+            {
+                value: inputs.name.trim(),
+                priceModifier: inputs.price ? Number(inputs.price) : 0,
+                stock: undefined
+            }
+        ];
+        setProductForm({ ...productForm, variations: newVars });
+
+        // Reset inputs
+        setNewOptionInputs(prev => ({
+            ...prev,
+            [varIdx]: { name: '', price: '' }
+        }));
+    };
+
     // Fetch Variation Templates
     const fetchVariationTemplates = async () => {
         try {
@@ -845,24 +870,54 @@ const Products: React.FC = () => {
                                                     ))}
                                                 </div>
 
-                                                {/* Add option input */}
-                                                <input
-                                                    type="text"
-                                                    placeholder="Ajouter option (ex: XL) + Entrée"
-                                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-white text-xs focus:border-orange-500 outline-none"
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            e.preventDefault();
-                                                            const val = e.currentTarget.value.trim();
-                                                            if (val) {
-                                                                const newVars = [...productForm.variations];
-                                                                newVars[varIdx].options = [...newVars[varIdx].options, { value: val, stock: undefined, priceModifier: 0 }];
-                                                                setProductForm({ ...productForm, variations: newVars });
-                                                                e.currentTarget.value = '';
+                                                {/* Add option inputs */}
+                                                <div className="flex gap-2 mt-2">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Option (ex: XL)"
+                                                        value={newOptionInputs[varIdx]?.name || ''}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            setNewOptionInputs(prev => ({
+                                                                ...prev,
+                                                                [varIdx]: { ...prev[varIdx], name: val }
+                                                            }));
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                handleAddOption(varIdx);
                                                             }
-                                                        }
-                                                    }}
-                                                />
+                                                        }}
+                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-xs focus:border-orange-500 outline-none"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        placeholder="+ Prix (FCFA)"
+                                                        value={newOptionInputs[varIdx]?.price || ''}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            setNewOptionInputs(prev => ({
+                                                                ...prev,
+                                                                [varIdx]: { ...prev[varIdx], price: val }
+                                                            }));
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                handleAddOption(varIdx);
+                                                            }
+                                                        }}
+                                                        className="w-24 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-xs focus:border-orange-500 outline-none"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleAddOption(varIdx)}
+                                                        className="bg-zinc-800 hover:bg-orange-500 hover:text-white text-zinc-400 px-3 rounded transition-colors"
+                                                    >
+                                                        <Plus size={16} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
