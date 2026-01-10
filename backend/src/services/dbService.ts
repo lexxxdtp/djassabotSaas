@@ -426,39 +426,53 @@ export const db = {
                     .from('settings')
                     .select('*')
                     .eq('tenant_id', tenantId)
-                    .single();
-                if (!error && data) {
+                    .maybeSingle(); // Use maybeSingle to avoid 406/PGRST116 error if no row exists
+
+                if (error) {
+                    console.error('[DB] getSettings Error:', error.message);
+                    // Don't throw, just return defaults so the app doesn't crash
+                    return { ...DEFAULT_SETTINGS };
+                }
+
+                if (data) {
                     // Map snake_case DB columns to camelCase TypeScript interface
                     return {
-                        botName: data.bot_name,
-                        language: data.language,
-                        persona: data.persona,
-                        greeting: data.greeting,
-                        politeness: data.politeness,
-                        emojiLevel: data.emoji_level,
-                        responseLength: data.response_length,
+                        botName: data.bot_name || DEFAULT_SETTINGS.botName,
+                        language: data.language || DEFAULT_SETTINGS.language,
+                        persona: data.persona || DEFAULT_SETTINGS.persona,
+                        greeting: data.greeting || DEFAULT_SETTINGS.greeting,
+                        politeness: data.politeness || DEFAULT_SETTINGS.politeness,
+                        emojiLevel: data.emoji_level || DEFAULT_SETTINGS.emojiLevel,
+                        responseLength: data.response_length || DEFAULT_SETTINGS.responseLength,
                         trainingExamples: data.training_examples || [],
-                        negotiationEnabled: data.negotiation_enabled ?? true,
-                        negotiationFlexibility: data.negotiation_flexibility ?? 5,
-                        voiceEnabled: data.voice_enabled ?? true,
+                        negotiationEnabled: data.negotiation_enabled ?? DEFAULT_SETTINGS.negotiationEnabled,
+                        negotiationFlexibility: data.negotiation_flexibility ?? DEFAULT_SETTINGS.negotiationFlexibility,
+                        voiceEnabled: data.voice_enabled ?? DEFAULT_SETTINGS.voiceEnabled,
                         systemInstructions: data.system_instructions || '',
-                        storeName: data.store_name,
+                        storeName: data.store_name || DEFAULT_SETTINGS.storeName,
                         businessType: data.business_type || '',
-                        address: data.address,
+                        address: data.address || DEFAULT_SETTINGS.address,
                         locationUrl: data.location_url || '',
                         gpsCoordinates: data.gps_coordinates || '',
-                        phone: data.phone,
+                        phone: data.phone || DEFAULT_SETTINGS.phone,
                         socialMedia: data.social_media || {},
-                        hours: data.hours,
-                        returnPolicy: data.return_policy,
+                        hours: data.hours || DEFAULT_SETTINGS.hours,
+                        returnPolicy: data.return_policy || DEFAULT_SETTINGS.returnPolicy,
                         policyDescription: data.policy_description || '',
-                        deliveryAbidjanPrice: data.delivery_abidjan_price ?? 1500,
-                        deliveryInteriorPrice: data.delivery_interior_price ?? 3000,
-                        freeDeliveryThreshold: data.free_delivery_threshold ?? 50000,
-                        acceptedPayments: data.accepted_payments || ['wave', 'cash'],
+                        deliveryAbidjanPrice: data.delivery_abidjan_price ?? DEFAULT_SETTINGS.deliveryAbidjanPrice,
+                        deliveryInteriorPrice: data.delivery_interior_price ?? DEFAULT_SETTINGS.deliveryInteriorPrice,
+                        freeDeliveryThreshold: data.free_delivery_threshold ?? DEFAULT_SETTINGS.freeDeliveryThreshold,
+                        acceptedPayments: data.accepted_payments || DEFAULT_SETTINGS.acceptedPayments,
                     } as Settings;
+                } else {
+                    // No settings row found for this tenant, return defaults
+                    console.log(`[DB] No settings found for tenant ${tenantId}, returning defaults.`);
+                    return { ...DEFAULT_SETTINGS };
                 }
-            } catch (e) { }
+            } catch (e: any) {
+                console.error('[DB] getSettings Exception:', e);
+                return { ...DEFAULT_SETTINGS };
+            }
         }
         return localData.settings; // Fallback for single-tenant local dev
     },
@@ -496,13 +510,20 @@ export const db = {
                 if (settings.acceptedPayments !== undefined) dbSettings.accepted_payments = settings.acceptedPayments;
                 dbSettings.updated_at = new Date();
 
+                console.log('[DB] Updating Settings for tenant:', tenantId, dbSettings);
+
                 const { data, error } = await supabase
                     .from('settings')
                     .upsert(dbSettings, { onConflict: 'tenant_id' })
                     .select()
                     .single();
 
-                if (!error && data) {
+                if (error) {
+                    console.error('[DB] Update Settings Error:', error);
+                    throw error;
+                }
+
+                if (data) {
                     // Map back to camelCase for return
                     return {
                         botName: data.bot_name,
@@ -534,7 +555,9 @@ export const db = {
                     } as Settings;
                 }
             } catch (e) {
-                console.error('[DB] Update Settings Error:', e);
+                console.error('[DB] Update Settings Exception:', e);
+                // Throw to let the frontend know it failed!
+                throw e;
             }
         }
 
