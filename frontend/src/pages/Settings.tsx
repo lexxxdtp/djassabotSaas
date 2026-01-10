@@ -194,12 +194,13 @@ export default function Settings() {
                 if (res.ok) {
                     alert('Configuration sauvegardée !');
                 } else {
-                    alert('Erreur lors de la sauvegarde.');
+                    const errorData = await res.json().catch(() => ({ error: 'Erreur inconnue' }));
+                    alert(`Erreur lors de la sauvegarde : ${errorData.error || 'Problème serveur'}\n${errorData.details || ''}`);
                 }
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            alert('Erreur de connexion.');
+            alert('Erreur de connexion : ' + e.message);
         } finally {
             setLoading(false);
         }

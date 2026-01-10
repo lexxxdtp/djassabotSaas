@@ -48,11 +48,15 @@ app.get('/api/settings', authenticateTenant, async (req, res) => {
 
 app.post('/api/settings', authenticateTenant, async (req, res) => {
     try {
+        console.log(`[API] Updating settings for tenant: ${req.tenantId}`);
         const settings = await db.updateSettings(req.tenantId!, req.body);
         res.json(settings);
     } catch (e: any) {
-        console.error('[API] Settings Error:', e);
-        res.status(500).json({ error: e.message || 'Failed to update settings' });
+        console.error('[API] Settings Error Details:', e);
+        res.status(500).json({
+            error: e.message || 'Failed to update settings',
+            details: e.toString()
+        });
     }
 });
 
