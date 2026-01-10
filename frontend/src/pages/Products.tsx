@@ -44,23 +44,24 @@ const Products: React.FC = () => {
     const [variationTemplates, setVariationTemplates] = useState<any[]>([]);
 
     // Fetch Variation Templates
-    useEffect(() => {
-        const fetchTemplates = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const API_URL = getApiUrl();
-                const res = await fetch(`${API_URL}/variation-templates`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setVariationTemplates(data);
-                }
-            } catch (error) {
-                console.error('Failed to fetch variation templates', error);
+    const fetchVariationTemplates = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const API_URL = getApiUrl();
+            const res = await fetch(`${API_URL}/variation-templates`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setVariationTemplates(data);
             }
-        };
-        fetchTemplates();
+        } catch (error) {
+            console.error('Failed to fetch variation templates', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchVariationTemplates();
     }, []);
 
     // Fetch Products
@@ -242,6 +243,33 @@ const Products: React.FC = () => {
                     headers,
                     body: JSON.stringify(payload)
                 });
+            }
+
+            // AUTO-SAVE CUSTOM VARIATION TEMPLATES
+            // Check if any used variation name is NOT in current templates, then save it.
+            if (payload.variations && payload.variations.length > 0) {
+                const uniqueNewTemplates = payload.variations
+                    .filter(v => v.name && v.options.length > 0)
+                    .filter(v => !variationTemplates.some(t => t.name.toLowerCase() === v.name.toLowerCase()));
+
+                for (const newVar of uniqueNewTemplates) {
+                    try {
+                        const templatePayload = {
+                            name: newVar.name,
+                            default_options: newVar.options.map(o => ({ value: o.value, priceModifier: 0 }))
+                        };
+                        await fetch(`${API_URL}/variation-templates`, {
+                            method: 'POST',
+                            headers,
+                            body: JSON.stringify(templatePayload)
+                        });
+                        console.log(`Auto-saved new variation template: ${newVar.name}`);
+                    } catch (e) {
+                        console.warn('Failed to auto-save template', e);
+                    }
+                }
+                // Refresh templates for next time
+                fetchVariationTemplates();
             }
 
             if (!response.ok) {
