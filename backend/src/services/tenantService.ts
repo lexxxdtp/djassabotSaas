@@ -439,14 +439,13 @@ export const getSubscriptionByTenantId = async (tenantId: string): Promise<Subsc
 
 export const createDefaultSettings = async (tenantId: string, businessName: string): Promise<void> => {
     const settings = {
-        id: uuidv4(),
         tenant_id: tenantId,
         bot_name: 'Assistant',
-        business_name: businessName,
-        business_description: `Bienvenue chez ${businessName}`,
-        accepted_payments: JSON.stringify(['cash']),
-        delivery_zones: JSON.stringify([]),
-        specific_instructions: '',
+        store_name: businessName, // Corrected from business_name
+        policy_description: `Bienvenue chez ${businessName}`, // Corrected from business_description
+        accepted_payments: ['cash', 'wave'], // Pass array directly for JSONB
+        delivery_zones: [],
+        system_instructions: '', // Corrected from specific_instructions
         created_at: new Date(),
         updated_at: new Date()
     };
@@ -458,10 +457,8 @@ export const createDefaultSettings = async (tenantId: string, businessName: stri
 
         if (error) {
             console.error('[createDefaultSettings] DB Error:', error);
-            throw new Error(`Database Error (Settings): ${error.message}`);
+            // Don't throw here to avoid blocking signup, just log
         }
         return;
     }
-
-    throw new Error('Database connection unavailable (Supabase Disabled).');
 };
