@@ -10,6 +10,7 @@ interface VariationOption {
     value: string;
     stock?: number;
     priceModifier?: number;
+    images?: string[];
 }
 
 interface ProductVariation {
@@ -92,6 +93,63 @@ const Products: React.FC = () => {
     useEffect(() => {
         fetchProducts();
     }, []);
+
+    // Variation Image Upload Handler
+    const handleVariationImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, varIdx: number, optIdx: number) => {
+        if (!e.target.files?.length) return;
+
+        const files = Array.from(e.target.files);
+        // Check local limit for this option
+        const currentOptionImages = productForm.variations[varIdx].options[optIdx].images || [];
+        if (currentOptionImages.length + files.length > 2) {
+            alert('Maximum 2 images par déclinaison');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const newImages: string[] = [];
+            for (const file of files) {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `var-${Date.now()}-${Math.random()}.${fileExt}`;
+                const { error } = await supabase.storage
+                    .from('product-images')
+                    .upload(fileName, file);
+
+                if (error) throw error;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('product-images')
+                    .getPublicUrl(fileName);
+
+                newImages.push(publicUrl);
+            }
+
+            // Update form state
+            const newVars = [...productForm.variations];
+            const targetOption = newVars[varIdx].options[optIdx];
+            targetOption.images = [...(targetOption.images || []), ...newImages];
+
+            // Also add to main product images (if not exceeding 5)
+            let newMainImages = [...productForm.images];
+            const remainingMainSlots = 5 - newMainImages.length;
+            if (remainingMainSlots > 0) {
+                newMainImages = [...newMainImages, ...newImages.slice(0, remainingMainSlots)];
+            }
+
+            setProductForm(prev => ({
+                ...prev,
+                variations: newVars,
+                images: newMainImages
+            }));
+
+        } catch (error) {
+            console.error('Upload failed', error);
+            alert('Erreur upload');
+        } finally {
+            setUploading(false);
+        }
+    };
 
     // Open Modal for Create
     const openCreateModal = () => {
@@ -680,24 +738,63 @@ const Products: React.FC = () => {
                                                     </button>
                                                 </div>
 
-                                                {/* Options */}
-                                                <div className="flex flex-wrap gap-1 mb-2">
+                                                {/* Options List */}
+                                                <div className="space-y-1 mb-3 mt-2">
                                                     {variation.options.map((opt, optIdx) => (
-                                                        <span key={optIdx} className="inline-flex items-center gap-1 px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded text-xs">
-                                                            {opt.value}
-                                                            {opt.priceModifier ? ` (${opt.priceModifier > 0 ? '+' : ''}${opt.priceModifier})` : ''}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const newVars = [...productForm.variations];
-                                                                    newVars[varIdx].options = newVars[varIdx].options.filter((_, i) => i !== optIdx);
-                                                                    setProductForm({ ...productForm, variations: newVars });
-                                                                }}
-                                                                className="text-zinc-500 hover:text-red-500"
-                                                            >
-                                                                <X size={10} />
-                                                            </button>
-                                                        </span>
+                                                        <div key={optIdx} className="flex items-center justify-between bg-zinc-900 border border-zinc-700/50 rounded-md p-1.5 hover:border-zinc-600 transition-colors">
+
+                                                            {/* Left: Name & Data */}
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-medium text-zinc-200 pl-1">{opt.value}</span>
+                                                                {opt.priceModifier !== 0 && opt.priceModifier !== undefined && (
+                                                                    <span className="text-xs text-zinc-500">({opt.priceModifier > 0 ? '+' : ''}{opt.priceModifier})</span>
+                                                                )}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const newVars = [...productForm.variations];
+                                                                        newVars[varIdx].options = newVars[varIdx].options.filter((_, i) => i !== optIdx);
+                                                                        setProductForm({ ...productForm, variations: newVars });
+                                                                    }}
+                                                                    className="text-zinc-600 hover:text-red-500 ml-1 p-0.5"
+                                                                >
+                                                                    <X size={12} />
+                                                                </button>
+                                                            </div>
+
+                                                            {/* Right: Images Upload */}
+                                                            <div className="flex items-center gap-1.5">
+                                                                {opt.images && opt.images.map((img, imgIdx) => (
+                                                                    <div key={imgIdx} className="relative w-7 h-7 rounded border border-zinc-700 overflow-hidden group">
+                                                                        <img src={img} alt="" className="w-full h-full object-cover" />
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                const newVars = [...productForm.variations];
+                                                                                newVars[varIdx].options[optIdx].images = opt.images?.filter((_, i) => i !== imgIdx);
+                                                                                setProductForm({ ...productForm, variations: newVars });
+                                                                            }}
+                                                                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        >
+                                                                            <X size={10} className="text-white" />
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+
+                                                                {(!opt.images || opt.images.length < 2) && (
+                                                                    <label className="w-7 h-7 flex items-center justify-center bg-zinc-800 border border-zinc-700 border-dashed rounded cursor-pointer hover:border-orange-500 text-zinc-600 hover:text-orange-500 transition-colors" title="Ajouter photo (max 2)">
+                                                                        <ImageIcon size={12} />
+                                                                        <input
+                                                                            type="file"
+                                                                            accept="image/*"
+                                                                            multiple
+                                                                            className="hidden"
+                                                                            onChange={(e) => handleVariationImageUpload(e, varIdx, optIdx)}
+                                                                        />
+                                                                    </label>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     ))}
                                                 </div>
 
