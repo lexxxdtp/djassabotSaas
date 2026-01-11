@@ -159,6 +159,17 @@ class WhatsAppManager {
             // --- AUDIO HANDLING ---
             if (msg.message?.audioMessage) {
                 console.log(`[Manager] Audio received from ${remoteJid}`);
+
+                // Check if voice is enabled for this tenant
+                const settings = await db.getSettings(tenantId);
+                if (!settings.voiceEnabled) {
+                    console.log(`[Manager] Voice disabled for tenant ${tenantId}, ignoring audio`);
+                    await sock.sendMessage(remoteJid, {
+                        text: "Désolé, je ne peux pas traiter les messages vocaux pour l'instant. Pouvez-vous m'écrire votre demande ?"
+                    });
+                    return;
+                }
+
                 try {
                     // Check if transcribeAudio is available (dynamic import context)
                     const { transcribeAudio } = await import('./aiService');

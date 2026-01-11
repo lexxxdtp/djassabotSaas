@@ -57,30 +57,6 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
         let action = null; // Pour dire au frontend qu'une action spéciale a eu lieu (ex: ajout panier)
         let images: string[] = []; // Images à afficher dans le simulateur
 
-        // --- Vérifier si l'utilisateur demande des photos/images ---
-        const askingForPhotos = /photo|image|voir|montre|catalogue|galerie/i.test(message);
-
-        if (askingForPhotos && !intentData.productName) {
-            // Montrer le catalogue avec toutes les images
-            const productsWithImages = products.filter(p => p.images && p.images.length > 0);
-            if (productsWithImages.length > 0) {
-                images = productsWithImages.flatMap(p => p.images || []).slice(0, 6); // Max 6 images
-                responseText = `[SIMULATION] Voici notre catalogue ! 📸\n\n${productsWithImages.map(p => `• ${p.name} - ${p.price} FCFA`).join('\n')}\n\nQuel produit vous intéresse ?`;
-                action = { type: 'SHOW_CATALOG', products: productsWithImages };
-
-                await addToHistory(tenantId, simUserId, 'user', message);
-                await addToHistory(tenantId, simUserId, 'model', responseText);
-                res.json({ response: responseText, action, images });
-                return;
-            } else {
-                responseText = `[SIMULATION] Désolé, nous n'avons pas encore de photos dans notre catalogue. Mais je peux vous renseigner sur nos produits ! Que cherchez-vous ?`;
-                await addToHistory(tenantId, simUserId, 'user', message);
-                await addToHistory(tenantId, simUserId, 'model', responseText);
-                res.json({ response: responseText });
-                return;
-            }
-        }
-
         if (intentData.intent === 'BUY' && intentData.productName) {
             const product = await db.getProductByName(tenantId, intentData.productName);
             if (product) {
@@ -91,15 +67,16 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
                     images = product.images.slice(0, 3); // Max 3 images du produit
                 }
 
-                // Vérifier le stock disponible
-                if (product.stock !== undefined && product.stock < qty) {
+                // Vérifier le stock disponible (seulement si manageStock est true)
+                const shouldCheckStock = product.manageStock !== false;
+                if (shouldCheckStock && product.stock !== undefined && product.stock < qty) {
                     if (product.stock <= 0) {
                         // Produit épuisé
-                        responseText = `[SIMULATION] Désolé, ${product.name} est actuellement en rupture de stock. 😔\n\nVoulez-vous que je vous prévienne quand il sera de nouveau disponible ?`;
+                        responseText = `Désolé, ${product.name} est actuellement en rupture de stock. 😔\n\nVoulez-vous que je vous prévienne quand il sera de nouveau disponible ?`;
                         action = { type: 'OUT_OF_STOCK', product };
                     } else {
                         // Stock insuffisant - proposer le max disponible
-                        responseText = `[SIMULATION] Oups ! Il ne reste que ${product.stock} ${product.name} en stock. 📦\n\nVoulez-vous commander les ${product.stock} disponibles pour ${product.stock * product.price} FCFA ?`;
+                        responseText = `Oups ! Il ne reste que ${product.stock} ${product.name} en stock. 📦\n\nVoulez-vous commander les ${product.stock} disponibles pour ${product.stock * product.price} FCFA ?`;
                         action = { type: 'INSUFFICIENT_STOCK', product, requested: qty, available: product.stock };
                     }
 
@@ -112,7 +89,7 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
                 // Stock suffisant - procéder à l'ajout au panier
                 const total = product.price * qty;
 
-                responseText = `[SIMULATION] J'ai ajouté ${qty}x ${product.name} au panier (Total: ${total} FCFA). 🛒\n\nÀ quelle adresse (quartier, ville) doit-on livrer ?`;
+                responseText = `J'ai ajouté ${qty}x ${product.name} au panier (Total: ${total} FCFA). 🛒\n\nÀ quelle adresse (quartier, ville) doit-on livrer ?`;
                 action = { type: 'ADD_TO_CART', product, quantity: qty };
 
                 // Mettre à jour l'état session pour que le prochain message soit l'adresse
@@ -174,11 +151,23 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
             history: session.history
         });
 
+        // Extract images from AI response if it used [IMAGE: url] tags
+        const imageMatch = responseText.match(/\[IMAGE:\s*(.*?)\]/g);
+        if (imageMatch) {
+            images = imageMatch.map(tag => {
+                const urlMatch = tag.match(/\[IMAGE:\s*(.*?)\]/);
+                return urlMatch ? urlMatch[1].trim() : '';
+            }).filter(url => url.length > 0);
+
+            // Remove the [IMAGE: url] tags from the response text
+            responseText = responseText.replace(/\[IMAGE:\s*.*?\]/g, '').trim();
+        }
+
         // update history
         await addToHistory(tenantId, simUserId, 'user', message);
         await addToHistory(tenantId, simUserId, 'model', responseText);
 
-        res.json({ response: responseText });
+        res.json({ response: responseText, images });
 
     } catch (error: any) {
         console.error('Erreur simulation IA:', error);

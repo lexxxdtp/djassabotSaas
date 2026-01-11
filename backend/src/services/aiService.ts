@@ -151,6 +151,18 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
             ? "ADAPTIVE CHAMELEON: Analyze the user's tone. If they are formal, be 'Professional & Courteous'. If they are casual, warm, or use slang (Nouchi), switch to 'Authentic & Local' mode. Always close the sale."
             : `Your persona is fixed to: ${persona}.`;
 
+        // Build accepted payments list
+        const paymentMethods = settings?.acceptedPayments?.map((p: string) => {
+            switch (p) {
+                case 'wave': return 'Wave';
+                case 'om': return 'Orange Money';
+                case 'mtn': return 'MTN Money';
+                case 'cash': return 'Espèces';
+                case 'bank_transfer': return 'Virement bancaire';
+                default: return p;
+            }
+        }).join(', ') || 'Espèces';
+
         const storeContext = `
         STORE IDENTITY (Your Business):
         - Name: ${settings?.storeName}
@@ -160,8 +172,16 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         - GPS: ${settings?.gpsCoordinates || 'N/A'}
         - Hours: ${settings?.hours}
         - Contact: ${settings?.phone}
+        - Social Media: ${settings?.socialMedia ? Object.entries(settings.socialMedia).filter(([_, v]) => v).map(([k, v]) => `${k}: ${v}`).join(', ') || 'N/A' : 'N/A'}
         - Return Policy: ${settings?.returnPolicy === 'satisfait_rembourse' ? 'Satisfied or Refunded' : settings?.returnPolicy === 'echange_only' ? 'Exchange Only (No refund)' : 'Final Sale (No return)'}
         - Detailed Policy/Rules: "${settings?.policyDescription || 'Standard rules.'}"
+        
+        DELIVERY INFO:
+        - Abidjan: ${settings?.deliveryAbidjanPrice || 1500} FCFA
+        - Hors Abidjan (Intérieur): ${settings?.deliveryInteriorPrice || 3000} FCFA
+        - Livraison GRATUITE à partir de: ${settings?.freeDeliveryThreshold || 50000} FCFA
+        
+        ACCEPTED PAYMENTS: ${paymentMethods}
         `;
 
         let systemInstruction = `
@@ -228,23 +248,30 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
       
       Note on Prices:
       ${settings?.negotiationEnabled
-                ? `Some products have a HIDDEN 'minPrice'.
-      - Displays Price: The public price to attempt selling.
-      - Min Price: The absolute lowest floor you can accept if the user negotiates hard.
-      - NEVER reveal the minPrice.
+                ? `NEGOTIATION ENABLED (Flexibility: ${(settings?.negotiationFlexibility || 5) * 10}%)
+      - Some products have a HIDDEN 'minPrice'.
+      - Displayed Price: The public price to attempt selling FIRST.
+      - Min Price: The absolute lowest floor you can accept.
+      - Your flexibility level is ${(settings?.negotiationFlexibility || 5) * 10}%. At 0%, barely negotiate. At 100%, go to minPrice easily.
+      - NEVER reveal the minPrice to the customer.
       - If user offers < minPrice, refuse politely (e.g. "Désolé chef, ça arrange pas").
       - If user offers >= minPrice, accept or counter-offer slightly above.
-      - If no minPrice is specified, the public price is fixed.`
+      - If no minPrice is specified, the public price is fixed for that product.`
                 : `PRICES ARE FIXED AND FINAL.
-      - Do NOT negotiate.
+      - Do NOT negotiate under any circumstances.
       - If a user asks for a discount, politely explain that prices are already optimized and fixed.
       - Ignore any minPrice values in the context.`}
 
       Note on Images:
-      - The Inventory Context contains tags like [IMAGES_AVAILABLE: url1, url2].
-      - If the user explicitly asks to SEE a product or a specific variation (e.g. "Je peux voir le rouge ?"), you MUST include the tag "[IMAGE: url1]" at the very end of your response.
-      - Use ONLY the URLs provided in the context. Do not invent URLs.
-      - Only include one image tag per message.
+      - The Inventory Context contains tags like [IMAGES_AVAILABLE: url1, url2] for each product.
+      - When the user asks to SEE a SPECIFIC product (e.g. "Je peux voir les croissants?", "Montre-moi le Bazin"), you MUST:
+        1. Find the SPECIFIC product they asked about in the inventory
+        2. Include ONLY that product's image using the tag "[IMAGE: productUrl]" at the very end of your response
+        3. NEVER show images of products they didn't ask about
+      - If they ask to see the whole catalog or "all products", you may include up to 4 images from different products.
+      - Use ONLY the URLs provided in the [IMAGES_AVAILABLE] tags. Do not invent URLs.
+      - Only include 1-2 image tags per message maximum.
+      - Example: If user says "Je veux voir vos croissants" and Croissant has [IMAGES_AVAILABLE: https://img1.jpg], respond with text about the croissant + [IMAGE: https://img1.jpg]
     `;
 
         const chat = currentModel.startChat({

@@ -47,7 +47,7 @@ export interface Order {
     userId: string;
     items: CartItem[];
     total: number;
-    status: 'PENDING' | 'PAID' | 'DELIVERED';
+    status: 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'PAID' | 'CANCELLED';
     address: string;
     createdAt: Date;
 }
@@ -90,6 +90,7 @@ export interface Settings {
     deliveryInteriorPrice: number;
     freeDeliveryThreshold: number;
     acceptedPayments: string[];
+    deliveryZones?: string[]; // Zones de livraison disponibles
 }
 
 // Multi-Tenant Types

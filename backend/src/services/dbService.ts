@@ -476,6 +476,7 @@ export const db = {
                         deliveryInteriorPrice: data.delivery_interior_price ?? DEFAULT_SETTINGS.deliveryInteriorPrice,
                         freeDeliveryThreshold: data.free_delivery_threshold ?? DEFAULT_SETTINGS.freeDeliveryThreshold,
                         acceptedPayments: data.accepted_payments || DEFAULT_SETTINGS.acceptedPayments,
+                        deliveryZones: data.delivery_zones || [],
                     } as Settings;
                 } else {
                     // No settings row found for this tenant, return defaults
@@ -565,6 +566,7 @@ export const db = {
                         deliveryInteriorPrice: data.delivery_interior_price ?? 3000,
                         freeDeliveryThreshold: data.free_delivery_threshold ?? 50000,
                         acceptedPayments: data.accepted_payments || ['wave', 'cash'],
+                        deliveryZones: data.delivery_zones || [],
                     } as Settings;
                 }
             } catch (e) {
