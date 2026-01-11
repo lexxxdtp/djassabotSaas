@@ -430,21 +430,23 @@ const Products: React.FC = () => {
 
                                         return (
                                             <>
-                                                <div className="flex gap-2 mb-2">
-                                                    <span className={`px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider ${displayStock > 10 ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
-                                                        {displayStock > 0 ? `${displayStock} EN STOCK` : 'ÉPUISÉ'}
-                                                        {hasActiveVariations && <span className="ml-1 opacity-50">(var.)</span>}
+                                                <div className="flex flex-wrap gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider flex items-center ${displayStock > 10 ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                                                        {displayStock > 0 ? `${displayStock} STOCK` : 'ÉPUISÉ'}
+                                                        {hasActiveVariations && <span className="ml-1 opacity-60 text-[9px] lowercase">(var.)</span>}
                                                     </span>
 
-                                                    {/* Badge Mode Stock */}
-                                                    <span className={`px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider border ${!product.manageStock ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-zinc-800 text-zinc-500 border-zinc-700'}`}>
-                                                        {!product.manageStock ? '♾️ FLEXIBLE' : '🔒 STRICT'}
+                                                    {/* Badge Mode Stock (Clean & Sans Emoji) */}
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider flex items-center border cursor-pointer hover:opacity-80 transition-opacity ${!product.manageStock ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}
+                                                        title={!product.manageStock ? "Vente illimitée autorisée" : "Vente bloquée si épuisé"}
+                                                    >
+                                                        {!product.manageStock ? 'FLEXIBLE' : 'STRICT'}
                                                     </span>
                                                 </div>
 
                                                 {/* Quick Stock Actions - Désactivé pour les produits avec variations */}
-                                                {!hasActiveVariations && product.manageStock !== false ? (
-                                                    <div className="flex items-center bg-black rounded-lg border border-zinc-800 w-fit">
+                                                {!hasActiveVariations && product.manageStock !== false && (
+                                                    <div className="flex items-center bg-black rounded border border-zinc-800 w-fit mt-2" onClick={(e) => e.stopPropagation()}>
                                                         <button
                                                             onClick={async () => {
                                                                 const newStock = Math.max(0, product.stock - 1);
@@ -460,7 +462,7 @@ const Products: React.FC = () => {
                                                                     body: JSON.stringify({ stock: newStock })
                                                                 });
                                                             }}
-                                                            className="px-2 py-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-l-lg transition-colors"
+                                                            className="px-2 py-0.5 text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors text-xs"
                                                         >
                                                             -
                                                         </button>
@@ -480,14 +482,10 @@ const Products: React.FC = () => {
                                                                     body: JSON.stringify({ stock: newStock })
                                                                 });
                                                             }}
-                                                            className="px-2 py-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-r-lg transition-colors"
+                                                            className="px-2 py-0.5 text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors text-xs"
                                                         >
                                                             +
                                                         </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="text-zinc-600 text-xs italic">
-                                                        Stock géré dans les variations
                                                     </div>
                                                 )}
                                             </>
@@ -555,20 +553,26 @@ const Products: React.FC = () => {
                                         placeholder="5000"
                                     />
                                 </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-2">
+                                <div className="bg-zinc-950/50 p-2 rounded border border-zinc-800/50">
+                                    <div className="flex justify-between items-center mb-1.5">
                                         <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wide">
                                             Stock {variationsEnabled && <span className="text-orange-500 text-[10px] ml-1">(Auto)</span>}
                                         </label>
 
-                                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setProductForm({ ...productForm, manageStock: !productForm.manageStock })}>
-                                            <span className={`text-[10px] ${productForm.manageStock ? 'text-orange-500 font-bold' : 'text-zinc-600'}`}>
+                                        {/* BOUTON SWITCH STOCK BIEN VISIBLE */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setProductForm({ ...productForm, manageStock: !productForm.manageStock })}
+                                            className="flex items-center gap-2 px-2 py-1 rounded bg-zinc-900 border border-zinc-800 hover:border-zinc-600 transition-all cursor-pointer group"
+                                            title={productForm.manageStock ? "Mode Strict: Vente bloquée si stock épuisé" : "Mode Flexible: Vente autorisée même si stock épuisé"}
+                                        >
+                                            <span className={`text-[9px] font-bold uppercase ${productForm.manageStock ? 'text-zinc-400 group-hover:text-white' : 'text-blue-500'}`}>
                                                 {productForm.manageStock ? 'STRICT' : 'FLEXIBLE'}
                                             </span>
-                                            <div className={`w-8 h-4 rounded-full relative transition-colors ${productForm.manageStock ? 'bg-orange-500' : 'bg-zinc-700'}`}>
-                                                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${productForm.manageStock ? 'left-4.5' : 'left-0.5'}`}></div>
+                                            <div className={`w-6 h-3 rounded-full relative transition-colors ${productForm.manageStock ? 'bg-zinc-700' : 'bg-blue-500'}`}>
+                                                <div className={`absolute top-0.5 w-2 h-2 bg-white rounded-full transition-transform ${productForm.manageStock ? 'left-0.5' : 'left-3.5'}`}></div>
                                             </div>
-                                        </div>
+                                        </button>
                                     </div>
                                     <input
                                         required
