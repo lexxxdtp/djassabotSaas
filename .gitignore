@@ -12,6 +12,7 @@ dist/
 
 # Misc
 .DS_Store
+.tmp.driveupload/
 .env
 .env.local
 .env.development.local

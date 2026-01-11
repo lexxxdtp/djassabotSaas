@@ -228,9 +228,10 @@ export default function Settings() {
                     alert(`Erreur lors de la sauvegarde : ${errorData.error || 'Problème serveur'}\n${errorData.details || ''}`);
                 }
             }
-        } catch (e: any) {
-            console.error(e);
-            alert('Erreur de connexion : ' + e.message);
+        } catch (e) {
+            const error = e instanceof Error ? e : new Error('Unknown error');
+            console.error(error);
+            alert('Erreur de connexion : ' + error.message);
         } finally {
             setLoading(false);
         }

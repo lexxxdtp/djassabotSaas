@@ -53,8 +53,6 @@ create table if not exists products (
   created_at timestamp with time zone default timezone('utc', now())
 );
 
-);
-
 -- 4. Orders Table
 create table if not exists orders (
   id text primary key, -- Custom ID format like ORD-12345
