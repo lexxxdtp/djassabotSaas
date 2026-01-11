@@ -149,6 +149,36 @@ export default function Settings() {
         fetchProfile();
     }, [token, API_URL]);
 
+    // Load cached summary on mount to save API quota
+    useEffect(() => {
+        const saved = localStorage.getItem('aiSummary');
+        if (saved) setAiSummary(saved);
+    }, []);
+
+    const handleGenerateSummary = async () => {
+        if (!token) return;
+        setSummarizing(true);
+        try {
+            const res = await fetch(`${API_URL}/ai/summarize-identity`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(config)
+            });
+            const data = await res.json();
+            if (data.summary) {
+                setAiSummary(data.summary);
+                localStorage.setItem('aiSummary', data.summary);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setSummarizing(false);
+        }
+    };
+
     const handleSave = async () => {
         if (!token) {
             alert('Vous devez être connecté pour sauvegarder.');
@@ -828,13 +858,7 @@ export default function Settings() {
                                         </h3>
                                         {aiSummary && (
                                             <button
-                                                onClick={() => {
-                                                    setSummarizing(true);
-                                                    setTimeout(() => { // Mock call
-                                                        // Call API here
-                                                        setSummarizing(false);
-                                                    }, 1000);
-                                                }}
+                                                onClick={handleGenerateSummary}
                                                 className="text-[10px] text-zinc-500 hover:text-white"
                                             >
                                                 Regénérer
@@ -848,25 +872,7 @@ export default function Settings() {
                                                 Générez une synthèse pour voir ce que l'IA a compris de votre business.
                                             </p>
                                             <button
-                                                onClick={async () => {
-                                                    setSummarizing(true);
-                                                    try {
-                                                        const res = await fetch(`${API_URL}/ai/summarize-identity`, {
-                                                            method: 'POST',
-                                                            headers: {
-                                                                'Content-Type': 'application/json',
-                                                                'Authorization': `Bearer ${token}`
-                                                            },
-                                                            body: JSON.stringify(config) // Send current draft config
-                                                        });
-                                                        const data = await res.json();
-                                                        if (data.summary) setAiSummary(data.summary);
-                                                    } catch (e) {
-                                                        console.error(e);
-                                                    } finally {
-                                                        setSummarizing(false);
-                                                    }
-                                                }}
+                                                onClick={handleGenerateSummary}
                                                 disabled={summarizing}
                                                 className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 border border-purple-600/50 px-4 py-2 rounded-lg text-xs font-bold transition-all w-full flex items-center justify-center gap-2"
                                             >
