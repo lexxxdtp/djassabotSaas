@@ -151,17 +151,20 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
             ? "ADAPTIVE CHAMELEON: Analyze the user's tone. If they are formal, be 'Professional & Courteous'. If they are casual, warm, or use slang (Nouchi), switch to 'Authentic & Local' mode. Always close the sale."
             : `Your persona is fixed to: ${persona}.`;
 
-        // Build accepted payments list
-        const paymentMethods = settings?.acceptedPayments?.map((p: string) => {
-            switch (p) {
-                case 'wave': return 'Wave';
-                case 'om': return 'Orange Money';
-                case 'mtn': return 'MTN Money';
-                case 'cash': return 'Espèces';
-                case 'bank_transfer': return 'Virement bancaire';
-                default: return p;
-            }
-        }).join(', ') || 'Espèces';
+        // Build accepted payments list (with safety check for non-array values)
+        const paymentsArray = Array.isArray(settings?.acceptedPayments) ? settings.acceptedPayments : [];
+        const paymentMethods = paymentsArray.length > 0
+            ? paymentsArray.map((p: string) => {
+                switch (p) {
+                    case 'wave': return 'Wave';
+                    case 'om': return 'Orange Money';
+                    case 'mtn': return 'MTN Money';
+                    case 'cash': return 'Espèces';
+                    case 'bank_transfer': return 'Virement bancaire';
+                    default: return p;
+                }
+            }).join(', ')
+            : 'Espèces';
 
         const storeContext = `
         STORE IDENTITY (Your Business):
