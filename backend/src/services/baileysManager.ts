@@ -406,7 +406,16 @@ class WhatsAppManager {
             // 3. Récupérer le contexte du Tenant pour l'IA
             const settings = await db.getSettings(tenantId);
             const products = await db.getProducts(tenantId);
-            const productContext = products.map(p => `${p.name} (${p.price} FCFA)`).join(', ');
+            const productContext = products.map(p => {
+                let info = `${p.name} (${p.price} FCFA)`;
+                if (p.variations && p.variations.length > 0) {
+                    const varText = p.variations.map(v =>
+                        `${v.name}: ${v.options.map(o => o.value).join('/')}`
+                    ).join(', ');
+                    info += ` [Variations: ${varText}]`;
+                }
+                return info;
+            }).join(', ');
 
             // 4. Détection d'Intention (Achat vs Discussion)
             const intentData = await detectPurchaseIntent(text, productContext);
@@ -525,7 +534,11 @@ class WhatsAppManager {
                             productInfo += `\n  * Variation [${v.name}]:`;
                             v.options.forEach((opt: any) => {
                                 let imgInfo = opt.images && opt.images.length > 0 ? ` [IMAGES_AVAILABLE: ${opt.images.join(', ')}]` : '';
-                                productInfo += `\n    - Option: "${opt.value}" | Stock: ${opt.stock ?? '∞'} | Prix: ${opt.priceModifier ? (opt.priceModifier > 0 ? '+' : '') + opt.priceModifier : '+0'}${imgInfo}`;
+                                const mod = opt.priceModifier || 0;
+                                const total = p.price + mod;
+                                const sign = mod > 0 ? '+' : '';
+                                const priceInfo = mod !== 0 ? `Prix: ${sign}${mod} (Total: ${total} FCFA)` : `Prix: Base (${total} FCFA)`;
+                                productInfo += `\n    - Option: "${opt.value}" | Stock: ${opt.stock ?? '∞'} | ${priceInfo}${imgInfo}`;
                             });
                         }
                     });

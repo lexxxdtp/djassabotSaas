@@ -130,10 +130,15 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
         const inventoryContext = products.map(p => {
             let base = `- ${p.name} (${p.price} FCFA): ${p.stock !== undefined && p.stock <= 0 ? 'Épuisé' : 'En stock'}`;
 
-            // Add Variations details
+            // Add Variations details with Explicit Price Calculations
             if (p.variations && p.variations.length > 0) {
                 const vars = p.variations.map(v =>
-                    `  * ${v.name}: ${v.options.map(o => o.value).join(', ')}`
+                    `  * ${v.name}: ${v.options.map(o => {
+                        const mod = o.priceModifier || 0;
+                        const total = p.price + mod;
+                        const sign = mod > 0 ? '+' : '';
+                        return `${o.value}${mod !== 0 ? ` (${sign}${mod}, Total: ${total} FCFA)` : ''}`;
+                    }).join(', ')}`
                 ).join('\n');
                 base += `\n${vars}`;
             }
