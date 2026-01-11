@@ -141,6 +141,18 @@ accepted_payments (text[])
 
 ## 🐛 Problèmes Résolus Récemment
 
+### 2026-01-11 - Améliorations Logique IA (Pricing & Hallucinations)
+- **Cause:**
+    1. L'IA calculait mal le prix total des variations (ex: Croissant 500 + Chocolat 300 = 500 au lieu de 800).
+    2. L'IA détectait des intentions d'achat trop agressivement ("Et les X ?" -> Commande).
+    3. Hallucinations (invention de contexte/produits).
+- **Solution:**
+    1. **Pricing:** Calcul explicite du total dans le prompt système (`Base + Modifier = Total`).
+    2. **Intent:** Règle stricte : Ambiguïté = CHAT. Seules les commandes explicites ("Je prends") déclenchent le panier.
+    3. **Hallucinations:** Consignes strictes "NO HALLUCINATIONS" et restriction du cross-selling au contexte pertinent.
+- **Fichiers:** `aiRoutes.ts`, `baileysManager.ts`, `aiService.ts`
+- **Statut:** ✅ Déployé et Vérifié
+
 ### 2026-01-10 - Erreur "Génération de résumé"
 - **Cause:** Clé API Gemini signalée comme leaked (403 Forbidden)
 - **Solution:** Nouvelle clé API générée et mise à jour
@@ -156,6 +168,7 @@ accepted_payments (text[])
 - **Cause:** API URL incorrecte (localhost au lieu de Railway)
 - **Solution:** Configuration de `VITE_API_URL` dans Vercel
 - **Fichier:** `frontend/src/utils/apiConfig.ts`
+
 
 ---
 
