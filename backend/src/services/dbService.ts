@@ -197,7 +197,8 @@ export const db = {
                 minPrice: p.min_price,
                 tenantId: p.tenant_id,
                 variations: p.variations || [],
-                aiInstructions: p.ai_instructions
+                aiInstructions: p.ai_instructions,
+                manageStock: p.manage_stock ?? true
             })) as Product[];
         } catch (e: any) {
             console.error('[DB] Supabase getProducts failed:', e);
@@ -234,7 +235,8 @@ export const db = {
             images: product.images,
             min_price: product.minPrice,
             variations: product.variations || [],
-            ai_instructions: product.aiInstructions || null
+            ai_instructions: product.aiInstructions || null,
+            manage_stock: product.manageStock ?? true
         };
 
         if (isSupabaseEnabled && supabase) {
@@ -254,7 +256,8 @@ export const db = {
                     minPrice: data.min_price,
                     tenantId: data.tenant_id,
                     variations: data.variations || [],
-                    aiInstructions: data.ai_instructions
+                    aiInstructions: data.ai_instructions,
+                    manageStock: data.manage_stock ?? true
                 } as Product;
             } catch (e: any) {
                 console.error('[DB] Create Product Failed:', e);
@@ -293,6 +296,10 @@ export const db = {
         if (updates.aiInstructions !== undefined) {
             dbUpdates.ai_instructions = updates.aiInstructions;
             delete dbUpdates.aiInstructions;
+        }
+        if (updates.manageStock !== undefined) {
+            dbUpdates.manage_stock = updates.manageStock;
+            delete dbUpdates.manageStock;
         }
         // variations is already in correct format (JSON), no mapping needed
 

@@ -128,8 +128,16 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
 
         // --- Réponse IA Standard ---
         const inventoryContext = products.map(p => {
-            const stockInfo = p.stock !== undefined ? `(Stock: ${p.stock})` : '(Stock: Illimité)';
-            let base = `- ${p.name} (${p.price} FCFA): ${p.stock !== undefined && p.stock <= 0 ? 'RUPTURE DE STOCK' : stockInfo}`;
+            const isUnlimited = p.manageStock === false;
+            const stockInfo = isUnlimited ? '(Stock: Sur commande / Illimité)' : (p.stock !== undefined ? `[Stock: ${p.stock}]` : '[Stock: Illimité]');
+
+            // Si stock limité et <= 0 => Rupture. Sinon => stockInfo
+            let status = stockInfo;
+            if (!isUnlimited && p.stock !== undefined && p.stock <= 0) {
+                status = 'RUPTURE DE STOCK';
+            }
+
+            let base = `- ${p.name} (${p.price} FCFA): ${status}`;
 
             // Add Variations details with Explicit Price Calculations AND Stock
             if (p.variations && p.variations.length > 0) {
@@ -138,7 +146,14 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
                         const mod = o.priceModifier || 0;
                         const total = p.price + mod;
                         const sign = mod > 0 ? '+' : '';
-                        const optStock = o.stock !== undefined ? `[Stock: ${o.stock}]` : '[Stock: Illimité]';
+
+                        let optStock = '[Stock: Illimité]';
+                        if (!isUnlimited) {
+                            optStock = o.stock !== undefined ? `[Stock: ${o.stock}]` : '[Stock: Illimité]';
+                        } else {
+                            optStock = '[Stock: Sur commande]';
+                        }
+
                         return `${o.value}${mod !== 0 ? ` (${sign}${mod}, Total: ${total} FCFA)` : ''} ${optStock}`;
                     }).join(', ')}`
                 ).join('\n');

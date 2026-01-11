@@ -29,6 +29,7 @@ interface Product {
     variations?: ProductVariation[];
     aiInstructions?: string;
     ai_instructions?: string;
+    manageStock?: boolean;
 }
 
 interface VariationTemplate {
@@ -55,7 +56,8 @@ const Products: React.FC = () => {
         description: '',
         images: [] as string[],
         variations: [] as ProductVariation[],
-        aiInstructions: ''
+        aiInstructions: '',
+        manageStock: true
     });
     const [uploading, setUploading] = useState(false);
     const [variationsEnabled, setVariationsEnabled] = useState(false);
@@ -214,7 +216,7 @@ const Products: React.FC = () => {
     // Open Modal for Create
     const openCreateModal = () => {
         setEditingId(null);
-        setProductForm({ name: '', price: '', stock: '', description: '', images: [], variations: [], aiInstructions: '' });
+        setProductForm({ name: '', price: '', stock: '', description: '', images: [], variations: [], aiInstructions: '', manageStock: true });
         setVariationsEnabled(false);
         setIsModalOpen(true);
     };
@@ -229,7 +231,8 @@ const Products: React.FC = () => {
             description: product.description || '',
             images: product.images || [],
             variations: product.variations || [],
-            aiInstructions: product.aiInstructions || product.ai_instructions || ''
+            aiInstructions: product.aiInstructions || product.ai_instructions || '',
+            manageStock: product.manageStock ?? true
         });
         // Enable variations toggle if product has active variations
         const hasActiveVariations = product.variations && product.variations.some((v: ProductVariation) =>
@@ -277,7 +280,8 @@ const Products: React.FC = () => {
                 description: productForm.description,
                 images: productForm.images,
                 variations: productForm.variations,
-                aiInstructions: productForm.aiInstructions
+                aiInstructions: productForm.aiInstructions,
+                manageStock: productForm.manageStock
             };
 
             const API_URL = getApiUrl();
@@ -545,9 +549,20 @@ const Products: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">
-                                        Qqté Stock {variationsEnabled && <span className="text-orange-500 text-[10px] ml-1">(Auto)</span>}
-                                    </label>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                                            Stock {variationsEnabled && <span className="text-orange-500 text-[10px] ml-1">(Auto)</span>}
+                                        </label>
+
+                                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setProductForm({ ...productForm, manageStock: !productForm.manageStock })}>
+                                            <span className={`text-[10px] ${productForm.manageStock ? 'text-orange-500 font-bold' : 'text-zinc-600'}`}>
+                                                {productForm.manageStock ? 'STRICT' : 'FLEXIBLE'}
+                                            </span>
+                                            <div className={`w-8 h-4 rounded-full relative transition-colors ${productForm.manageStock ? 'bg-orange-500' : 'bg-zinc-700'}`}>
+                                                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${productForm.manageStock ? 'left-4.5' : 'left-0.5'}`}></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <input
                                         required
                                         type="number"

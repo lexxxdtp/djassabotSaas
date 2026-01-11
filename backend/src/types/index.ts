@@ -24,6 +24,7 @@ export interface Product {
     minPrice?: number;    // Lowest acceptable price for negotiation
     variations?: ProductVariation[]; // Optional variations/déclinaisons
     aiInstructions?: string; // Special instructions for AI (promotions, rules, etc.)
+    manageStock?: boolean; // If false, allow unlimited sales (production on demand)
 }
 
 // Selected variation for cart/order
