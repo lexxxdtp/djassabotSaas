@@ -337,15 +337,21 @@ export const detectPurchaseIntent = async (userText: string, productContext: str
     Analyze this user message: "${userText}"
     Context of available products: "${productContext}"
     
-    Does the user definitively want to buy or add a product to cart?
+    Determine if the user explicitly wants to BUY/ADD TO CART right now.
     
-    If YES, return strictly JSON in this format:
+    STRICT RULES:
+    - If the user says "I take X", "Add X", "I want to buy X", "Send me X", order is CONFIRMED -> Return intent "BUY".
+    - If the user asks a question ("How much is X?", "Do you have X?", "And the croissants?"), default to "CHAT".
+    - If the user mentions a product without a clear action verb ("The croissants"), default to "CHAT".
+    - If ambiguity exists, default to "CHAT".
+    
+    If BUY, return strictly JSON:
     { "intent": "BUY", "productName": "extracted_product_name", "quantity": number }
     
-    If NO (just asking questions, saying hello, or negotiating), return:
+    If CHAT, return:
     { "intent": "CHAT" }
     
-    Do not add markdown formatting like \`\`\`json. Just the raw JSON string.
+    Do not add markdown formatting. Just the raw JSON string.
     `;
 
     try {
