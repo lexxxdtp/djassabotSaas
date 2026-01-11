@@ -21,8 +21,8 @@ export default function MarketingTools() {
                     </div>
                     <div>
                         <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Audience Totale</p>
-                        <h3 className="text-2xl font-bold text-white font-mono">1,240</h3>
-                        <p className="text-xs text-emerald-500 font-bold">+12 cette semaine</p>
+                        <h3 className="text-2xl font-bold text-white font-mono">0</h3>
+                        <p className="text-xs text-zinc-600 font-bold">-- cette semaine</p>
                     </div>
                 </div>
                 <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl flex items-center space-x-4 hover:border-orange-500/30 transition-colors">
@@ -31,8 +31,8 @@ export default function MarketingTools() {
                     </div>
                     <div>
                         <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Campagnes Envoyées</p>
-                        <h3 className="text-2xl font-bold text-white font-mono">8</h3>
-                        <p className="text-xs text-zinc-500">Dernière: Promo Tabaski</p>
+                        <h3 className="text-2xl font-bold text-white font-mono">0</h3>
+                        <p className="text-xs text-zinc-500">Aucune campagne</p>
                     </div>
                 </div>
                 <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl flex items-center space-x-4 hover:border-orange-500/30 transition-colors">
@@ -41,8 +41,8 @@ export default function MarketingTools() {
                     </div>
                     <div>
                         <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider">Paniers Sauvés</p>
-                        <h3 className="text-2xl font-bold text-white font-mono">12</h3>
-                        <p className="text-xs text-emerald-500 font-bold">+45,000 FCFA</p>
+                        <h3 className="text-2xl font-bold text-white font-mono">0</h3>
+                        <p className="text-xs text-zinc-600 font-bold">0 FCFA</p>
                     </div>
                 </div>
             </div>
@@ -108,11 +108,10 @@ export default function MarketingTools() {
                             <span>Conseil IA du Jour</span>
                         </h3>
                         <p className="text-zinc-400 text-sm leading-relaxed mb-6">
-                            "Vos clients achètent souvent des <strong className="text-white">robes</strong> le vendredi.
-                            Programmez une diffusion ce jeudi soir à 18h pour maximiser vos ventes ce weekend !"
+                            L'IA analysera vos données de vente pour vous proposer des conseils personnalisés une fois que vous aurez plus d'activité.
                         </p>
-                        <button className="w-full py-3 bg-orange-500/10 text-orange-500 rounded-lg text-sm font-bold uppercase tracking-wide hover:bg-orange-500/20 transition-colors border border-orange-500/20">
-                            Utiliser ce conseil
+                        <button className="w-full py-3 bg-zinc-800 text-zinc-500 rounded-lg text-sm font-bold uppercase tracking-wide cursor-not-allowed border border-zinc-800">
+                            En Attente de Données
                         </button>
                     </div>
                 </div>
@@ -142,7 +141,7 @@ function BroadcastForm() {
                 <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Envoyer à</label>
                     <select className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-white focus:border-orange-500 outline-none">
-                        <option>Tous les clients (1,240)</option>
+                        <option>Tous les clients (0)</option>
                         <option>Clients VIP (&gt; 100k FCFA)</option>
                         <option>Nouveaux clients (30 jours)</option>
                     </select>
@@ -265,20 +264,9 @@ function AbandonedCartsView() {
 
             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mt-6 mb-3">Dernières Relances</h3>
             <div className="space-y-3">
-                {[1, 2, 3].map((_, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-black border border-zinc-800/50 rounded-xl hover:border-zinc-700 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">
-                                225
-                            </div>
-                            <div>
-                                <p className="text-white text-sm font-medium">07 09 ** ** 92</p>
-                                <p className="text-zinc-600 text-xs">Il y a {i * 15 + 5} min • Panier: 15,000 F</p>
-                            </div>
-                        </div>
-                        <span className="text-emerald-500 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded">Récupéré ✅</span>
-                    </div>
-                ))}
+                <div className="text-center py-6 border border-dashed border-zinc-800 rounded-xl">
+                    <p className="text-zinc-500 text-sm">Aucune relance effectuée pour le moment.</p>
+                </div>
             </div>
         </div>
     );

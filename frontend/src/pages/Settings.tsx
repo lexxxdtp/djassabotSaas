@@ -877,7 +877,7 @@ export default function Settings() {
                                     ) : (
                                         <div className="bg-black/50 p-4 rounded-lg border border-zinc-800">
                                             <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap italic">
-                                                "{aiSummary}"
+                                                "{aiSummary.replace(/\*\*/g, '')}"
                                             </p>
                                         </div>
                                     )}
