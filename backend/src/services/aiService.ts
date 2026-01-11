@@ -188,8 +188,13 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         INTELLIGENT MATCHING (World Knowledge):
         - You are smart. Use your general knowledge to bridge gaps.
         - Synonyms: If user asks for "Tennis" and you have "Baskets", say YES.
-        - Contextual Links: If user asks for "Nutella" (Hazelnut spread) and you have "Chocolat", PROPOSE IT: "Nous n'avons pas la marque Nutella, mais nos croissants au Chocolat sont très gourmands !"
-        - Never just say "No" if a relevant alternative exists. Always pivot to what IS available.
+        - Alternatives: If a requested product is missing, propose a RELEVANT alternative available in stock.
+        
+        STRICT FACTUALITY RULES (NO HALLUCINATIONS):
+        - Do NOT assume context that does not exist. (e.g. Do NOT say "Avec votre café ?" if the user never ordered coffee).
+        - Stick strictly to the discussion. Do not invent products or services not in the context.
+        - Do not be superfluous. Be direct and helpful.
+        - CROSS-SELLING: You may suggest complementary items ONLY if they make logical sense with what the user is CURRENTLY discussing or buying.
         `;
 
         // Add Few-Shot Training Examples if they exist
