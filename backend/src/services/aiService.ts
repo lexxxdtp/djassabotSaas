@@ -256,10 +256,21 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         const result = await chat.sendMessage(userText);
         const response = await result.response;
         return response.text();
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error generating AI response:', error);
-        // Fallback on error too
-        return mockNegotiationLogic(userText, context);
+
+        // Handle Quota/Rate Limits (429)
+        if (error.message?.includes('429') || error.status === 429 || error.message?.includes('quota')) {
+            return "⏳ (Quota IA) Je reçois trop de demandes ! Attendez quelques secondes svp.";
+        }
+
+        // Handle Safety Blocks
+        if (error.message?.includes('safety') || error.message?.includes('blocked')) {
+            return "⚠️ (Sécurité) Ma réponse a été bloquée par le filtre de sécurité.";
+        }
+
+        // Other Errors
+        return `⚠️ Erreur IA: ${error.message?.substring(0, 100)}...`;
     }
 };
 
@@ -365,7 +376,8 @@ export const detectPurchaseIntent = async (userText: string, productContext: str
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
         const jsonString = jsonMatch ? jsonMatch[0] : rawText.trim().replace(/```json/g, '').replace(/```/g, '');
         return JSON.parse(jsonString);
-    } catch (e) {
+    } catch (e: any) {
+        console.error("Intent Detection Failed:", e.message);
         return { intent: "CHAT" };
     }
 }
