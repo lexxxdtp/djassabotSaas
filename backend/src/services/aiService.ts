@@ -275,6 +275,16 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
       - Use ONLY the URLs provided in the [IMAGES_AVAILABLE] tags. Do not invent URLs.
       - Only include 1-2 image tags per message maximum.
       - Example: If user says "Je veux voir vos croissants" and Croissant has [IMAGES_AVAILABLE: https://img1.jpg], respond with text about the croissant + [IMAGE: https://img1.jpg]
+
+      🎯 CRITICAL: Product-Specific Instructions (CONSIGNES SPÉCIALES):
+      - Some products have special instructions marked with "📋 CONSIGNES SPÉCIALES" in the inventory context.
+      - YOU MUST FOLLOW THESE INSTRUCTIONS STRICTLY - they are rules set by the store owner.
+      - Examples of what these instructions might say:
+        * "Si le client prend 3 brownies, propose 5 avec 10% de réduction" → ALWAYS propose the upsell BEFORE confirming the order!
+        * "À partir de 10 articles, offrir la livraison gratuite" → Apply this rule automatically.
+        * "Suggérer l'accessoire X pour chaque achat" → Mention the accessory.
+      - NEVER skip these consignes. They are MANDATORY business rules.
+      - When a user wants to buy a quantity, CHECK if there's a consigne that applies, and PROPOSE IT FIRST before adding to cart.
     `;
 
         const chat = currentModel.startChat({

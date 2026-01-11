@@ -57,53 +57,7 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
         let action = null; // Pour dire au frontend qu'une action spéciale a eu lieu (ex: ajout panier)
         let images: string[] = []; // Images à afficher dans le simulateur
 
-        if (intentData.intent === 'BUY' && intentData.productName) {
-            const product = await db.getProductByName(tenantId, intentData.productName);
-            if (product) {
-                let qty = intentData.quantity || 1;
-
-                // Ajouter l'image du produit à la réponse
-                if (product.images && product.images.length > 0) {
-                    images = product.images.slice(0, 3); // Max 3 images du produit
-                }
-
-                // Vérifier le stock disponible (seulement si manageStock est true)
-                const shouldCheckStock = product.manageStock !== false;
-                if (shouldCheckStock && product.stock !== undefined && product.stock < qty) {
-                    if (product.stock <= 0) {
-                        // Produit épuisé
-                        responseText = `Désolé, ${product.name} est actuellement en rupture de stock. 😔\n\nVoulez-vous que je vous prévienne quand il sera de nouveau disponible ?`;
-                        action = { type: 'OUT_OF_STOCK', product };
-                    } else {
-                        // Stock insuffisant - proposer le max disponible
-                        responseText = `Oups ! Il ne reste que ${product.stock} ${product.name} en stock. 📦\n\nVoulez-vous commander les ${product.stock} disponibles pour ${product.stock * product.price} FCFA ?`;
-                        action = { type: 'INSUFFICIENT_STOCK', product, requested: qty, available: product.stock };
-                    }
-
-                    await addToHistory(tenantId, simUserId, 'user', message);
-                    await addToHistory(tenantId, simUserId, 'model', responseText);
-                    res.json({ response: responseText, action, images });
-                    return;
-                }
-
-                // Stock suffisant - procéder à l'ajout au panier
-                const total = product.price * qty;
-
-                responseText = `J'ai ajouté ${qty}x ${product.name} au panier (Total: ${total} FCFA). 🛒\n\nÀ quelle adresse (quartier, ville) doit-on livrer ?`;
-                action = { type: 'ADD_TO_CART', product, quantity: qty };
-
-                // Mettre à jour l'état session pour que le prochain message soit l'adresse
-                await updateSession(tenantId, simUserId, { state: 'WAITING_FOR_ADDRESS' });
-
-                await addToHistory(tenantId, simUserId, 'user', message);
-                await addToHistory(tenantId, simUserId, 'model', responseText);
-
-                res.json({ response: responseText, action, images });
-                return;
-            }
-        }
-
-        // --- Réponse IA Standard ---
+        // --- Construire le contexte d'inventaire avec les consignes IA ---
         const inventoryContext = products.map(p => {
             const isUnlimited = p.manageStock === false;
             const stockInfo = isUnlimited ? '(Stock: Sur commande / Illimité)' : (p.stock !== undefined ? `[Stock: ${p.stock}]` : '[Stock: Illimité]');
@@ -137,6 +91,11 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
                 base += `\n${vars}`;
             }
 
+            // *** IMPORTANT: Add AI Instructions (Special Rules for this product) ***
+            if (p.aiInstructions && p.aiInstructions.trim()) {
+                base += `\n  📋 CONSIGNES SPÉCIALES: "${p.aiInstructions}"`;
+            }
+
             // Add Image Tags for the System Prompt to pick up
             if (p.images && p.images.length > 0) {
                 base += ` [IMAGES_AVAILABLE: ${p.images.join(', ')}]`;
@@ -144,6 +103,62 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
 
             return base;
         }).join('\n\n');
+
+        // --- Vérifier si le produit demandé a des consignes spéciales ---
+        if (intentData.intent === 'BUY' && intentData.productName) {
+            const product = await db.getProductByName(tenantId, intentData.productName);
+            if (product) {
+                let qty = intentData.quantity || 1;
+
+                // Ajouter l'image du produit à la réponse
+                if (product.images && product.images.length > 0) {
+                    images = product.images.slice(0, 3); // Max 3 images du produit
+                }
+
+                // Vérifier le stock disponible (seulement si manageStock est true)
+                const shouldCheckStock = product.manageStock !== false;
+                if (shouldCheckStock && product.stock !== undefined && product.stock < qty) {
+                    if (product.stock <= 0) {
+                        // Produit épuisé
+                        responseText = `Désolé, ${product.name} est actuellement en rupture de stock. 😔\n\nVoulez-vous que je vous prévienne quand il sera de nouveau disponible ?`;
+                        action = { type: 'OUT_OF_STOCK', product };
+                    } else {
+                        // Stock insuffisant - proposer le max disponible
+                        responseText = `Oups ! Il ne reste que ${product.stock} ${product.name} en stock. 📦\n\nVoulez-vous commander les ${product.stock} disponibles pour ${product.stock * product.price} FCFA ?`;
+                        action = { type: 'INSUFFICIENT_STOCK', product, requested: qty, available: product.stock };
+                    }
+
+                    await addToHistory(tenantId, simUserId, 'user', message);
+                    await addToHistory(tenantId, simUserId, 'model', responseText);
+                    res.json({ response: responseText, action, images });
+                    return;
+                }
+
+                // *** Si le produit a des consignes spéciales, laisser l'IA répondre d'abord ***
+                if (product.aiInstructions && product.aiInstructions.trim()) {
+                    // L'IA doit d'abord traiter les consignes (ex: proposer 5 au lieu de 3 avec réduction)
+                    // On ne fait PAS de shortcut vers "ajout au panier" directement
+                    console.log(`[AI Sim] Produit "${product.name}" a des consignes spéciales - IA va répondre`);
+
+                    // Laisser tomber le shortcut, l'IA va gérer avec les consignes
+                } else {
+                    // Pas de consignes spéciales - procéder à l'ajout direct au panier
+                    const total = product.price * qty;
+
+                    responseText = `J'ai ajouté ${qty}x ${product.name} au panier (Total: ${total} FCFA). 🛒\n\nÀ quelle adresse (quartier, ville) doit-on livrer ?`;
+                    action = { type: 'ADD_TO_CART', product, quantity: qty };
+
+                    // Mettre à jour l'état session pour que le prochain message soit l'adresse
+                    await updateSession(tenantId, simUserId, { state: 'WAITING_FOR_ADDRESS' });
+
+                    await addToHistory(tenantId, simUserId, 'user', message);
+                    await addToHistory(tenantId, simUserId, 'model', responseText);
+
+                    res.json({ response: responseText, action, images });
+                    return;
+                }
+            }
+        }
 
         responseText = await generateAIResponse(message, {
             settings,
