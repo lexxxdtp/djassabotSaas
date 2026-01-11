@@ -128,16 +128,18 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
 
         // --- Réponse IA Standard ---
         const inventoryContext = products.map(p => {
-            let base = `- ${p.name} (${p.price} FCFA): ${p.stock !== undefined && p.stock <= 0 ? 'Épuisé' : 'En stock'}`;
+            const stockInfo = p.stock !== undefined ? `(Stock: ${p.stock})` : '(Stock: Illimité)';
+            let base = `- ${p.name} (${p.price} FCFA): ${p.stock !== undefined && p.stock <= 0 ? 'RUPTURE DE STOCK' : stockInfo}`;
 
-            // Add Variations details with Explicit Price Calculations
+            // Add Variations details with Explicit Price Calculations AND Stock
             if (p.variations && p.variations.length > 0) {
                 const vars = p.variations.map(v =>
                     `  * ${v.name}: ${v.options.map(o => {
                         const mod = o.priceModifier || 0;
                         const total = p.price + mod;
                         const sign = mod > 0 ? '+' : '';
-                        return `${o.value}${mod !== 0 ? ` (${sign}${mod}, Total: ${total} FCFA)` : ''}`;
+                        const optStock = o.stock !== undefined ? `[Stock: ${o.stock}]` : '[Stock: Illimité]';
+                        return `${o.value}${mod !== 0 ? ` (${sign}${mod}, Total: ${total} FCFA)` : ''} ${optStock}`;
                     }).join(', ')}`
                 ).join('\n');
                 base += `\n${vars}`;
