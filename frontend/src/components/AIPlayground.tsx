@@ -147,7 +147,9 @@ export default function AIPlayground() {
                                 </div>
                             )}
                             {msg.text.split('\n').map((line, j) => (
-                                <p key={j} className="min-h-[1em]">{line}</p>
+                                <p key={j} className="min-h-[1em]">
+                                    {line.replace(/\*\*/g, '')}
+                                </p>
                             ))}
                             <span className="text-[10px] opacity-50 block text-right mt-1">
                                 {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
