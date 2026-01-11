@@ -315,7 +315,11 @@ class WhatsAppManager {
                 }
 
                 // Check stock for this option
-                if (selectedOption.stock !== undefined && selectedOption.stock < tempOrder.quantity) {
+                // FIX: Only check stock if manageStock is strictly TRUE for the product
+                // Note: Variations might have their own stock logic, but for now we follow the product's rule or local stock if present
+                const shouldCheckStock = product.manageStock !== false;
+
+                if (shouldCheckStock && selectedOption.stock !== undefined && selectedOption.stock < tempOrder.quantity) {
                     if (selectedOption.stock <= 0) {
                         await sock.sendMessage(remoteJid, {
                             text: `Désolé, ${selectedOption.value} est actuellement épuisé. 😔\n\nVeuillez choisir une autre option.`
@@ -438,7 +442,11 @@ class WhatsAppManager {
                                     optText += ` (${opt.priceModifier > 0 ? '+' : ''}${opt.priceModifier} FCFA)`;
                                 }
                                 if (opt.stock !== undefined) {
-                                    optText += opt.stock > 0 ? ` [${opt.stock} en stock]` : ' [Épuisé]';
+                                    if (product.manageStock === false) {
+                                        optText += ''; // Flexible stock, don't show limit
+                                    } else {
+                                        optText += opt.stock > 0 ? ` [${opt.stock} en stock]` : ' [Épuisé]';
+                                    }
                                 }
                                 return optText;
                             })
@@ -473,8 +481,8 @@ class WhatsAppManager {
                     }
 
                     // === Product without variations - normal flow ===
-                    // Vérifier le stock disponible
-                    if (product.stock !== undefined && product.stock < qty) {
+                    // Vérifier le stock disponible (Seulement si manageStock est true)
+                    if (product.manageStock !== false && product.stock !== undefined && product.stock < qty) {
                         if (product.stock <= 0) {
                             // Produit épuisé
                             await sock.sendMessage(remoteJid, {
@@ -525,7 +533,11 @@ class WhatsAppManager {
 
             // 5. Réponse IA Standard (Chat / Info produit / Négociation)
             const inventoryContext = products.map(p => {
-                let productInfo = `- ${p.name}: ${p.price} FCFA ${p.minPrice ? `(Min: ${p.minPrice})` : ''} | ${p.stock > 0 ? 'En stock' : 'Épuisé'}`;
+                const stockStatus = p.manageStock === false
+                    ? 'Stock: Illimité (Flexible)'
+                    : (p.stock > 0 ? `Stock: ${p.stock}` : 'Épuisé');
+
+                let productInfo = `- ${p.name}: ${p.price} FCFA ${p.minPrice ? `(Min: ${p.minPrice})` : ''} | ${stockStatus}`;
 
                 // Include Variations Detail (with Image URLs)
                 if (p.variations && p.variations.length > 0) {
@@ -538,7 +550,8 @@ class WhatsAppManager {
                                 const total = p.price + mod;
                                 const sign = mod > 0 ? '+' : '';
                                 const priceInfo = mod !== 0 ? `Prix: ${sign}${mod} (Total: ${total} FCFA)` : `Prix: Base (${total} FCFA)`;
-                                productInfo += `\n    - Option: "${opt.value}" | Stock: ${opt.stock ?? '∞'} | ${priceInfo}${imgInfo}`;
+                                const optStockInfo = p.manageStock === false ? 'Stock: Illimité' : `Stock: ${opt.stock ?? '∞'}`;
+                                productInfo += `\n    - Option: "${opt.value}" | ${optStockInfo} | ${priceInfo}${imgInfo}`;
                             });
                         }
                     });

@@ -186,7 +186,8 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
 
         CRITICAL INVENTORY RULES (MUST FOLLOW):
         1. CHECK STOCK FIRST: The context defines available stock as "[Stock: X]".
-        2. IF DEMAND > STOCK:
+        2. IF Stock is "Illimité" or "Flexible" -> YOU CAN SELL ANY QUANTITY.
+        3. IF Stock is a Number (e.g., 5) AND DEMAND > STOCK:
            - You MUST REFUSE the order for the excess quantity.
            - Explain clearly: "Désolé, il ne me reste que X unités en stock (pour cette variante)."
            - Propose the available quantity instead.

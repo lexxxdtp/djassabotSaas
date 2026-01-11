@@ -48,6 +48,8 @@ create table if not exists products (
   -- Special AI instructions for this product (promotions, rules, etc.)
   -- Example: "Si le client prend 3+, proposer -10% sur le 5ème"
   ai_instructions text,
+  -- Stock Management Mode (true = strict count, false = flexible/unlimited)
+  manage_stock boolean default true,
   created_at timestamp with time zone default timezone('utc', now())
 );
 
