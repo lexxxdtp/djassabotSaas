@@ -178,11 +178,20 @@ class WhatsAppManager {
 
             // 3. Gestion des Messages Entrants
             sock.ev.on('messages.upsert', async (m) => {
-                if (m.type !== 'notify') return;
+                // On traite tout pour avoir l'historique et les chats dans le dashboard
+                // Mais on ne répondra qu'aux nouveaux messages (notify) récents
 
                 for (const msg of m.messages) {
-                    if (!msg.key.fromMe && m.type === 'notify') {
-                        await this.handleMessage(tenantId, sock, msg);
+                    try {
+                        const msgTimestamp = (typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : (msg.messageTimestamp as Long)?.toNumber?.() || Math.floor(Date.now() / 1000));
+                        const secondsAgo = Math.floor(Date.now() / 1000) - msgTimestamp;
+
+                        // Considérer comme historique si type 'append' ou vieux de plus de 30 secondes
+                        const isHistory = m.type === 'append' || secondsAgo > 30;
+
+                        await this.handleMessage(tenantId, sock, msg, isHistory);
+                    } catch (err) {
+                        console.error('Error processing message upsert:', err);
                     }
                 }
             });
@@ -192,84 +201,122 @@ class WhatsAppManager {
     /**
      * Traitement centralisé des messages par Tenant
      */
-    private async handleMessage(tenantId: string, sock: WASocket, msg: proto.IWebMessageInfo) {
+    private async handleMessage(tenantId: string, sock: WASocket, msg: proto.IWebMessageInfo, isHistory: boolean = false) {
         try {
             if (!msg.key || !msg.key.remoteJid) return;
-
             const remoteJid = msg.key.remoteJid;
+
+            // Ignore status updates (broadcasts)
+            if (remoteJid === 'status@broadcast') return;
+
+            // Determine content
             let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+
+            // Si c'est un message envoyé par moi (depuis téléphone ou autre session)
+            if (msg.key.fromMe) {
+                // On l'ajoute juste à l'historique comme venant du "model" (assistant) pour la cohérence
+                if (text) {
+                    // Dynamically import to ensure availability
+                    const { addToHistory } = await import('./sessionService');
+                    await addToHistory(tenantId, remoteJid, 'model', text);
+                }
+                return;
+            }
 
             // --- AUDIO HANDLING ---
             if (msg.message?.audioMessage) {
-                console.log(`[Manager] Audio received from ${remoteJid}`);
+                if (isHistory) {
+                    text = '[Audio Message]'; // Placeholder for history
+                } else {
+                    console.log(`[Manager] Audio received from ${remoteJid}`);
+                    // Check if voice is enabled for this tenant
+                    const { db } = await import('./dbService');
+                    const settings = await db.getSettings(tenantId);
 
-                // Check if voice is enabled for this tenant
-                const settings = await db.getSettings(tenantId);
-                if (!settings.voiceEnabled) {
-                    console.log(`[Manager] Voice disabled for tenant ${tenantId}, ignoring audio`);
-                    await sock.sendMessage(remoteJid, {
-                        text: "Désolé, je ne peux pas traiter les messages vocaux pour l'instant. Pouvez-vous m'écrire votre demande ?"
-                    });
-                    return;
-                }
-
-                try {
-                    // Check if transcribeAudio is available (dynamic import context)
-                    const { transcribeAudio } = await import('./aiService');
-
-                    const buffer = await downloadMediaMessage(
-                        msg as any,
-                        'buffer',
-                        {}
-                    );
-
-                    const mimeType = msg.message?.audioMessage?.mimetype || 'audio/ogg';
-                    if (buffer instanceof Buffer) {
-                        // Default to ogg if mimetype contains 'ogg' or 'opus', otherwise try to pass as is or map?
-                        // Gemini is flexible. Let's pass what we get.
-                        const transcription = await transcribeAudio(buffer, mimeType);
-                        console.log(`[Manager] Audio Transcribed: "${transcription}"`);
-
-                        // If transcription valid, treat as text
-                        if (transcription) {
-                            text = transcription;
-                            // Optional: Send a receipts/reaction instead of text?
-                            // await sock.sendMessage(remoteJid, { text: `(Transcription: "${transcription}")` }); 
-                        } else {
-                            await sock.sendMessage(remoteJid, { text: "Je n'ai pas réussi à écouter votre message vocal. Pouvez-vous l'écrire ?" });
-                            return;
-                        }
+                    if (!settings.voiceEnabled) {
+                        console.log(`[Manager] Voice disabled for tenant ${tenantId}, ignoring audio`);
+                        await sock.sendMessage(remoteJid, {
+                            text: "Désolé, je ne peux pas traiter les messages vocaux pour l'instant. Pouvez-vous m'écrire votre demande ?"
+                        });
+                        return;
                     }
-                } catch (e) {
-                    console.error("Error downloading/transcribing audio", e);
-                    return;
+
+                    try {
+                        // Check if transcribeAudio is available (dynamic import context)
+                        const { transcribeAudio } = await import('./aiService');
+                        const buffer = await downloadMediaMessage(
+                            msg as any,
+                            'buffer',
+                            {}
+                        );
+
+                        const mimeType = msg.message?.audioMessage?.mimetype || 'audio/ogg';
+                        if (buffer instanceof Buffer) {
+                            const transcription = await transcribeAudio(buffer, mimeType);
+                            console.log(`[Manager] Audio Transcribed: "${transcription}"`);
+
+                            if (transcription) {
+                                text = transcription;
+                            } else {
+                                await sock.sendMessage(remoteJid, { text: "Je n'ai pas réussi à écouter votre message vocal. Pouvez-vous l'écrire ?" });
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error downloading/transcribing audio", e);
+                        return;
+                    }
                 }
             }
 
             // --- IMAGE HANDLING ---
             if (msg.message?.imageMessage) {
-                console.log(`[Manager] Image received from ${remoteJid}`);
-                try {
-                    const buffer = await downloadMediaMessage(
-                        msg as any,
-                        'buffer',
-                        {}
-                    );
-                    const mimeType = msg.message?.imageMessage?.mimetype || 'image/jpeg';
-                    const caption = msg.message?.imageMessage?.caption || "";
+                if (isHistory) {
+                    text = `[Image] ${msg.message.imageMessage.caption || ''}`;
+                } else {
+                    console.log(`[Manager] Image received from ${remoteJid}`);
+                    try {
+                        const buffer = await downloadMediaMessage(
+                            msg as any,
+                            'buffer',
+                            {}
+                        );
+                        const mimeType = msg.message?.imageMessage?.mimetype || 'image/jpeg';
+                        const caption = msg.message?.imageMessage?.caption || "";
 
-                    const description = await analyzeImage(buffer as Buffer, mimeType, caption);
-                    console.log(`[Manager] Image Analysis: "${description}"`);
+                        // Lazy import analyze
+                        const { analyzeImage } = await import('./aiService');
+                        const description = await analyzeImage(buffer as Buffer, mimeType, caption);
+                        console.log(`[Manager] Image Analysis: "${description}"`);
 
-                    // Inject into text flow
-                    text = `[User sent an Image] Description: ${description}. Caption: ${caption}`;
-
-                } catch (e) {
-                    console.error("Error downloading/analyzing image", e);
+                        text = `[User sent an Image] Description: ${description}. Caption: ${caption}`;
+                    } catch (e) {
+                        console.error("Error downloading/analyzing image", e);
+                    }
                 }
             }
 
             if (!text) return; // Ignore non-text/non-audio messages
+
+            // Imports
+            const { getSession, updateSession, addToHistory, clearHistory, addItemToSessionCart } = await import('./sessionService');
+            const { db } = await import('./dbService');
+            const { generateAIResponse, detectPurchaseIntent } = await import('./aiService');
+
+            // 0. Update Last Interaction & History regardless of logic
+            // This ensures the chat shows up in the Dashboard List immediately
+            const currentSession = await getSession(tenantId, remoteJid);
+
+            // Si le nom du contact est dispo dans le message (pushName), on peut update la session ?
+            // Mais getSession gère déjà un default.
+
+            await addToHistory(tenantId, remoteJid, 'user', text);
+
+            // *** STOP HERE IF HISTORY OR AUTOPILOT DISABLED ***
+            if (isHistory) {
+                // Just updating history (done above)
+                return;
+            }
 
             console.log(`[Manager] Tenant ${tenantId} reçu de ${remoteJid}: ${text}`);
 
@@ -280,16 +327,18 @@ class WhatsAppManager {
             await new Promise(r => setTimeout(r, Math.random() * 1500 + 500));
             await sock.sendPresenceUpdate('composing', remoteJid);
 
-            // Import dynamique pour éviter les cycles si besoin, ou utiliser les imports existants
-            // Note: Assurez-vous que ces imports existent en haut du fichier
-            const { getSession, updateSession, addToHistory, clearHistory, addItemToSessionCart } = await import('./sessionService');
-            // const { db } = await import('./dbService'); // Déjà importé
-            // const { generateAIResponse, detectPurchaseIntent } = await import('./aiService'); // Déjà importé
 
-            // 1. Récupérer la session utilisateur (Multi-Tenant Key)
+            // 1. Récupérer la session (re-fetch updated?)
             const session = await getSession(tenantId, remoteJid);
 
+            // Check Autopilot Status EARLY
+            if (session.autopilotEnabled === false) {
+                console.log(`[Manager] Autopilot disabled for ${remoteJid}, skipping AI response.`);
+                return;
+            }
+
             // 2. Gestion des états (Machine à états simple)
+            // ... (rest as before)
 
             // CAS A : En attente de l'adresse pour finaliser la commande
             if (session.state === 'WAITING_FOR_ADDRESS') {
@@ -624,13 +673,6 @@ class WhatsAppManager {
                 }
                 return productInfo;
             }).join('\n');
-
-            // Check Autopilot Status
-            if (session.autopilotEnabled === false) {
-                console.log(`[Manager] Autopilot disabled for ${remoteJid}, skipping AI response.`);
-                await addToHistory(tenantId, remoteJid, 'user', text);
-                return;
-            }
 
             const aiResponse = await generateAIResponse(text, {
                 settings,
