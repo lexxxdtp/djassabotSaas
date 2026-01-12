@@ -23,9 +23,9 @@ router.get('/plans', (req, res) => {
                 price: 5000,
                 currency: 'XOF',
                 features: [
-                    '500 conversations IA/mois',
-                    '1 agent WhatsApp',
-                    '50 produits',
+                    'Bot IA WhatsApp',
+                    'Gestion des produits',
+                    '50 produits max',
                     'Support email'
                 ]
             },
@@ -35,9 +35,10 @@ router.get('/plans', (req, res) => {
                 price: 10000,
                 currency: 'XOF',
                 features: [
-                    '2000 conversations IA/mois',
+                    'Tout du Starter +',
                     'Produits illimités',
-                    'Analytics avancés',
+                    'IA Négociatrice avancée',
+                    'Statistiques détaillées',
                     'Support prioritaire'
                 ]
             },
@@ -47,10 +48,10 @@ router.get('/plans', (req, res) => {
                 price: 15000,
                 currency: 'XOF',
                 features: [
-                    'Conversations illimitées',
-                    '3 agents WhatsApp',
-                    'API Access',
-                    'Support téléphonique'
+                    'Tout du Pro +',
+                    'Support VIP',
+                    'Formation personnalisée',
+                    'Configuration sur mesure'
                 ]
             }
         ]

@@ -1,19 +1,34 @@
-import { useState } from 'react';
-import { Check, Shield, Crown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Check, Shield, Crown, Loader2 } from 'lucide-react';
+import { getApiUrl } from '../utils/apiConfig';
+
+interface Plan {
+    id: string;
+    name: string;
+    price: number;
+    currency: string;
+    features: string[];
+}
 
 interface PlanCardProps {
     title: string;
-    price: string;
+    price: number;
     features: string[];
     planId: string;
     recommended?: boolean;
     currentPlan: string;
     onUpgrade: (plan: string) => void;
     loading: boolean;
+    loadingPlan: string | null;
 }
 
-const PlanCard = ({ title, price, features, planId, recommended = false, currentPlan, onUpgrade, loading }: PlanCardProps) => {
+const PlanCard = ({ title, price, features, planId, recommended = false, currentPlan, onUpgrade, loading, loadingPlan }: PlanCardProps) => {
     const isCurrent = currentPlan === planId;
+    const isLoading = loading && loadingPlan === planId;
+
+    const formatPrice = (p: number) => {
+        return p.toLocaleString('fr-FR');
+    };
 
     return (
         <div className={`relative flex flex-col p-6 rounded-2xl border ${isCurrent
@@ -38,8 +53,8 @@ const PlanCard = ({ title, price, features, planId, recommended = false, current
             <div className="mb-4">
                 <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
                 <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-white">{price}</span>
-                    <span className="text-zinc-500 text-sm">/mois</span>
+                    <span className="text-3xl font-bold text-white">{formatPrice(price)}</span>
+                    <span className="text-zinc-500 text-sm">FCFA/mois</span>
                 </div>
             </div>
 
@@ -53,34 +68,111 @@ const PlanCard = ({ title, price, features, planId, recommended = false, current
             </div>
 
             <button
-                onClick={() => !isCurrent && onUpgrade(planId)}
+                onClick={() => !isCurrent && !loading && onUpgrade(planId)}
                 disabled={isCurrent || loading}
-                className={`w-full py-3 rounded-lg font-bold text-sm transition-all ${isCurrent
+                className={`w-full py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 ${isCurrent
                     ? 'bg-zinc-800 text-zinc-500 cursor-default'
                     : recommended
                         ? 'bg-orange-500 hover:bg-orange-600 text-black shadow-lg shadow-orange-500/20'
                         : 'bg-white hover:bg-zinc-200 text-black'
                     }`}
             >
-                {loading && !isCurrent ? 'Traitement...' : isCurrent ? 'Plan Actif' : 'Choisir ce plan'}
+                {isLoading ? (
+                    <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Redirection...
+                    </>
+                ) : isCurrent ? (
+                    'Plan Actif'
+                ) : (
+                    'Choisir ce plan'
+                )}
             </button>
         </div>
     );
 };
 
 export default function Subscription() {
-    const [currentPlan, setCurrentPlan] = useState('starter');
+    // currentPlan will be fetched from API after Paystack callback
+    const [currentPlan, _setCurrentPlan] = useState('starter');
     const [loading, setLoading] = useState(false);
+    const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+    const [plans, setPlans] = useState<Plan[]>([]);
+    const [error, setError] = useState<string | null>(null);
 
-    // Mock upgrade function
-    const handleUpgrade = (plan: string) => {
+    // Fetch plans from API
+    useEffect(() => {
+        const fetchPlans = async () => {
+            try {
+                const res = await fetch(`${getApiUrl()}/paystack/plans`);
+                const data = await res.json();
+                if (data.plans) {
+                    setPlans(data.plans);
+                }
+            } catch (e) {
+                console.error('Failed to fetch plans:', e);
+                // Fallback to default plans
+                setPlans([
+                    { id: 'starter', name: 'Starter', price: 5000, currency: 'XOF', features: ['Bot IA WhatsApp', 'Gestion produits', '50 produits max', 'Support email'] },
+                    { id: 'pro', name: 'Pro', price: 10000, currency: 'XOF', features: ['Tout du Starter +', 'Produits illimités', 'Statistiques détaillées', 'IA Négociatrice', 'Support prioritaire'] },
+                    { id: 'business', name: 'Business', price: 15000, currency: 'XOF', features: ['Tout du Pro +', 'Support VIP', 'Formation personnalisée', 'Configuration sur mesure'] }
+                ]);
+            }
+        };
+        fetchPlans();
+    }, []);
+
+    // Handle upgrade - redirect to Paystack
+    const handleUpgrade = async (plan: string) => {
         setLoading(true);
-        setTimeout(() => {
-            setCurrentPlan(plan);
+        setLoadingPlan(plan);
+        setError(null);
+
+        try {
+            const token = localStorage.getItem('authToken');
+            const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
+
+            const res = await fetch(`${getApiUrl()}/paystack/subscribe`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ plan, email: userEmail })
+            });
+
+            const data = await res.json();
+
+            if (data.success && data.paymentUrl) {
+                // Redirect to Paystack payment page
+                window.location.href = data.paymentUrl;
+            } else {
+                setError(data.error || 'Une erreur est survenue');
+                setLoading(false);
+                setLoadingPlan(null);
+            }
+        } catch (e: any) {
+            console.error('Subscription error:', e);
+            setError('Erreur de connexion au serveur');
             setLoading(false);
-            alert(`Félicitations ! Vous êtes passé au plan ${plan.toUpperCase()}.`);
-        }, 1500);
+            setLoadingPlan(null);
+        }
     };
+
+    // Get plan details with fallback
+    const getPlan = (planId: string) => {
+        return plans.find(p => p.id === planId) || {
+            id: planId,
+            name: planId.charAt(0).toUpperCase() + planId.slice(1),
+            price: 0,
+            currency: 'XOF',
+            features: []
+        };
+    };
+
+    const starterPlan = getPlan('starter');
+    const proPlan = getPlan('pro');
+    const businessPlan = getPlan('business');
 
     return (
         <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in zoom-in duration-500 pb-20">
@@ -89,60 +181,65 @@ export default function Subscription() {
                     Boostez votre <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-600">Croissance</span>
                 </h1>
                 <p className="text-zinc-400 max-w-xl mx-auto">
-                    Choisissez le plan adapté à votre volume de ventes. Changez à tout moment.
+                    Choisissez le plan adapté à votre volume de ventes. Payez par Wave, Orange Money ou Carte.
                 </p>
             </div>
 
+            {error && (
+                <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-center">
+                    {error}
+                </div>
+            )}
+
             <div className="grid md:grid-cols-3 gap-6">
                 <PlanCard
-                    title="Starter"
-                    price="0 FCFA"
+                    title={starterPlan.name}
+                    price={starterPlan.price}
                     planId="starter"
-                    features={[
-                        "1 Numéro WhatsApp",
-                        "Bot Vendeur IA Base",
+                    features={starterPlan.features.length > 0 ? starterPlan.features : [
+                        "Bot IA WhatsApp",
+                        "Gestion des produits",
                         "50 Produits max",
-                        "Commandes illimitées",
                         "Support Email"
                     ]}
                     currentPlan={currentPlan}
                     onUpgrade={handleUpgrade}
                     loading={loading}
+                    loadingPlan={loadingPlan}
                 />
 
                 <PlanCard
-                    title="Pro"
-                    price="15.000 FCFA"
+                    title={proPlan.name}
+                    price={proPlan.price}
                     planId="pro"
                     recommended={true}
-                    features={[
+                    features={proPlan.features.length > 0 ? proPlan.features : [
                         "Tout du Starter +",
-                        "IA Négociatrice Avancée",
                         "Produits illimités",
-                        "Relances paniers abandonnés",
+                        "IA Négociatrice Avancée",
                         "Statistiques détaillées",
                         "Support Prioritaire"
                     ]}
                     currentPlan={currentPlan}
                     onUpgrade={handleUpgrade}
                     loading={loading}
+                    loadingPlan={loadingPlan}
                 />
 
                 <PlanCard
-                    title="Business"
-                    price="45.000 FCFA"
+                    title={businessPlan.name}
+                    price={businessPlan.price}
                     planId="business"
-                    features={[
+                    features={businessPlan.features.length > 0 ? businessPlan.features : [
                         "Tout du Pro +",
-                        "3 Numéros WhatsApp",
-                        "IA Personnalisable (Voix)",
-                        "API Accès",
-                        "Account Manager dédié",
-                        "Formation équipe"
+                        "Support VIP",
+                        "Formation personnalisée",
+                        "Configuration sur mesure"
                     ]}
                     currentPlan={currentPlan}
                     onUpgrade={handleUpgrade}
                     loading={loading}
+                    loadingPlan={loadingPlan}
                 />
             </div>
 
@@ -152,8 +249,8 @@ export default function Subscription() {
                         <Shield size={24} />
                     </div>
                     <div>
-                        <h3 className="font-bold text-white">Garantie Satisfait ou Remboursé</h3>
-                        <p className="text-sm text-zinc-500">Testez le plan Pro sans risque pendant 14 jours.</p>
+                        <h3 className="font-bold text-white">Paiement Sécurisé</h3>
+                        <p className="text-sm text-zinc-500">Wave, Orange Money, MTN, Visa/Mastercard</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -161,8 +258,8 @@ export default function Subscription() {
                         <Crown size={24} />
                     </div>
                     <div>
-                        <h3 className="font-bold text-white">Besoin de plus ?</h3>
-                        <p className="text-sm text-zinc-500">Contactez-nous pour une offre sur mesure.</p>
+                        <h3 className="font-bold text-white">Besoin d'aide ?</h3>
+                        <p className="text-sm text-zinc-500">Contactez-nous sur WhatsApp</p>
                     </div>
                 </div>
             </div>

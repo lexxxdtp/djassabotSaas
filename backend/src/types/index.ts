@@ -104,6 +104,7 @@ export interface Tenant {
     whatsappConnected: boolean;
     whatsappPhoneNumber?: string;
     whatsappStatus: string;
+    paystackSubaccountCode?: string; // For receiving payments
     createdAt: Date;
     updatedAt: Date;
 }
