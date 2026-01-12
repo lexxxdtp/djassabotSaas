@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -15,6 +15,7 @@ const Overview = lazy(() => import('./pages/Overview'));
 const Settings = lazy(() => import('./pages/Settings'));
 const WhatsAppConnect = lazy(() => import('./pages/WhatsAppConnect'));
 const Subscription = lazy(() => import('./pages/Subscription'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -72,7 +73,7 @@ function App() {
               </Route>
             </Route>
 
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<LandingPage />} />
           </Routes>
         </Suspense>
       </Router>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingBag, ArrowRight, Mail, Lock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -12,8 +12,16 @@ const Login: React.FC = () => {
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, isAuthenticated } = useAuth();
     const API_URL = getApiUrl();
+
+    // Redirect to dashboard if already authenticated
+    useEffect(() => {
+        if (isAuthenticated) {
+            console.log('[Login] User already authenticated, redirecting to dashboard');
+            navigate('/dashboard', { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -114,8 +122,8 @@ const Login: React.FC = () => {
                             type="button"
                             onClick={() => setRememberMe(!rememberMe)}
                             className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${rememberMe
-                                    ? 'bg-orange-500 border-orange-500'
-                                    : 'bg-transparent border-zinc-600 hover:border-zinc-500'
+                                ? 'bg-orange-500 border-orange-500'
+                                : 'bg-transparent border-zinc-600 hover:border-zinc-500'
                                 }`}
                         >
                             {rememberMe && (

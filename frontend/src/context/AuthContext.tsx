@@ -51,18 +51,35 @@ const clearStoredItems = () => {
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [token, setToken] = useState<string | null>(() => getStoredItem('token'));
-    const [user, setUser] = useState<User | null>(() => getStoredJSON('user') as User | null);
-    const [tenant, setTenant] = useState<Tenant | null>(() => getStoredJSON('tenant') as Tenant | null);
+    // Initialize state from storage
+    const [token, setToken] = useState<string | null>(() => {
+        const storedToken = getStoredItem('token');
+        console.log('[AuthContext] Init - token from storage:', storedToken ? 'Found (length: ' + storedToken.length + ')' : 'Not found');
+        return storedToken;
+    });
+    const [user, setUser] = useState<User | null>(() => {
+        const storedUser = getStoredJSON('user') as User | null;
+        console.log('[AuthContext] Init - user from storage:', storedUser ? storedUser.email || storedUser.phone : 'Not found');
+        return storedUser;
+    });
+    const [tenant, setTenant] = useState<Tenant | null>(() => {
+        const storedTenant = getStoredJSON('tenant') as Tenant | null;
+        console.log('[AuthContext] Init - tenant from storage:', storedTenant?.name || 'Not found');
+        return storedTenant;
+    });
     const isLoading = false;
 
+    console.log('[AuthContext] isAuthenticated:', !!token);
+
     const login = (newToken: string, newUser: User, newTenant: Tenant, rememberMe: boolean = true) => {
+        console.log('[AuthContext] Login called with rememberMe:', rememberMe);
         setToken(newToken);
         setUser(newUser);
         setTenant(newTenant);
 
         // Choose storage based on rememberMe preference
         const storage = rememberMe ? localStorage : sessionStorage;
+        console.log('[AuthContext] Using storage:', rememberMe ? 'localStorage' : 'sessionStorage');
 
         // Clear old data from both storages first
         clearStoredItems();
@@ -79,6 +96,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (newUser.email) {
             storage.setItem('userEmail', newUser.email);
         }
+
+        console.log('[AuthContext] Data stored successfully. Token length:', newToken.length);
     };
 
     const logout = () => {
