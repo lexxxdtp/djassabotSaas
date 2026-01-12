@@ -141,30 +141,44 @@ class WhatsAppManager {
 
                 // 2. Gestion de la Connexion
                 if (connection === 'close') {
-                    const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-                    console.log(`[Manager] Connexion fermée pour Tenant ${tenantId}. Reconnect: ${shouldReconnect}`);
+                    const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
+                    const shouldReconnect = reason !== DisconnectReason.loggedOut;
+
+                    console.log(`[Manager] 🔴 Connexion fermée pour Tenant ${tenantId}. Raison: ${reason}. Reconnect: ${shouldReconnect}`);
 
                     if (shouldReconnect) {
+                        // Infinite Retry Logic (Smart Backoff)
+                        // On ne limite plus le nombre d'essais pour garantir la persistance
                         const session = this.sessions.get(tenantId);
-                        if (session && session.retryCount < this.MAX_RETRIES) {
+                        let delay = 2000; // start 2s
+
+                        if (session) {
                             session.retryCount++;
-                            // Retry simple
-                            this.createSession(tenantId);
+                            // Exponential backoff maxed at 30s
+                            delay = Math.min(session.retryCount * 2000, 30000);
                         }
+
+                        console.log(`[Manager] 🔄 Tentative de reconnexion dans ${delay / 1000}s...`);
+
+                        setTimeout(() => {
+                            this.createSession(tenantId).catch(e => console.error(`[Manager] Retry failed:`, e));
+                        }, delay);
+
                     } else {
-                        // Logged out
+                        // VRAIE Déconnexion (Logout manuel depuis le téléphone)
+                        console.log(`[Manager] ❌ Déconnexion définitive (Logout Manuel). Nettoyage session.`);
                         this.sessions.delete(tenantId);
                         await this.cleanupSession(tenantId);
                         await db.updateTenantWhatsAppStatus(tenantId, 'disconnected');
                     }
                 } else if (connection === 'open') {
-                    console.log(`[Manager] ✅ Tenant ${tenantId} connecté à WhatsApp !`);
+                    console.log(`[Manager] ✅ Tenant ${tenantId} connecté à WhatsApp ! Stable.`);
 
                     const session = this.sessions.get(tenantId);
                     if (session) {
                         session.status = 'connected';
-                        session.qr = undefined; // Plus besoin de QR
-                        session.retryCount = 0;
+                        session.qr = undefined;
+                        session.retryCount = 0; // Reset counter on success
                     }
 
                     // Récupérer le numéro de téléphone connecté
