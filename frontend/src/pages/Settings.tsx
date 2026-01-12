@@ -218,9 +218,13 @@ export default function Settings() {
             } else {
                 throw new Error(data.error || 'Erreur inconnue');
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error(e);
-            alert('Erreur: ' + e.message);
+            if (e instanceof Error) {
+                alert('Erreur: ' + e.message);
+            } else {
+                alert('Erreur inconnue');
+            }
         } finally {
             setLoading(false);
         }

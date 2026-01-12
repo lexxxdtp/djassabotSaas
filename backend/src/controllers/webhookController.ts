@@ -57,6 +57,12 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                         const address = textBody;
                         const tempOrder = session.tempOrder;
 
+                        if (!tempOrder) {
+                            await sendTextMessage(from, "Désolé, votre panier semble vide ou expiré. Veuillez recommencer.");
+                            await updateSession(DEFAULT_TENANT_ID, from, { state: 'IDLE' });
+                            return;
+                        }
+
                         // Generate Payment Link
                         const paymentLink = await generateWavePaymentLink(tempOrder.total, `ORDER-${Date.now()}`);
 
@@ -81,19 +87,21 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                         const product = await db.getProductByName(DEFAULT_TENANT_ID, intentData.productName);
                         if (product) {
                             // Add to cart (cart is per user, not per tenant in current implementation)
-                            const cart = await db.addToCart(DEFAULT_TENANT_ID, from, product, intentData.quantity || 1);
+                            // Add to cart logic
+                            const cartItem = {
+                                productId: product.id,
+                                productName: product.name,
+                                quantity: intentData.quantity || 1,
+                                price: product.price
+                            };
 
-                            // Calculate Total
-                            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                            const { addItemToSessionCart } = await import('../services/sessionService');
+                            const updatedTempOrder = await addItemToSessionCart(DEFAULT_TENANT_ID, from, cartItem);
+                            const total = updatedTempOrder.total;
 
                             // Ask for delivery address instead of sending link immediately
                             await updateSession(DEFAULT_TENANT_ID, from, {
-                                state: 'WAITING_FOR_ADDRESS',
-                                tempOrder: {
-                                    total,
-                                    summary: `${intentData.quantity || 1}x ${product.name}`,
-                                    items: cart
-                                }
+                                state: 'WAITING_FOR_ADDRESS'
                             });
 
                             await sendTextMessage(from, `J'ai ajouté ${intentData.quantity || 1}x ${product.name} au panier (Total: ${total} FCFA). 🛒\n\nÀ quelle adresse (quartier/ville) doit-on livrer ?`);

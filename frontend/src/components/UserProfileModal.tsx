@@ -69,7 +69,7 @@ const PlanCard = ({ id, title, price, features, recommended, currentPlan, loadin
 export default function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
     const { user, tenant } = useAuth();
     const [activeTab, setActiveTab] = useState<'profile' | 'subscription'>('subscription');
-    const [currentPlan, _setCurrentPlan] = useState('starter');
+    const [currentPlan] = useState('starter');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -100,8 +100,13 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                 setError(data.error || 'Une erreur est survenue');
                 setLoading(false);
             }
-        } catch (e: any) {
-            console.error('Subscription error:', e);
+        } catch (e: unknown) {
+            console.error(e);
+            if (e instanceof Error) {
+                alert('Erreur: ' + e.message);
+            } else {
+                alert('Erreur inconnue');
+            }
             setError('Erreur de connexion au serveur');
             setLoading(false);
         }

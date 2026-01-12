@@ -1,4 +1,5 @@
 import { supabase, isSupabaseEnabled } from '../config/supabase';
+import { CartItem, SelectedVariation } from '../types';
 
 export interface Session {
     id: string; // composite key: tenantId:userId
@@ -6,7 +7,12 @@ export interface Session {
     tenantId: string;
     history: { role: 'user' | 'model'; parts: { text: string }[] }[];
     state: 'IDLE' | 'WAITING_FOR_ADDRESS' | 'WAITING_FOR_NAME' | 'WAITING_FOR_VARIATION';
-    tempOrder?: any;
+    tempOrder?: {
+        items: CartItem[];
+        total: number;
+        summary: string;
+        [key: string]: any;
+    };
     lastInteraction: Date;
     reminderSent?: boolean;
 }
@@ -156,3 +162,70 @@ const saveSessionToDb = async (session: Session) => {
     }
 };
 
+
+
+// --- Cart Management Helpers ---
+
+const areVariationsEqual = (v1?: SelectedVariation[], v2?: SelectedVariation[]): boolean => {
+    if (!v1 && !v2) return true;
+    if (!v1 || !v2) return false;
+    if (v1.length !== v2.length) return false;
+
+    // Check if every variation in v1 exists in v2 with same value
+    return v1.every(var1 =>
+        v2?.some(var2 => var2.name === var1.name && var2.value === var1.value)
+    );
+};
+
+export const addItemToSessionCart = async (tenantId: string, userId: string, newItem: CartItem) => {
+    const session = await getSession(tenantId, userId);
+
+    // Initialize items if missing (handle legacy structure where tempOrder might just be an object without items)
+    let currentItems: CartItem[] = (session.tempOrder && Array.isArray(session.tempOrder.items))
+        ? session.tempOrder.items
+        : [];
+
+    // Logic to merge
+    const existingItemIndex = currentItems.findIndex(item =>
+        item.productId === newItem.productId &&
+        areVariationsEqual(item.selectedVariations, newItem.selectedVariations)
+    );
+
+    // Create a new array to ensure immutability/reactivity if needed, though for backend logic mutation is fine
+    const updatedItems = [...currentItems];
+
+    if (existingItemIndex > -1) {
+        updatedItems[existingItemIndex] = {
+            ...updatedItems[existingItemIndex],
+            quantity: updatedItems[existingItemIndex].quantity + newItem.quantity
+        };
+    } else {
+        updatedItems.push(newItem);
+    }
+
+    // Calculate new total
+    const total = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Generate Summary
+    const summary = updatedItems.map(i => {
+        const vars = i.selectedVariations && i.selectedVariations.length > 0
+            ? `(${i.selectedVariations.map(v => v.value).join(', ')})`
+            : '';
+        return `${i.quantity}x ${i.productName} ${vars}`;
+    }).join('\n');
+
+    const tempOrder = {
+        ...session.tempOrder, // Keep other temp props if any
+        items: updatedItems,
+        total,
+        summary
+    };
+
+    // Update the session
+    // Note: Caller handles state transition if necessary (e.g. to WAITING_FOR_ADDRESS)
+    await updateSession(tenantId, userId, {
+        tempOrder
+    });
+
+    return tempOrder;
+};

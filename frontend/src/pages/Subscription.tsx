@@ -94,7 +94,7 @@ const PlanCard = ({ title, price, features, planId, recommended = false, current
 
 export default function Subscription() {
     // currentPlan will be fetched from API after Paystack callback
-    const [currentPlan, _setCurrentPlan] = useState('starter');
+    const [currentPlan] = useState('starter');
     const [loading, setLoading] = useState(false);
     const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
     const [plans, setPlans] = useState<Plan[]>([]);
@@ -151,7 +151,7 @@ export default function Subscription() {
                 setLoading(false);
                 setLoadingPlan(null);
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error('Subscription error:', e);
             setError('Erreur de connexion au serveur');
             setLoading(false);

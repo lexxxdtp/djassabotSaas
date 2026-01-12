@@ -239,7 +239,7 @@ class WhatsAppManager {
 
             // Import dynamique pour éviter les cycles si besoin, ou utiliser les imports existants
             // Note: Assurez-vous que ces imports existent en haut du fichier
-            const { getSession, updateSession, addToHistory, clearHistory } = await import('./sessionService');
+            const { getSession, updateSession, addToHistory, clearHistory, addItemToSessionCart } = await import('./sessionService');
             // const { db } = await import('./dbService'); // Déjà importé
             // const { generateAIResponse, detectPurchaseIntent } = await import('./aiService'); // Déjà importé
 
@@ -387,6 +387,7 @@ class WhatsAppManager {
                 const variationsSummary = newSelectedVariations.map(v => `${v.name}: ${v.value}`).join(', ');
 
                 // Create cart item with variations
+                // Create cart item with variations
                 const cartItem = {
                     productId: product.id,
                     productName: product.name,
@@ -395,14 +396,15 @@ class WhatsAppManager {
                     selectedVariations: newSelectedVariations
                 };
 
+                // Add to persistent session cart
+                const updatedTempOrder = await addItemToSessionCart(tenantId, remoteJid, cartItem);
+
                 await updateSession(tenantId, remoteJid, {
-                    state: 'WAITING_FOR_ADDRESS',
-                    tempOrder: {
-                        items: [cartItem],
-                        total: total,
-                        summary: `${tempOrder.quantity}x ${product.name} (${variationsSummary})`
-                    }
+                    state: 'WAITING_FOR_ADDRESS'
                 });
+
+                // Recalculate total from the FULL cart, not just this item (though usually valid to show full total)
+                const fullTotal = updatedTempOrder.total;
 
                 await sock.sendMessage(remoteJid, {
                     text: `Excellent choix ! 🎉\n\n📦 ${tempOrder.quantity}x ${product.name}\n📝 ${variationsSummary}\n💰 Total: ${total} FCFA\n\nÀ quelle adresse (quartier, ville) doit-on livrer ?`
@@ -514,18 +516,22 @@ class WhatsAppManager {
                     }
 
                     // Ajouter au panier (stock suffisant)
-                    const cart = await db.addToCart(tenantId, remoteJid, product, qty);
+                    // const cart = await db.addToCart(tenantId, remoteJid, product, qty); // DEPRECATED: Local only
 
-                    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                    const cartItem = {
+                        productId: product.id,
+                        productName: product.name,
+                        quantity: qty,
+                        price: product.price
+                    };
+
+                    // Add to session cart
+                    const updatedTempOrder = await addItemToSessionCart(tenantId, remoteJid, cartItem);
+                    const total = updatedTempOrder.total;
 
                     // Passer en mode "Checkout"
                     await updateSession(tenantId, remoteJid, {
-                        state: 'WAITING_FOR_ADDRESS',
-                        tempOrder: {
-                            items: cart,
-                            total: total,
-                            summary: `${qty}x ${product.name}`
-                        }
+                        state: 'WAITING_FOR_ADDRESS'
                     });
 
                     await sock.sendMessage(remoteJid, {
