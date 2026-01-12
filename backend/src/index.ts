@@ -7,6 +7,7 @@ import { startAllTenantInstances } from './services/baileysManager';
 import authRoutes from './routes/authRoutes';
 import aiRoutes from './routes/aiRoutes';
 import variationTemplateRoutes from './routes/variationTemplateRoutes';
+import paystackRoutes from './routes/paystackRoutes';
 import './jobs/abandonedCart'; // Start Cron Jobs
 import { db } from './services/dbService';
 import { authenticateTenant } from './middleware/auth';
@@ -39,6 +40,9 @@ app.use('/api', variationTemplateRoutes); // Variation Templates
 
 // Webhooks (Public but should be AFTER specific routes)
 app.use('/api/webhooks', webhookRoutes);
+
+// Paystack Payment Routes
+app.use('/api/paystack', paystackRoutes);
 
 // Settings (Protected by JWT)
 app.get('/api/settings', authenticateTenant, async (req, res) => {
