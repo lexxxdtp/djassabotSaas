@@ -294,8 +294,8 @@ export default function Settings() {
         <button
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all text-sm border ${activeTab === id
-                ? 'bg-orange-500 text-black border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.3)]'
-                : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-white'
+                ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+                : 'bg-white/5 text-zinc-400 border-white/5 hover:bg-white/10 hover:text-white'
                 }`}
         >
             <Icon size={16} />
@@ -306,17 +306,17 @@ export default function Settings() {
     return (
         <div className="max-w-5xl mx-auto space-y-8 pb-20 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-800 pb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-6">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Configuration Neurons 🧠</h1>
-                    <p className="text-zinc-500 text-sm">Paramétrez l'intelligence artificielle et votre profil.</p>
+                    <p className="text-zinc-400 text-sm">Paramétrez l'intelligence artificielle et votre profil.</p>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={loading}
-                    className="flex items-center gap-2 px-6 py-3 bg-white text-black hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold transition-all text-sm"
+                    className="flex items-center gap-2 px-6 py-3 bg-white text-black hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold transition-all text-sm shadow-lg shadow-white/10"
                 >
-                    {loading ? <span className="animate-spin">⏳</span> : <CheckCircle size={18} className="text-orange-600" />}
+                    {loading ? <span className="animate-spin">⏳</span> : <CheckCircle size={18} className="text-indigo-600" />}
                     <span>{loading ? 'Sauvegarde...' : 'Appliquer les modifications'}</span>
                 </button>
             </div>
@@ -336,7 +336,7 @@ export default function Settings() {
                 {/* --- TAB 0: MON PROFIL --- */}
                 {activeTab === 'profile' && (
                     <div className="space-y-6">
-                        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-8 backdrop-blur-sm">
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8 backdrop-blur-sm">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                                 <span className="w-2 h-2 rounded-full bg-purple-500"></span> Mes Informations Personnelles
                             </h2>
@@ -348,7 +348,7 @@ export default function Settings() {
                                         type="text"
                                         value={userProfile.fullName}
                                         onChange={e => setUserProfile({ ...userProfile, fullName: e.target.value })}
-                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all placeholder:text-zinc-700"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-600"
                                         placeholder="Votre nom"
                                     />
                                 </div>
@@ -358,7 +358,7 @@ export default function Settings() {
                                         type="date"
                                         value={userProfile.birthDate}
                                         onChange={e => setUserProfile({ ...userProfile, birthDate: e.target.value })}
-                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all [&::-webkit-calendar-picker-indicator]:invert"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all [&::-webkit-calendar-picker-indicator]:invert"
                                     />
                                 </div>
                                 <div>
@@ -367,7 +367,7 @@ export default function Settings() {
                                         type="text"
                                         value={userProfile.phone}
                                         onChange={e => setUserProfile({ ...userProfile, phone: e.target.value })}
-                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all placeholder:text-zinc-700"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-600"
                                         placeholder="+225..."
                                     />
                                 </div>
@@ -377,7 +377,7 @@ export default function Settings() {
                                         type="email"
                                         value={userProfile.email}
                                         onChange={e => setUserProfile({ ...userProfile, email: e.target.value })}
-                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all placeholder:text-zinc-700"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-600"
                                         placeholder="email@exemple.com"
                                     />
                                 </div>
@@ -390,9 +390,9 @@ export default function Settings() {
                 {activeTab === 'identity' && (
                     <div className="space-y-6">
                         {/* Base Identity & Personality */}
-                        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-8 backdrop-blur-sm">
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8 backdrop-blur-sm">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                                <span className="w-2 h-2 rounded-full bg-orange-500"></span> Personnalité du Vendeur
+                                <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Personnalité du Vendeur
                             </h2>
 
                             {/* Ligne 1 : Nom & Style Global */}
@@ -403,7 +403,7 @@ export default function Settings() {
                                         type="text"
                                         value={config.botName}
                                         onChange={e => setConfig({ ...config, botName: e.target.value })}
-                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all placeholder:text-zinc-700"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-600"
                                         placeholder="Ex: Awa"
                                     />
                                 </div>
@@ -412,13 +412,13 @@ export default function Settings() {
                                     <select
                                         value={config.persona}
                                         onChange={e => setConfig({ ...config, persona: e.target.value })}
-                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all appearance-none cursor-pointer"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all appearance-none cursor-pointer"
                                     >
-                                        <option value="auto" className="font-bold text-orange-400">✨ Adaptatif (S'adapte au client)</option>
-                                        <option value="professional">Formel & Courtois</option>
-                                        <option value="friendly">Empathique & Accueillant</option>
-                                        <option value="humorous">Authentique & Local</option>
-                                        <option value="assertive">Commercial & Persuasif</option>
+                                        <option value="auto" className="font-bold text-indigo-400">✨ Adaptatif (S'adapte au client)</option>
+                                        <option value="professional" className="bg-zinc-900 text-white">Formel & Courtois</option>
+                                        <option value="friendly" className="bg-zinc-900 text-white">Empathique & Accueillant</option>
+                                        <option value="humorous" className="bg-zinc-900 text-white">Authentique & Local</option>
+                                        <option value="assertive" className="bg-zinc-900 text-white">Commercial & Persuasif</option>
                                     </select>
                                 </div>
                             </div>
@@ -430,11 +430,11 @@ export default function Settings() {
                                     <select
                                         value={config.politeness || 'informal'}
                                         onChange={e => setConfig({ ...config, politeness: e.target.value })}
-                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none appearance-none"
                                     >
-                                        <option value="auto" className="font-bold text-orange-400">✨ Adaptatif (Auto)</option>
-                                        <option value="formal">Vous (Vouvoiement)</option>
-                                        <option value="informal">Tu (Tutoiement)</option>
+                                        <option value="auto" className="font-bold text-indigo-400">✨ Adaptatif (Auto)</option>
+                                        <option value="formal" className="bg-zinc-900 text-white">Vous (Vouvoiement)</option>
+                                        <option value="informal" className="bg-zinc-900 text-white">Tu (Tutoiement)</option>
                                     </select>
                                 </div>
                                 <div>
@@ -442,13 +442,13 @@ export default function Settings() {
                                     <select
                                         value={config.emojiLevel || 'medium'}
                                         onChange={e => setConfig({ ...config, emojiLevel: e.target.value })}
-                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none appearance-none"
                                     >
-                                        <option value="auto" className="font-bold text-orange-400">✨ Adaptatif (Auto)</option>
-                                        <option value="high">Abondant</option>
-                                        <option value="medium">Modéré</option>
-                                        <option value="low">Minimal</option>
-                                        <option value="none">Aucun</option>
+                                        <option value="auto" className="font-bold text-indigo-400">✨ Adaptatif (Auto)</option>
+                                        <option value="high" className="bg-zinc-900 text-white">Abondant</option>
+                                        <option value="medium" className="bg-zinc-900 text-white">Modéré</option>
+                                        <option value="low" className="bg-zinc-900 text-white">Minimal</option>
+                                        <option value="none" className="bg-zinc-900 text-white">Aucun</option>
                                     </select>
                                 </div>
                                 <div>
@@ -456,12 +456,12 @@ export default function Settings() {
                                     <select
                                         value={config.responseLength || 'medium'}
                                         onChange={e => setConfig({ ...config, responseLength: e.target.value })}
-                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none appearance-none"
                                     >
-                                        <option value="auto" className="font-bold text-orange-400">✨ Adaptatif (Auto)</option>
-                                        <option value="short">Court & Direct</option>
-                                        <option value="medium">Équilibré</option>
-                                        <option value="long">Détaillé & Explicatif</option>
+                                        <option value="auto" className="font-bold text-indigo-400">✨ Adaptatif (Auto)</option>
+                                        <option value="short" className="bg-zinc-900 text-white">Court & Direct</option>
+                                        <option value="medium" className="bg-zinc-900 text-white">Équilibré</option>
+                                        <option value="long" className="bg-zinc-900 text-white">Détaillé & Explicatif</option>
                                     </select>
                                 </div>
                             </div>
@@ -476,18 +476,18 @@ export default function Settings() {
                                     onChange={e => setConfig({ ...config, systemInstructions: e.target.value })}
                                     placeholder="Décrivez ici la personnalité exacte, les phrases types, et les interdits..."
                                     rows={5}
-                                    className="w-full bg-black border border-zinc-800 rounded-lg p-4 text-white focus:border-orange-500 outline-none placeholder:text-zinc-700 leading-relaxed font-mono text-sm"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600 leading-relaxed font-mono text-sm"
                                 />
                             </div>
 
                             {/* Exemples (Few-Shot) */}
-                            <div className="mt-8 bg-black/40 p-6 rounded-lg border border-zinc-800">
-                                <label className="block text-xs font-bold text-orange-500 mb-4 uppercase tracking-wide flex items-center gap-2">
+                            <div className="mt-8 bg-black/40 p-6 rounded-lg border border-white/5">
+                                <label className="block text-xs font-bold text-indigo-500 mb-4 uppercase tracking-wide flex items-center gap-2">
                                     <CheckCircle size={14} /> Entraînement par l'exemple (Few-Shot)
                                 </label>
                                 <div className="grid gap-4">
                                     {(config.trainingExamples || []).map((example, index) => (
-                                        <div key={index} className="group relative grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-zinc-900 p-3 rounded-lg border border-transparent hover:border-zinc-700 transition-all">
+                                        <div key={index} className="group relative grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-white/5 p-3 rounded-lg border border-transparent hover:border-white/10 transition-all">
                                             <div className="md:col-span-5">
                                                 <input
                                                     type="text"
@@ -498,7 +498,7 @@ export default function Settings() {
                                                         newExamples[index] = { ...newExamples[index], question: e.target.value };
                                                         setConfig({ ...config, trainingExamples: newExamples });
                                                     }}
-                                                    className="w-full bg-black border border-zinc-800 rounded px-3 py-2 text-xs text-white placeholder:text-zinc-700 focus:border-orange-500 outline-none transition-all"
+                                                    className="w-full bg-black/50 border border-white/5 rounded px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:border-indigo-500 outline-none transition-all"
                                                 />
                                             </div>
                                             <div className="hidden md:flex md:col-span-1 justify-center text-zinc-600">➜</div>
@@ -512,7 +512,7 @@ export default function Settings() {
                                                         newExamples[index] = { ...newExamples[index], answer: e.target.value };
                                                         setConfig({ ...config, trainingExamples: newExamples });
                                                     }}
-                                                    className="w-full bg-black border border-zinc-800 rounded px-3 py-2 text-xs text-white placeholder:text-zinc-700 focus:border-orange-500 outline-none transition-all"
+                                                    className="w-full bg-black/50 border border-white/5 rounded px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:border-indigo-500 outline-none transition-all"
                                                 />
                                             </div>
                                             <div className="md:col-span-1 flex justify-center">
@@ -536,7 +536,7 @@ export default function Settings() {
                                         const newExamples = [...(config.trainingExamples || []), { question: '', answer: '' }];
                                         setConfig({ ...config, trainingExamples: newExamples });
                                     }}
-                                    className="mt-4 flex items-center justify-center gap-2 text-xs font-bold text-orange-500 hover:text-orange-400 hover:bg-orange-950/30 px-4 py-3 rounded border border-dashed border-orange-900 hover:border-orange-500/50 transition-all w-full uppercase tracking-wide"
+                                    className="mt-4 flex items-center justify-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 hover:bg-indigo-950/30 px-4 py-3 rounded border border-dashed border-indigo-900/50 hover:border-indigo-500/50 transition-all w-full uppercase tracking-wide"
                                 >
                                     <PlusCircle size={14} />
                                     Ajouter un exemple
@@ -546,21 +546,21 @@ export default function Settings() {
                         </div>
 
                         {/* Negotiation Intelligence */}
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8 backdrop-blur-sm">
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8 backdrop-blur-sm">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                                 <span className="w-2 h-2 rounded-full bg-pink-500"></span> Négociation
                             </h2>
                             <div className="space-y-6">
 
                                 {/* Toggle Negotiation */}
-                                <div className="flex items-center justify-between bg-black border border-neutral-800 p-4 rounded-lg">
+                                <div className="flex items-center justify-between bg-black/40 border border-white/5 p-4 rounded-lg">
                                     <div>
                                         <div className="text-sm font-bold text-white mb-1">Activer la Négociation</div>
                                         <div className="text-xs text-zinc-500">Si désactivé, l'IA refusera toute baisse de prix.</div>
                                     </div>
                                     <button
                                         onClick={() => setConfig({ ...config, negotiationEnabled: !config.negotiationEnabled })}
-                                        className={`w-12 h-6 rounded-full p-1 transition-colors ${config.negotiationEnabled ? 'bg-orange-500' : 'bg-zinc-700'}`}
+                                        className={`w-12 h-6 rounded-full p-1 transition-colors ${config.negotiationEnabled ? 'bg-indigo-500' : 'bg-zinc-700'}`}
                                     >
                                         <div className={`w-4 h-4 bg-white rounded-full transition-transform ${config.negotiationEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
                                     </button>
@@ -570,16 +570,16 @@ export default function Settings() {
                                     <div>
                                         <div className="flex justify-between mb-2">
                                             <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Taux de Flexibilité</label>
-                                            <span className="text-orange-500 font-bold font-mono">{config.negotiationFlexibility * 10}%</span>
+                                            <span className="text-indigo-500 font-bold font-mono">{config.negotiationFlexibility * 10}%</span>
                                         </div>
                                         <input
                                             type="range"
                                             min="0" max="10" step="1"
                                             value={config.negotiationFlexibility}
                                             onChange={e => setConfig({ ...config, negotiationFlexibility: parseInt(e.target.value) })}
-                                            className="w-full h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                                            className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                                         />
-                                        <div className="flex justify-between text-[10px] text-neutral-600 mt-2 uppercase font-bold tracking-widest">
+                                        <div className="flex justify-between text-[10px] text-zinc-500 mt-2 uppercase font-bold tracking-widest">
                                             <span>Strict (0%)</span>
                                             <span>Open Bar (100%)</span>
                                         </div>
@@ -592,7 +592,7 @@ export default function Settings() {
                                         value={config.greeting}
                                         onChange={e => setConfig({ ...config, greeting: e.target.value })}
                                         rows={2}
-                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none placeholder:text-neutral-700"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
                                     />
                                 </div>
                             </div>
@@ -604,7 +604,7 @@ export default function Settings() {
                 {activeTab === 'business' && (
                     <div className="space-y-6">
                         {/* 1. Type d'Activité */}
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8">
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                                 <span className="w-2 h-2 rounded-full bg-blue-500"></span> Type d'Activité
                             </h2>
@@ -621,19 +621,19 @@ export default function Settings() {
                                                     setConfig({ ...config, businessType: e.target.value });
                                                 }
                                             }}
-                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none appearance-none"
                                         >
-                                            <option value="Mode & Vêtements">Mode & Vêtements (Fashion)</option>
-                                            <option value="Chaussures & Sneakers">Chaussures & Sneakers</option>
-                                            <option value="Beauté & Cosmétiques">Beauté & Cosmétiques</option>
-                                            <option value="Électronique & Gadgets">Électronique & Gadgets</option>
-                                            <option value="Restauration & Fast-Food">Restauration & Fast-Food</option>
-                                            <option value="Épicerie & Supermarché">Épicerie & Supermarché</option>
-                                            <option value="Immobilier & Location">Immobilier & Location</option>
-                                            <option value="Services & Consulting">Services & Consulting</option>
-                                            <option value="Automobile & Pièces">Automobile & Pièces</option>
-                                            <option value="Bijouterie & Accessoires">Bijouterie & Accessoires</option>
-                                            <option value="Autre">Autre (Personnalisé)</option>
+                                            <option value="Mode & Vêtements" className="bg-zinc-900 text-white">Mode & Vêtements (Fashion)</option>
+                                            <option value="Chaussures & Sneakers" className="bg-zinc-900 text-white">Chaussures & Sneakers</option>
+                                            <option value="Beauté & Cosmétiques" className="bg-zinc-900 text-white">Beauté & Cosmétiques</option>
+                                            <option value="Électronique & Gadgets" className="bg-zinc-900 text-white">Électronique & Gadgets</option>
+                                            <option value="Restauration & Fast-Food" className="bg-zinc-900 text-white">Restauration & Fast-Food</option>
+                                            <option value="Épicerie & Supermarché" className="bg-zinc-900 text-white">Épicerie & Supermarché</option>
+                                            <option value="Immobilier & Location" className="bg-zinc-900 text-white">Immobilier & Location</option>
+                                            <option value="Services & Consulting" className="bg-zinc-900 text-white">Services & Consulting</option>
+                                            <option value="Automobile & Pièces" className="bg-zinc-900 text-white">Automobile & Pièces</option>
+                                            <option value="Bijouterie & Accessoires" className="bg-zinc-900 text-white">Bijouterie & Accessoires</option>
+                                            <option value="Autre" className="bg-zinc-900 text-white">Autre (Personnalisé)</option>
                                         </select>
 
                                         {(!['Mode & Vêtements', 'Chaussures & Sneakers', 'Beauté & Cosmétiques', 'Électronique & Gadgets', 'Restauration & Fast-Food', 'Épicerie & Supermarché', 'Immobilier & Location', 'Services & Consulting', 'Automobile & Pièces', 'Bijouterie & Accessoires'].includes(config.businessType)) && (
@@ -641,7 +641,7 @@ export default function Settings() {
                                                 type="text"
                                                 value={config.businessType}
                                                 onChange={e => setConfig({ ...config, businessType: e.target.value })}
-                                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:border-orange-500 outline-none placeholder:text-zinc-600 animate-in fade-in slide-in-from-top-2"
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600 animate-in fade-in slide-in-from-top-2"
                                                 placeholder="Précisez votre activité (ex: Boulangerie Artisanale)..."
                                                 autoFocus
                                             />
@@ -652,7 +652,7 @@ export default function Settings() {
                         </div>
 
                         {/* 2. Coordonnées & Réseaux */}
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8">
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                                 <span className="w-2 h-2 rounded-full bg-blue-500"></span> Contacts & Réseaux
                             </h2>
@@ -663,7 +663,7 @@ export default function Settings() {
                                         type="text"
                                         value={config.phone}
                                         onChange={e => setConfig({ ...config, phone: e.target.value })}
-                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
                                         placeholder="+225..."
                                     />
                                 </div>
@@ -673,7 +673,7 @@ export default function Settings() {
                                         type="text"
                                         value={config.socialMedia?.website || ''}
                                         onChange={e => setConfig({ ...config, socialMedia: { ...config.socialMedia, website: e.target.value } })}
-                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
                                         placeholder="https://..."
                                     />
                                 </div>
@@ -683,7 +683,7 @@ export default function Settings() {
                                         type="text"
                                         value={config.socialMedia?.facebook || ''}
                                         onChange={e => setConfig({ ...config, socialMedia: { ...config.socialMedia, facebook: e.target.value } })}
-                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
                                         placeholder="facebook.com/page..."
                                     />
                                 </div>
@@ -693,7 +693,7 @@ export default function Settings() {
                                         type="text"
                                         value={config.socialMedia?.instagram || ''}
                                         onChange={e => setConfig({ ...config, socialMedia: { ...config.socialMedia, instagram: e.target.value } })}
-                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
                                         placeholder="instagram.com/user..."
                                     />
                                 </div>
@@ -703,7 +703,7 @@ export default function Settings() {
                                         type="text"
                                         value={config.socialMedia?.tiktok || ''}
                                         onChange={e => setConfig({ ...config, socialMedia: { ...config.socialMedia, tiktok: e.target.value } })}
-                                        className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
                                         placeholder="tiktok.com/@user..."
                                     />
                                 </div>
@@ -711,7 +711,7 @@ export default function Settings() {
                         </div>
 
                         {/* 3. Localisation */}
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8">
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                                 <span className="w-2 h-2 rounded-full bg-blue-500"></span> Localisation
                             </h2>
@@ -719,12 +719,12 @@ export default function Settings() {
                                 <div>
                                     <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Adresse Physique</label>
                                     <div className="relative">
-                                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600 w-4 h-4" />
+                                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 w-4 h-4" />
                                         <input
                                             type="text"
                                             value={config.address}
                                             onChange={e => setConfig({ ...config, address: e.target.value })}
-                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 pl-10 text-white focus:border-orange-500 outline-none"
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pl-10 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
                                             placeholder="Quartier, Ville, Commune..."
                                         />
                                     </div>
@@ -736,7 +736,7 @@ export default function Settings() {
                                             type="text"
                                             value={config.locationUrl || ''}
                                             onChange={e => setConfig({ ...config, locationUrl: e.target.value })}
-                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
                                             placeholder="https://maps.google.com/..."
                                         />
                                     </div>
@@ -748,7 +748,7 @@ export default function Settings() {
                                                     type="text"
                                                     value={config.gpsCoordinates || ''}
                                                     onChange={e => setConfig({ ...config, gpsCoordinates: e.target.value })}
-                                                    className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none"
+                                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
                                                     placeholder="5.3600, -3.9000"
                                                 />
                                                 <button
@@ -767,10 +767,10 @@ export default function Settings() {
                                                             alert('La géolocalisation n\'est pas supportée par ce navigateur.');
                                                         }
                                                     }}
-                                                    className="bg-zinc-800 hover:bg-zinc-700 text-white p-3 rounded-lg transition-colors"
+                                                    className="bg-white/5 hover:bg-white/10 text-white p-3 rounded-lg transition-colors border border-white/5"
                                                     title="Me géolocaliser"
                                                 >
-                                                    <MapPin size={20} className="text-orange-500" />
+                                                    <MapPin size={20} className="text-indigo-500" />
                                                 </button>
                                             </div>
                                         </div>
@@ -780,7 +780,7 @@ export default function Settings() {
                         </div>
 
                         {/* 4. Politique & Fonctionnement */}
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8">
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                                 <span className="w-2 h-2 rounded-full bg-blue-500"></span> Politique & Fonctionnement
                             </h2>
@@ -789,12 +789,12 @@ export default function Settings() {
                                     <div>
                                         <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Horaires d'Ouverture</label>
                                         <div className="relative">
-                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600 w-4 h-4" />
+                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 w-4 h-4" />
                                             <input
                                                 type="text"
                                                 value={config.hours}
                                                 onChange={e => setConfig({ ...config, hours: e.target.value })}
-                                                className="w-full bg-black border border-neutral-800 rounded-lg p-3 pl-10 text-white focus:border-orange-500 outline-none"
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pl-10 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
                                                 placeholder="Lun-Sam: 08h-20h"
                                             />
                                         </div>
@@ -804,11 +804,11 @@ export default function Settings() {
                                         <select
                                             value={config.returnPolicy}
                                             onChange={e => setConfig({ ...config, returnPolicy: e.target.value })}
-                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none appearance-none"
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none appearance-none"
                                         >
-                                            <option value="satisfait_rembourse">✅ Satisfait ou Remboursé</option>
-                                            <option value="echange_only">🔄 Échange uniquement</option>
-                                            <option value="ni_repris">❌ Vente finale</option>
+                                            <option value="satisfait_rembourse" className="bg-zinc-900 text-white">✅ Satisfait ou Remboursé</option>
+                                            <option value="echange_only" className="bg-zinc-900 text-white">🔄 Échange uniquement</option>
+                                            <option value="ni_repris" className="bg-zinc-900 text-white">❌ Vente finale</option>
                                         </select>
                                     </div>
                                 </div>
@@ -819,7 +819,7 @@ export default function Settings() {
                                         value={config.policyDescription || ''}
                                         onChange={e => setConfig({ ...config, policyDescription: e.target.value })}
                                         rows={6}
-                                        className="w-full bg-black border border-neutral-800 rounded-lg p-4 text-white focus:border-orange-500 outline-none placeholder:text-zinc-700 leading-relaxed text-sm"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600 leading-relaxed text-sm"
                                         placeholder="Ex: Nous livrons partout à Abidjan sous 24h. Le paiement se fait à la livraison via Wave ou Cash. Pour l'intérieur du pays, paiement avant expédition..."
                                     />
                                 </div>
@@ -827,7 +827,7 @@ export default function Settings() {
                         </div>
 
                         {/* 5. Paiement */}
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8">
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                                 <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Paiement
                             </h2>
@@ -843,11 +843,11 @@ export default function Settings() {
                                     return (
                                         <label
                                             key={method.id}
-                                            className={`flex items-center gap-2 bg-black border rounded-lg px-4 py-3 cursor-pointer select-none transition-all ${isChecked ? 'border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.1)]' : 'border-neutral-800 hover:border-neutral-700'
+                                            className={`flex items-center gap-2 bg-white/5 border rounded-lg px-4 py-3 cursor-pointer select-none transition-all ${isChecked ? 'border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'border-white/5 hover:border-white/10'
                                                 }`}
                                         >
-                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isChecked ? 'border-orange-500 bg-orange-500' : 'border-neutral-600'}`}>
-                                                {isChecked && <div className="w-1.5 h-1.5 bg-black rounded-full" />}
+                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isChecked ? 'border-indigo-500 bg-indigo-500' : 'border-zinc-600'}`}>
+                                                {isChecked && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                                             </div>
                                             <input
                                                 type="checkbox"
@@ -868,12 +868,12 @@ export default function Settings() {
                         </div>
 
                         {/* 6. Coordonnées de Réception (Split Payments) */}
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8 relative overflow-hidden">
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8 relative overflow-hidden">
                             {/* Background Pattern */}
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs relative z-10">
-                                <span className="w-2 h-2 rounded-full bg-green-500"></span> Réception des Paiements
+                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Réception des Paiements
                             </h2>
 
                             <div className="relative z-10">
@@ -888,13 +888,13 @@ export default function Settings() {
                                         <select
                                             value={config.settlementBank || ''}
                                             onChange={e => setConfig({ ...config, settlementBank: e.target.value })}
-                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-green-500 outline-none appearance-none"
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-emerald-500 outline-none appearance-none"
                                             disabled={!!paystackSubaccountCode}
                                         >
                                             <option value="">Choisir un opérateur</option>
-                                            <option value="MTN">MTN Mobile Money</option>
-                                            <option value="Orange Money">Orange Money</option>
-                                            <option value="Wave">Wave</option>
+                                            <option value="MTN" className="bg-zinc-900 text-white">MTN Mobile Money</option>
+                                            <option value="Orange Money" className="bg-zinc-900 text-white">Orange Money</option>
+                                            <option value="Wave" className="bg-zinc-900 text-white">Wave</option>
                                         </select>
                                     </div>
                                     <div>
@@ -903,7 +903,7 @@ export default function Settings() {
                                             type="text"
                                             value={config.settlementAccount || ''}
                                             onChange={e => setConfig({ ...config, settlementAccount: e.target.value })}
-                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-green-500 outline-none font-mono tracking-wide"
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-emerald-500 outline-none font-mono tracking-wide placeholder:text-zinc-600"
                                             placeholder="Ex: 0504030201"
                                             disabled={!!paystackSubaccountCode}
                                         />
@@ -911,20 +911,20 @@ export default function Settings() {
                                 </div>
 
                                 {paystackSubaccountCode ? (
-                                    <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+                                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
                                             <CheckCircle className="text-black w-5 h-5" />
                                         </div>
                                         <div>
-                                            <div className="font-bold text-green-400 text-sm">Compte de paiement actif</div>
-                                            <div className="text-xs text-green-500/70 font-mono">ID: {paystackSubaccountCode}</div>
+                                            <div className="font-bold text-emerald-400 text-sm">Compte de paiement actif</div>
+                                            <div className="text-xs text-emerald-500/70 font-mono">ID: {paystackSubaccountCode}</div>
                                         </div>
                                     </div>
                                 ) : (
                                     <button
                                         onClick={handleSetupVendor}
                                         disabled={loading || !config.settlementBank || !config.settlementAccount}
-                                        className="w-full py-3 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all shadow-lg shadow-green-900/20"
+                                        className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all shadow-lg shadow-emerald-900/20"
                                     >
                                         {loading ? 'Configuration...' : 'Activer les Paiements Automatiques'}
                                     </button>
@@ -950,25 +950,25 @@ export default function Settings() {
                             {/* Left Col: Explainer & Summary */}
                             <div className="md:col-span-1 space-y-6">
                                 {/* Zone d'Explication */}
-                                <div className="bg-gradient-to-br from-emerald-900/30 to-black border border-emerald-900/50 rounded-xl p-6">
+                                <div className="bg-gradient-to-br from-indigo-900/30 to-[#0a0c10] border border-indigo-500/20 rounded-xl p-6">
                                     <h3 className="text-white font-bold text-lg mb-2">Zone de Test</h3>
                                     <p className="text-zinc-400 text-sm leading-relaxed">
                                         Testez votre bot en temps réel.
                                     </p>
                                     <ul className="mt-4 space-y-2 text-xs text-zinc-500">
                                         <li className="flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                            <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
                                             Simulation d'achat
                                         </li>
                                         <li className="flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                            <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
                                             Test de la personnalité
                                         </li>
                                     </ul>
                                 </div>
 
                                 {/* Résumé IA Auto-Généré */}
-                                <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+                                <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-6">
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="text-white font-bold text-sm flex items-center gap-2">
                                             <Bot size={16} className="text-purple-500" /> Synthèse IA
@@ -998,7 +998,7 @@ export default function Settings() {
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="bg-black/50 p-4 rounded-lg border border-zinc-800">
+                                        <div className="bg-black/50 p-4 rounded-lg border border-white/5">
                                             <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap italic">
                                                 "{aiSummary.replace(/\*\*/g, '')}"
                                             </p>

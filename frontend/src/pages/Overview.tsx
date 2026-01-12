@@ -15,13 +15,13 @@ interface StatCardProps {
 }
 
 const StatCard = ({ title, value, change, icon: Icon, subtitle }: StatCardProps) => (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-orange-500/30 transition-all group shadow-sm hover:shadow-orange-500/10">
+    <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-6 hover:border-indigo-500/30 transition-all group shadow-sm hover:shadow-indigo-500/10">
         <div className="flex justify-between items-start mb-4">
             <div>
-                <p className="text-zinc-400 text-xs font-medium uppercase tracking-wider mb-1">{title}</p>
+                <p className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">{title}</p>
                 <h3 className="text-2xl font-bold text-white tracking-tight">{value}</h3>
             </div>
-            <div className="p-3 rounded-xl bg-orange-500/10 text-orange-500 group-hover:bg-orange-500 group-hover:text-black transition-all duration-300">
+            <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
                 <Icon className="w-6 h-6" />
             </div>
         </div>
@@ -29,20 +29,20 @@ const StatCard = ({ title, value, change, icon: Icon, subtitle }: StatCardProps)
             <span className="text-emerald-400 flex items-center gap-1 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-xs border border-emerald-500/20">
                 <TrendingUp className="w-3 h-3" /> {change}
             </span>
-            <span className="text-zinc-600 ml-2 text-xs font-medium uppercase">{subtitle}</span>
+            <span className="text-gray-500 ml-2 text-xs font-medium uppercase">{subtitle}</span>
         </div>
     </div>
 );
 
 const ActivityFeed = ({ logs }: { logs: Log[] }) => {
     return (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 h-full flex flex-col">
+        <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Activity className="text-orange-500 w-5 h-5 animate-pulse" />
+                    <Activity className="text-indigo-500 w-5 h-5 animate-pulse" />
                     Le Pulse
                 </h3>
-                <span className="text-[10px] text-zinc-500 uppercase font-semibold bg-zinc-800 px-2 py-1 rounded">En Direct</span>
+                <span className="text-[10px] text-gray-400 uppercase font-semibold bg-white/5 px-2 py-1 rounded">En Direct</span>
             </div>
             <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar max-h-[400px]">
                 {logs.length === 0 ? (
@@ -52,7 +52,7 @@ const ActivityFeed = ({ logs }: { logs: Log[] }) => {
                         <div key={log.id} className="flex gap-3 items-start group">
                             <div className={`mt-1 min-w-[8px] h-2 rounded-full ${log.type === 'sale' ? 'bg-emerald-500' :
                                 log.type === 'warning' ? 'bg-amber-500' :
-                                    log.type === 'action' ? 'bg-orange-500' : 'bg-blue-500'
+                                    log.type === 'action' ? 'bg-indigo-500' : 'bg-blue-500'
                                 }`} />
                             <div>
                                 <p className="text-xs text-zinc-300 leading-relaxed group-hover:text-white transition-colors">
@@ -83,9 +83,9 @@ const RecentOrders = ({ orders }: { orders: DashboardOrder[] }) => {
     };
 
     return (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mt-6">
+        <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-6 mt-6">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                <Package className="text-orange-500 w-5 h-5" />
+                <Package className="text-indigo-500 w-5 h-5" />
                 Commandes Récentes
             </h3>
             <div className="overflow-x-auto">
@@ -106,7 +106,7 @@ const RecentOrders = ({ orders }: { orders: DashboardOrder[] }) => {
                             </tr>
                         ) : (
                             orders.map((order) => (
-                                <tr key={order.id} className="group hover:bg-zinc-800/30 transition-colors">
+                                <tr key={order.id} className="group hover:bg-white/5 transition-colors">
                                     <td className="py-3 text-sm text-white font-medium">
                                         {/* Mask phone number for privacy */}
                                         {order.userId.replace(/@s.whatsapp.net/, '').replace(/^(\d{4}).*(\d{2})$/, '$1...$2')}
@@ -263,7 +263,7 @@ export default function Overview() {
     return (
         <div className="space-y-6 animate-in fade-in zoom-in duration-500 pb-10">
             {/* Header */}
-            <div className="flex justify-between items-end pb-4 border-b border-zinc-800/50">
+            <div className="flex justify-between items-end pb-4 border-b border-white/5">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">{greeting}</h1>
                     <p className="text-zinc-500">{content.welcome}</p>
@@ -272,7 +272,7 @@ export default function Overview() {
                 {/* Lang Switch */}
                 <button
                     onClick={() => setLang(l => l === 'fr' ? 'en' : 'fr')}
-                    className="flex items-center gap-2 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white text-xs hover:border-orange-500/50 transition-all font-medium uppercase tracking-wide"
+                    className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 hover:text-white text-xs hover:border-indigo-500/50 transition-all font-medium uppercase tracking-wide"
                 >
                     <Globe className="w-3 h-3" />
                     <span>{lang === 'fr' ? 'Français' : 'English'}</span>
@@ -310,12 +310,12 @@ export default function Overview() {
                 {/* Left Column (2/3): Analytics + Recent Orders */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     {/* Analytics Chart */}
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex-1 min-h-[300px]">
+                    <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-6 flex-1 min-h-[300px]">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-lg font-bold text-white tracking-tight">{content.analytics}</h3>
                             <div className="flex items-center gap-2">
-                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-orange-500 bg-orange-500/10 px-2 py-1 rounded-full animate-pulse border border-orange-500/20">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-full animate-pulse border border-indigo-500/20">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
                                     {content.live}
                                 </span>
                             </div>
@@ -325,8 +325,8 @@ export default function Overview() {
                                 <AreaChart data={chartData}>
                                     <defs>
                                         <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272a" />
@@ -346,12 +346,12 @@ export default function Overview() {
                                     <Tooltip
                                         contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
                                         itemStyle={{ color: '#fff' }}
-                                        cursor={{ stroke: '#f97316', strokeWidth: 1 }}
+                                        cursor={{ stroke: '#6366f1', strokeWidth: 1 }}
                                     />
                                     <Area
                                         type="monotone"
                                         dataKey="sales"
-                                        stroke="#f97316"
+                                        stroke="#6366f1"
                                         strokeWidth={3}
                                         fillOpacity={1}
                                         fill="url(#colorSales)"

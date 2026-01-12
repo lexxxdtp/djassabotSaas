@@ -25,14 +25,14 @@ const DashboardLayout: React.FC = () => {
     ];
 
     return (
-        <div className="flex h-screen bg-black text-slate-200 font-sans">
+        <div className="flex h-screen bg-[#0f111a] text-slate-200 font-sans">
             <UserProfileModal isOpen={userModalOpen} onClose={() => setUserModalOpen(false)} />
 
             {/* Sidebar Desktop */}
-            <aside className="hidden md:flex flex-col w-64 bg-zinc-950 border-r border-zinc-800">
-                <div className="p-6 border-b border-zinc-800">
+            <aside className="hidden md:flex flex-col w-64 bg-[#0a0c10] border-r border-white/5">
+                <div className="p-6 border-b border-white/5">
                     <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-1">
-                        DJASSA<span className="text-orange-500">BOT</span>
+                        DJASSA<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600">BOT</span>
                     </h1>
                     <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-widest font-semibold">Vendeur Augmenté</p>
                 </div>
@@ -45,14 +45,14 @@ const DashboardLayout: React.FC = () => {
                             end={item.path === '/dashboard'}
                             className={({ isActive }) =>
                                 `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${isActive
-                                    ? 'bg-orange-500/5 text-orange-500 border-l-2 border-orange-500'
-                                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                                    ? 'bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-400 border-l-2 border-indigo-500'
+                                    : 'text-zinc-400 hover:bg-white/5 hover:text-white'
                                 }`
                             }
                         >
                             {({ isActive }) => (
                                 <>
-                                    <item.icon size={20} className={`transition-colors ${isActive ? 'text-orange-500' : 'text-zinc-500 group-hover:text-white'}`} />
+                                    <item.icon size={20} className={`transition-colors ${isActive ? 'text-indigo-400' : 'text-zinc-500 group-hover:text-white'}`} />
                                     <span className="font-medium text-sm">{item.label}</span>
                                 </>
                             )}
@@ -60,24 +60,24 @@ const DashboardLayout: React.FC = () => {
                     ))}
                 </nav>
 
-                <div className="p-4 border-t border-zinc-800 space-y-2">
+                <div className="p-4 border-t border-white/5 space-y-2">
                     {/* User Profile Trigger */}
                     <button
                         onClick={() => setUserModalOpen(true)}
-                        className="w-full flex items-center gap-3 px-3 py-3 rounded-lg bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all group text-left"
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 transition-all group text-left"
                     >
                         <div className="relative">
-                            <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-orange-500 font-bold border border-zinc-700 group-hover:border-orange-500/50 transition-colors">
+                            <div className="w-9 h-9 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold border border-indigo-500/30 group-hover:border-indigo-500/50 transition-colors">
                                 {tenant?.name?.[0] || user?.email?.[0] || 'U'}
                             </div>
-                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-black rounded-full flex items-center justify-center border border-zinc-800">
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#0a0c10] rounded-full flex items-center justify-center border border-white/10">
                                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
                             </div>
                         </div>
                         <div className="overflow-hidden flex-1">
-                            <p className="text-sm font-bold text-white truncate group-hover:text-orange-500 transition-colors">{tenant?.name || 'Mon Business'}</p>
+                            <p className="text-sm font-bold text-white truncate group-hover:text-indigo-400 transition-colors">{tenant?.name || 'Mon Business'}</p>
                             <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] bg-orange-500/10 text-orange-500 px-1.5 py-0.5 rounded border border-orange-500/20 font-mono uppercase truncate max-w-full">{user?.email}</span>
+                                <span className="text-[10px] bg-indigo-500/10 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/20 font-mono uppercase truncate max-w-full">{user?.email}</span>
                             </div>
                         </div>
                     </button>
@@ -94,10 +94,10 @@ const DashboardLayout: React.FC = () => {
 
             {/* Mobile Menu Overlay */}
             {mobileMenuOpen && (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm md:hidden" onClick={() => setMobileMenuOpen(false)}>
-                    <div className="absolute left-0 top-0 bottom-0 w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 bg-[#0f111a]/80 backdrop-blur-sm md:hidden" onClick={() => setMobileMenuOpen(false)}>
+                    <div className="absolute left-0 top-0 bottom-0 w-64 bg-[#0a0c10] border-r border-white/5 flex flex-col" onClick={e => e.stopPropagation()}>
                         <div className="p-4 flex justify-between items-center mb-4 shrink-0">
-                            <h1 className="text-xl font-bold text-white">DJASSA<span className="text-orange-500">BOT</span></h1>
+                            <h1 className="text-xl font-bold text-white">DJASSA<span className="text-indigo-500">BOT</span></h1>
                             <button onClick={() => setMobileMenuOpen(false)} className="text-zinc-400 hover:text-white"><X size={24} /></button>
                         </div>
 
@@ -108,7 +108,7 @@ const DashboardLayout: React.FC = () => {
                                     to={item.path}
                                     onClick={() => setMobileMenuOpen(false)}
                                     className={({ isActive }) =>
-                                        `flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive ? 'bg-orange-500/10 text-orange-500' : 'text-zinc-400'
+                                        `flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive ? 'bg-indigo-500/10 text-indigo-500' : 'text-zinc-400'
                                         }`
                                     }
                                 >
@@ -118,27 +118,27 @@ const DashboardLayout: React.FC = () => {
                             ))}
                         </nav>
 
-                        <div className="p-4 border-t border-zinc-800 space-y-2 shrink-0 bg-zinc-950">
+                        <div className="p-4 border-t border-white/5 space-y-2 shrink-0 bg-[#0a0c10]">
                             {/* User Profile Trigger */}
                             <button
                                 onClick={() => {
                                     setMobileMenuOpen(false);
                                     setUserModalOpen(true);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-3 rounded-lg bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all group text-left"
+                                className="w-full flex items-center gap-3 px-3 py-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 transition-all group text-left"
                             >
                                 <div className="relative">
-                                    <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-orange-500 font-bold border border-zinc-700 group-hover:border-orange-500/50 transition-colors">
+                                    <div className="w-9 h-9 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold border border-indigo-500/30 group-hover:border-indigo-500/50 transition-colors">
                                         {tenant?.name?.[0] || user?.email?.[0] || 'U'}
                                     </div>
-                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-black rounded-full flex items-center justify-center border border-zinc-800">
+                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#0a0c10] rounded-full flex items-center justify-center border border-white/5">
                                         <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
                                     </div>
                                 </div>
                                 <div className="overflow-hidden flex-1">
-                                    <p className="text-sm font-bold text-white truncate group-hover:text-orange-500 transition-colors">{tenant?.name || 'Mon Business'}</p>
+                                    <p className="text-sm font-bold text-white truncate group-hover:text-indigo-500 transition-colors">{tenant?.name || 'Mon Business'}</p>
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-[10px] bg-orange-500/10 text-orange-500 px-1.5 py-0.5 rounded border border-orange-500/20 font-mono uppercase truncate max-w-full">{user?.email}</span>
+                                        <span className="text-[10px] bg-indigo-500/10 text-indigo-500 px-1.5 py-0.5 rounded border border-indigo-500/20 font-mono uppercase truncate max-w-full">{user?.email}</span>
                                     </div>
                                 </div>
                             </button>
@@ -156,9 +156,9 @@ const DashboardLayout: React.FC = () => {
             )}
 
             {/* Main Content */}
-            <main className="flex-1 overflow-auto bg-black scrollbar-hide">
-                <div className="md:hidden flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10">
-                    <h1 className="font-bold text-white">DJASSA<span className="text-orange-500">BOT</span></h1>
+            <main className="flex-1 overflow-auto bg-[#0f111a] scrollbar-hide">
+                <div className="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-[#0f111a]/80 backdrop-blur-md sticky top-0 z-10">
+                    <h1 className="font-bold text-white">DJASSA<span className="text-indigo-500">BOT</span></h1>
                     <button onClick={() => setMobileMenuOpen(true)} className="text-white"><Menu size={24} /></button>
                 </div>
                 <div className="p-4 md:p-8 max-w-7xl mx-auto">

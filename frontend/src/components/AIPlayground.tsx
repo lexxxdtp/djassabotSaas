@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Send, Trash2, Smartphone, Bot } from 'lucide-react';
 import { getApiUrl } from '../utils/apiConfig';
@@ -86,11 +87,11 @@ export default function AIPlayground() {
     };
 
     return (
-        <div className="bg-black border border-zinc-800 rounded-2xl overflow-hidden flex flex-col h-[500px] shadow-2xl relative">
+        <div className="bg-[#0a0c10] border border-white/5 rounded-2xl overflow-hidden flex flex-col h-[500px] shadow-2xl relative">
             {/* Header */}
-            <div className="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
+            <div className="bg-white/5 border-b border-white/5 p-4 flex justify-between items-center z-20">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-lg shadow-orange-500/20">
+                    <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg shadow-lg shadow-indigo-500/20">
                         <Smartphone size={18} className="text-white" />
                     </div>
                     <div>
@@ -113,7 +114,7 @@ export default function AIPlayground() {
             </div>
 
             {/* Chat Area */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 relative z-10 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 relative z-10 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                 {messages.length === 0 && (
                     <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50">
                         <Bot size={48} className="text-zinc-600 mb-4" />
@@ -124,8 +125,8 @@ export default function AIPlayground() {
                 {messages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm ${msg.role === 'user'
-                            ? 'bg-emerald-600 text-white rounded-tr-none'
-                            : 'bg-zinc-800 text-zinc-200 rounded-tl-none border border-zinc-700'
+                            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-tr-none shadow-indigo-500/10'
+                            : 'bg-white/5 text-zinc-200 rounded-tl-none border border-white/10'
                             }`}>
                             {/* Afficher les images si présentes */}
                             {msg.images && msg.images.length > 0 && (
@@ -137,7 +138,7 @@ export default function AIPlayground() {
                                             key={imgIdx}
                                             src={imgUrl}
                                             alt={`Product ${imgIdx + 1}`}
-                                            className="rounded-lg w-full h-auto object-cover max-h-32 cursor-pointer hover:opacity-90 transition-opacity"
+                                            className="rounded-lg w-full h-auto object-cover max-h-32 cursor-pointer hover:opacity-90 transition-opacity border border-white/10"
                                             onClick={() => window.open(imgUrl, '_blank')}
                                             onError={(e) => {
                                                 (e.target as HTMLImageElement).style.display = 'none';
@@ -160,7 +161,7 @@ export default function AIPlayground() {
 
                 {loading && (
                     <div className="flex justify-start">
-                        <div className="bg-zinc-800 rounded-2xl rounded-tl-none px-4 py-3 border border-zinc-700">
+                        <div className="bg-white/5 rounded-2xl rounded-tl-none px-4 py-3 border border-white/10">
                             <div className="flex gap-1.5">
                                 <span className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                                 <span className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
@@ -172,18 +173,18 @@ export default function AIPlayground() {
             </div>
 
             {/* Input Area */}
-            <form onSubmit={handleSend} className="p-3 bg-zinc-900 border-t border-zinc-800 flex gap-2 relative z-10">
+            <form onSubmit={handleSend} className="p-3 bg-[#0a0c10] border-t border-white/5 flex gap-2 relative z-10">
                 <input
                     type="text"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     placeholder="Tapez un message..."
-                    className="flex-1 bg-black border border-zinc-700 rounded-full px-4 py-2 text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none placeholder:text-zinc-600 text-sm"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none placeholder:text-zinc-600 text-sm"
                 />
                 <button
                     type="submit"
                     disabled={!input.trim() || loading}
-                    className="w-10 h-10 flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-full transition-all shadow-lg shadow-emerald-500/20"
+                    className="w-10 h-10 flex items-center justify-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-white rounded-full transition-all shadow-lg shadow-indigo-500/20"
                 >
                     <Send size={18} className={loading ? 'opacity-0' : 'ml-0.5'} />
                 </button>

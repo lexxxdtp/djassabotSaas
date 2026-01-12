@@ -352,14 +352,14 @@ const Products: React.FC = () => {
     return (
         <div className="space-y-6 relative animate-in fade-in duration-500">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 border-b border-zinc-800 pb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 border-b border-white/5 pb-6">
                 <div>
                     <h1 className="text-3xl font-bold text-white tracking-tight">Inventaire</h1>
-                    <p className="text-zinc-500">Gérez vos produits en vente sur WhatsApp</p>
+                    <p className="text-zinc-400">Gérez vos produits en vente sur WhatsApp</p>
                 </div>
                 <button
                     onClick={openCreateModal}
-                    className="bg-orange-500 hover:bg-orange-600 text-black px-6 py-3 rounded-lg font-bold shadow-lg shadow-orange-500/20 flex items-center space-x-2 transition-all"
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/25 text-white px-6 py-3 rounded-lg font-bold flex items-center space-x-2 transition-all hover:scale-[1.02]"
                 >
                     <Plus size={20} />
                     <span>Ajouter Produit</span>
@@ -369,7 +369,7 @@ const Products: React.FC = () => {
             {/* Grid */}
             {loading ? (
                 <div className="text-zinc-500 text-center py-20 flex flex-col items-center">
-                    <div className="animate-spin text-orange-500 mb-4">⌛️</div>
+                    <div className="animate-spin text-indigo-500 mb-4">⌛️</div>
                     Chargement de l'inventaire...
                 </div>
             ) : (
@@ -378,9 +378,9 @@ const Products: React.FC = () => {
                         <div
                             key={product.id}
                             onClick={() => navigate(`/dashboard/products/${product.id}`)}
-                            className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden group hover:border-orange-500/50 transition-all shadow-sm hover:shadow-orange-500/10 cursor-pointer"
+                            className="bg-[#0a0c10] rounded-xl border border-white/5 overflow-hidden group hover:border-indigo-500/30 transition-all shadow-sm hover:shadow-indigo-500/10 cursor-pointer"
                         >
-                            <div className="h-48 overflow-hidden relative bg-zinc-950">
+                            <div className="h-48 overflow-hidden relative bg-black/50">
                                 <img
                                     src={product.images?.[0] || 'https://via.placeholder.com/150/18181b/71717a?text=No+Image'}
                                     alt={product.name}
@@ -390,10 +390,9 @@ const Products: React.FC = () => {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            openEditModal(product); // Fix: Use openEditModal instead of navigation if intended for quick edit, or allow nav.
-                                            // Navigation is default behavior for card click, keeping edit separate
+                                            openEditModal(product);
                                         }}
-                                        className="bg-black/80 hover:bg-orange-500 hover:text-black p-2 rounded-lg text-white backdrop-blur-sm transition-colors border border-zinc-800"
+                                        className="bg-black/60 hover:bg-indigo-500 hover:text-white p-2 rounded-lg text-white backdrop-blur-md transition-colors border border-white/10"
                                     >
                                         <Edit size={16} />
                                     </button>
@@ -402,7 +401,7 @@ const Products: React.FC = () => {
                                             e.stopPropagation();
                                             handleDelete(product.id);
                                         }}
-                                        className="bg-black/80 hover:bg-red-500 p-2 rounded-lg text-white backdrop-blur-sm transition-colors border border-zinc-800"
+                                        className="bg-black/60 hover:bg-red-500 p-2 rounded-lg text-white backdrop-blur-md transition-colors border border-white/10"
                                     >
                                         <Trash2 size={16} />
                                     </button>
@@ -411,7 +410,7 @@ const Products: React.FC = () => {
 
                             <div className="p-5">
                                 <h3 className="text-lg font-bold mb-1 text-white truncate">{product.name}</h3>
-                                <p className="text-orange-500 font-bold mb-4 font-mono text-sm">{Number(product.price).toLocaleString()} FCFA</p>
+                                <p className="text-indigo-400 font-bold mb-4 font-mono text-sm">{Number(product.price).toLocaleString()} FCFA</p>
 
                                 <div className="flex justify-between items-center" onClick={(e) => e.stopPropagation()}>
                                     {(() => {
@@ -437,7 +436,7 @@ const Products: React.FC = () => {
                                                     </span>
 
                                                     {/* Badge Mode Stock (Clean & Sans Emoji) */}
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider flex items-center border cursor-pointer hover:opacity-80 transition-opacity ${!product.manageStock ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider flex items-center border cursor-pointer hover:opacity-80 transition-opacity ${!product.manageStock ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-white/5 text-zinc-400 border-white/10'}`}
                                                         title={!product.manageStock ? "Vente illimitée autorisée" : "Vente bloquée si épuisé"}
                                                     >
                                                         {!product.manageStock ? 'FLEXIBLE' : 'STRICT'}
@@ -462,7 +461,7 @@ const Products: React.FC = () => {
                                                                     body: JSON.stringify({ stock: newStock })
                                                                 });
                                                             }}
-                                                            className="px-2 py-0.5 text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors text-xs"
+                                                            className="px-2 py-0.5 text-zinc-500 hover:text-white hover:bg-white/10 transition-colors text-xs"
                                                         >
                                                             -
                                                         </button>
@@ -482,7 +481,7 @@ const Products: React.FC = () => {
                                                                     body: JSON.stringify({ stock: newStock })
                                                                 });
                                                             }}
-                                                            className="px-2 py-0.5 text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors text-xs"
+                                                            className="px-2 py-0.5 text-zinc-500 hover:text-white hover:bg-white/10 transition-colors text-xs"
                                                         >
                                                             +
                                                         </button>
@@ -497,13 +496,13 @@ const Products: React.FC = () => {
                     ))}
                     {/* Empty State if no products */}
                     {products.length === 0 && (
-                        <div className="col-span-full py-20 text-center border-2 border-dashed border-zinc-800 rounded-2xl bg-zinc-900/50">
+                        <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-2xl bg-white/5">
                             <ImageIcon className="mx-auto h-12 w-12 text-zinc-600 mb-4" />
                             <h3 className="text-lg font-medium text-white">Votre boutique est vide</h3>
                             <p className="text-zinc-500 mt-1 mb-6">Commencez par ajouter votre premier produit.</p>
                             <button
                                 onClick={openCreateModal}
-                                className="text-orange-500 hover:text-orange-400 font-bold text-sm uppercase tracking-wide border-b border-orange-500/30 hover:border-orange-500"
+                                className="text-indigo-400 hover:text-indigo-300 font-bold text-sm uppercase tracking-wide border-b border-indigo-500/30 hover:border-indigo-500"
                             >
                                 + Ajouter maintenant
                             </button>
@@ -515,61 +514,61 @@ const Products: React.FC = () => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 relative animate-in fade-in zoom-in duration-200 shadow-2xl shadow-black/50">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/80 backdrop-blur-md">
+                    <div className="bg-[#0a0c10] border border-white/5 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 relative animate-in fade-in zoom-in duration-200 shadow-2xl shadow-indigo-500/10">
                         <button
                             onClick={() => setIsModalOpen(false)}
-                            className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
+                            className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
                         >
                             <X size={24} />
                         </button>
 
                         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                            <div className="w-1 h-6 bg-orange-500 rounded-full"></div>
+                            <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full"></div>
                             {editingId ? 'MODIFIER PRODUIT' : 'NOUVEAU PRODUIT'}
                         </h2>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
-                                <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Nom du Produit</label>
+                                <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">Nom du Produit</label>
                                 <input
                                     required
                                     type="text"
                                     value={productForm.name}
                                     onChange={e => setProductForm({ ...productForm, name: e.target.value })}
-                                    className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none placeholder:text-zinc-700 transition-colors"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-gray-600 transition-colors"
                                     placeholder="Ex: Robe rouge"
                                 />
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Prix (FCFA)</label>
+                                    <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">Prix (FCFA)</label>
                                     <input
                                         required
                                         type="number"
                                         value={productForm.price}
                                         onChange={e => setProductForm({ ...productForm, price: e.target.value })}
-                                        className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none placeholder:text-zinc-700 font-mono"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-gray-600 font-mono"
                                         placeholder="5000"
                                     />
                                 </div>
-                                <div className="bg-zinc-950/50 p-2 rounded border border-zinc-800/50">
+                                <div className="bg-black/30 p-2 rounded border border-white/5">
                                     <div className="flex justify-between items-center mb-1.5">
-                                        <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wide">
-                                            Stock {variationsEnabled && <span className="text-orange-500 text-[10px] ml-1">(Auto)</span>}
+                                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                                            Stock {variationsEnabled && <span className="text-indigo-400 text-[10px] ml-1">(Auto)</span>}
                                         </label>
 
                                         {/* BOUTON SWITCH STOCK BIEN VISIBLE */}
                                         <button
                                             type="button"
                                             onClick={() => setProductForm({ ...productForm, manageStock: !productForm.manageStock })}
-                                            className="flex items-center gap-2 px-2 py-1 rounded bg-zinc-900 border border-zinc-800 hover:border-zinc-600 transition-all cursor-pointer group"
+                                            className="flex items-center gap-2 px-2 py-1 rounded bg-white/5 border border-white/10 hover:border-white/20 transition-all cursor-pointer group"
                                             title={productForm.manageStock ? "Mode Strict: Vente bloquée si stock épuisé" : "Mode Flexible: Vente autorisée même si stock épuisé"}
                                         >
-                                            <span className={`text-[9px] font-bold uppercase ${productForm.manageStock ? 'text-zinc-400 group-hover:text-white' : 'text-blue-500'}`}>
+                                            <span className={`text-[9px] font-bold uppercase ${productForm.manageStock ? 'text-zinc-400 group-hover:text-white' : 'text-indigo-400'}`}>
                                                 {productForm.manageStock ? 'STRICT' : 'FLEXIBLE'}
                                             </span>
-                                            <div className={`w-6 h-3 rounded-full relative transition-colors ${productForm.manageStock ? 'bg-zinc-700' : 'bg-blue-500'}`}>
+                                            <div className={`w-6 h-3 rounded-full relative transition-colors ${productForm.manageStock ? 'bg-white/20' : 'bg-indigo-500'}`}>
                                                 <div className={`absolute top-0.5 w-2 h-2 bg-white rounded-full transition-transform ${productForm.manageStock ? 'left-0.5' : 'left-3.5'}`}></div>
                                             </div>
                                         </button>
@@ -581,16 +580,16 @@ const Products: React.FC = () => {
                                         disabled={variationsEnabled}
                                         value={productForm.stock}
                                         onChange={e => setProductForm({ ...productForm, stock: Math.max(0, Number(e.target.value) || 0).toString() })}
-                                        className={`w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none placeholder:text-zinc-700 font-mono ${variationsEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        className={`w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-gray-600 font-mono ${variationsEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         placeholder="10"
                                         title={variationsEnabled ? "Calculé automatiquement via les déclinaisons" : "Stock global"}
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Description</label>
+                                <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">Description</label>
                                 <textarea
-                                    className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none h-20 placeholder:text-zinc-700 resize-none"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none h-20 placeholder:text-gray-600 resize-none"
                                     placeholder="Détails du produit (matière, coupe, etc.)"
                                     value={productForm.description}
                                     onChange={e => setProductForm({ ...productForm, description: e.target.value })}
@@ -598,12 +597,12 @@ const Products: React.FC = () => {
                             </div>
 
                             {/* Consignes IA */}
-                            <div className="border-t border-zinc-800 pt-3 mt-2">
-                                <label className="block text-xs font-semibold text-orange-400 mb-2 uppercase tracking-wide">
+                            <div className="border-t border-white/5 pt-3 mt-2">
+                                <label className="block text-xs font-semibold text-purple-400 mb-2 uppercase tracking-wide">
                                     🤖 Consignes IA
                                 </label>
                                 <textarea
-                                    className="w-full bg-black border border-zinc-800 rounded-lg p-3 text-white focus:border-orange-500 outline-none h-20 placeholder:text-zinc-700 resize-none text-sm"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none h-20 placeholder:text-gray-600 resize-none text-sm"
                                     placeholder="Ex: Si le client prend 3+, proposer -10%. À partir de 5, livraison offerte."
                                     value={productForm.aiInstructions}
                                     onChange={e => setProductForm({ ...productForm, aiInstructions: e.target.value })}
@@ -617,7 +616,7 @@ const Products: React.FC = () => {
                                 <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Galerie</label>
                                 <div className="grid grid-cols-3 gap-2 mb-2">
                                     {productForm.images.map((img, idx) => (
-                                        <div key={idx} className="relative h-20 rounded-lg overflow-hidden group border border-zinc-800">
+                                        <div key={idx} className="relative h-20 rounded-lg overflow-hidden group border border-white/10">
                                             <img src={img} alt="Product" className="w-full h-full object-cover" />
                                             <button
                                                 type="button"
@@ -633,7 +632,7 @@ const Products: React.FC = () => {
                                     ))}
                                     <label
                                         htmlFor="file-upload"
-                                        className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-zinc-800 hover:border-orange-500 rounded-lg cursor-pointer transition-all text-zinc-600 hover:text-orange-500 bg-black hover:bg-orange-500/5 group"
+                                        className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-white/10 hover:border-indigo-500 rounded-lg cursor-pointer transition-all text-zinc-500 hover:text-indigo-400 bg-black/20 hover:bg-indigo-500/5 group"
                                     >
                                         {uploading ? (
                                             <span className="animate-spin text-lg">⏳</span>
@@ -700,7 +699,7 @@ const Products: React.FC = () => {
                                         type="text"
                                         placeholder={productForm.images.length >= 5 ? "Limite atteinte (5 photos max)" : "Ou collez une URL d'image ici..."}
                                         disabled={productForm.images.length >= 5}
-                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-400 focus:border-orange-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-gray-400 focus:border-indigo-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
                                                 e.preventDefault();
@@ -723,11 +722,11 @@ const Products: React.FC = () => {
                             </div>
 
                             {/* Section Déclinaisons avec Toggle */}
-                            <div className="border-t border-zinc-800 pt-4 mt-4">
+                            <div className="border-t border-white/5 pt-4 mt-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-3">
-                                        <Tags size={16} className="text-orange-500" />
-                                        <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Déclinaisons</span>
+                                        <Tags size={16} className="text-indigo-500" />
+                                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Déclinaisons</span>
 
                                         {/* Toggle Switch */}
                                         <button
@@ -739,11 +738,11 @@ const Products: React.FC = () => {
                                                     setProductForm({ ...productForm, variations: [] });
                                                 }
                                             }}
-                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${variationsEnabled ? 'bg-orange-500' : 'bg-zinc-700'}`}
+                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${variationsEnabled ? 'bg-indigo-500' : 'bg-gray-700'}`}
                                         >
                                             <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${variationsEnabled ? 'translate-x-5' : 'translate-x-1'}`} />
                                         </button>
-                                        <span className={`text-[10px] ${variationsEnabled ? 'text-orange-400' : 'text-zinc-600'}`}>
+                                        <span className={`text-[10px] ${variationsEnabled ? 'text-indigo-400' : 'text-gray-600'}`}>
                                             {variationsEnabled ? 'ON' : 'OFF'}
                                         </span>
                                     </div>
@@ -755,7 +754,7 @@ const Products: React.FC = () => {
                                                 ...productForm,
                                                 variations: [...productForm.variations, { name: '', options: [] }]
                                             })}
-                                            className="text-xs text-orange-500 hover:text-orange-400 flex items-center gap-1"
+                                            className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
                                         >
                                             <Plus size={14} />
                                             Ajouter
@@ -771,11 +770,11 @@ const Products: React.FC = () => {
                                 </p>
 
                                 {!variationsEnabled ? null : productForm.variations.length === 0 ? (
-                                    <p className="text-zinc-500 text-xs py-2 text-center border border-dashed border-zinc-800 rounded-lg">Cliquez sur "Ajouter" pour créer une déclinaison</p>
+                                    <p className="text-zinc-500 text-xs py-2 text-center border border-dashed border-white/5 rounded-lg">Cliquez sur "Ajouter" pour créer une déclinaison</p>
                                 ) : (
                                     <div className="space-y-3">
                                         {productForm.variations.map((variation, varIdx) => (
-                                            <div key={varIdx} className="bg-black border border-zinc-800 rounded-lg p-3">
+                                            <div key={varIdx} className="bg-black/40 border border-white/5 rounded-lg p-3">
                                                 <div className="flex items-center gap-2 mb-2">
                                                     {variation.isCustom ? (
                                                         <div className="flex-1 flex gap-2">
@@ -789,20 +788,19 @@ const Products: React.FC = () => {
                                                                     newVars[varIdx].name = e.target.value;
                                                                     setProductForm({ ...productForm, variations: newVars });
                                                                 }}
-                                                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm focus:border-orange-500 outline-none"
+                                                                className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-white text-sm focus:border-indigo-500 outline-none"
                                                             />
                                                             <button
                                                                 type="button"
                                                                 onClick={() => {
                                                                     const newVars = [...productForm.variations];
+                                                                    // If empty, removing the card logic might fit here but let's just keep as is
                                                                     newVars[varIdx].isCustom = false;
-                                                                    newVars[varIdx].name = '';
-                                                                    newVars[varIdx].options = [];
                                                                     setProductForm({ ...productForm, variations: newVars });
                                                                 }}
-                                                                className="text-zinc-500 hover:text-white px-2 py-1 bg-zinc-800 rounded text-xs transition-colors"
+                                                                className="text-gray-500 hover:text-white"
                                                             >
-                                                                Liste
+                                                                <X size={14} />
                                                             </button>
                                                         </div>
                                                     ) : (
@@ -811,215 +809,119 @@ const Products: React.FC = () => {
                                                             onChange={(e) => {
                                                                 const val = e.target.value;
                                                                 const newVars = [...productForm.variations];
-
-                                                                if (val === '__custom__') {
-                                                                    newVars[varIdx].isCustom = true;
+                                                                if (val === 'custom') {
                                                                     newVars[varIdx].name = '';
-                                                                    newVars[varIdx].options = [];
+                                                                    newVars[varIdx].isCustom = true;
                                                                 } else {
-                                                                    const selectedTemplate = variationTemplates.find(t => t.name === val);
-                                                                    if (selectedTemplate && selectedTemplate.default_options) {
-                                                                        newVars[varIdx] = {
-                                                                            name: val,
-                                                                            options: [...selectedTemplate.default_options],
-                                                                            isCustom: false
-                                                                        };
-                                                                    } else {
-                                                                        newVars[varIdx].name = val;
-                                                                        newVars[varIdx].isCustom = false;
+                                                                    newVars[varIdx].name = val;
+                                                                    // Pre-fill options if template exists
+                                                                    const tmpl = variationTemplates.find(t => t.name === val);
+                                                                    if (tmpl && newVars[varIdx].options.length === 0) {
+                                                                        newVars[varIdx].options = tmpl.default_options.map(o => ({
+                                                                            value: o.value,
+                                                                            priceModifier: 0,
+                                                                            stock: 0
+                                                                        }));
                                                                     }
                                                                 }
                                                                 setProductForm({ ...productForm, variations: newVars });
                                                             }}
-                                                            className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-sm focus:border-orange-500 outline-none"
+                                                            className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-white text-sm focus:border-indigo-500 outline-none"
                                                         >
-                                                            <option value="">Sélectionner un type...</option>
-                                                            {variationTemplates.map((template, idx) => (
-                                                                <option key={idx} value={template.name}>
-                                                                    {template.name} {template.isSystem ? '' : '(Custom)'}
-                                                                </option>
+                                                            <option value="" disabled>Choisir un type (Taille, Couleur...)</option>
+                                                            {variationTemplates.map(t => (
+                                                                <option key={t.name} value={t.name} className="text-black">{t.name}</option>
                                                             ))}
-                                                            <option value="__custom__" className="font-bold text-orange-500 bg-zinc-900">+ Créer un autre type...</option>
+                                                            <option value="custom" className="text-indigo-400 font-semibold">+ Nouveau Type</option>
                                                         </select>
                                                     )}
+
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            setProductForm({
-                                                                ...productForm,
-                                                                variations: productForm.variations.filter((_, i) => i !== varIdx)
-                                                            });
+                                                            const newVars = productForm.variations.filter((_, i) => i !== varIdx);
+                                                            setProductForm({ ...productForm, variations: newVars });
                                                         }}
                                                         className="text-red-500 hover:text-red-400 p-1"
                                                     >
-                                                        <X size={14} />
+                                                        <Trash2 size={14} />
                                                     </button>
                                                 </div>
 
                                                 {/* Options List */}
-                                                <div className="space-y-1 mb-3 mt-2">
-                                                    {variation.options.map((opt, optIdx) => (
-                                                        <div key={optIdx} className="flex items-center justify-between bg-zinc-900 border border-zinc-700/50 rounded-md p-1.5 hover:border-zinc-600 transition-colors">
-
-                                                            {/* Left: Name & Data */}
-                                                            <div className="flex items-center gap-2 flex-1">
+                                                <div className="space-y-2 pl-2 border-l-2 border-white/5">
+                                                    {variation.options.map((option, optIdx) => (
+                                                        <div key={optIdx} className="flex flex-wrap items-center gap-2 text-sm bg-white/5 rounded p-2">
+                                                            <span className="font-bold text-white w-16 truncate">{option.value}</span>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Stock"
+                                                                value={option.stock ?? ''}
+                                                                onChange={(e) => {
+                                                                    const val = Number(e.target.value);
+                                                                    const newVars = [...productForm.variations];
+                                                                    newVars[varIdx].options[optIdx].stock = isNaN(val) ? 0 : val;
+                                                                    setProductForm({ ...productForm, variations: newVars });
+                                                                }}
+                                                                className="w-16 bg-black border border-white/10 rounded px-2 py-1 text-white text-xs outline-none focus:border-indigo-500"
+                                                            />
+                                                            <label htmlFor={`file-upload-${varIdx}-${optIdx}`} className="cursor-pointer text-gray-400 hover:text-indigo-400">
+                                                                <ImageIcon size={14} />
                                                                 <input
-                                                                    type="text"
-                                                                    value={opt.value}
-                                                                    onChange={(e) => {
-                                                                        const newVars = [...productForm.variations];
-                                                                        newVars[varIdx].options[optIdx].value = e.target.value;
-                                                                        setProductForm({ ...productForm, variations: newVars });
-                                                                    }}
-                                                                    className="bg-transparent border-b border-dashed border-zinc-700 hover:border-zinc-500 focus:border-orange-500 outline-none text-sm font-medium text-zinc-200 w-20"
+                                                                    id={`file-upload-${varIdx}-${optIdx}`}
+                                                                    type="file"
+                                                                    multiple
+                                                                    className="hidden"
+                                                                    onChange={(e) => handleVariationImageUpload(e, varIdx, optIdx)}
                                                                 />
-                                                                <div className="flex items-center gap-0.5" title="Surcoût (FCFA)">
-                                                                    <span className="text-zinc-600 text-xs">+</span>
-                                                                    <input
-                                                                        type="number"
-                                                                        value={opt.priceModifier || ''}
-                                                                        placeholder="0"
-                                                                        onChange={(e) => {
-                                                                            const newVars = [...productForm.variations];
-                                                                            newVars[varIdx].options[optIdx].priceModifier = Number(e.target.value);
-                                                                            setProductForm({ ...productForm, variations: newVars });
-                                                                        }}
-                                                                        className="bg-transparent border-b border-dashed border-zinc-700 hover:border-zinc-500 focus:border-orange-500 outline-none text-xs text-zinc-400 w-12 font-mono"
-                                                                    />
-                                                                </div>
-                                                                <div className="flex items-center gap-0.5" title="Stock déclinaison">
-                                                                    <span className="text-zinc-600 text-xs">#</span>
-                                                                    <input
-                                                                        type="number"
-                                                                        value={opt.stock === undefined ? '' : opt.stock}
-                                                                        placeholder="∞"
-                                                                        onChange={(e) => {
-                                                                            const newVars = [...productForm.variations];
-                                                                            // Treat empty string as undefined (unlimited) or handle 0 explicitly
-                                                                            const val = e.target.value;
-                                                                            newVars[varIdx].options[optIdx].stock = val === '' ? undefined : Number(val);
-                                                                            setProductForm({ ...productForm, variations: newVars });
-                                                                        }}
-                                                                        className="bg-transparent border-b border-dashed border-zinc-700 hover:border-zinc-500 focus:border-orange-500 outline-none text-xs text-blue-400 w-10 font-mono"
-                                                                    />
-                                                                </div>
-
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        const newVars = [...productForm.variations];
-                                                                        newVars[varIdx].options = newVars[varIdx].options.filter((_, i) => i !== optIdx);
-                                                                        setProductForm({ ...productForm, variations: newVars });
-                                                                    }}
-                                                                    className="text-zinc-600 hover:text-red-500 ml-1 p-0.5"
-                                                                >
-                                                                    <X size={12} />
-                                                                </button>
-                                                            </div>
-
-                                                            {/* Right: Images Upload */}
-                                                            <div className="flex items-center gap-1.5 ml-2">
-                                                                {opt.images && opt.images.map((img, imgIdx) => (
-                                                                    <div key={imgIdx} className="relative w-7 h-7 rounded border border-zinc-700 overflow-hidden group">
-                                                                        <img src={img} alt="" className="w-full h-full object-cover" />
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                const newVars = [...productForm.variations];
-                                                                                newVars[varIdx].options[optIdx].images = opt.images?.filter((_, i) => i !== imgIdx);
-                                                                                setProductForm({ ...productForm, variations: newVars });
-                                                                            }}
-                                                                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                        >
-                                                                            <X size={10} className="text-white" />
-                                                                        </button>
-                                                                    </div>
-                                                                ))}
-
-                                                                {(!opt.images || opt.images.length < 2) && (
-                                                                    <label className="w-7 h-7 flex items-center justify-center bg-zinc-800 border border-zinc-700 border-dashed rounded cursor-pointer hover:border-orange-500 text-zinc-600 hover:text-orange-500 transition-colors" title="Ajouter photo (max 2)">
-                                                                        <ImageIcon size={12} />
-                                                                        <input
-                                                                            type="file"
-                                                                            accept="image/*"
-                                                                            multiple
-                                                                            className="hidden"
-                                                                            onChange={(e) => handleVariationImageUpload(e, varIdx, optIdx)}
-                                                                        />
-                                                                    </label>
-                                                                )}
-                                                            </div>
+                                                            </label>
+                                                            {(option.images?.length || 0) > 0 && <span className="text-[10px] text-green-500">({option.images?.length} img)</span>}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newVars = [...productForm.variations];
+                                                                    newVars[varIdx].options = newVars[varIdx].options.filter((_, i) => i !== optIdx);
+                                                                    setProductForm({ ...productForm, variations: newVars });
+                                                                }}
+                                                                className="ml-auto text-gray-500 hover:text-red-400"
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
                                                         </div>
                                                     ))}
-                                                </div>
 
-                                                {/* Add option inputs */}
-                                                <div className="flex gap-2 mt-2">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Option (ex: XL)"
-                                                        value={newOptionInputs[varIdx]?.name || ''}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            setNewOptionInputs(prev => ({
-                                                                ...prev,
-                                                                [varIdx]: { ...prev[varIdx], name: val }
-                                                            }));
-                                                        }}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                e.preventDefault();
-                                                                handleAddOption(varIdx);
-                                                            }
-                                                        }}
-                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-xs focus:border-orange-500 outline-none"
-                                                    />
-                                                    <input
-                                                        type="number"
-                                                        placeholder="+ Prix"
-                                                        value={newOptionInputs[varIdx]?.price || ''}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            setNewOptionInputs(prev => ({
-                                                                ...prev,
-                                                                [varIdx]: { ...prev[varIdx], price: val }
-                                                            }));
-                                                        }}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                e.preventDefault();
-                                                                handleAddOption(varIdx);
-                                                            }
-                                                        }}
-                                                        className="w-16 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-xs focus:border-orange-500 outline-none"
-                                                    />
-                                                    <input
-                                                        type="number"
-                                                        placeholder="Stock"
-                                                        min="0"
-                                                        value={newOptionInputs[varIdx]?.stock || ''}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            setNewOptionInputs(prev => ({
-                                                                ...prev,
-                                                                [varIdx]: { ...prev[varIdx], stock: val }
-                                                            }));
-                                                        }}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                e.preventDefault();
-                                                                handleAddOption(varIdx);
-                                                            }
-                                                        }}
-                                                        className="w-16 bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-white text-xs focus:border-orange-500 outline-none"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleAddOption(varIdx)}
-                                                        className="bg-zinc-800 hover:bg-orange-500 hover:text-white text-zinc-400 px-3 rounded transition-colors"
-                                                    >
-                                                        <Plus size={16} />
-                                                    </button>
+                                                    {/* Add Option Input */}
+                                                    <div className="flex gap-2 items-center mt-2">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Nouvelle option (ex: XL)"
+                                                            value={newOptionInputs[varIdx]?.name || ''}
+                                                            onChange={(e) => setNewOptionInputs({
+                                                                ...newOptionInputs,
+                                                                [varIdx]: { ...newOptionInputs[varIdx], name: e.target.value }
+                                                            })}
+                                                            className="flex-1 bg-black border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:border-indigo-500 outline-none"
+                                                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption(varIdx))}
+                                                        />
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Stock"
+                                                            value={newOptionInputs[varIdx]?.stock || ''}
+                                                            onChange={(e) => setNewOptionInputs({
+                                                                ...newOptionInputs,
+                                                                [varIdx]: { ...newOptionInputs[varIdx], stock: e.target.value }
+                                                            })}
+                                                            className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white placeholder-zinc-600 focus:border-indigo-500 outline-none"
+                                                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption(varIdx))}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleAddOption(varIdx)}
+                                                            className="bg-white/10 hover:bg-indigo-500 hover:text-white text-zinc-400 rounded-lg p-1.5 transition-colors"
+                                                        >
+                                                            <Plus size={14} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
@@ -1029,47 +931,39 @@ const Products: React.FC = () => {
 
                             <button
                                 type="submit"
-                                className="w-full bg-white hover:bg-zinc-200 text-black font-bold uppercase tracking-wide py-3 rounded-lg transition-all mt-4"
+                                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
                             >
-                                {editingId ? 'Enregistrer modifications' : 'Créer le Produit'}
+                                {editingId ? 'Mettre à jour' : 'Créer Produit'}
                             </button>
                         </form>
                     </div>
-                </div >
+                </div>
             )}
 
             {/* Delete Confirmation Modal */}
             {isDeleteModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-md p-6 relative animate-in fade-in zoom-in duration-200 shadow-2xl shadow-red-900/10">
-                        <div className="text-center">
-                            <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Trash2 className="text-red-500 w-6 h-6" />
-                            </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Confirmer la suppression</h3>
-                            <p className="text-zinc-500 text-sm mb-6 leading-relaxed">
-                                Êtes-vous sûr de vouloir supprimer ce produit ?<br />
-                                Cette action est irréversible.
-                            </p>
-                            <div className="flex space-x-3">
-                                <button
-                                    onClick={() => setIsDeleteModalOpen(false)}
-                                    className="flex-1 py-3 rounded-lg border border-zinc-700 text-zinc-300 font-medium hover:bg-zinc-800 transition-colors"
-                                >
-                                    Annuler
-                                </button>
-                                <button
-                                    onClick={confirmDelete}
-                                    className="flex-1 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white font-bold transition-colors shadow-lg shadow-red-500/20"
-                                >
-                                    Supprimer
-                                </button>
-                            </div>
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-950/80 backdrop-blur-md">
+                    <div className="bg-[#0a0c10] border border-white/10 rounded-xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in duration-200">
+                        <h3 className="text-lg font-bold text-white mb-2">Supprimer le produit ?</h3>
+                        <p className="text-zinc-400 text-sm mb-6">Cette action est irréversible. Le produit sera retiré de la vente.</p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setIsDeleteModalOpen(false)}
+                                className="px-4 py-2 text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-sm font-medium"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 rounded-lg transition-all text-sm font-bold"
+                            >
+                                Supprimer
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
-        </div >
+        </div>
     );
 };
 
