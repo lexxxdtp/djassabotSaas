@@ -89,6 +89,7 @@ export const getTenantById = async (id: string): Promise<Tenant | null> => {
                     whatsappConnected: data.whatsapp_connected,
                     whatsappPhoneNumber: data.whatsapp_phone_number,
                     whatsappStatus: data.whatsapp_status,
+                    paystackSubaccountCode: data.paystack_subaccount_code,
                     createdAt: new Date(data.created_at),
                     updatedAt: new Date(data.updated_at)
                 };
@@ -118,6 +119,7 @@ export const getActiveTenants = async (): Promise<Tenant[]> => {
                     whatsappConnected: d.whatsapp_connected,
                     whatsappPhoneNumber: d.whatsapp_phone_number,
                     whatsappStatus: d.whatsapp_status,
+                    paystackSubaccountCode: d.paystack_subaccount_code,
                     createdAt: new Date(d.created_at),
                     updatedAt: new Date(d.updated_at)
                 }));
@@ -149,6 +151,48 @@ export const updateTenantWhatsAppStatus = async (
     } catch (e) {
         console.error('[updateTenantWhatsAppStatus] Error:', e);
     }
+};
+
+export const updateTenant = async (
+    tenantId: string,
+    updates: Partial<Tenant>
+): Promise<Tenant | null> => {
+    try {
+        if (isSupabaseEnabled && supabase) {
+            // Map camelCase to snake_case
+            const dbUpdates: any = { updated_at: new Date() };
+            if (updates.name !== undefined) dbUpdates.name = updates.name;
+            if (updates.businessType !== undefined) dbUpdates.business_type = updates.businessType;
+            if (updates.status !== undefined) dbUpdates.status = updates.status;
+            if (updates.paystackSubaccountCode !== undefined) dbUpdates.paystack_subaccount_code = updates.paystackSubaccountCode;
+
+            const { data, error } = await supabase
+                .from('tenants')
+                .update(dbUpdates)
+                .eq('id', tenantId)
+                .select()
+                .single();
+
+            if (!error && data) {
+                return {
+                    id: data.id,
+                    name: data.name,
+                    businessType: data.business_type,
+                    status: data.status,
+                    subscriptionTier: data.subscription_tier,
+                    whatsappConnected: data.whatsapp_connected,
+                    whatsappPhoneNumber: data.whatsapp_phone_number,
+                    whatsappStatus: data.whatsapp_status,
+                    paystackSubaccountCode: data.paystack_subaccount_code,
+                    createdAt: new Date(data.created_at),
+                    updatedAt: new Date(data.updated_at)
+                };
+            }
+        }
+    } catch (e) {
+        console.error('[updateTenant] Error:', e);
+    }
+    return null;
 };
 
 export const updateTenantQRCode = async (tenantId: string, qrCode: string): Promise<void> => {

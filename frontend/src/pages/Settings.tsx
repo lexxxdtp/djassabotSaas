@@ -57,6 +57,8 @@ export default function Settings() {
         deliveryInteriorPrice: number;
         freeDeliveryThreshold: number;
         acceptedPayments: string[];
+        settlementBank?: string;
+        settlementAccount?: string;
     }>({
         // Identity
         botName: 'Awa',
@@ -98,7 +100,12 @@ export default function Settings() {
         deliveryInteriorPrice: 3000,
         freeDeliveryThreshold: 50000,
         acceptedPayments: ['wave', 'om', 'cash'],
+        // Vendor Payment
+        settlementBank: '',
+        settlementAccount: '',
     });
+
+    const [paystackSubaccountCode, setPaystackSubaccountCode] = useState<string | null>(null);
 
     const [aiSummary, setAiSummary] = useState('');
     const [summarizing, setSummarizing] = useState(false);
@@ -139,6 +146,9 @@ export default function Settings() {
                             birthDate: data.user.birth_date ? new Date(data.user.birth_date).toISOString().split('T')[0] : ''
                         });
                     }
+                    if (data.tenant && data.tenant.paystackSubaccountCode) {
+                        setPaystackSubaccountCode(data.tenant.paystackSubaccountCode);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to fetch profile', error);
@@ -176,6 +186,43 @@ export default function Settings() {
             console.error(e);
         } finally {
             setSummarizing(false);
+        }
+    };
+
+    const handleSetupVendor = async () => {
+        if (!token) return;
+        if (!config.settlementBank || !config.settlementAccount) {
+            alert('Veuillez renseigner votre banque et numéro de compte.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/paystack/setup-vendor`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    settlement_bank: config.settlementBank,
+                    account_number: config.settlementAccount,
+                    percentage_charge: 2 // 2% commission par défaut
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setPaystackSubaccountCode(data.subaccount_code);
+                alert('Compte vendeur configuré avec succès ! Vos futurs paiements seront automatisés.');
+            } else {
+                throw new Error(data.error || 'Erreur inconnue');
+            }
+        } catch (e: any) {
+            console.error(e);
+            alert('Erreur: ' + e.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -813,6 +860,71 @@ export default function Settings() {
                                         </label>
                                     );
                                 })}
+                            </div>
+                        </div>
+
+                        {/* 6. Coordonnées de Réception (Split Payments) */}
+                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-8 relative overflow-hidden">
+                            {/* Background Pattern */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+
+                            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs relative z-10">
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span> Réception des Paiements
+                            </h2>
+
+                            <div className="relative z-10">
+                                <p className="text-zinc-400 text-sm mb-6 max-w-2xl text-justify">
+                                    Configurez votre compte money pour recevoir automatiquement vos gains.
+                                    L'argent des ventes sera transféré sur ce compte (moins la commission de la plateforme).
+                                </p>
+
+                                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Opérateur / Banque</label>
+                                        <select
+                                            value={config.settlementBank || ''}
+                                            onChange={e => setConfig({ ...config, settlementBank: e.target.value })}
+                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-green-500 outline-none appearance-none"
+                                            disabled={!!paystackSubaccountCode}
+                                        >
+                                            <option value="">Choisir un opérateur</option>
+                                            <option value="MTN">MTN Mobile Money</option>
+                                            <option value="Orange Money">Orange Money</option>
+                                            <option value="Wave">Wave</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Numéro de Compte / Téléphone</label>
+                                        <input
+                                            type="text"
+                                            value={config.settlementAccount || ''}
+                                            onChange={e => setConfig({ ...config, settlementAccount: e.target.value })}
+                                            className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white focus:border-green-500 outline-none font-mono tracking-wide"
+                                            placeholder="Ex: 0504030201"
+                                            disabled={!!paystackSubaccountCode}
+                                        />
+                                    </div>
+                                </div>
+
+                                {paystackSubaccountCode ? (
+                                    <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+                                            <CheckCircle className="text-black w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-green-400 text-sm">Compte de paiement actif</div>
+                                            <div className="text-xs text-green-500/70 font-mono">ID: {paystackSubaccountCode}</div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={handleSetupVendor}
+                                        disabled={loading || !config.settlementBank || !config.settlementAccount}
+                                        className="w-full py-3 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all shadow-lg shadow-green-900/20"
+                                    >
+                                        {loading ? 'Configuration...' : 'Activer les Paiements Automatiques'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

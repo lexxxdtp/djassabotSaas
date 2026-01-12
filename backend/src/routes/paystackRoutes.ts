@@ -157,11 +157,13 @@ router.post('/verify-account', authenticateTenant, async (req, res) => {
  */
 router.post('/setup-vendor', authenticateTenant, async (req, res) => {
     try {
-        const { bankCode, accountNumber, email, phone } = req.body;
+        const { bankCode, settlement_bank, accountNumber, account_number, email, phone } = req.body;
         const tenantId = req.tenantId!;
+        const finalBankCode = bankCode || settlement_bank;
+        const finalAccountNumber = accountNumber || account_number;
 
-        if (!bankCode || !accountNumber) {
-            return res.status(400).json({ error: 'Coordonnées bancaires requises' });
+        if (!finalBankCode || !finalAccountNumber) {
+            return res.status(400).json({ error: 'Coordonnées bancaires requises (bankCode/settlement_bank et accountNumber)' });
         }
 
         // Get tenant info
@@ -170,12 +172,19 @@ router.post('/setup-vendor', authenticateTenant, async (req, res) => {
             return res.status(404).json({ error: 'Tenant non trouvé' });
         }
 
+        // Try to get user email if not provided
+        let contactEmail = email;
+        if (!contactEmail) {
+            const user = await db.getUserById(req.userId!);
+            contactEmail = user?.email || 'vendor@djassabot.com';
+        }
+
         const result = await paystackService.createVendorSubaccount(
             tenantId,
             tenant.name,
-            bankCode,
-            accountNumber,
-            email || 'vendor@example.com',
+            finalBankCode,
+            finalAccountNumber,
+            contactEmail,
             phone
         );
 

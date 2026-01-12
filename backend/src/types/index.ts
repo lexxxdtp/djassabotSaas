@@ -91,6 +91,10 @@ export interface Settings {
     freeDeliveryThreshold: number;
     acceptedPayments: string[];
     deliveryZones?: string[]; // Zones de livraison disponibles
+
+    // Vendor Payment (Split)
+    settlementBank?: string; // e.g. "MTN", "WAVE", "ORANGE", or Bank Code
+    settlementAccount?: string; // Phone number or Account number
 }
 
 // Multi-Tenant Types

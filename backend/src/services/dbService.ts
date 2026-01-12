@@ -691,6 +691,7 @@ export const db = {
     getTenantById: tenantService.getTenantById,
     getActiveTenants: tenantService.getActiveTenants,
     updateTenantWhatsAppStatus: tenantService.updateTenantWhatsAppStatus,
+    updateTenant: tenantService.updateTenant,
     updateTenantQRCode: tenantService.updateTenantQRCode,
 
     // User Management

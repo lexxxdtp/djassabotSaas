@@ -106,9 +106,26 @@ export const createVendorSubaccount = async (
     phone?: string
 ) => {
     try {
+        // Map common names to codes if necessary (Basic mapping for CI)
+        let finalBankCode = bankCode;
+        if (bankCode === 'MTN') finalBankCode = 'MTN'; // Verify this code via listBanks if fails
+        if (bankCode === 'Orange Money') finalBankCode = 'ORM'; // Verify this code
+        if (bankCode === 'Wave') finalBankCode = 'WAVE'; // Verify this code
+
+        // Better approach: Since we don't know the codes for sure without calling API, 
+        // we should probably let the user select from a real list in the future.
+        // For now, let's try to find the bank by name if the code looks like a name
+        if (['MTN', 'Orange Money', 'Wave'].includes(bankCode)) {
+            const banksRes = await listBanks('côte d\'ivoire');
+            if (banksRes.success) {
+                const found = banksRes.banks.find((b: any) => b.name.toLowerCase().includes(bankCode.toLowerCase()) || b.code === bankCode);
+                if (found) finalBankCode = found.code;
+            }
+        }
+
         const response = await paystackApi.post('/subaccount', {
             business_name: businessName,
-            settlement_bank: bankCode,
+            settlement_bank: finalBankCode,
             account_number: accountNumber,
             percentage_charge: 2, // TDJaasa takes 2% commission on sales
             primary_contact_email: email,
@@ -118,7 +135,7 @@ export const createVendorSubaccount = async (
         const subaccountCode = response.data.data.subaccount_code;
 
         // Save subaccount code to tenant record
-        // await db.updateTenant(tenantId, { paystackSubaccountCode: subaccountCode });
+        await db.updateTenant(tenantId, { paystackSubaccountCode: subaccountCode });
 
         console.log(`[Paystack] Created subaccount ${subaccountCode} for tenant ${tenantId}`);
 
