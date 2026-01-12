@@ -15,6 +15,7 @@ export interface Session {
     };
     lastInteraction: Date;
     reminderSent?: boolean;
+    autopilotEnabled: boolean; // default true
 }
 
 // In-memory fallback ONLY if Supabase is disabled/fails (not recommended for prod)
@@ -42,7 +43,7 @@ export const getSession = async (tenantId: string, userId: string): Promise<Sess
                     state: data.state as any,
                     tempOrder: typeof data.temp_order === 'string' ? JSON.parse(data.temp_order) : data.temp_order,
                     lastInteraction: new Date(data.last_interaction),
-                    reminderSent: data.reminder_sent
+                    autopilotEnabled: data.autopilot_enabled ?? true
                 };
             }
         } catch (e) {
@@ -61,6 +62,7 @@ export const getSession = async (tenantId: string, userId: string): Promise<Sess
         tenantId,
         history: [],
         state: 'IDLE',
+        autopilotEnabled: true,
         lastInteraction: new Date()
     };
 
@@ -124,7 +126,7 @@ export const getActiveSessions = async (): Promise<Session[]> => {
                     state: d.state as any,
                     tempOrder: typeof d.temp_order === 'string' ? JSON.parse(d.temp_order) : d.temp_order,
                     lastInteraction: new Date(d.last_interaction),
-                    reminderSent: d.reminder_sent
+                    autopilotEnabled: d.autopilot_enabled ?? true
                 }));
             }
         } catch (e) { console.error(e); }
@@ -148,6 +150,7 @@ const saveSessionToDb = async (session: Session) => {
                 temp_order: session.tempOrder,
                 last_interaction: session.lastInteraction,
                 reminder_sent: session.reminderSent || false,
+                autopilot_enabled: session.autopilotEnabled ?? true,
                 updated_at: new Date()
             };
 

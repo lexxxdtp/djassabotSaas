@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Check, Shield, Crown, Loader2 } from 'lucide-react';
 import { getApiUrl } from '../utils/apiConfig';
+import { useAuth } from '../context/AuthContext';
 
 interface Plan {
     id: string;
@@ -94,7 +95,11 @@ const PlanCard = ({ title, price, features, planId, recommended = false, current
 
 export default function Subscription() {
     // currentPlan will be fetched from API after Paystack callback
-    const [currentPlan] = useState('starter');
+    const { tenant } = useAuth();
+    // Use actual tenant plan, defaulting to 'starter' only if verified or checking specific statuses
+    // For visual correctness, if status is 'trial', we might want to show that.
+    // However, sticking to the implementation request: use real data.
+    const currentPlan = tenant?.subscription_tier || 'starter';
     const [loading, setLoading] = useState(false);
     const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
     const [plans, setPlans] = useState<Plan[]>([]);

@@ -69,7 +69,7 @@ const PlanCard = ({ id, title, price, features, recommended, currentPlan, loadin
 export default function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
     const { user, tenant } = useAuth();
     const [activeTab, setActiveTab] = useState<'profile' | 'subscription'>('subscription');
-    const [currentPlan] = useState('starter');
+    const [currentPlan] = useState(tenant?.subscription_tier || 'starter');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 

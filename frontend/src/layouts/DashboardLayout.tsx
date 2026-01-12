@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Settings, LogOut, Package, Share2, Menu, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Settings, LogOut, Package, Share2, Menu, X, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
 
@@ -18,6 +18,7 @@ const DashboardLayout: React.FC = () => {
 
     const navItems = [
         { path: '/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard },
+        { path: '/dashboard/inbox', label: 'Discussions', icon: MessageSquare }, // Changed icon to match typical chat
         { path: '/dashboard/orders', label: 'Commandes', icon: ShoppingBag },
         { path: '/dashboard/products', label: 'Produits', icon: Package },
         { path: '/dashboard/marketing', label: 'Marketing', icon: Share2 },

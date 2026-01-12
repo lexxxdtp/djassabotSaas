@@ -114,7 +114,9 @@ router.post('/signup', async (req: Request, res: Response) => {
             tenant: {
                 id: tenant.id,
                 name: tenant.name,
-                businessType: tenant.businessType
+                businessType: tenant.businessType,
+                status: tenant.status,
+                subscription_tier: tenant.subscriptionTier
             },
             user: {
                 id: user.id,
@@ -205,6 +207,7 @@ router.post('/login', async (req: Request, res: Response) => {
                 name: tenant.name,
                 businessType: tenant.businessType,
                 status: tenant.status,
+                subscription_tier: tenant.subscriptionTier,
                 whatsappConnected: tenant.whatsappConnected
             },
             user: {
@@ -259,6 +262,7 @@ router.get('/me', authenticateTenant, async (req: Request, res: Response) => {
                 name: tenant.name,
                 businessType: tenant.businessType,
                 status: tenant.status,
+                subscription_tier: tenant.subscriptionTier,
                 whatsappConnected: tenant.whatsappConnected
             }
         });

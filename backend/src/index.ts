@@ -33,8 +33,13 @@ app.use(express.json());
 // IMPORTANT: Register specific routes BEFORE catch-all routes
 app.use('/api/auth', authRoutes);
 
+import chatRoutes from './routes/chatRoutes';
+
+// ... (other imports)
+
 // Protected Routes
 app.use('/api/whatsapp', whatsappRoutes); // Auth handled inside router
+app.use('/api/chats', chatRoutes); // Chat Management
 app.use('/api/ai', aiRoutes); // New AI Simulation Routes
 app.use('/api', variationTemplateRoutes); // Variation Templates
 

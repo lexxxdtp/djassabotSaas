@@ -43,6 +43,45 @@ class WhatsAppManager {
     }
 
     /**
+     * Demander un code de jumelage (Pairing Code) pour connexion sans QR
+     * Utile si l'utilisateur est sur le même téléphone
+     */
+    public async requestPairingCode(tenantId: string, phoneNumber: string): Promise<string | undefined> {
+        let session = this.sessions.get(tenantId);
+
+        // Si pas de session, on en crée une
+        if (!session) {
+            await this.createSession(tenantId);
+            session = this.sessions.get(tenantId);
+        }
+
+        if (!session || !session.sock) {
+            throw new Error("Impossible d'initialiser la session WhatsApp");
+        }
+
+        // Si déjà connecté, pas besoin
+        if (session.status === 'connected') {
+            throw new Error("Déjà connecté !");
+        }
+
+        // Formater le numéro (enlever + et espaces)
+        const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+
+        // Attendre un peu que le socket soit prêt
+        await new Promise(r => setTimeout(r, 2000));
+
+        try {
+            console.log(`[Manager] Demande code de jumelage pour ${tenantId} sur le ${cleanPhone}`);
+            const code = await session.sock.requestPairingCode(cleanPhone);
+            console.log(`[Manager] Code reçu: ${code}`);
+            return code;
+        } catch (error) {
+            console.error(`[Manager] Erreur demande Pairing Code:`, error);
+            throw new Error("Échec de la génération du code. Vérifiez le numéro.");
+        }
+    }
+
+    /**
      * Créer une nouvelle connexion pour un tenant
      */
     public async createSession(tenantId: string): Promise<string | undefined> {
@@ -67,8 +106,12 @@ class WhatsAppManager {
                 creds: state.creds,
                 keys: makeCacheableSignalKeyStore(state.keys, logger),
             },
-            browser: ['Tdjaasa Bot', 'Chrome', '1.0.0'],
+            browser: ['Ubuntu', 'Chrome', '20.0.04'], // Standard stable config for Pairing Code
             generateHighQualityLinkPreview: true,
+            // syncFullHistory: false, 
+            connectTimeoutMs: 60000,
+            defaultQueryTimeoutMs: 60000,
+            keepAliveIntervalMs: 10000
         });
 
         // Stocker la session temporairement
@@ -581,6 +624,13 @@ class WhatsAppManager {
                 }
                 return productInfo;
             }).join('\n');
+
+            // Check Autopilot Status
+            if (session.autopilotEnabled === false) {
+                console.log(`[Manager] Autopilot disabled for ${remoteJid}, skipping AI response.`);
+                await addToHistory(tenantId, remoteJid, 'user', text);
+                return;
+            }
 
             const aiResponse = await generateAIResponse(text, {
                 settings,

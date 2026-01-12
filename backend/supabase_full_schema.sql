@@ -189,6 +189,7 @@ create table if not exists sessions (
   temp_order jsonb,
   last_interaction timestamp with time zone default timezone('utc', now()),
   reminder_sent boolean default false,
+  autopilot_enabled boolean default true,
   created_at timestamp with time zone default timezone('utc', now()),
   updated_at timestamp with time zone default timezone('utc', now())
 );

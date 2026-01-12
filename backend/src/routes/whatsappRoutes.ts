@@ -52,6 +52,26 @@ router.get('/status', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
+// Obtenir un code de jumelage (Pairing Code)
+router.post('/pair-code', async (req: Request, res: Response) => {
+    try {
+        const tenantId = req.tenantId!;
+        const { phoneNumber } = req.body;
+
+        if (!phoneNumber) {
+            res.status(400).json({ error: 'Numéro de téléphone requis' });
+            return;
+        }
+
+        const code = await whatsappManager.requestPairingCode(tenantId, phoneNumber);
+        res.json({ success: true, code });
+
+    } catch (error: any) {
+        console.error('Erreur Pairing Code:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Déconnexion
 router.post('/logout', async (req: Request, res: Response) => {
     try {

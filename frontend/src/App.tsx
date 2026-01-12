@@ -10,6 +10,7 @@ const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'));
 const Products = lazy(() => import('./pages/Products'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const Orders = lazy(() => import('./pages/Orders'));
+const Inbox = lazy(() => import('./pages/Inbox'));
 const MarketingTools = lazy(() => import('./pages/Marketing'));
 const Overview = lazy(() => import('./pages/Overview'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -66,6 +67,7 @@ function App() {
                 <Route path="products" element={<Products />} />
                 <Route path="products/:id" element={<ProductDetail />} />
                 <Route path="orders" element={<Orders />} />
+                <Route path="inbox" element={<Inbox />} />
                 <Route path="marketing" element={<MarketingTools />} />
                 <Route path="subscription" element={<Subscription />} />
                 <Route path="settings" element={<Settings />} />

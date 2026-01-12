@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { getApiUrl } from '../utils/apiConfig';
 
 interface User {
     id: string;
@@ -13,6 +14,8 @@ interface Tenant {
     id: string;
     name: string;
     businessType?: string;
+    subscription_tier?: string;
+    status?: string;
 }
 
 interface AuthContextType {
@@ -67,7 +70,51 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log('[AuthContext] Init - tenant from storage:', storedTenant?.name || 'Not found');
         return storedTenant;
     });
-    const isLoading = false;
+
+
+    const [isLoadingData, setIsLoadingData] = useState(false);
+
+    useEffect(() => {
+        const fetchMe = async () => {
+            if (!token) return;
+
+            // Avoid loop if we just logged in (state is already set), but logic usually requires refresh on page reload
+            // Simplest check: if we have token but maybe stale data?
+            // Actually, always fetch on mount (page refresh) to sync status
+            setIsLoadingData(true);
+            try {
+                const res = await fetch(`${getApiUrl()}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.user && data.tenant) {
+                        setUser(data.user);
+                        setTenant(data.tenant);
+
+                        // Update storage
+                        const isLocal = !!localStorage.getItem('token');
+                        const storage = isLocal ? localStorage : sessionStorage;
+                        storage.setItem('user', JSON.stringify(data.user));
+                        storage.setItem('tenant', JSON.stringify(data.tenant));
+
+                        console.log('[AuthContext] Refreshed user data from API');
+                        console.log('[AuthContext] Current Plan:', data.tenant.subscription_tier);
+                    }
+                } else if (res.status === 401) {
+                    // Token invalid/expired
+                    logout();
+                }
+            } catch (err) {
+                console.error('[AuthContext] Failed to refresh user data', err);
+            } finally {
+                setIsLoadingData(false);
+            }
+        };
+
+        fetchMe();
+    }, [token]);
 
     console.log('[AuthContext] isAuthenticated:', !!token);
 
@@ -117,7 +164,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             isAuthenticated: !!token,
             login,
             logout,
-            isLoading
+            isLoading: isLoadingData
         }}>
             {children}
         </AuthContext.Provider>
