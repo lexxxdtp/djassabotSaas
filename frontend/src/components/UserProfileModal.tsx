@@ -71,9 +71,6 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
     const [activeTab, setActiveTab] = useState<'profile' | 'subscription'>('subscription');
     const [currentPlan, _setCurrentPlan] = useState('starter');
     const [loading, setLoading] = useState(false);
-
-    if (!isOpen) return null;
-
     const [error, setError] = useState<string | null>(null);
 
     // Real Paystack Upgrade
@@ -109,6 +106,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
             setLoading(false);
         }
     };
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
