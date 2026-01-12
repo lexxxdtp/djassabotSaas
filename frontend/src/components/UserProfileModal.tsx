@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, User, Crown, Shield, Check, Mail, Building } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getApiUrl } from '../utils/apiConfig';
 
 interface UserProfileModalProps {
     isOpen: boolean;
@@ -68,19 +69,45 @@ const PlanCard = ({ id, title, price, features, recommended, currentPlan, loadin
 export default function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
     const { user, tenant } = useAuth();
     const [activeTab, setActiveTab] = useState<'profile' | 'subscription'>('subscription');
-    const [currentPlan, setCurrentPlan] = useState('starter');
+    const [currentPlan, _setCurrentPlan] = useState('starter');
     const [loading, setLoading] = useState(false);
 
     if (!isOpen) return null;
 
-    // Simulation Upgrade
-    const handleUpgrade = (planId: string) => {
+    const [error, setError] = useState<string | null>(null);
+
+    // Real Paystack Upgrade
+    const handleUpgrade = async (planId: string) => {
         setLoading(true);
-        setTimeout(() => {
-            setCurrentPlan(planId);
+        setError(null);
+
+        try {
+            const token = localStorage.getItem('token') || localStorage.getItem('authToken') || sessionStorage.getItem('token');
+            const userEmail = user?.email || localStorage.getItem('userEmail') || 'user@example.com';
+
+            const res = await fetch(`${getApiUrl()}/paystack/subscribe`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ plan: planId, email: userEmail })
+            });
+
+            const data = await res.json();
+
+            if (data.success && data.paymentUrl) {
+                // Redirect to Paystack payment page
+                window.location.href = data.paymentUrl;
+            } else {
+                setError(data.error || 'Une erreur est survenue');
+                setLoading(false);
+            }
+        } catch (e: any) {
+            console.error('Subscription error:', e);
+            setError('Erreur de connexion au serveur');
             setLoading(false);
-            alert(`Plan ${planId.toUpperCase()} activé !`);
-        }, 1500);
+        }
     };
 
     return (
@@ -131,12 +158,18 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                                 <p className="text-zinc-500 text-sm mt-1">Changez de plan pour débloquer plus de puissance.</p>
                             </div>
 
+                            {error && (
+                                <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-2 rounded-lg text-sm">
+                                    {error}
+                                </div>
+                            )}
+
                             <div className="grid md:grid-cols-3 gap-4">
                                 <PlanCard
                                     id="starter"
                                     title="Starter"
-                                    price="Gratuit"
-                                    features={["1 Bot WhatsApp", "50 Produits", "Support Email"]}
+                                    price="5.000 FCFA"
+                                    features={["Bot IA WhatsApp", "50 Produits max", "Support Email"]}
                                     currentPlan={currentPlan}
                                     loading={loading}
                                     onUpgrade={handleUpgrade}
@@ -144,9 +177,9 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                                 <PlanCard
                                     id="pro"
                                     title="Pro"
-                                    price="15.000 FCFA"
+                                    price="10.000 FCFA"
                                     recommended={true}
-                                    features={["IA Avancée", "Produits Illimités", "Relance Paniers", "Support Prio"]}
+                                    features={["Produits Illimités", "IA Négociatrice", "Statistiques", "Support Prio"]}
                                     currentPlan={currentPlan}
                                     loading={loading}
                                     onUpgrade={handleUpgrade}
@@ -154,8 +187,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                                 <PlanCard
                                     id="business"
                                     title="Business"
-                                    price="45.000 FCFA"
-                                    features={["3 Numéros", "IA Vocale", "API Access", "Manager Dédié"]}
+                                    price="15.000 FCFA"
+                                    features={["Support VIP", "Formation perso", "Config sur mesure"]}
                                     currentPlan={currentPlan}
                                     loading={loading}
                                     onUpgrade={handleUpgrade}
