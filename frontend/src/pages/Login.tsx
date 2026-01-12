@@ -7,6 +7,7 @@ import { getApiUrl } from '../utils/apiConfig';
 const Login: React.FC = () => {
     const [identifier, setIdentifier] = useState(''); // email OU téléphone (+225XXXXXXXXXX)
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(true); // Par défaut activé
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -34,7 +35,8 @@ const Login: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     identifier: formattedIdentifier,
-                    password
+                    password,
+                    rememberMe // Envoyer au backend pour token longue durée
                 }),
             });
 
@@ -44,7 +46,8 @@ const Login: React.FC = () => {
                 throw new Error(data.error || 'Identifiants invalides');
             }
 
-            login(data.token, data.user, data.tenant);
+            // Pass rememberMe to login function for storage decision
+            login(data.token, data.user, data.tenant, rememberMe);
             navigate('/dashboard');
 
         } catch (err: unknown) {
@@ -103,6 +106,30 @@ const Login: React.FC = () => {
                                 className="w-full bg-black border border-zinc-700/50 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-700 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
                             />
                         </div>
+                    </div>
+
+                    {/* Remember Me Checkbox */}
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setRememberMe(!rememberMe)}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${rememberMe
+                                    ? 'bg-orange-500 border-orange-500'
+                                    : 'bg-transparent border-zinc-600 hover:border-zinc-500'
+                                }`}
+                        >
+                            {rememberMe && (
+                                <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            )}
+                        </button>
+                        <label
+                            onClick={() => setRememberMe(!rememberMe)}
+                            className="text-sm text-zinc-400 cursor-pointer select-none hover:text-zinc-300 transition-colors"
+                        >
+                            Me garder connecté
+                        </label>
                     </div>
 
                     <button

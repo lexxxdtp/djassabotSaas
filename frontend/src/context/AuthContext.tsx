@@ -20,41 +20,65 @@ interface AuthContextType {
     tenant: Tenant | null;
     token: string | null;
     isAuthenticated: boolean;
-    login: (token: string, user: User, tenant: Tenant) => void;
+    login: (token: string, user: User, tenant: Tenant, rememberMe?: boolean) => void;
     logout: () => void;
     isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper to get stored data (checks both localStorage and sessionStorage)
+const getStoredItem = (key: string): string | null => {
+    return localStorage.getItem(key) || sessionStorage.getItem(key);
+};
+
+// Helper to get stored JSON
+const getStoredJSON = (key: string): unknown => {
+    try {
+        const item = getStoredItem(key);
+        return item ? JSON.parse(item) : null;
+    } catch {
+        return null;
+    }
+};
+
+// Helper to clear from both storages
+const clearStoredItems = () => {
+    ['token', 'user', 'tenant', 'authToken', 'userEmail'].forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+    });
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
-    const [user, setUser] = useState<User | null>(() => {
-        try {
-            const item = localStorage.getItem('user');
-            return item ? JSON.parse(item) : null;
-        } catch {
-            return null;
-        }
-    });
-    const [tenant, setTenant] = useState<Tenant | null>(() => {
-        try {
-            const item = localStorage.getItem('tenant');
-            return item ? JSON.parse(item) : null;
-        } catch {
-            return null;
-        }
-    });
+    const [token, setToken] = useState<string | null>(() => getStoredItem('token'));
+    const [user, setUser] = useState<User | null>(() => getStoredJSON('user') as User | null);
+    const [tenant, setTenant] = useState<Tenant | null>(() => getStoredJSON('tenant') as Tenant | null);
     const isLoading = false;
 
-    const login = (newToken: string, newUser: User, newTenant: Tenant) => {
+    const login = (newToken: string, newUser: User, newTenant: Tenant, rememberMe: boolean = true) => {
         setToken(newToken);
         setUser(newUser);
         setTenant(newTenant);
 
-        localStorage.setItem('token', newToken);
-        localStorage.setItem('user', JSON.stringify(newUser));
-        localStorage.setItem('tenant', JSON.stringify(newTenant));
+        // Choose storage based on rememberMe preference
+        const storage = rememberMe ? localStorage : sessionStorage;
+
+        // Clear old data from both storages first
+        clearStoredItems();
+
+        // Store in chosen storage
+        storage.setItem('token', newToken);
+        storage.setItem('user', JSON.stringify(newUser));
+        storage.setItem('tenant', JSON.stringify(newTenant));
+
+        // Also store authToken for backward compatibility (used by Subscription page)
+        storage.setItem('authToken', newToken);
+
+        // Store email for Paystack if available
+        if (newUser.email) {
+            storage.setItem('userEmail', newUser.email);
+        }
     };
 
     const logout = () => {
@@ -62,9 +86,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(null);
         setTenant(null);
 
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('tenant');
+        // Clear from both storages
+        clearStoredItems();
     };
 
     return (
