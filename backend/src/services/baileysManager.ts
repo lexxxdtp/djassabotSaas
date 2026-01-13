@@ -46,6 +46,18 @@ class WhatsAppManager {
      * Demander un code de jumelage (Pairing Code) pour connexion sans QR
      * Utile si l'utilisateur est sur le même téléphone
      */
+
+    /**
+     * Obtenir le statut d'une session (pour le watchdog)
+     */
+    public getSessionStatus(tenantId: string): { status: string; exists: boolean } {
+        const session = this.sessions.get(tenantId);
+        return {
+            exists: !!session,
+            status: session?.status || 'ABSENT'
+        };
+    }
+
     public async requestPairingCode(tenantId: string, phoneNumber: string): Promise<string | undefined> {
         let session = this.sessions.get(tenantId);
 
@@ -803,7 +815,7 @@ class WhatsAppManager {
 export const whatsappManager = new WhatsAppManager();
 
 export const startAllTenantInstances = async () => {
-    console.log('[Startup] Vérification des tenants WhatsApp...');
+    console.log('[Startup] 🚀 Vérification des tenants WhatsApp...');
     const tenants = await db.getActiveTenants();
 
     for (const tenant of tenants) {
@@ -812,8 +824,33 @@ export const startAllTenantInstances = async () => {
         const status = tenant.whatsappStatus || (tenant as any).whatsapp_status;
 
         if (isConnected || status === 'connected') {
-            console.log(`[Startup] Démarrage du bot pour tenant ${tenant.id} (${tenant.name})`);
+            console.log(`[Startup] ⚡ Démarrage du bot pour tenant ${tenant.id} (${tenant.name})`);
             await whatsappManager.createSession(tenant.id);
         }
     }
+
+    // 🛡️ CONNECTION WATCHDOG - Vérifie la santé des connexions toutes les 2 minutes
+    console.log('[Watchdog] 🛡️ Démarrage du moniteur de connexion (intervalle: 2min)');
+    setInterval(async () => {
+        try {
+            const activeTenants = await db.getActiveTenants();
+
+            for (const tenant of activeTenants) {
+                const isConnected = tenant.whatsappConnected || (tenant as any).whatsapp_connected === true;
+                const status = tenant.whatsappStatus || (tenant as any).whatsapp_status;
+
+                if (isConnected || status === 'connected') {
+                    const sessionInfo = whatsappManager.getSessionStatus(tenant.id);
+
+                    // Si pas de session en mémoire, ou session déconnectée
+                    if (!sessionInfo.exists || (sessionInfo.status !== 'connected' && sessionInfo.status !== 'connecting')) {
+                        console.log(`[Watchdog] ⚠️ Tenant ${tenant.id} devrait être connecté mais ne l'est pas (status: ${sessionInfo.status}). Reconnexion...`);
+                        await whatsappManager.createSession(tenant.id);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('[Watchdog] ❌ Error checking connection health:', e);
+        }
+    }, 2 * 60 * 1000); // Toutes les 2 minutes
 };
