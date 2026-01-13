@@ -52,7 +52,7 @@ router.get('/', async (req: any, res) => {
 // Get messages for a specific chat
 router.get('/:jid/messages', async (req: any, res) => {
     try {
-        const tenantId = req.user.tenantId;
+        const tenantId = req.tenantId;
         const { jid } = req.params;
         const decodedJid = decodeURIComponent(jid);
 
@@ -72,7 +72,7 @@ router.get('/:jid/messages', async (req: any, res) => {
 // Toggle Autopilot for a specific chat
 router.post('/:jid/toggle-autopilot', async (req: any, res) => {
     try {
-        const tenantId = req.user.tenantId;
+        const tenantId = req.tenantId;
         const { jid } = req.params;
         const { enabled } = req.body; // boolean
         const decodedJid = decodeURIComponent(jid);
@@ -91,7 +91,7 @@ router.post('/:jid/toggle-autopilot', async (req: any, res) => {
 // Send a manual message
 router.post('/:jid/send', async (req: any, res) => {
     try {
-        const tenantId = req.user.tenantId;
+        const tenantId = req.tenantId;
         const { jid } = req.params;
         const { text } = req.body;
         const decodedJid = decodeURIComponent(jid);
