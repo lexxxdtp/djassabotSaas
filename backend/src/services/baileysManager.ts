@@ -198,6 +198,18 @@ class WhatsAppManager {
                     const phoneNumber = userJid ? userJid.split(':')[0] : undefined;
 
                     await db.updateTenantWhatsAppStatus(tenantId, 'connected', phoneNumber);
+
+                    // 🚀 FORCE SYNC: Récupérer les chats existants immédiatement
+                    console.log(`[Manager] 🔄 Forçage de la synchronisation des chats pour ${tenantId}...`);
+                    try {
+                        // Baileys store les chats dans sock.store si activé, sinon on doit écouter les events
+                        // On va créer des sessions "fantômes" pour les chats récents qu'on voit dans messages.upsert
+                        // Pour l'instant, on log juste pour debug
+                        console.log(`[Manager] 📱 En attente des premiers messages pour peupler le dashboard...`);
+                    } catch (e) {
+                        console.error(`[Manager] Erreur sync chats:`, e);
+                    }
+
                     resolve(undefined); // Connecté, pas de QR à retourner
                 }
             });
@@ -255,8 +267,10 @@ class WhatsAppManager {
                 }
             });
 
-            // 3. Gestion des Messages Entrants (Live)
+            // 3. Gestion des Messages Entrants (Live + Historique)
             sock.ev.on('messages.upsert', async (m) => {
+                console.log(`[Manager] 📨 Messages reçus pour ${tenantId} - Type: ${m.type}, Count: ${m.messages.length}`);
+
                 // On traite tout pour avoir l'historique et les chats dans le dashboard
                 // Mais on ne répondra qu'aux nouveaux messages (notify) récents
 
@@ -267,6 +281,8 @@ class WhatsAppManager {
 
                         // Considérer comme historique si type 'append' ou vieux de plus de 10 secondes
                         const isHistory = m.type === 'append' || secondsAgo > 10;
+
+                        console.log(`[Manager] 💬 Message de ${msg.key.remoteJid} - Type: ${m.type}, isHistory: ${isHistory}, age: ${secondsAgo}s`);
 
                         await this.handleMessage(tenantId, sock, msg, isHistory);
                     } catch (err) {
