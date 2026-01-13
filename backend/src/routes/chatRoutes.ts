@@ -12,10 +12,23 @@ router.use(authenticateTenant);
 router.get('/', async (req: any, res) => {
     try {
         const tenantId = req.user.tenantId;
+        console.log(`[API] 📋 Fetching chats for tenant: ${tenantId}`);
+
         const sessions = await getActiveSessions();
+        console.log(`[API] 📊 Total sessions in DB: ${sessions.length}`);
 
         // Filter by tenant
         const tenantSessions = sessions.filter(s => s.tenantId === tenantId);
+        console.log(`[API] 🎯 Sessions for this tenant: ${tenantSessions.length}`);
+
+        if (tenantSessions.length > 0) {
+            console.log(`[API] Sample session:`, {
+                userId: tenantSessions[0].userId,
+                historyLength: tenantSessions[0].history.length,
+                state: tenantSessions[0].state,
+                lastInteraction: tenantSessions[0].lastInteraction
+            });
+        }
 
         // Format for frontend
         const chats = tenantSessions.map(s => ({
@@ -28,9 +41,10 @@ router.get('/', async (req: any, res) => {
             unreadCount: 0 // TODO: Implement unread tracking
         })).sort((a, b) => new Date(b.lastInteraction).getTime() - new Date(a.lastInteraction).getTime());
 
+        console.log(`[API] ✅ Returning ${chats.length} chats to frontend`);
         res.json(chats);
     } catch (error) {
-        console.error('Error fetching chats:', error);
+        console.error('[API] ❌ Error fetching chats:', error);
         res.status(500).json({ error: 'Failed to fetch chats' });
     }
 });
