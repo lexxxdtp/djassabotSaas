@@ -190,7 +190,60 @@ class WhatsAppManager {
                 }
             });
 
-            // 3. Gestion des Messages Entrants
+            // 4. Gestion de l'historique initial (Sync)
+            sock.ev.on('messaging-history.set', async ({ chats, contacts, messages, isLatest }) => {
+                console.log(`[Manager] 📜 Historique reçu pour Tenant ${tenantId}: ${chats.length} chats, ${messages.length} messages.`);
+
+                const { getSession, addToHistory, updateSession } = await import('./sessionService');
+
+                // 1. Sync Chats (Ensure sessions exist)
+                for (const chat of chats) {
+                    if (chat.id === 'status@broadcast') continue;
+                    if (!chat.id) continue;
+
+                    // Create/Get session to ensure it appears in the list
+                    // Using 'updateSession' with partial data can create it if logic allows, 
+                    // or better, just getSession which creates it.
+                    await getSession(tenantId, chat.id);
+
+                    // Update metadata if available (timestamp, etc.)
+                    if (chat.conversationTimestamp) {
+                        const timestamp = typeof chat.conversationTimestamp === 'number'
+                            ? chat.conversationTimestamp
+                            : (chat.conversationTimestamp as Long).toNumber();
+                        const date = new Date(timestamp * 1000);
+                        await updateSession(tenantId, chat.id, { lastInteraction: date });
+                    }
+                }
+
+                // 2. Sync Recent Messages (Populate history)
+                // messages is a dictionary if coming from history set, or array? 
+                // Baileys types: messages: { [jid: string]: proto.IWebMessageInfo[] } | proto.IWebMessageInfo[]
+                // Usually it's an array of recent msgs per chat.
+
+                // Note: This matches the structure usually received.
+                // We only take the last ~10 messages per chat to avoid overloading DB
+
+                for (const msg of messages) {
+                    // If it's an array (unlikely in 'set' but possible in some versions) or valid msg object
+                    // Actually 'messaging-history.set' messages is often: { [jid: string]: msgs[] }? 
+                    // Checking Baileys docs/types:
+                    // It is usually an array of objects for the chats that have new history.
+
+                    // Let's rely on handleMessage with isHistory=true for recent ones
+                    if (!msg.key || !msg.key.remoteJid) continue;
+
+                    // Skip very old messages (older than 24h?) to speed up
+                    const timestamp = (typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : (msg.messageTimestamp as Long)?.toNumber?.() || 0);
+                    const isRecent = (Date.now() / 1000 - timestamp) < 86400 * 7; // Last 7 days
+
+                    if (isRecent) {
+                        await this.handleMessage(tenantId, sock, msg, true);
+                    }
+                }
+            });
+
+            // 3. Gestion des Messages Entrants (Live)
             sock.ev.on('messages.upsert', async (m) => {
                 // On traite tout pour avoir l'historique et les chats dans le dashboard
                 // Mais on ne répondra qu'aux nouveaux messages (notify) récents
@@ -200,8 +253,8 @@ class WhatsAppManager {
                         const msgTimestamp = (typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : (msg.messageTimestamp as Long)?.toNumber?.() || Math.floor(Date.now() / 1000));
                         const secondsAgo = Math.floor(Date.now() / 1000) - msgTimestamp;
 
-                        // Considérer comme historique si type 'append' ou vieux de plus de 30 secondes
-                        const isHistory = m.type === 'append' || secondsAgo > 30;
+                        // Considérer comme historique si type 'append' ou vieux de plus de 10 secondes
+                        const isHistory = m.type === 'append' || secondsAgo > 10;
 
                         await this.handleMessage(tenantId, sock, msg, isHistory);
                     } catch (err) {
