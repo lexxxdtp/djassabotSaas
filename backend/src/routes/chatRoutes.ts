@@ -11,7 +11,7 @@ router.use(authenticateTenant);
 // Get all active chats (sessions)
 router.get('/', async (req: any, res) => {
     try {
-        const tenantId = req.user.tenantId;
+        const tenantId = req.tenantId;
         console.log(`[API] 📋 Fetching chats for tenant: ${tenantId}`);
 
         const sessions = await getActiveSessions();
