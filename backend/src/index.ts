@@ -77,7 +77,8 @@ app.get('/api/orders', authenticateTenant, async (req, res) => {
 
 app.put('/api/orders/:id/status', authenticateTenant, async (req, res) => {
     const { status } = req.body;
-    const updated = await db.updateOrderStatus(req.tenantId!, req.params.id, status);
+    const orderId = req.params.id as string;
+    const updated = await db.updateOrderStatus(req.tenantId!, orderId, status);
     if (updated) res.json(updated);
     else res.status(400).json({ error: 'Failed to update status' });
 });
@@ -120,7 +121,8 @@ app.post('/api/products', authenticateTenant, async (req, res) => {
 
 app.put('/api/products/:id', authenticateTenant, async (req, res) => {
     try {
-        const product = await db.updateProduct(req.tenantId!, req.params.id, req.body);
+        const productId = req.params.id as string;
+        const product = await db.updateProduct(req.tenantId!, productId, req.body);
         if (product) res.json(product);
         else res.status(404).json({ error: 'Product not found' });
     } catch (e: any) {
@@ -131,7 +133,8 @@ app.put('/api/products/:id', authenticateTenant, async (req, res) => {
 
 app.delete('/api/products/:id', authenticateTenant, async (req, res) => {
     try {
-        const success = await db.deleteProduct(req.tenantId!, req.params.id);
+        const productId = req.params.id as string;
+        const success = await db.deleteProduct(req.tenantId!, productId);
         res.json({ success });
     } catch (e: any) {
         console.error('[API] Delete Product Error:', e);

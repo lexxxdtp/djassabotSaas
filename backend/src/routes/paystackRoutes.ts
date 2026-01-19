@@ -108,7 +108,8 @@ router.post('/subscribe', authenticateTenant, async (req, res) => {
  */
 router.get('/verify/:reference', authenticateTenant, async (req, res) => {
     try {
-        const result = await paystackService.verifyTransaction(req.params.reference);
+        const reference = req.params.reference as string;
+        const result = await paystackService.verifyTransaction(reference);
         res.json(result);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
