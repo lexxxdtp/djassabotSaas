@@ -103,7 +103,12 @@ export const db = {
                     .eq('tenant_id', tenantId)
                     .order('created_at', { ascending: false });
                 if (error) throw error;
-                return (data || []).map(o => ({ ...o, createdAt: new Date(o.created_at) }));
+                // Map snake_case DB columns to camelCase for app usage
+                return (data || []).map(o => ({
+                    ...o,
+                    userId: o.user_id,  // Map user_id to userId
+                    createdAt: new Date(o.created_at)
+                }));
             } catch (e) {
                 console.warn('[DB] Supabase getOrders failed, fallback to local');
             }
@@ -111,23 +116,27 @@ export const db = {
         return localData.orders.filter((o: any) => o.tenantId === tenantId);
     },
 
+
     createOrder: async (tenantId: string, userId: string, items: CartItem[], total: number, address: string, createdAt: Date = new Date()): Promise<Order> => {
-        const newOrder: any = {
-            id: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+
+        // Supabase uses snake_case column names
+        const dbOrder = {
+            id: orderId,
             tenant_id: tenantId,
-            userId,
+            user_id: userId,  // snake_case for DB
             items,
             total,
             status: 'PENDING',
             address,
-            createdAt
+            created_at: createdAt.toISOString()  // snake_case for DB
         };
 
         if (isSupabaseEnabled && supabase) {
             try {
                 const { data, error } = await supabase
                     .from('orders')
-                    .insert(newOrder)
+                    .insert(dbOrder)
                     .select()
                     .single();
                 if (error) throw error;
@@ -136,20 +145,37 @@ export const db = {
                 await supabase.from('activity_logs').insert([{
                     tenant_id: tenantId,
                     type: 'sale',
-                    message: `Nouvelle commande de ${(total).toLocaleString()} FCFA par ${userId}`,
+                    message: `Nouvelle commande de ${(total).toLocaleString()} FCFA par ${userId.split('@')[0]}`,
                     metadata: { orderId: data.id, total }
                 }]);
 
-                return data;
+                // Map back to camelCase for app usage
+                return {
+                    ...data,
+                    userId: data.user_id,
+                    createdAt: new Date(data.created_at)
+                } as Order;
             } catch (e) {
-                console.warn('[DB] Supabase createOrder failed, fallback to local');
+                console.warn('[DB] Supabase createOrder failed, fallback to local:', e);
             }
         }
 
-        localData.orders.push(newOrder);
+        // Local fallback uses camelCase
+        const localOrder: any = {
+            id: orderId,
+            tenantId,
+            userId,
+            items,
+            total,
+            status: 'PENDING',
+            address,
+            createdAt
+        };
+        localData.orders.push(localOrder);
         saveData();
-        return newOrder;
+        return localOrder;
     },
+
 
     updateOrderStatus: async (tenantId: string, orderId: string, status: string): Promise<any> => {
         if (isSupabaseEnabled && supabase) {
