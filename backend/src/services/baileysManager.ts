@@ -77,7 +77,16 @@ class WhatsAppManager {
         }
 
         // Formater le numéro (enlever + et espaces)
-        const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+        let cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+
+        // Smart formatting for Ivory Coast (CI)
+        // If user types 10 digits starting with 0 (e.g., 0707...), add 225
+        if (cleanPhone.length === 10 && cleanPhone.startsWith('0')) {
+            cleanPhone = '225' + cleanPhone;
+        }
+        // If user types 8 digits (old format) -> Error or try to guess? Better fail safely.
+
+        console.log(`[Manager] Pairing for: ${cleanPhone}`);
 
         // Attendre un peu que le socket soit prêt
         await new Promise(r => setTimeout(r, 2000));
@@ -281,6 +290,46 @@ class WhatsAppManager {
                 return;
             }
 
+
+            // 3. Récupérer le contexte du Tenant pour l'IA (MOVED UP FOR IMAGE AWARENESS)
+            // Use static db import instead of dynamic require inside function if possible, 
+            // but we are inside an async method and db is imported at top level.
+
+            const settings = await db.getSettings(tenantId);
+            const products = await db.getProducts(tenantId);
+            const inventoryContext = products.map(p => {
+                const stockStatus = p.manageStock === false
+                    ? 'Stock: Illimité (Flexible)'
+                    : (p.stock > 0 ? `Stock: ${p.stock}` : 'Épuisé');
+
+                let productInfo = `- ${p.name}: ${p.price} FCFA ${p.minPrice ? `(Min: ${p.minPrice})` : ''} | ${stockStatus}`;
+
+                // Include Variations Detail (with Image URLs)
+                if (p.variations && p.variations.length > 0) {
+                    p.variations.forEach((v: any) => { // Use 'any' or defined interface
+                        if (v.name && v.options) {
+                            productInfo += `\n  * Variation [${v.name}]:`;
+                            v.options.forEach((opt: any) => {
+                                let imgInfo = opt.images && opt.images.length > 0 ? ` [IMAGES_AVAILABLE: ${opt.images.join(', ')}]` : '';
+                                const mod = opt.priceModifier || 0;
+                                const total = p.price + mod;
+                                const sign = mod > 0 ? '+' : '';
+                                const priceInfo = mod !== 0 ? `Prix: ${sign}${mod} (Total: ${total} FCFA)` : `Prix: Base (${total} FCFA)`;
+                                const optStockInfo = p.manageStock === false ? 'Stock: Illimité' : `Stock: ${opt.stock ?? '∞'}`;
+                                productInfo += `\n    - Option: "${opt.value}" | ${optStockInfo} | ${priceInfo}${imgInfo}`;
+                            });
+                        }
+                    });
+                } else if (p.images && p.images.length > 0) {
+                    productInfo += ` [MAIN_IMAGES: ${p.images.join(', ')}]`;
+                }
+
+                if (p.aiInstructions) {
+                    productInfo += `\n  📋 Consignes: ${p.aiInstructions}`;
+                }
+                return productInfo;
+            }).join('\n');
+
             // --- AUDIO HANDLING ---
             if (msg.message?.audioMessage) {
                 if (isHistory) {
@@ -288,8 +337,7 @@ class WhatsAppManager {
                 } else {
                     console.log(`[Manager] Audio received from ${remoteJid}`);
                     // Check if voice is enabled for this tenant
-                    const { db } = await import('./dbService');
-                    const settings = await db.getSettings(tenantId);
+                    // settings is already fetched above
 
                     if (!settings.voiceEnabled) {
                         console.log(`[Manager] Voice disabled for tenant ${tenantId}, ignoring audio`);
@@ -344,7 +392,8 @@ class WhatsAppManager {
 
                         // Lazy import analyze
                         const { analyzeImage } = await import('./aiService');
-                        const description = await analyzeImage(buffer as Buffer, mimeType, caption);
+                        // PASS INVENTORY CONTEXT HERE
+                        const description = await analyzeImage(buffer as Buffer, mimeType, caption, inventoryContext);
                         console.log(`[Manager] Image Analysis: "${description}"`);
 
                         text = `[User sent an Image] Description: ${description}. Caption: ${caption}`;
@@ -358,8 +407,7 @@ class WhatsAppManager {
 
             // Imports
             const { getSession, updateSession, addToHistory, clearHistory, addItemToSessionCart } = await import('./sessionService');
-            const { db } = await import('./dbService');
-            const { generateAIResponse, detectPurchaseIntent } = await import('./aiService');
+            // db and aiService are imported globally at top of file
 
             // 0. Update Last Interaction & History regardless of logic
             // This ensures the chat shows up in the Dashboard List immediately
@@ -568,11 +616,12 @@ class WhatsAppManager {
                 return;
             }
 
+
             // CAS B : Flux Normal (IDLE)
 
             // 3. Récupérer le contexte du Tenant pour l'IA
-            const settings = await db.getSettings(tenantId);
-            const products = await db.getProducts(tenantId);
+            // (Moved to top of function)
+
             const productContext = products.map(p => {
                 let info = `${p.name} (${p.price} FCFA)`;
                 if (p.variations && p.variations.length > 0) {
@@ -698,39 +747,9 @@ class WhatsAppManager {
                 }
             }
 
+
             // 5. Réponse IA Standard (Chat / Info produit / Négociation)
-            const inventoryContext = products.map(p => {
-                const stockStatus = p.manageStock === false
-                    ? 'Stock: Illimité (Flexible)'
-                    : (p.stock > 0 ? `Stock: ${p.stock}` : 'Épuisé');
-
-                let productInfo = `- ${p.name}: ${p.price} FCFA ${p.minPrice ? `(Min: ${p.minPrice})` : ''} | ${stockStatus}`;
-
-                // Include Variations Detail (with Image URLs)
-                if (p.variations && p.variations.length > 0) {
-                    p.variations.forEach((v: any) => { // Use 'any' or defined interface
-                        if (v.name && v.options) {
-                            productInfo += `\n  * Variation [${v.name}]:`;
-                            v.options.forEach((opt: any) => {
-                                let imgInfo = opt.images && opt.images.length > 0 ? ` [IMAGES_AVAILABLE: ${opt.images.join(', ')}]` : '';
-                                const mod = opt.priceModifier || 0;
-                                const total = p.price + mod;
-                                const sign = mod > 0 ? '+' : '';
-                                const priceInfo = mod !== 0 ? `Prix: ${sign}${mod} (Total: ${total} FCFA)` : `Prix: Base (${total} FCFA)`;
-                                const optStockInfo = p.manageStock === false ? 'Stock: Illimité' : `Stock: ${opt.stock ?? '∞'}`;
-                                productInfo += `\n    - Option: "${opt.value}" | ${optStockInfo} | ${priceInfo}${imgInfo}`;
-                            });
-                        }
-                    });
-                } else if (p.images && p.images.length > 0) {
-                    productInfo += ` [MAIN_IMAGES: ${p.images.join(', ')}]`;
-                }
-
-                if (p.aiInstructions) {
-                    productInfo += `\n  📋 Consignes: ${p.aiInstructions}`;
-                }
-                return productInfo;
-            }).join('\n');
+            // inventoryContext is already built at the top of the function
 
             const aiResponse = await generateAIResponse(text, {
                 settings,

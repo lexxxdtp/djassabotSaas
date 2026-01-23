@@ -137,17 +137,23 @@ const WhatsAppConnect: React.FC = () => {
                                 <>
                                     <div className="text-center">
                                         <h3 className="text-white font-bold mb-2">Entrez votre numéro</h3>
-                                        <p className="text-zinc-500 text-xs text-left">Ex: 2250700112233 (sans + ni espaces)</p>
+                                        <p className="text-zinc-500 text-xs text-left">Entrez vos 10 chiffres (ex: 07 07...)</p>
                                     </div>
                                     <form onSubmit={handleRequestPairingCode} className="space-y-4">
-                                        <input
-                                            type="text"
-                                            placeholder="2250700000000"
-                                            value={phoneNumber}
-                                            onChange={e => setPhoneNumber(e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-center tracking-widest focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono"
-                                            required
-                                        />
+                                        <div className="relative flex items-center">
+                                            <div className="absolute left-0 top-0 bottom-0 pl-4 flex items-center pointer-events-none">
+                                                <span className="text-xl mr-2">🇨🇮</span>
+                                                <span className="text-zinc-400 font-mono text-sm border-r border-white/10 pr-2">+225</span>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="07 07 00 00 00"
+                                                value={phoneNumber}
+                                                onChange={e => setPhoneNumber(e.target.value)}
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-28 pr-4 py-3 text-white tracking-widest focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono"
+                                                required
+                                            />
+                                        </div>
                                         <button
                                             type="submit"
                                             disabled={requestingCode || phoneNumber.length < 10}

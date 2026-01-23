@@ -327,7 +327,7 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
     }
 };
 
-export const analyzeImage = async (imageInput: string | Buffer, mimeType: string = 'image/jpeg', caption?: string) => {
+export const analyzeImage = async (imageInput: string | Buffer, mimeType: string = 'image/jpeg', caption?: string, inventoryContext: string = '') => {
     // Get model with lazy initialization
     const currentModel = getModel();
 
@@ -347,9 +347,23 @@ export const analyzeImage = async (imageInput: string | Buffer, mimeType: string
             imageData = Buffer.from(imageResp.data).toString('base64');
         }
 
-        const prompt = caption
-            ? `User sent an image with caption: "${caption}". Is this a product we sell (fashion)? Describe it briefly to handle the request.`
-            : "Describe this image briefly. Is it a fashion product? What are the colors?";
+        const prompt = `
+        CONTEXT: The user sent an image to a store bot via WhatsApp.
+        USER CAPTION: "${caption || 'No caption'}"
+        
+        STORE INVENTORY (What we have in stock):
+        ${inventoryContext || "No specific inventory data provided."}
+
+        TASK:
+        1. Analyze the image visually (what product is it? color? type?).
+        2. COMPARE it with the STORE INVENTORY above.
+        3. Is this product (or something very similar) in our stock?
+           - IF YES: Confirm we have it, mention the name and price from inventory.
+           - IF NO: Say we don't have this specific model, but describe what we have that is closest.
+           - IF IT'S A PAYMENT RECEIPT (Wave/OM/Money): Extract the amount and Transaction ID.
+        
+        Keep the response natural, helpful, and concise (WhatsApp style).
+        `;
 
         const result = await currentModel.generateContent([
             prompt,
