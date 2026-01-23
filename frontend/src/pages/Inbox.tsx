@@ -36,7 +36,7 @@ const Inbox: React.FC = () => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Fetch Chats
-    const fetchChats = async () => {
+    const fetchChats = React.useCallback(async () => {
         try {
             const res = await fetch(`${API_URL}/chats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -50,10 +50,10 @@ const Inbox: React.FC = () => {
         } finally {
             setLoadingChats(false);
         }
-    };
+    }, [API_URL, token]);
 
     // Fetch Messages for Selected Chat
-    const fetchMessages = async (jid: string) => {
+    const fetchMessages = React.useCallback(async (jid: string) => {
         setLoadingMessages(true);
         try {
             const res = await fetch(`${API_URL}/chats/${encodeURIComponent(jid)}/messages`, {
@@ -68,14 +68,14 @@ const Inbox: React.FC = () => {
         } finally {
             setLoadingMessages(false);
         }
-    };
+    }, [API_URL, token]);
 
     // Initial Load & Polling
     useEffect(() => {
         fetchChats();
         const interval = setInterval(fetchChats, 5000); // Poll chats list
         return () => clearInterval(interval);
-    }, [token]);
+    }, [fetchChats]);
 
     // Poll messages if chat selected
     useEffect(() => {
@@ -93,7 +93,7 @@ const Inbox: React.FC = () => {
         }, 3000);
 
         return () => clearInterval(interval);
-    }, [selectedChat, token]);
+    }, [selectedChat, API_URL, token, fetchMessages]);
 
     // Scroll to bottom
     useEffect(() => {
