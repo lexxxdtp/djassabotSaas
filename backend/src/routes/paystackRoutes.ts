@@ -190,7 +190,7 @@ router.post('/setup-vendor', authenticateTenant, async (req, res) => {
         );
 
         if (result.success) {
-            // TODO: Save subaccount code to tenant
+            // Subaccount code is saved inside createVendorSubaccount
             res.json({
                 success: true,
                 subaccountCode: result.subaccountCode,

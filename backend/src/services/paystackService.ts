@@ -7,14 +7,14 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://djassabot-saas.vercel.
 const API_URL = process.env.API_URL || 'https://djassabot-saas-production.up.railway.app';
 
 // Plan codes from Paystack Dashboard
-const PLAN_CODES = {
+const PLAN_CODES: Record<string, string> = {
     starter: process.env.PAYSTACK_PLAN_STARTER || '',
     pro: process.env.PAYSTACK_PLAN_PRO || '',
     business: process.env.PAYSTACK_PLAN_BUSINESS || ''
 };
 
 // Plan prices in FCFA
-const PLAN_PRICES = {
+const PLAN_PRICES: Record<string, number> = {
     starter: 5000,
     pro: 10000,
     business: 15000
@@ -90,6 +90,29 @@ export const verifyTransaction = async (reference: string) => {
     }
 };
 
+/**
+ * List available banks for subaccount creation
+ */
+export const listBanks = async (country: string = 'côte d\'ivoire') => {
+    try {
+        const response = await paystackApi.get('/bank', {
+            params: { country, use_cursor: false, perPage: 100 }
+        });
+
+        return {
+            success: true,
+            banks: response.data.data.map((bank: any) => ({
+                name: bank.name,
+                code: bank.code,
+                type: bank.type
+            }))
+        };
+    } catch (error: any) {
+        console.error('[Paystack] List banks error:', error.response?.data || error.message);
+        return { success: false, banks: [] };
+    }
+};
+
 // ============================================
 // MERCHANT PAYMENTS (Vendors receive money)
 // ============================================
@@ -106,15 +129,12 @@ export const createVendorSubaccount = async (
     phone?: string
 ) => {
     try {
-        // Map common names to codes if necessary (Basic mapping for CI)
+        // Map common names to codes if necessary
         let finalBankCode = bankCode;
-        if (bankCode === 'MTN') finalBankCode = 'MTN'; // Verify this code via listBanks if fails
-        if (bankCode === 'Orange Money') finalBankCode = 'ORM'; // Verify this code
-        if (bankCode === 'Wave') finalBankCode = 'WAVE'; // Verify this code
+        if (bankCode === 'MTN') finalBankCode = 'MTN';
+        if (bankCode === 'Orange Money') finalBankCode = 'ORM';
+        if (bankCode === 'Wave') finalBankCode = 'WAVE';
 
-        // Better approach: Since we don't know the codes for sure without calling API, 
-        // we should probably let the user select from a real list in the future.
-        // For now, let's try to find the bank by name if the code looks like a name
         if (['MTN', 'Orange Money', 'Wave'].includes(bankCode)) {
             const banksRes = await listBanks('côte d\'ivoire');
             if (banksRes.success) {
@@ -155,7 +175,6 @@ export const createVendorSubaccount = async (
 
 /**
  * Generate a payment link for a customer order (Split Payment)
- * Money goes to vendor's subaccount with TDJaasa taking a commission
  */
 export const createOrderPaymentLink = async (
     tenantId: string,
@@ -174,9 +193,10 @@ export const createOrderPaymentLink = async (
             email: customerEmail || `${customerPhone.replace(/\+/g, '')}@whatsapp.customer`,
             amount: amount * 100, // Convert to kobo
             subaccount: subaccountCode,
-            transaction_charge: commission * 100, // TDJaasa's cut
-            bearer: 'subaccount', // Vendor pays Paystack fees
-            callback_url: `${API_URL}/api/webhooks/paystack/order`,
+            transaction_charge: commission * 100,
+            bearer: 'subaccount',
+            // Redirect user to FRONTEND success page
+            callback_url: `${FRONTEND_URL}/order-confirmation?orderId=${orderId}`,
             metadata: {
                 tenantId,
                 orderId,
@@ -197,29 +217,6 @@ export const createOrderPaymentLink = async (
             success: false,
             error: error.response?.data?.message || error.message
         };
-    }
-};
-
-/**
- * List available banks for subaccount creation
- */
-export const listBanks = async (country: string = 'côte d\'ivoire') => {
-    try {
-        const response = await paystackApi.get('/bank', {
-            params: { country, use_cursor: false, perPage: 100 }
-        });
-
-        return {
-            success: true,
-            banks: response.data.data.map((bank: any) => ({
-                name: bank.name,
-                code: bank.code,
-                type: bank.type
-            }))
-        };
-    } catch (error: any) {
-        console.error('[Paystack] List banks error:', error.response?.data || error.message);
-        return { success: false, banks: [] };
     }
 };
 
@@ -258,14 +255,24 @@ export const handlePaystackWebhook = async (event: string, data: any) => {
             const metadata = data.metadata;
 
             if (metadata?.type === 'subscription') {
-                // Handle subscription payment success
                 console.log(`[Paystack] Subscription payment successful for tenant ${metadata.tenantId}`);
-                // Update tenant subscription status
-                // await db.activateSubscription(metadata.tenantId, metadata.plan);
+                try {
+                    const expiresAt = new Date();
+                    expiresAt.setDate(expiresAt.getDate() + 30);
+
+                    // Use createSubscription from dbService (which wraps tenantService)
+                    await db.createSubscription({
+                        tenantId: metadata.tenantId,
+                        plan: metadata.plan,
+                        status: 'active',
+                        expiresAt
+                    });
+                    console.log(`[Paystack] ✅ Tenant ${metadata.tenantId} subscription activated.`);
+                } catch (e) {
+                    console.error('[Paystack] ❌ Failed to activate subscription:', e);
+                }
             } else if (metadata?.type === 'order') {
-                // Handle order payment success
                 console.log(`[Paystack] Order payment successful: ${metadata.orderId}`);
-                // Update order status to PAID
                 await db.updateOrderStatus(metadata.tenantId, metadata.orderId, 'PAID');
             }
             break;

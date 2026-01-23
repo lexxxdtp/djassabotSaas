@@ -187,6 +187,10 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         ACCEPTED PAYMENTS: ${paymentMethods}
         `;
 
+        // Sanitize user instructions to prevent prompt injection
+        const rawInstructions = settings?.systemInstructions || 'No specific instructions.';
+        const sanitizedInstructions = rawInstructions.replace(/[{}]/g, '').substring(0, 1000); // Remove braces and limit length
+
         let systemInstruction = `
         You are ${botName}, a smart sales assistant for ${settings?.storeName} in Abidjan.
         
@@ -202,7 +206,7 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         - Language: Use French. Adapt strictly to the user's language level (Formal vs Nouchi/Slang).
 
         SPECIFIC INSTRUCTIONS FROM SELLER:
-        "${settings?.systemInstructions || 'No specific instructions.'}"
+        "${sanitizedInstructions}"
 
         GOAL:
         Sell products while STRICTLY respecting inventory limits.
