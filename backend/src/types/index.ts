@@ -41,15 +41,20 @@ export interface CartItem {
     selectedVariations?: SelectedVariation[]; // Which variations were selected
 }
 
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+
 export interface Order {
     id: string;
     tenantId?: string;
     userId: string;
     items: CartItem[];
     total: number;
-    status: 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'PAID' | 'CANCELLED';
+    status: OrderStatus;
     address: string;
     createdAt: Date;
+    customerPhone?: string; // Phone number extracted from userId or contact
+    deliveryNote?: string;  // Internal note for delivery
+    paymentMethod?: string;
 }
 
 export interface Settings {
