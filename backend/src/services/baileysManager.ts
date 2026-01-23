@@ -458,7 +458,16 @@ class WhatsAppManager {
                 }
 
                 // Créer la commande
-                const order = await db.createOrder(tenantId, remoteJid, tempOrder.items, tempOrder.total, address);
+                const orderItems = tempOrder.items && tempOrder.items.length > 0
+                    ? tempOrder.items
+                    : [{
+                        productId: tempOrder.productId || 'unknown',
+                        productName: tempOrder.productName || 'Produit Inconnu',
+                        quantity: tempOrder.quantity || 1,
+                        price: tempOrder.basePrice || tempOrder.total
+                    }];
+
+                const order = await db.createOrder(tenantId, remoteJid, orderItems, tempOrder.total, address);
 
                 // TODO: Générer lien de paiement Wave ici si activé
                 // const paymentLink = ... 
@@ -469,6 +478,42 @@ class WhatsAppManager {
 
                 // Notifier le vendeur (via Socket interne, Email, ou Push) ou juste log pour l'instant
                 console.log(`[ORDER] Nouvelle commande pour Tenant ${tenantId} de ${remoteJid}`);
+
+                // --- TOUR DE CONTRÔLE (Notification Vendeur) ---
+                try {
+                    // Cible: Le numéro défini dans les réglages, ou le propriétaire du compte
+                    const notificationPhone = settings.phone?.replace(/[^0-9]/g, ''); // Fallback to public phone
+                    // Idealement on devrait avoir un setting dédié: settings.notificationPhone
+
+                    if (notificationPhone && notificationPhone.length >= 8) {
+                        // S'assurer que le numéro est au format JID WhatsApp (ex: 22507...@s.whatsapp.net)
+                        // Si c'est un numéro local ivoirien (10 chiffres), ajouter 225
+                        let targetJid = notificationPhone;
+                        if (!targetJid.includes('@s.whatsapp.net')) {
+                            if (targetJid.length === 10 && (targetJid.startsWith('01') || targetJid.startsWith('05') || targetJid.startsWith('07'))) {
+                                targetJid = '225' + targetJid;
+                            }
+                            targetJid = targetJid + '@s.whatsapp.net';
+                        }
+
+                        const itemsSummary = tempOrder.items && tempOrder.items.length > 0
+                            ? tempOrder.items.map(i => `- ${i.quantity}x ${i.productName}`).join('\n')
+                            : `- ${tempOrder.quantity}x ${tempOrder.productName || 'Produit'}`;
+
+                        const notificationMsg = `🚨 *NOUVELLE COMMANDE !*\n\n` +
+                            `👤 *Client:* ${remoteJid.split('@')[0]}\n` +
+                            `📍 *Lieu:* ${address}\n` +
+                            `💰 *Total:* ${tempOrder.total} FCFA\n\n` +
+                            `🛒 *Panier:*\n${itemsSummary}\n\n` +
+                            `👇 *Action:*\nTransférez ce message à votre livreur.`;
+
+                        await sock.sendMessage(targetJid, { text: notificationMsg });
+                        console.log(`[ORDER] Notification envoyée au vendeur (${targetJid})`);
+                    }
+                } catch (notifError) {
+                    console.error('[ORDER] Erreur envoi notification vendeur:', notifError);
+                }
+                // -----------------------------------------------
 
                 // Nettoyer
                 await db.clearCart(tenantId, remoteJid);
