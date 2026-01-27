@@ -79,12 +79,15 @@ class WhatsAppManager {
         // Formater le numéro (enlever + et espaces)
         let cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
 
-        // Smart formatting for Ivory Coast (CI)
-        // If user types 10 digits starting with 0 (e.g., 0707...), add 225
-        if (cleanPhone.length === 10 && cleanPhone.startsWith('0')) {
-            cleanPhone = '225' + cleanPhone;
+        // --- CORRECTION INTERNATIONALE ---
+        // On ne force plus le 225. On suppose que le frontend envoie un format complet (CC + Number)
+        // Ou que l'utilisateur a entré le code pays.
+        // Si le numéro fait moins de 8 chiffres, c'est probablement une erreur, mais on laisse passer
+        // pour les tests ou numéros courts speciaux, sauf si < 5.
+
+        if (cleanPhone.length < 5) {
+            throw new Error("Numéro trop court.");
         }
-        // If user types 8 digits (old format) -> Error or try to guess? Better fail safely.
 
         console.log(`[Manager] Pairing for: ${cleanPhone}`);
 
@@ -481,15 +484,17 @@ class WhatsAppManager {
 
                 // --- TOUR DE CONTRÔLE (Notification Vendeur) ---
                 try {
-                    // Cible: Le numéro défini dans les réglages, ou le propriétaire du compte
-                    const notificationPhone = settings.phone?.replace(/[^0-9]/g, ''); // Fallback to public phone
-                    // Idealement on devrait avoir un setting dédié: settings.notificationPhone
+                    // Cible: Utiliser le "Numéro Admin/Notif" configuré, sinon fallback sur le téléphone de la boutique
+                    const notificationPhone = (settings.notificationPhone || settings.phone)?.replace(/[^0-9]/g, '');
 
                     if (notificationPhone && notificationPhone.length >= 8) {
                         // S'assurer que le numéro est au format JID WhatsApp (ex: 22507...@s.whatsapp.net)
-                        // Si c'est un numéro local ivoirien (10 chiffres), ajouter 225
                         let targetJid = notificationPhone;
                         if (!targetJid.includes('@s.whatsapp.net')) {
+                            // Heuristique simple si pas de code pays (assume 225 si 10 chiffres, sinon international requis)
+                            // Pour être safe, on considère que si ça commence par 0, c'est local, sinon c'est international.
+                            // Mais "local" dépend du pays du tenant... Pour l'instant on garde le support CI par défaut pour la compatibilité
+                            // TODO: Utiliser settings.countryCode si dispo
                             if (targetJid.length === 10 && (targetJid.startsWith('01') || targetJid.startsWith('05') || targetJid.startsWith('07'))) {
                                 targetJid = '225' + targetJid;
                             }
@@ -497,15 +502,29 @@ class WhatsAppManager {
                         }
 
                         const itemsSummary = tempOrder.items && tempOrder.items.length > 0
-                            ? tempOrder.items.map(i => `- ${i.quantity}x ${i.productName}`).join('\n')
-                            : `- ${tempOrder.quantity}x ${tempOrder.productName || 'Produit'}`;
+                            ? tempOrder.items.map(i => {
+                                const vars = i.selectedVariations ? ` (${i.selectedVariations.map(v => v.value).join(', ')})` : '';
+                                return `- ${i.quantity}x ${i.productName}${vars} : ${i.price} FCFA`;
+                            }).join('\n')
+                            : `- ${tempOrder.quantity}x ${tempOrder.productName} : ${tempOrder.total} FCFA`;
 
-                        const notificationMsg = `🚨 *NOUVELLE COMMANDE !*\n\n` +
-                            `👤 *Client:* ${remoteJid.split('@')[0]}\n` +
-                            `📍 *Lieu:* ${address}\n` +
-                            `💰 *Total:* ${tempOrder.total} FCFA\n\n` +
-                            `🛒 *Panier:*\n${itemsSummary}\n\n` +
-                            `👇 *Action:*\nTransférez ce message à votre livreur.`;
+                        // Message Formate pour transfert Livreurs
+                        const dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+                        const notificationMsg =
+                            `📦 *NOUVELLE COMMANDE À LIVRER*
+📅 *Date:* ${dateStr}
+
+👤 *Client:* ${remoteJid.split('@')[0]}
+📍 *Lieu de Livraison:* ${address}
+
+🛒 *Contenu du Colis:*
+${itemsSummary}
+
+💰 *MONTANT A ENCAISSER:* ${tempOrder.total} FCFA
+(Livraison non incluse dans le montant affiché, à ajouter selon la zone)
+
+👇 *Instructions:*
+Copiez ce message pour le livreur ou contactez le client directement.`;
 
                         await sock.sendMessage(targetJid, { text: notificationMsg });
                         console.log(`[ORDER] Notification envoyée au vendeur (${targetJid})`);

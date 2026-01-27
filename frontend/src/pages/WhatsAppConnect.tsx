@@ -67,6 +67,20 @@ const WhatsAppConnect: React.FC = () => {
         setRequestingCode(true);
         setPairingCode(null);
 
+        // Get selected country code
+        const form = e.target as HTMLFormElement;
+        const countryCode = (form.elements.namedItem('countryCode') as HTMLSelectElement).value;
+
+        // Clean user input (remove spaces, dashes)
+        let cleanLocal = phoneNumber.replace(/[^0-9]/g, '');
+        // Remove leading zero if present (standard for international format, except some countries but mostly yes)
+        if (cleanLocal.startsWith('0')) {
+            cleanLocal = cleanLocal.substring(1);
+        }
+
+        const fullNumber = countryCode + cleanLocal;
+        console.log('Requesting pairing for:', fullNumber);
+
         try {
             const res = await fetch(`${API_URL}/whatsapp/pair-code`, {
                 method: 'POST',
@@ -74,7 +88,7 @@ const WhatsAppConnect: React.FC = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ phoneNumber })
+                body: JSON.stringify({ phoneNumber: fullNumber })
             });
             const data = await res.json();
             if (data.success && data.code) {
@@ -141,16 +155,46 @@ const WhatsAppConnect: React.FC = () => {
                                     </div>
                                     <form onSubmit={handleRequestPairingCode} className="space-y-4">
                                         <div className="relative flex items-center">
-                                            <div className="absolute left-0 top-0 bottom-0 pl-4 flex items-center pointer-events-none">
-                                                <span className="text-xl mr-2">🇨🇮</span>
-                                                <span className="text-zinc-400 font-mono text-sm border-r border-white/10 pr-2">+225</span>
+                                            {/* COUNTRY SELECTOR */}
+                                            <div className="absolute left-0 top-0 bottom-0 flex items-center border-r border-white/10 bg-white/5 rounded-l-lg z-10 w-28">
+                                                <select
+                                                    className="w-full h-full bg-transparent text-white text-xs font-mono outline-none px-2 appearance-none cursor-pointer"
+                                                    onChange={() => {
+                                                        // Placeholder for future logic
+                                                    }}
+                                                    defaultValue="225"
+                                                    name="countryCode"
+                                                >
+                                                    <optgroup label="Afrique de l'Ouest (Prioritaire)">
+                                                        <option value="225">🇨🇮 +225</option>
+                                                        <option value="221">🇸🇳 +221</option>
+                                                        <option value="223">🇲🇱 +223</option>
+                                                        <option value="226">🇧🇫 +226</option>
+                                                        <option value="229">🇧🇯 +229</option>
+                                                        <option value="228">🇹🇬 +228</option>
+                                                        <option value="227">🇳🇪 +227</option>
+                                                        <option value="224">🇬🇳 +224</option>
+                                                        <option value="233">🇬🇭 +233</option>
+                                                        <option value="234">🇳🇬 +234</option>
+                                                    </optgroup>
+                                                    <optgroup label="International">
+                                                        <option value="33">🇫🇷 +33</option>
+                                                        <option value="1">🇺🇸 +1</option>
+                                                        <option value="44">🇬🇧 +44</option>
+                                                        <option value="32">🇧🇪 +32</option>
+                                                    </optgroup>
+                                                </select>
+                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1 text-zinc-400">
+                                                    <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                                                </div>
                                             </div>
+
                                             <input
                                                 type="text"
-                                                placeholder="07 07 00 00 00"
+                                                placeholder="07 07..."
                                                 value={phoneNumber}
                                                 onChange={e => setPhoneNumber(e.target.value)}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-28 pr-4 py-3 text-white tracking-widest focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono"
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-32 pr-4 py-3 text-white tracking-widest focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono"
                                                 required
                                             />
                                         </div>

@@ -191,6 +191,25 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         const rawInstructions = settings?.systemInstructions || 'No specific instructions.';
         const sanitizedInstructions = rawInstructions.replace(/[{}]/g, '').substring(0, 1000); // Remove braces and limit length
 
+        // Format delivery zones for AI
+        const deliveryContext = settings?.deliveryZones && settings.deliveryZones.length > 0
+            ? settings.deliveryZones.map(z => `- ${z.name}: ${z.price} FCFA`).join('\n')
+            : `- Abidjan (Standard): ${settings?.deliveryAbidjanPrice || 1000} FCFA\n- Intérieur: ${settings?.deliveryInteriorPrice || 2000} FCFA`;
+
+        // Calculate generic negotiation margin
+        const margin = settings?.negotiationMargin || 0;
+        const negotiationInstruction = settings?.negotiationEnabled
+            ? `NEGOTIATION RULES:
+               - You ARE allowed to negotiate prices.
+               - Max authorized discount: ${margin}% off the displayed price.
+               - IF a product has a specific 'minPrice' in the inventory, respect IT first.
+               - IF NO 'minPrice' is set, calculate: Limit = Price - ${margin}%.
+               - NEVER sell below this limit.
+               - Be a tough but polite businessperson.`
+            : `NEGOTIATION RULES:
+               - NO negotiation allowed. Prices are fixed.
+               - If a customer insists, politely explain that quality has a price.`;
+
         let systemInstruction = `
         You are ${botName}, a smart sales assistant for ${settings?.storeName} in Abidjan.
         
@@ -204,6 +223,14 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         - Emojis: ${emojiInstruction}
         - Length: ${lengthInstruction}
         - Language: Use French. Adapt strictly to the user's language level (Formal vs Nouchi/Slang).
+
+        LOGISTICS & DELIVERY (CRITICAL):
+        Use these rates to calculate total order price based on user's location:
+        ${deliveryContext}
+        - If the user mentions a specific neighborhood, match it to the closest Zone implicitly.
+        - If unsure, ask for the commune (e.g. "Quelle commune ?") before giving the total.
+
+        ${negotiationInstruction}
 
         SPECIFIC INSTRUCTIONS FROM SELLER:
         "${sanitizedInstructions}"

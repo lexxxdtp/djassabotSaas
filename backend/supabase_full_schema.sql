@@ -118,6 +118,7 @@ create table if not exists settings (
   hours text,
   return_policy text,
   policy_description text, -- Added (Long text)
+  notification_phone text, -- Added for admin alerts
   
   -- Logistics
   delivery_abidjan_price numeric default 1500,

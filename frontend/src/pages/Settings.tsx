@@ -59,6 +59,7 @@ export default function Settings() {
         acceptedPayments: string[];
         settlementBank?: string;
         settlementAccount?: string;
+        notificationPhone?: string;
     }>({
         // Identity
         botName: 'Awa',
@@ -94,6 +95,7 @@ export default function Settings() {
         hours: '08:00 - 20:00',
         returnPolicy: 'satisfait_rembourse',
         policyDescription: '', // New: Long text description
+        notificationPhone: '', // New
 
         // Logistics
         deliveryAbidjanPrice: 1500,
@@ -665,6 +667,19 @@ export default function Settings() {
                                         onChange={e => setConfig({ ...config, phone: e.target.value })}
                                         className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
                                         placeholder="+225..."
+                                    />
+                                </div>
+                                <div className="md:col-span-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-4">
+                                    <label className="block text-xs font-bold text-indigo-400 mb-2 uppercase tracking-wide">
+                                        🔔 Numéro de Notification Admin / Livreur (Très Important)
+                                    </label>
+                                    <p className="text-[10px] text-indigo-300 mb-2">C'est sur ce numéro que vous recevrez les alertes de nouvelles commandes formatées pour les livreurs.</p>
+                                    <input
+                                        type="text"
+                                        value={config.notificationPhone || ''}
+                                        onChange={e => setConfig({ ...config, notificationPhone: e.target.value })}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600 font-mono"
+                                        placeholder="Ex: 2250707..."
                                     />
                                 </div>
                                 <div>

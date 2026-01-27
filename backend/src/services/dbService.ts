@@ -497,7 +497,9 @@ export const db = {
                         socialMedia: data.social_media || {},
                         hours: data.hours || DEFAULT_SETTINGS.hours,
                         returnPolicy: data.return_policy || DEFAULT_SETTINGS.returnPolicy,
+                        returnPolicy: data.return_policy || DEFAULT_SETTINGS.returnPolicy,
                         policyDescription: data.policy_description || '',
+                        notificationPhone: data.notification_phone || '',
                         deliveryAbidjanPrice: data.delivery_abidjan_price ?? DEFAULT_SETTINGS.deliveryAbidjanPrice,
                         deliveryInteriorPrice: data.delivery_interior_price ?? DEFAULT_SETTINGS.deliveryInteriorPrice,
                         freeDeliveryThreshold: data.free_delivery_threshold ?? DEFAULT_SETTINGS.freeDeliveryThreshold,
@@ -543,7 +545,9 @@ export const db = {
                 if (settings.socialMedia !== undefined) dbSettings.social_media = settings.socialMedia;
                 if (settings.hours !== undefined) dbSettings.hours = settings.hours;
                 if (settings.returnPolicy !== undefined) dbSettings.return_policy = settings.returnPolicy;
+                if (settings.returnPolicy !== undefined) dbSettings.return_policy = settings.returnPolicy;
                 if (settings.policyDescription !== undefined) dbSettings.policy_description = settings.policyDescription;
+                if (settings.notificationPhone !== undefined) dbSettings.notification_phone = settings.notificationPhone;
                 if (settings.deliveryAbidjanPrice !== undefined) dbSettings.delivery_abidjan_price = settings.deliveryAbidjanPrice;
                 if (settings.deliveryInteriorPrice !== undefined) dbSettings.delivery_interior_price = settings.deliveryInteriorPrice;
                 if (settings.freeDeliveryThreshold !== undefined) dbSettings.free_delivery_threshold = settings.freeDeliveryThreshold;
@@ -588,6 +592,7 @@ export const db = {
                         hours: data.hours,
                         returnPolicy: data.return_policy,
                         policyDescription: data.policy_description || '',
+                        notificationPhone: data.notification_phone || '',
                         deliveryAbidjanPrice: data.delivery_abidjan_price ?? 1500,
                         deliveryInteriorPrice: data.delivery_interior_price ?? 3000,
                         freeDeliveryThreshold: data.free_delivery_threshold ?? 50000,

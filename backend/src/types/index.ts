@@ -69,7 +69,8 @@ export interface Settings {
     responseLength: string;
     trainingExamples: { question: string; answer: string }[];
     negotiationEnabled: boolean;
-    negotiationFlexibility: number;
+    negotiationFlexibility: number; // 0-1 (Abstract "Personality")
+    negotiationMargin?: number;     // 0-100 (Real percentage limit, e.g., 10%)
     voiceEnabled: boolean;
     systemInstructions: string;
 
@@ -95,11 +96,12 @@ export interface Settings {
     deliveryInteriorPrice: number;
     freeDeliveryThreshold: number;
     acceptedPayments: string[];
-    deliveryZones?: string[]; // Zones de livraison disponibles
+    deliveryZones?: { name: string; price: number }[]; // Zones de livraison (ex: Cocody: 1000)
 
     // Vendor Payment (Split)
     settlementBank?: string; // e.g. "MTN", "WAVE", "ORANGE", or Bank Code
     settlementAccount?: string; // Phone number or Account number
+    notificationPhone?: string; // Number to receive order alerts (Admin/Delivery)
 }
 
 // Multi-Tenant Types
