@@ -66,6 +66,8 @@ export interface Settings {
     // Personality
     politeness: string;
     emojiLevel: string;
+    humorLevel?: string; // New
+    slangLevel?: string; // New
     responseLength: string;
     trainingExamples: { question: string; answer: string }[];
     negotiationEnabled: boolean;

@@ -134,6 +134,8 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         const politeness = settings?.politeness || 'informal'; // Default to Tu
         const emojiLevel = settings?.emojiLevel || 'medium';
         const length = settings?.responseLength || 'medium';
+        const slangLevel = settings?.slangLevel || 'low'; // nouchi/argot level
+        const humorLevel = settings?.humorLevel || 'medium'; // humor level
 
         const politenessInstruction = politeness === 'auto'
             ? "ADAPTIVE: Analyze the user's input. If they use 'tu', use 'tu'. If they use 'vous', use 'vous'. If unsure, default to 'vous' initially."
@@ -147,9 +149,47 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
             ? "ADAPTIVE: Match the user's verbosity. If they write short messages, be concise. If they ask detailed questions, provide detailed answers."
             : length === 'short' ? "Be very concise and direct." : length === 'long' ? "Be descriptive and chatty." : "Keep it balanced (2-3 sentences max).";
 
-        const personaInstruction = persona === 'auto'
-            ? "ADAPTIVE CHAMELEON: Analyze the user's tone. If they are formal, be 'Professional & Courteous'. If they are casual, warm, or use slang (Nouchi), switch to 'Authentic & Local' mode. Always close the sale."
-            : `Your persona is fixed to: ${persona}.`;
+        // Enhanced persona instruction with new style presets
+        let personaInstruction: string;
+        switch (persona) {
+            case 'professional':
+                personaInstruction = "Personality: PROFESSIONAL & REFINED. Be formal, courteous, and elegant. Use polished French, no slang. Address customers with utmost respect. Focus on quality and excellence.";
+                break;
+            case 'friendly':
+                personaInstruction = "Personality: FRIENDLY & WARM. Be approachable, kind, and helpful like a good friend. Use casual but respectful language. Make customers feel at ease and welcome.";
+                break;
+            case 'assertive':
+            case 'commercial':
+                personaInstruction = "Personality: COMMERCIAL & PERSUASIVE. Be direct, sales-focused, and confident. Create urgency ('Stock limité!'), highlight value, and actively push for the sale. Close deals fast.";
+                break;
+            case 'local':
+            case 'ivoirien':
+                personaInstruction = "Personality: LOCAL IVOIRIEN / AUTHENTIQUE. Use Ivorian French with Nouchi slang expressions (e.g., 'Wesh patron!', 'C\\'est gâté!', 'On gère ça dèh!'). Be very relaxed and street-smart. Connect with customers culturally.";
+                break;
+            case 'auto':
+                personaInstruction = "ADAPTIVE CHAMELEON: Analyze the user's tone. If they are formal, be 'Professional & Courteous'. If they are casual, warm, or use slang (Nouchi), switch to 'Authentic & Local' mode. Always close the sale.";
+                break;
+            default:
+                personaInstruction = `Your persona is: ${persona}. Adapt accordingly.`;
+        }
+
+        // Slang/Nouchi level instruction
+        const slangInstruction = slangLevel === 'high'
+            ? "SLANG USAGE: Use HEAVY Nouchi/Ivorian slang (e.g., 'Wesh!', 'C\\'est gâté!', 'Ça va djô!', 'On dit quoi?', 'Kpakpato'). Speak like a true Abidjanais."
+            : slangLevel === 'medium'
+                ? "SLANG USAGE: Mix standard French with occasional Nouchi expressions (e.g., 'C\\'est bon patron', 'On gère')."
+                : slangLevel === 'none'
+                    ? "SLANG USAGE: Use ZERO slang. Pure standard French only."
+                    : "SLANG USAGE: Use minimal slang. Keep mostly standard French with very light local flavor.";
+
+        // Humor level instruction
+        const humorInstruction = humorLevel === 'high'
+            ? "HUMOR: Be playful and funny! Add jokes, witty remarks, and fun expressions. Make customers laugh and enjoy the conversation."
+            : humorLevel === 'medium'
+                ? "HUMOR: Be lightly humorous. Occasional wit and friendly jokes are welcome."
+                : humorLevel === 'low'
+                    ? "HUMOR: Stay serious and professional. Avoid jokes. Focus on business."
+                    : "HUMOR: Minimal humor. Be straightforward and efficient.";
 
         // Build accepted payments list (with safety check for non-array values)
         const paymentsArray = Array.isArray(settings?.acceptedPayments) ? settings.acceptedPayments : [];
@@ -191,9 +231,10 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         const rawInstructions = settings?.systemInstructions || 'No specific instructions.';
         const sanitizedInstructions = rawInstructions.replace(/[{}]/g, '').substring(0, 1000); // Remove braces and limit length
 
-        // Format delivery zones for AI
-        const deliveryContext = settings?.deliveryZones && settings.deliveryZones.length > 0
-            ? settings.deliveryZones.map(z => `- ${z.name}: ${z.price} FCFA`).join('\n')
+        // Format delivery zones for AI (with type safety)
+        const zonesArray = Array.isArray(settings?.deliveryZones) ? settings.deliveryZones : [];
+        const deliveryContext = zonesArray.length > 0
+            ? zonesArray.map(z => `- ${z.name}: ${z.price} FCFA`).join('\n')
             : `- Abidjan (Standard): ${settings?.deliveryAbidjanPrice || 1000} FCFA\n- Intérieur: ${settings?.deliveryInteriorPrice || 2000} FCFA`;
 
         // Calculate generic negotiation margin
@@ -222,6 +263,8 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         - Politeness: ${politenessInstruction}
         - Emojis: ${emojiInstruction}
         - Length: ${lengthInstruction}
+        - ${slangInstruction}
+        - ${humorInstruction}
         - Language: Use French. Adapt strictly to the user's language level (Formal vs Nouchi/Slang).
 
         LOGISTICS & DELIVERY (CRITICAL):
@@ -486,11 +529,12 @@ export const generateIdentitySummary = async (settings: Settings) => {
     CONFIG:
     Nom: ${settings.botName}
     Boutique: ${settings.storeName} (${settings.businessType})
-    Vendeur: ${settings.persona} (Politesse: ${settings.politeness}, Emojis: ${settings.emojiLevel})
+    Style: ${settings.persona} 
+    Communication: Politesse=${settings.politeness}, Emojis=${settings.emojiLevel}, Argot/Nouchi=${settings.slangLevel || 'low'}, Humour=${settings.humorLevel || 'medium'}
     Politique: ${settings.policyDescription || 'Standard'}
     Instructions: ${settings.systemInstructions}
     
-    Réponds à la première personne (Je).
+    Réponds à la première personne (Je). Sois concis (3-4 phrases max).
     `;
 
     try {

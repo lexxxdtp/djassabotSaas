@@ -1,9 +1,42 @@
 
 import { useState, useEffect } from 'react';
-import { Bot, Store, Clock, MapPin, QrCode, Trash2, PlusCircle, CheckCircle, User } from 'lucide-react';
+import { Bot, Store, Clock, MapPin, QrCode, Trash2, PlusCircle, CheckCircle, User, Sparkles } from 'lucide-react';
 import WhatsAppConnect from './WhatsAppConnect';
 import AIPlayground from '../components/AIPlayground';
 import { getApiUrl } from '../utils/apiConfig';
+
+// Communication Styles with presets - Each style auto-configures all personality parameters
+const COMMUNICATION_STYLES = [
+    {
+        id: 'professional',
+        icon: '🎩',
+        name: 'Professionnel',
+        description: 'Vouvoiement, formel, sans emojis',
+        presets: { politeness: 'formal', emojiLevel: 'none', slangLevel: 'none', humorLevel: 'low' }
+    },
+    {
+        id: 'friendly',
+        icon: '😊',
+        name: 'Amical',
+        description: 'Tutoiement, emojis modérés, chaleureux',
+        recommended: true,
+        presets: { politeness: 'informal', emojiLevel: 'medium', slangLevel: 'low', humorLevel: 'medium' }
+    },
+    {
+        id: 'commercial',
+        icon: '📣',
+        name: 'Commercial',
+        description: 'Direct, persuasif, focus vente',
+        presets: { politeness: 'informal', emojiLevel: 'high', slangLevel: 'low', humorLevel: 'low' }
+    },
+    {
+        id: 'local',
+        icon: '🗣️',
+        name: 'Local / Ivoirien',
+        description: 'Expressions locales, très décontracté',
+        presets: { politeness: 'informal', emojiLevel: 'high', slangLevel: 'high', humorLevel: 'high' }
+    }
+];
 
 import { useAuth } from '../context/AuthContext';
 
@@ -32,6 +65,8 @@ export default function Settings() {
         greeting: string;
         politeness: string;
         emojiLevel: string;
+        humorLevel: string; // New
+        slangLevel: string; // New
         responseLength: string;
         trainingExamples: { question: string; answer: string }[];
         negotiationEnabled: boolean;
@@ -69,6 +104,8 @@ export default function Settings() {
         // New Personality Fields
         politeness: 'informal',
         emojiLevel: 'medium',
+        humorLevel: 'medium',
+        slangLevel: 'low',
         responseLength: 'medium',
         trainingExamples: [
             { question: '', answer: '' },
@@ -388,229 +425,253 @@ export default function Settings() {
                     </div>
                 )}
 
-                {/* --- TAB 1: IDENTITY --- */}
+                {/* --- TAB 1: IDENTITY (Simplified Design) --- */}
                 {activeTab === 'identity' && (
                     <div className="space-y-6">
-                        {/* Base Identity & Personality */}
-                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8 backdrop-blur-sm">
+
+                        {/* 1. Identité de Base */}
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                                <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Personnalité du Vendeur
+                                <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Identité de l'Assistant
                             </h2>
 
-                            {/* Ligne 1 : Nom & Style Global */}
-                            <div className="grid md:grid-cols-2 gap-8 mb-8">
-                                <div>
-                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Nom de l'Avatar</label>
-                                    <input
-                                        type="text"
-                                        value={config.botName}
-                                        onChange={e => setConfig({ ...config, botName: e.target.value })}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-600"
-                                        placeholder="Ex: Awa"
-                                    />
+                            <div className="flex items-start gap-6">
+                                {/* Avatar Preview */}
+                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg shrink-0">
+                                    {config.botName.substring(0, 1) || 'A'}
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Archétype</label>
-                                    <select
-                                        value={config.persona}
-                                        onChange={e => setConfig({ ...config, persona: e.target.value })}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all appearance-none cursor-pointer"
-                                    >
-                                        <option value="auto" className="font-bold text-indigo-400">✨ Adaptatif (S'adapte au client)</option>
-                                        <option value="professional" className="bg-zinc-900 text-white">Formel & Courtois</option>
-                                        <option value="friendly" className="bg-zinc-900 text-white">Empathique & Accueillant</option>
-                                        <option value="humorous" className="bg-zinc-900 text-white">Authentique & Local</option>
-                                        <option value="assertive" className="bg-zinc-900 text-white">Commercial & Persuasif</option>
-                                    </select>
+
+                                {/* Name & Greeting */}
+                                <div className="flex-1 space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Nom de l'Assistant</label>
+                                        <input
+                                            type="text"
+                                            value={config.botName}
+                                            onChange={e => setConfig({ ...config, botName: e.target.value })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white text-lg font-bold focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-600"
+                                            placeholder="Ex: Awa, Koffi, Maya..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Message d'accueil</label>
+                                        <input
+                                            type="text"
+                                            value={config.greeting}
+                                            onChange={e => setConfig({ ...config, greeting: e.target.value })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-600"
+                                            placeholder="Bonjour ! Comment puis-je vous aider ?"
+                                        />
+                                    </div>
                                 </div>
                             </div>
-
-                            {/* Ligne 2 : Détails de Communication */}
-                            <div className="grid md:grid-cols-3 gap-6 mb-8">
-                                <div>
-                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Politesse</label>
-                                    <select
-                                        value={config.politeness || 'informal'}
-                                        onChange={e => setConfig({ ...config, politeness: e.target.value })}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none appearance-none"
-                                    >
-                                        <option value="auto" className="font-bold text-indigo-400">✨ Adaptatif (Auto)</option>
-                                        <option value="formal" className="bg-zinc-900 text-white">Vous (Vouvoiement)</option>
-                                        <option value="informal" className="bg-zinc-900 text-white">Tu (Tutoiement)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Emojis</label>
-                                    <select
-                                        value={config.emojiLevel || 'medium'}
-                                        onChange={e => setConfig({ ...config, emojiLevel: e.target.value })}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none appearance-none"
-                                    >
-                                        <option value="auto" className="font-bold text-indigo-400">✨ Adaptatif (Auto)</option>
-                                        <option value="high" className="bg-zinc-900 text-white">Abondant</option>
-                                        <option value="medium" className="bg-zinc-900 text-white">Modéré</option>
-                                        <option value="low" className="bg-zinc-900 text-white">Minimal</option>
-                                        <option value="none" className="bg-zinc-900 text-white">Aucun</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Longueur Réponses</label>
-                                    <select
-                                        value={config.responseLength || 'medium'}
-                                        onChange={e => setConfig({ ...config, responseLength: e.target.value })}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none appearance-none"
-                                    >
-                                        <option value="auto" className="font-bold text-indigo-400">✨ Adaptatif (Auto)</option>
-                                        <option value="short" className="bg-zinc-900 text-white">Court & Direct</option>
-                                        <option value="medium" className="bg-zinc-900 text-white">Équilibré</option>
-                                        <option value="long" className="bg-zinc-900 text-white">Détaillé & Explicatif</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Instructions Spécifiques */}
-                            <div className="mt-8">
-                                <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">
-                                    Prompt Système (Cerveau)
-                                </label>
-                                <textarea
-                                    value={config.systemInstructions}
-                                    onChange={e => setConfig({ ...config, systemInstructions: e.target.value })}
-                                    placeholder="Décrivez ici la personnalité exacte, les phrases types, et les interdits..."
-                                    rows={5}
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600 leading-relaxed font-mono text-sm"
-                                />
-                            </div>
-
-                            {/* Exemples (Few-Shot) */}
-                            <div className="mt-8 bg-black/40 p-6 rounded-lg border border-white/5">
-                                <label className="block text-xs font-bold text-indigo-500 mb-4 uppercase tracking-wide flex items-center gap-2">
-                                    <CheckCircle size={14} /> Entraînement par l'exemple (Few-Shot)
-                                </label>
-                                <div className="grid gap-4">
-                                    {(config.trainingExamples || []).map((example, index) => (
-                                        <div key={index} className="group relative grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-white/5 p-3 rounded-lg border border-transparent hover:border-white/10 transition-all">
-                                            <div className="md:col-span-5">
-                                                <input
-                                                    type="text"
-                                                    placeholder={`Question type ${index + 1}`}
-                                                    value={example.question}
-                                                    onChange={(e) => {
-                                                        const newExamples = [...(config.trainingExamples || [])];
-                                                        newExamples[index] = { ...newExamples[index], question: e.target.value };
-                                                        setConfig({ ...config, trainingExamples: newExamples });
-                                                    }}
-                                                    className="w-full bg-black/50 border border-white/5 rounded px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:border-indigo-500 outline-none transition-all"
-                                                />
-                                            </div>
-                                            <div className="hidden md:flex md:col-span-1 justify-center text-zinc-600">➜</div>
-                                            <div className="md:col-span-5">
-                                                <input
-                                                    type="text"
-                                                    placeholder={`Réponse attendue ${index + 1}`}
-                                                    value={example.answer}
-                                                    onChange={(e) => {
-                                                        const newExamples = [...(config.trainingExamples || [])];
-                                                        newExamples[index] = { ...newExamples[index], answer: e.target.value };
-                                                        setConfig({ ...config, trainingExamples: newExamples });
-                                                    }}
-                                                    className="w-full bg-black/50 border border-white/5 rounded px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:border-indigo-500 outline-none transition-all"
-                                                />
-                                            </div>
-                                            <div className="md:col-span-1 flex justify-center">
-                                                <button
-                                                    onClick={() => {
-                                                        const newExamples = config.trainingExamples.filter((_, i) => i !== index);
-                                                        setConfig({ ...config, trainingExamples: newExamples });
-                                                    }}
-                                                    className="p-2 text-zinc-600 hover:text-red-500 transition-colors"
-                                                    title="Supprimer"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <button
-                                    onClick={() => {
-                                        const newExamples = [...(config.trainingExamples || []), { question: '', answer: '' }];
-                                        setConfig({ ...config, trainingExamples: newExamples });
-                                    }}
-                                    className="mt-4 flex items-center justify-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 hover:bg-indigo-950/30 px-4 py-3 rounded border border-dashed border-indigo-900/50 hover:border-indigo-500/50 transition-all w-full uppercase tracking-wide"
-                                >
-                                    <PlusCircle size={14} />
-                                    Ajouter un exemple
-                                </button>
-                            </div>
-
                         </div>
 
-                        {/* Negotiation Intelligence */}
-                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8 backdrop-blur-sm">
-                            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                                <span className="w-2 h-2 rounded-full bg-pink-500"></span> Négociation
+                        {/* 2. Style de Communication */}
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+                            <h2 className="text-lg font-bold text-white mb-2 flex items-center gap-2 uppercase tracking-wider text-xs">
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span> Style de Communication
                             </h2>
-                            <div className="space-y-6">
+                            <p className="text-zinc-500 text-sm mb-6">Choisissez comment votre assistant s'adresse aux clients.</p>
 
-                                {/* Toggle Negotiation */}
-                                <div className="flex items-center justify-between bg-black/40 border border-white/5 p-4 rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {COMMUNICATION_STYLES.map(style => {
+                                    const isActive = config.persona === style.id;
+                                    return (
+                                        <button
+                                            key={style.id}
+                                            onClick={() => setConfig({
+                                                ...config,
+                                                persona: style.id,
+                                                ...style.presets // Apply all presets at once
+                                            })}
+                                            className={`relative p-5 rounded-xl border text-left transition-all group ${isActive
+                                                ? 'bg-indigo-500/10 border-indigo-500/50 ring-2 ring-indigo-500/30'
+                                                : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                                                }`}
+                                        >
+                                            {/* Selection Indicator */}
+                                            <div className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isActive ? 'border-indigo-500 bg-indigo-500' : 'border-zinc-600'
+                                                }`}>
+                                                {isActive && <CheckCircle size={12} className="text-white" />}
+                                            </div>
+
+                                            {/* Recommended Badge */}
+                                            {'recommended' in style && style.recommended && (
+                                                <div className="absolute top-4 left-4 text-[9px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                                                    Recommandé
+                                                </div>
+                                            )}
+
+                                            {/* Content */}
+                                            <div className="flex items-center gap-4 mt-2">
+                                                <span className="text-3xl">{style.icon}</span>
+                                                <div>
+                                                    <div className="font-bold text-white text-base">{style.name}</div>
+                                                    <div className="text-xs text-zinc-400 mt-1">{style.description}</div>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* 3. Options Rapides (Toggles) */}
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+                            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
+                                <span className="w-2 h-2 rounded-full bg-pink-500"></span> Options
+                            </h2>
+
+                            <div className="space-y-4">
+                                {/* Negotiation Toggle */}
+                                <div className="flex items-center justify-between bg-white/5 border border-white/5 p-4 rounded-lg">
                                     <div>
-                                        <div className="text-sm font-bold text-white mb-1">Activer la Négociation</div>
-                                        <div className="text-xs text-zinc-500">Si désactivé, l'IA refusera toute baisse de prix.</div>
+                                        <div className="text-sm font-bold text-white">Négociation des prix</div>
+                                        <div className="text-xs text-zinc-500">L'IA peut accepter des baisses de prix raisonnables</div>
                                     </div>
                                     <button
                                         onClick={() => setConfig({ ...config, negotiationEnabled: !config.negotiationEnabled })}
-                                        className={`w-12 h-6 rounded-full p-1 transition-colors ${config.negotiationEnabled ? 'bg-indigo-500' : 'bg-zinc-700'}`}
+                                        className={`w-14 h-7 rounded-full p-1 transition-colors ${config.negotiationEnabled ? 'bg-indigo-500' : 'bg-zinc-700'}`}
                                     >
-                                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${config.negotiationEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                                        <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${config.negotiationEnabled ? 'translate-x-7' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
 
-                                {config.negotiationEnabled && (
+                                {/* Voice Toggle */}
+                                <div className="flex items-center justify-between bg-white/5 border border-white/5 p-4 rounded-lg">
                                     <div>
-                                        <div className="flex justify-between mb-2">
-                                            <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Taux de Flexibilité</label>
-                                            <span className="text-indigo-500 font-bold font-mono">{config.negotiationFlexibility * 10}%</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="0" max="10" step="1"
-                                            value={config.negotiationFlexibility}
-                                            onChange={e => setConfig({ ...config, negotiationFlexibility: parseInt(e.target.value) })}
-                                            className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                                        />
-                                        <div className="flex justify-between text-[10px] text-zinc-500 mt-2 uppercase font-bold tracking-widest">
-                                            <span>Strict (0%)</span>
-                                            <span>Open Bar (100%)</span>
-                                        </div>
+                                        <div className="text-sm font-bold text-white">Réponses vocales</div>
+                                        <div className="text-xs text-zinc-500">Envoyer des messages audio en plus du texte</div>
                                     </div>
-                                )}
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Message d'accroche (First contact)</label>
-                                    <textarea
-                                        value={config.greeting}
-                                        onChange={e => setConfig({ ...config, greeting: e.target.value })}
-                                        rows={2}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
-                                    />
+                                    <button
+                                        onClick={() => setConfig({ ...config, voiceEnabled: !config.voiceEnabled })}
+                                        className={`w-14 h-7 rounded-full p-1 transition-colors ${config.voiceEnabled ? 'bg-indigo-500' : 'bg-zinc-700'}`}
+                                    >
+                                        <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${config.voiceEnabled ? 'translate-x-7' : 'translate-x-0'}`} />
+                                    </button>
                                 </div>
                             </div>
                         </div>
+
+                        {/* 4. Section Avancée (Collapsible) */}
+                        <details className="group">
+                            <summary className="bg-[#0a0c10] border border-white/5 rounded-xl p-6 cursor-pointer list-none flex items-center justify-between hover:bg-white/5 transition-all">
+                                <div className="flex items-center gap-3">
+                                    <span className="w-2 h-2 rounded-full bg-zinc-500"></span>
+                                    <span className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Options Avancées</span>
+                                </div>
+                                <span className="text-zinc-500 group-open:rotate-180 transition-transform">▼</span>
+                            </summary>
+
+                            <div className="mt-4 space-y-6">
+                                {/* Instructions Personnalisées */}
+                                <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+                                    <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                                        <Bot size={16} className="text-zinc-400" /> Instructions Personnalisées
+                                    </h3>
+                                    <p className="text-xs text-zinc-500 mb-4">Donnez des ordres spécifiques à l'IA (ex: "Ne jamais donner le prix sans demander la taille")</p>
+                                    <textarea
+                                        value={config.systemInstructions}
+                                        onChange={e => setConfig({ ...config, systemInstructions: e.target.value })}
+                                        placeholder="Ex: Toujours demander la couleur préférée avant de proposer un produit..."
+                                        rows={4}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600 leading-relaxed text-sm"
+                                    />
+                                </div>
+
+                                {/* Exemples d'Entraînement */}
+                                <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+                                    <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                                        <Sparkles size={16} className="text-zinc-400" /> Exemples d'Entraînement
+                                    </h3>
+                                    <p className="text-xs text-zinc-500 mb-4">Montrez à l'IA comment répondre à certaines questions</p>
+
+                                    <div className="space-y-3">
+                                        {(config.trainingExamples || []).map((example, index) => (
+                                            <div key={index} className="grid grid-cols-1 md:grid-cols-11 gap-2 items-center bg-white/5 p-3 rounded-lg">
+                                                <div className="md:col-span-5">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Client: ..."
+                                                        value={example.question}
+                                                        onChange={(e) => {
+                                                            const newExamples = [...(config.trainingExamples || [])];
+                                                            newExamples[index] = { ...newExamples[index], question: e.target.value };
+                                                            setConfig({ ...config, trainingExamples: newExamples });
+                                                        }}
+                                                        className="w-full bg-black/30 border border-white/5 rounded px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-indigo-500 outline-none"
+                                                    />
+                                                </div>
+                                                <div className="hidden md:flex md:col-span-1 justify-center text-zinc-600 text-lg">→</div>
+                                                <div className="md:col-span-4">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Réponse idéale..."
+                                                        value={example.answer}
+                                                        onChange={(e) => {
+                                                            const newExamples = [...(config.trainingExamples || [])];
+                                                            newExamples[index] = { ...newExamples[index], answer: e.target.value };
+                                                            setConfig({ ...config, trainingExamples: newExamples });
+                                                        }}
+                                                        className="w-full bg-black/30 border border-white/5 rounded px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-indigo-500 outline-none"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-1 flex justify-center">
+                                                    <button
+                                                        onClick={() => {
+                                                            const newExamples = config.trainingExamples.filter((_, i) => i !== index);
+                                                            setConfig({ ...config, trainingExamples: newExamples });
+                                                        }}
+                                                        className="p-2 text-zinc-600 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <button
+                                        onClick={() => {
+                                            const newExamples = [...(config.trainingExamples || []), { question: '', answer: '' }];
+                                            setConfig({ ...config, trainingExamples: newExamples });
+                                        }}
+                                        className="mt-4 flex items-center justify-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 px-4 py-3 rounded border border-dashed border-indigo-900/50 hover:border-indigo-500/50 transition-all w-full"
+                                    >
+                                        <PlusCircle size={14} />
+                                        Ajouter un exemple
+                                    </button>
+                                </div>
+                            </div>
+                        </details>
+
                     </div>
                 )}
 
                 {/* --- TAB 2: BUSINESS --- */}
                 {activeTab === 'business' && (
                     <div className="space-y-6">
-                        {/* 1. Type d'Activité */}
+                        {/* 1. Identité de la Boutique */}
                         <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Type d'Activité
+                                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Identité de la Boutique
                             </h2>
-                            <div>
+                            <div className="space-y-6">
+                                {/* Nom de la Boutique */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Nom de la Boutique</label>
+                                    <input
+                                        type="text"
+                                        value={config.storeName}
+                                        onChange={e => setConfig({ ...config, storeName: e.target.value })}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white text-lg font-bold focus:border-indigo-500 outline-none placeholder:text-zinc-600"
+                                        placeholder="Ex: Ma Boutique Mode, Chez Fatou..."
+                                    />
+                                    <p className="text-[10px] text-zinc-500 mt-1">Ce nom sera utilisé par l'IA pour se présenter aux clients.</p>
+                                </div>
+
+                                {/* Secteur d'Activité */}
                                 <div>
                                     <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Secteur d'Activité</label>
                                     <div className="space-y-3">
@@ -841,7 +902,57 @@ export default function Settings() {
                             </div>
                         </div>
 
-                        {/* 5. Paiement */}
+                        {/* 5. Livraison & Frais */}
+                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+                            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
+                                <span className="w-2 h-2 rounded-full bg-orange-500"></span> Livraison & Frais
+                            </h2>
+                            <p className="text-[10px] text-zinc-500 mb-4">Ces tarifs seront utilisés par l'IA pour calculer le total des commandes.</p>
+                            <div className="grid md:grid-cols-3 gap-6">
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Livraison Abidjan</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            value={config.deliveryAbidjanPrice}
+                                            onChange={e => setConfig({ ...config, deliveryAbidjanPrice: parseInt(e.target.value) || 0 })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pr-16 text-white focus:border-orange-500 outline-none"
+                                            placeholder="1500"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">FCFA</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Livraison Intérieur</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            value={config.deliveryInteriorPrice}
+                                            onChange={e => setConfig({ ...config, deliveryInteriorPrice: parseInt(e.target.value) || 0 })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pr-16 text-white focus:border-orange-500 outline-none"
+                                            placeholder="3000"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">FCFA</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Seuil Livraison Gratuite</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            value={config.freeDeliveryThreshold}
+                                            onChange={e => setConfig({ ...config, freeDeliveryThreshold: parseInt(e.target.value) || 0 })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pr-16 text-white focus:border-orange-500 outline-none"
+                                            placeholder="50000"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">FCFA</span>
+                                    </div>
+                                    <p className="text-[10px] text-zinc-500 mt-1">Livraison offerte à partir de ce montant</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 6. Paiement */}
                         <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                                 <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Paiement

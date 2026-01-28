@@ -100,6 +100,8 @@ create table if not exists settings (
   -- Personality
   politeness text default 'informal',
   emoji_level text default 'medium',
+  humor_level text default 'medium', -- Added
+  slang_level text default 'low', -- Added (Nouchi/Argot)
   response_length text default 'medium',
   training_examples jsonb default '[]',
   negotiation_enabled boolean default true,

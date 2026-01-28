@@ -497,7 +497,6 @@ export const db = {
                         socialMedia: data.social_media || {},
                         hours: data.hours || DEFAULT_SETTINGS.hours,
                         returnPolicy: data.return_policy || DEFAULT_SETTINGS.returnPolicy,
-                        returnPolicy: data.return_policy || DEFAULT_SETTINGS.returnPolicy,
                         policyDescription: data.policy_description || '',
                         notificationPhone: data.notification_phone || '',
                         deliveryAbidjanPrice: data.delivery_abidjan_price ?? DEFAULT_SETTINGS.deliveryAbidjanPrice,
@@ -530,6 +529,8 @@ export const db = {
                 if (settings.greeting !== undefined) dbSettings.greeting = settings.greeting;
                 if (settings.politeness !== undefined) dbSettings.politeness = settings.politeness;
                 if (settings.emojiLevel !== undefined) dbSettings.emoji_level = settings.emojiLevel;
+                if (settings.humorLevel !== undefined) dbSettings.humor_level = settings.humorLevel;
+                if (settings.slangLevel !== undefined) dbSettings.slang_level = settings.slangLevel;
                 if (settings.responseLength !== undefined) dbSettings.response_length = settings.responseLength;
                 if (settings.trainingExamples !== undefined) dbSettings.training_examples = settings.trainingExamples;
                 if (settings.negotiationEnabled !== undefined) dbSettings.negotiation_enabled = settings.negotiationEnabled;

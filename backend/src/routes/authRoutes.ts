@@ -278,6 +278,11 @@ router.get('/me', authenticateTenant, async (req: Request, res: Response) => {
  */
 router.put('/me', authenticateTenant, async (req: Request, res: Response) => {
     try {
+        console.log('[Update Me] 📝 Requête reçue:', {
+            userId: req.userId,
+            body: req.body
+        });
+
         const { userId } = req;
         const { full_name, email, phone, birth_date } = req.body;
 
