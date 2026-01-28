@@ -57,6 +57,29 @@ export interface Order {
     paymentMethod?: string;
 }
 
+// Opening hours per day structure
+export interface DayHours {
+    open: string;   // e.g., "08:00"
+    close: string;  // e.g., "20:00"
+    closed: boolean;
+}
+
+export interface OpeningHours {
+    lundi: DayHours;
+    mardi: DayHours;
+    mercredi: DayHours;
+    jeudi: DayHours;
+    vendredi: DayHours;
+    samedi: DayHours;
+    dimanche: DayHours;
+}
+
+// Delivery zone with pricing
+export interface DeliveryZone {
+    name: string;   // e.g., "Cocody", "Abidjan", "Intérieur"
+    price: number;  // Price in FCFA
+}
+
 export interface Settings {
     // Identity
     botName: string;
@@ -66,8 +89,8 @@ export interface Settings {
     // Personality
     politeness: string;
     emojiLevel: string;
-    humorLevel?: string; // New
-    slangLevel?: string; // New
+    humorLevel?: string;
+    slangLevel?: string;
     responseLength: string;
     trainingExamples: { question: string; answer: string }[];
     negotiationEnabled: boolean;
@@ -78,32 +101,30 @@ export interface Settings {
 
     // Business
     storeName: string;
-    businessType?: string; // New
+    businessType?: string;
     address: string;
-    locationUrl?: string; // New
-    gpsCoordinates?: string; // New
-    phone: string;
-    socialMedia?: { // New
+    locationUrl?: string;
+    gpsCoordinates?: string;
+    phone: string;  // PUBLIC - Business phone (can be shared by bot)
+    socialMedia?: {
         facebook?: string;
         instagram?: string;
         tiktok?: string;
         website?: string;
     };
-    hours: string;
-    returnPolicy: string;
-    policyDescription?: string; // New (Detailed policy)
+    openingHours?: OpeningHours;  // Horaires par jour
+    policyDescription?: string;   // Policy, returns, how it works (free text)
 
     // Logistics
-    deliveryAbidjanPrice: number;
-    deliveryInteriorPrice: number;
-    freeDeliveryThreshold: number;
+    deliveryEnabled: boolean;             // Toggle livraison on/off
+    deliveryZones: DeliveryZone[];        // Dynamic delivery zones with prices
+    freeDeliveryThreshold: number;        // Free delivery above this amount (0 = never free)
     acceptedPayments: string[];
-    deliveryZones?: { name: string; price: number }[]; // Zones de livraison (ex: Cocody: 1000)
 
     // Vendor Payment (Split)
-    settlementBank?: string; // e.g. "MTN", "WAVE", "ORANGE", or Bank Code
-    settlementAccount?: string; // Phone number or Account number
-    notificationPhone?: string; // Number to receive order alerts (Admin/Delivery)
+    settlementBank?: string;
+    settlementAccount?: string;
+    notificationPhone?: string;  // PRIVATE - Admin notification phone (NEVER share with bot)
 }
 
 // Multi-Tenant Types

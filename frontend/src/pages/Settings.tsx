@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Bot, Store, Clock, MapPin, QrCode, Trash2, PlusCircle, CheckCircle, User, Sparkles } from 'lucide-react';
+import { Bot, Store, Clock, MapPin, QrCode, Trash2, PlusCircle, CheckCircle, User, Sparkles, Truck, Plus, X } from 'lucide-react';
 import WhatsAppConnect from './WhatsAppConnect';
 import AIPlayground from '../components/AIPlayground';
 import { getApiUrl } from '../utils/apiConfig';
@@ -58,6 +58,21 @@ export default function Settings() {
         birthDate: ''
     });
 
+    // Type for opening hours per day
+    type DayHours = { open: string; close: string; closed: boolean };
+    type OpeningHours = {
+        lundi: DayHours;
+        mardi: DayHours;
+        mercredi: DayHours;
+        jeudi: DayHours;
+        vendredi: DayHours;
+        samedi: DayHours;
+        dimanche: DayHours;
+    };
+
+    // Type for delivery zones
+    type DeliveryZone = { name: string; price: number };
+
     const [config, setConfig] = useState<{
         botName: string;
         language: string;
@@ -65,8 +80,8 @@ export default function Settings() {
         greeting: string;
         politeness: string;
         emojiLevel: string;
-        humorLevel: string; // New
-        slangLevel: string; // New
+        humorLevel: string;
+        slangLevel: string;
         responseLength: string;
         trainingExamples: { question: string; answer: string }[];
         negotiationEnabled: boolean;
@@ -85,11 +100,10 @@ export default function Settings() {
             tiktok: string;
             website: string;
         };
-        hours: string;
-        returnPolicy: string;
+        openingHours: OpeningHours;
         policyDescription: string;
-        deliveryAbidjanPrice: number;
-        deliveryInteriorPrice: number;
+        deliveryEnabled: boolean;
+        deliveryZones: DeliveryZone[];
         freeDeliveryThreshold: number;
         acceptedPayments: string[];
         settlementBank?: string;
@@ -129,14 +143,24 @@ export default function Settings() {
             tiktok: '',
             website: ''
         },
-        hours: '08:00 - 20:00',
-        returnPolicy: 'satisfait_rembourse',
-        policyDescription: '', // New: Long text description
-        notificationPhone: '', // New
+        openingHours: {
+            lundi: { open: '08:00', close: '20:00', closed: false },
+            mardi: { open: '08:00', close: '20:00', closed: false },
+            mercredi: { open: '08:00', close: '20:00', closed: false },
+            jeudi: { open: '08:00', close: '20:00', closed: false },
+            vendredi: { open: '08:00', close: '20:00', closed: false },
+            samedi: { open: '09:00', close: '18:00', closed: false },
+            dimanche: { open: '09:00', close: '14:00', closed: true },
+        },
+        policyDescription: '',
+        notificationPhone: '',
 
         // Logistics
-        deliveryAbidjanPrice: 1500,
-        deliveryInteriorPrice: 3000,
+        deliveryEnabled: true,
+        deliveryZones: [
+            { name: 'Abidjan', price: 1500 },
+            { name: 'Intérieur du pays', price: 3000 }
+        ],
         freeDeliveryThreshold: 50000,
         acceptedPayments: ['wave', 'om', 'cash'],
         // Vendor Payment
@@ -855,48 +879,91 @@ export default function Settings() {
                             </div>
                         </div>
 
-                        {/* 4. Politique & Fonctionnement */}
+                        {/* 4. Horaires & Politique */}
                         <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
                             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Politique & Fonctionnement
+                                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Horaires & Politique
                             </h2>
                             <div className="space-y-6">
-                                <div className="grid md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Horaires d'Ouverture</label>
-                                        <div className="relative">
-                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 w-4 h-4" />
-                                            <input
-                                                type="text"
-                                                value={config.hours}
-                                                onChange={e => setConfig({ ...config, hours: e.target.value })}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pl-10 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
-                                                placeholder="Lun-Sam: 08h-20h"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Politique Retour (Simple)</label>
-                                        <select
-                                            value={config.returnPolicy}
-                                            onChange={e => setConfig({ ...config, returnPolicy: e.target.value })}
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none appearance-none"
-                                        >
-                                            <option value="satisfait_rembourse" className="bg-zinc-900 text-white">✅ Satisfait ou Remboursé</option>
-                                            <option value="echange_only" className="bg-zinc-900 text-white">🔄 Échange uniquement</option>
-                                            <option value="ni_repris" className="bg-zinc-900 text-white">❌ Vente finale</option>
-                                        </select>
+                                {/* Horaires par jour */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-3 uppercase tracking-wide">
+                                        <Clock className="inline w-4 h-4 mr-1" /> Horaires d'Ouverture par Jour
+                                    </label>
+                                    <div className="space-y-2">
+                                        {(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'] as const).map((day) => (
+                                            <div key={day} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
+                                                <span className="w-24 text-sm text-white capitalize font-medium">{day}</span>
+                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={!config.openingHours[day]?.closed}
+                                                        onChange={(e) => setConfig({
+                                                            ...config,
+                                                            openingHours: {
+                                                                ...config.openingHours,
+                                                                [day]: { ...config.openingHours[day], closed: !e.target.checked }
+                                                            }
+                                                        })}
+                                                        className="w-4 h-4 rounded accent-indigo-500"
+                                                    />
+                                                    <span className="text-xs text-zinc-400">Ouvert</span>
+                                                </label>
+                                                {!config.openingHours[day]?.closed && (
+                                                    <>
+                                                        <input
+                                                            type="time"
+                                                            value={config.openingHours[day]?.open || '08:00'}
+                                                            onChange={(e) => setConfig({
+                                                                ...config,
+                                                                openingHours: {
+                                                                    ...config.openingHours,
+                                                                    [day]: { ...config.openingHours[day], open: e.target.value }
+                                                                }
+                                                            })}
+                                                            className="bg-white/10 border border-white/10 rounded px-2 py-1 text-white text-sm"
+                                                        />
+                                                        <span className="text-zinc-500">à</span>
+                                                        <input
+                                                            type="time"
+                                                            value={config.openingHours[day]?.close || '20:00'}
+                                                            onChange={(e) => setConfig({
+                                                                ...config,
+                                                                openingHours: {
+                                                                    ...config.openingHours,
+                                                                    [day]: { ...config.openingHours[day], close: e.target.value }
+                                                                }
+                                                            })}
+                                                            className="bg-white/10 border border-white/10 rounded px-2 py-1 text-white text-sm"
+                                                        />
+                                                    </>
+                                                )}
+                                                {config.openingHours[day]?.closed && (
+                                                    <span className="text-red-400 text-sm">Fermé</span>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
+
+                                {/* Politique et fonctionnement */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Fonctionnement Détaillé (Politique)</label>
-                                    <p className="text-[10px] text-zinc-500 mb-2">Décrivez ici comment ça marche : paiement à la livraison ou avant ? expédition jour même ? échanges sous 3 jours ? Ceci aidera l'IA à répondre précisément.</p>
+                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">
+                                        📋 Politique, Retours & Fonctionnement
+                                    </label>
+                                    <p className="text-[10px] text-zinc-500 mb-2">
+                                        Décrivez votre politique de retour, vos conditions de vente, comment fonctionne le paiement, etc. L'IA utilisera ces informations pour répondre aux clients.
+                                    </p>
                                     <textarea
                                         value={config.policyDescription || ''}
                                         onChange={e => setConfig({ ...config, policyDescription: e.target.value })}
                                         rows={6}
                                         className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600 leading-relaxed text-sm"
-                                        placeholder="Ex: Nous livrons partout à Abidjan sous 24h. Le paiement se fait à la livraison via Wave ou Cash. Pour l'intérieur du pays, paiement avant expédition..."
+                                        placeholder="Ex: ✅ Satisfait ou remboursé sous 7 jours
+🚚 Nous livrons partout à Abidjan sous 24h
+💳 Paiement à la livraison via Wave ou Cash
+📦 Pour l'intérieur du pays, paiement avant expédition
+🔄 Échanges possibles sous 3 jours (article non porté)"
                                     />
                                 </div>
                             </div>
@@ -904,52 +971,119 @@ export default function Settings() {
 
                         {/* 5. Livraison & Frais */}
                         <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
-                            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                                <span className="w-2 h-2 rounded-full bg-orange-500"></span> Livraison & Frais
-                            </h2>
-                            <p className="text-[10px] text-zinc-500 mb-4">Ces tarifs seront utilisés par l'IA pour calculer le total des commandes.</p>
-                            <div className="grid md:grid-cols-3 gap-6">
-                                <div>
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Livraison Abidjan</label>
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-bold text-white flex items-center gap-2 uppercase tracking-wider text-xs">
+                                    <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                                    <Truck className="w-4 h-4" /> Livraison & Frais
+                                </h2>
+                                {/* Toggle Livraison */}
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <span className="text-sm text-zinc-400">
+                                        {config.deliveryEnabled ? 'Activée' : 'Désactivée'}
+                                    </span>
                                     <div className="relative">
                                         <input
-                                            type="number"
-                                            value={config.deliveryAbidjanPrice}
-                                            onChange={e => setConfig({ ...config, deliveryAbidjanPrice: parseInt(e.target.value) || 0 })}
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pr-16 text-white focus:border-orange-500 outline-none"
-                                            placeholder="1500"
+                                            type="checkbox"
+                                            checked={config.deliveryEnabled}
+                                            onChange={(e) => setConfig({ ...config, deliveryEnabled: e.target.checked })}
+                                            className="sr-only"
                                         />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">FCFA</span>
+                                        <div className={`w-11 h-6 rounded-full transition-colors ${config.deliveryEnabled ? 'bg-orange-500' : 'bg-zinc-700'}`}>
+                                            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${config.deliveryEnabled ? 'translate-x-5' : ''}`}></div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Livraison Intérieur</label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            value={config.deliveryInteriorPrice}
-                                            onChange={e => setConfig({ ...config, deliveryInteriorPrice: parseInt(e.target.value) || 0 })}
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pr-16 text-white focus:border-orange-500 outline-none"
-                                            placeholder="3000"
-                                        />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">FCFA</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Seuil Livraison Gratuite</label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            value={config.freeDeliveryThreshold}
-                                            onChange={e => setConfig({ ...config, freeDeliveryThreshold: parseInt(e.target.value) || 0 })}
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pr-16 text-white focus:border-orange-500 outline-none"
-                                            placeholder="50000"
-                                        />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">FCFA</span>
-                                    </div>
-                                    <p className="text-[10px] text-zinc-500 mt-1">Livraison offerte à partir de ce montant</p>
-                                </div>
+                                </label>
                             </div>
+
+                            {config.deliveryEnabled ? (
+                                <div className="space-y-4">
+                                    <p className="text-[10px] text-zinc-500">
+                                        Définissez vos zones de livraison et leurs tarifs. L'IA utilisera ces informations pour calculer le total des commandes.
+                                    </p>
+
+                                    {/* Dynamic Delivery Zones */}
+                                    <div className="space-y-3">
+                                        {config.deliveryZones.map((zone, index) => (
+                                            <div key={index} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
+                                                <input
+                                                    type="text"
+                                                    value={zone.name}
+                                                    onChange={(e) => {
+                                                        const newZones = [...config.deliveryZones];
+                                                        newZones[index].name = e.target.value;
+                                                        setConfig({ ...config, deliveryZones: newZones });
+                                                    }}
+                                                    className="flex-1 bg-white/10 border border-white/10 rounded-lg p-2 text-white text-sm placeholder:text-zinc-600"
+                                                    placeholder="Nom de la zone (ex: Cocody, Yopougon...)"
+                                                />
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        value={zone.price}
+                                                        onChange={(e) => {
+                                                            const newZones = [...config.deliveryZones];
+                                                            newZones[index].price = parseInt(e.target.value) || 0;
+                                                            setConfig({ ...config, deliveryZones: newZones });
+                                                        }}
+                                                        className="w-28 bg-white/10 border border-white/10 rounded-lg p-2 pr-12 text-white text-sm"
+                                                        placeholder="1500"
+                                                    />
+                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">FCFA</span>
+                                                </div>
+                                                {config.deliveryZones.length > 1 && (
+                                                    <button
+                                                        onClick={() => {
+                                                            const newZones = config.deliveryZones.filter((_, i) => i !== index);
+                                                            setConfig({ ...config, deliveryZones: newZones });
+                                                        }}
+                                                        className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                        title="Supprimer cette zone"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Add Zone Button */}
+                                    <button
+                                        onClick={() => setConfig({
+                                            ...config,
+                                            deliveryZones: [...config.deliveryZones, { name: '', price: 0 }]
+                                        })}
+                                        className="flex items-center gap-2 text-orange-400 hover:text-orange-300 text-sm font-medium transition-colors"
+                                    >
+                                        <Plus className="w-4 h-4" /> Ajouter une zone de livraison
+                                    </button>
+
+                                    {/* Free Delivery Threshold */}
+                                    <div className="pt-4 border-t border-white/5">
+                                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">
+                                            🎁 Seuil Livraison Gratuite
+                                        </label>
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative flex-1 max-w-xs">
+                                                <input
+                                                    type="number"
+                                                    value={config.freeDeliveryThreshold}
+                                                    onChange={e => setConfig({ ...config, freeDeliveryThreshold: parseInt(e.target.value) || 0 })}
+                                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pr-16 text-white focus:border-orange-500 outline-none"
+                                                    placeholder="50000"
+                                                />
+                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">FCFA</span>
+                                            </div>
+                                            <p className="text-[10px] text-zinc-500">Livraison offerte à partir de ce montant (0 = jamais gratuit)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-zinc-500">
+                                    <Truck className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                                    <p className="text-sm">La livraison est désactivée</p>
+                                    <p className="text-xs mt-1">Activez-la si vous gérez vous-même les frais de livraison</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* 6. Paiement */}

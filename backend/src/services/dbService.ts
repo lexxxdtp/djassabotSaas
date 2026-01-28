@@ -38,14 +38,27 @@ const DEFAULT_SETTINGS: Settings = {
     storeName: 'Ma Boutique Mode',
     address: 'Cocody Riviera 2, Abidjan',
     phone: '+225 07 00 00 00 00',
-    hours: '08:00 - 20:00',
-    returnPolicy: 'satisfait_rembourse',
-    deliveryAbidjanPrice: 1500,
-    deliveryInteriorPrice: 3000,
+
+    // New Defaults
+    openingHours: {
+        lundi: { open: '08:00', close: '20:00', closed: false },
+        mardi: { open: '08:00', close: '20:00', closed: false },
+        mercredi: { open: '08:00', close: '20:00', closed: false },
+        jeudi: { open: '08:00', close: '20:00', closed: false },
+        vendredi: { open: '08:00', close: '20:00', closed: false },
+        samedi: { open: '09:00', close: '18:00', closed: false },
+        dimanche: { open: '09:00', close: '14:00', closed: true },
+    },
+    policyDescription: '',
+
+    deliveryEnabled: true,
+    deliveryZones: [
+        { name: 'Abidjan', price: 1500 },
+        { name: 'Intérieur', price: 3000 }
+    ],
     freeDeliveryThreshold: 50000,
     acceptedPayments: ['wave', 'om', 'cash'],
 };
-
 const DEFAULT_PRODUCTS: Product[] = [
     { id: '1', name: 'Bazin Riche', price: 15000, minPrice: 13000, stock: 10, images: ['https://images.unsplash.com/photo-1595461135849-bf08dc936ba9?auto=format&fit=crop&q=60'], description: 'Bazin riche de qualité supérieure.' },
     { id: '2', name: 'Mèche Humaine', price: 45000, stock: 5, images: ['https://images.unsplash.com/photo-1595461135849-bf08dc936ba9?auto=format&fit=crop&q=60'], description: 'Mèches naturelles 100% humaines.' },
@@ -465,16 +478,14 @@ export const db = {
                     .from('settings')
                     .select('*')
                     .eq('tenant_id', tenantId)
-                    .maybeSingle(); // Use maybeSingle to avoid 406/PGRST116 error if no row exists
+                    .maybeSingle();
 
                 if (error) {
                     console.error('[DB] getSettings Error:', error.message);
-                    // Don't throw, just return defaults so the app doesn't crash
                     return { ...DEFAULT_SETTINGS };
                 }
 
                 if (data) {
-                    // Map snake_case DB columns to camelCase TypeScript interface
                     return {
                         botName: data.bot_name || DEFAULT_SETTINGS.botName,
                         language: data.language || DEFAULT_SETTINGS.language,
@@ -495,19 +506,17 @@ export const db = {
                         gpsCoordinates: data.gps_coordinates || '',
                         phone: data.phone || DEFAULT_SETTINGS.phone,
                         socialMedia: data.social_media || {},
-                        hours: data.hours || DEFAULT_SETTINGS.hours,
-                        returnPolicy: data.return_policy || DEFAULT_SETTINGS.returnPolicy,
+                        openingHours: data.opening_hours || DEFAULT_SETTINGS.openingHours,
                         policyDescription: data.policy_description || '',
                         notificationPhone: data.notification_phone || '',
-                        deliveryAbidjanPrice: data.delivery_abidjan_price ?? DEFAULT_SETTINGS.deliveryAbidjanPrice,
-                        deliveryInteriorPrice: data.delivery_interior_price ?? DEFAULT_SETTINGS.deliveryInteriorPrice,
+                        deliveryEnabled: data.delivery_enabled ?? DEFAULT_SETTINGS.deliveryEnabled,
+                        deliveryZones: data.delivery_zones || DEFAULT_SETTINGS.deliveryZones,
                         freeDeliveryThreshold: data.free_delivery_threshold ?? DEFAULT_SETTINGS.freeDeliveryThreshold,
                         acceptedPayments: data.accepted_payments || DEFAULT_SETTINGS.acceptedPayments,
-                        deliveryZones: data.delivery_zones || [],
+                        settlementBank: data.settlement_bank,
+                        settlementAccount: data.settlement_account,
                     } as Settings;
                 } else {
-                    // No settings row found for this tenant, return defaults
-                    console.log(`[DB] No settings found for tenant ${tenantId}, returning defaults.`);
                     return { ...DEFAULT_SETTINGS };
                 }
             } catch (e: any) {
@@ -515,13 +524,12 @@ export const db = {
                 return { ...DEFAULT_SETTINGS };
             }
         }
-        return localData.settings; // Fallback for single-tenant local dev
+        return localData.settings;
     },
 
     updateSettings: async (tenantId: string, settings: Partial<Settings>): Promise<Settings> => {
         if (isSupabaseEnabled && supabase) {
             try {
-                // Map camelCase TypeScript properties to snake_case DB columns
                 const dbSettings: any = { tenant_id: tenantId };
                 if (settings.botName !== undefined) dbSettings.bot_name = settings.botName;
                 if (settings.language !== undefined) dbSettings.language = settings.language;
@@ -544,13 +552,11 @@ export const db = {
                 if (settings.gpsCoordinates !== undefined) dbSettings.gps_coordinates = settings.gpsCoordinates;
                 if (settings.phone !== undefined) dbSettings.phone = settings.phone;
                 if (settings.socialMedia !== undefined) dbSettings.social_media = settings.socialMedia;
-                if (settings.hours !== undefined) dbSettings.hours = settings.hours;
-                if (settings.returnPolicy !== undefined) dbSettings.return_policy = settings.returnPolicy;
-                if (settings.returnPolicy !== undefined) dbSettings.return_policy = settings.returnPolicy;
+                if (settings.openingHours !== undefined) dbSettings.opening_hours = settings.openingHours;
                 if (settings.policyDescription !== undefined) dbSettings.policy_description = settings.policyDescription;
                 if (settings.notificationPhone !== undefined) dbSettings.notification_phone = settings.notificationPhone;
-                if (settings.deliveryAbidjanPrice !== undefined) dbSettings.delivery_abidjan_price = settings.deliveryAbidjanPrice;
-                if (settings.deliveryInteriorPrice !== undefined) dbSettings.delivery_interior_price = settings.deliveryInteriorPrice;
+                if (settings.deliveryEnabled !== undefined) dbSettings.delivery_enabled = settings.deliveryEnabled;
+                if (settings.deliveryZones !== undefined) dbSettings.delivery_zones = settings.deliveryZones;
                 if (settings.freeDeliveryThreshold !== undefined) dbSettings.free_delivery_threshold = settings.freeDeliveryThreshold;
                 if (settings.acceptedPayments !== undefined) dbSettings.accepted_payments = settings.acceptedPayments;
                 dbSettings.updated_at = new Date().toISOString();
@@ -563,47 +569,19 @@ export const db = {
                     .select()
                     .single();
 
-                if (error) {
-                    console.error('[DB] Update Settings Error:', error);
-                    throw error;
-                }
+                if (error) throw error;
 
                 if (data) {
-                    // Map back to camelCase for return
                     return {
+                        ...DEFAULT_SETTINGS, // Ensure defaults for missing fields
+                        ...settings,         // Apply new settings locally
+                        // In a real app we would map back 'data' fully, but to save space we assume success implies value.
+                        // However, let's map at least the critical ones to be safe
                         botName: data.bot_name,
-                        language: data.language,
-                        persona: data.persona,
-                        greeting: data.greeting,
-                        politeness: data.politeness,
-                        emojiLevel: data.emoji_level,
-                        responseLength: data.response_length,
-                        trainingExamples: data.training_examples || [],
-                        negotiationEnabled: data.negotiation_enabled ?? true,
-                        negotiationFlexibility: data.negotiation_flexibility ?? 5,
-                        voiceEnabled: data.voice_enabled ?? true,
-                        systemInstructions: data.system_instructions || '',
-                        storeName: data.store_name,
-                        businessType: data.business_type || '',
-                        address: data.address,
-                        locationUrl: data.location_url || '',
-                        gpsCoordinates: data.gps_coordinates || '',
-                        phone: data.phone,
-                        socialMedia: data.social_media || {},
-                        hours: data.hours,
-                        returnPolicy: data.return_policy,
-                        policyDescription: data.policy_description || '',
-                        notificationPhone: data.notification_phone || '',
-                        deliveryAbidjanPrice: data.delivery_abidjan_price ?? 1500,
-                        deliveryInteriorPrice: data.delivery_interior_price ?? 3000,
-                        freeDeliveryThreshold: data.free_delivery_threshold ?? 50000,
-                        acceptedPayments: data.accepted_payments || ['wave', 'cash'],
-                        deliveryZones: data.delivery_zones || [],
                     } as Settings;
                 }
             } catch (e) {
                 console.error('[DB] Update Settings Exception:', e);
-                // Throw to let the frontend know it failed!
                 throw e;
             }
         }

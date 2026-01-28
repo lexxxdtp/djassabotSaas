@@ -206,23 +206,37 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
             }).join(', ')
             : 'Espèces';
 
+        // Format Opening Hours
+        const openingHoursText = settings?.openingHours
+            ? Object.entries(settings.openingHours)
+                .map(([day, h]: [string, any]) => h.closed ? `${day}: Fermé` : `${day}: ${h.open}-${h.close}`)
+                .join(', ')
+            : "Non spécifié";
+
+        // Format delivery zones
+        const zonesArray = Array.isArray(settings?.deliveryZones) ? settings.deliveryZones : [];
+        const deliveryDetails = settings?.deliveryEnabled && zonesArray.length > 0
+            ? zonesArray.map(z => `- ${z.name}: ${z.price} FCFA`).join('\n')
+            : "Livraison sur devis ou désactivée dans les paramètres.";
+
         const storeContext = `
         STORE IDENTITY (Your Business):
         - Name: ${settings?.storeName}
-        - Activity: ${settings?.businessType || 'General Retail'}
+        - Activity: ${settings?.businessType || 'Commerce'}
         - Location: ${settings?.address}
         - Google Maps: ${settings?.locationUrl || 'N/A'}
         - GPS: ${settings?.gpsCoordinates || 'N/A'}
-        - Hours: ${settings?.hours}
-        - Contact: ${settings?.phone}
+        - Hours: ${openingHoursText}
+        - Contact: ${settings?.phone || 'N/A'} 
+        - Notification Phone (Admin): ${settings?.notificationPhone || 'N/A'} (Do not share unless emergency)
         - Social Media: ${settings?.socialMedia ? Object.entries(settings.socialMedia).filter(([_, v]) => v).map(([k, v]) => `${k}: ${v}`).join(', ') || 'N/A' : 'N/A'}
-        - Return Policy: ${settings?.returnPolicy === 'satisfait_rembourse' ? 'Satisfied or Refunded' : settings?.returnPolicy === 'echange_only' ? 'Exchange Only (No refund)' : 'Final Sale (No return)'}
-        - Detailed Policy/Rules: "${settings?.policyDescription || 'Standard rules.'}"
         
-        DELIVERY INFO:
-        - Abidjan: ${settings?.deliveryAbidjanPrice || 1500} FCFA
-        - Hors Abidjan (Intérieur): ${settings?.deliveryInteriorPrice || 3000} FCFA
-        - Livraison GRATUITE à partir de: ${settings?.freeDeliveryThreshold || 50000} FCFA
+        POLITIQUE & FONCTIONNEMENT:
+        "${settings?.policyDescription || 'Veuillez contacter le vendeur pour les détails.'}"
+        
+        LIVRAISON & LOGISTIQUE:
+        ${deliveryDetails}
+        - Livraison Gratuite dès: ${settings?.freeDeliveryThreshold || 'Aucun seuil'} FCFA
         
         ACCEPTED PAYMENTS: ${paymentMethods}
         `;
@@ -231,11 +245,8 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         const rawInstructions = settings?.systemInstructions || 'No specific instructions.';
         const sanitizedInstructions = rawInstructions.replace(/[{}]/g, '').substring(0, 1000); // Remove braces and limit length
 
-        // Format delivery zones for AI (with type safety)
-        const zonesArray = Array.isArray(settings?.deliveryZones) ? settings.deliveryZones : [];
-        const deliveryContext = zonesArray.length > 0
-            ? zonesArray.map(z => `- ${z.name}: ${z.price} FCFA`).join('\n')
-            : `- Abidjan (Standard): ${settings?.deliveryAbidjanPrice || 1000} FCFA\n- Intérieur: ${settings?.deliveryInteriorPrice || 2000} FCFA`;
+        // We already built deliveryDetails above, no need to redo it differently
+        const deliveryContext = deliveryDetails;
 
         // Calculate generic negotiation margin
         const margin = settings?.negotiationMargin || 0;

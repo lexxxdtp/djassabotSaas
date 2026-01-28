@@ -204,3 +204,16 @@ alter table sessions enable row level security;
 -- Open Access Policies for new tables (match existing pattern)
 create policy "Allow All Customers" on customers for all using (true) with check (true);
 create policy "Allow All Sessions" on sessions for all using (true) with check (true);
+
+-- MIGRATION: 2026-01-28 - Add Dynamic Settings Fields
+-- Execute this block to update existing 'settings' table
+
+ALTER TABLE settings 
+ADD COLUMN IF NOT EXISTS opening_hours JSONB DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS delivery_enabled BOOLEAN DEFAULT TRUE;
+
+-- Additional checks for columns that should exist
+ALTER TABLE settings ADD COLUMN IF NOT EXISTS delivery_zones JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE settings ADD COLUMN IF NOT EXISTS policy_description TEXT DEFAULT '';
+ALTER TABLE settings ADD COLUMN IF NOT EXISTS notification_phone TEXT DEFAULT '';
+
