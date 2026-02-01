@@ -129,6 +129,13 @@ create table if not exists settings (
   accepted_payments jsonb default '["wave", "cash"]',
   delivery_zones jsonb default '[]',
   
+  -- Vendor Payment (Split Payments)
+  settlement_bank text,
+  settlement_account text,
+  
+  -- AI Negotiation
+  negotiation_margin integer default 10,  -- Percentage limit (0-100)
+  
   created_at timestamp with time zone default timezone('utc', now()),
   updated_at timestamp with time zone default timezone('utc', now())
 );

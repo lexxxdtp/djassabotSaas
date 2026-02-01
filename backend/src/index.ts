@@ -8,6 +8,7 @@ import authRoutes from './routes/authRoutes';
 import aiRoutes from './routes/aiRoutes';
 import variationTemplateRoutes from './routes/variationTemplateRoutes';
 import paystackRoutes from './routes/paystackRoutes';
+import chatRoutes from './routes/chatRoutes';
 import './jobs/abandonedCart'; // Start Cron Jobs
 import { db } from './services/dbService';
 import { authenticateTenant } from './middleware/auth';
@@ -33,9 +34,7 @@ app.use(express.json());
 // IMPORTANT: Register specific routes BEFORE catch-all routes
 app.use('/api/auth', authRoutes);
 
-import chatRoutes from './routes/chatRoutes';
 
-// ... (other imports)
 
 // Protected Routes
 app.use('/api/whatsapp', whatsappRoutes); // Auth handled inside router

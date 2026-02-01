@@ -515,6 +515,7 @@ export const db = {
                         acceptedPayments: data.accepted_payments || DEFAULT_SETTINGS.acceptedPayments,
                         settlementBank: data.settlement_bank,
                         settlementAccount: data.settlement_account,
+                        negotiationMargin: data.negotiation_margin ?? 10,
                     } as Settings;
                 } else {
                     return { ...DEFAULT_SETTINGS };
@@ -559,6 +560,9 @@ export const db = {
                 if (settings.deliveryZones !== undefined) dbSettings.delivery_zones = settings.deliveryZones;
                 if (settings.freeDeliveryThreshold !== undefined) dbSettings.free_delivery_threshold = settings.freeDeliveryThreshold;
                 if (settings.acceptedPayments !== undefined) dbSettings.accepted_payments = settings.acceptedPayments;
+                if (settings.settlementBank !== undefined) dbSettings.settlement_bank = settings.settlementBank;
+                if (settings.settlementAccount !== undefined) dbSettings.settlement_account = settings.settlementAccount;
+                if (settings.negotiationMargin !== undefined) dbSettings.negotiation_margin = settings.negotiationMargin;
                 dbSettings.updated_at = new Date().toISOString();
 
                 console.log('[DB] Updating Settings for tenant:', tenantId, dbSettings);
