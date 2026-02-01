@@ -493,6 +493,8 @@ export const db = {
                         greeting: data.greeting || DEFAULT_SETTINGS.greeting,
                         politeness: data.politeness || DEFAULT_SETTINGS.politeness,
                         emojiLevel: data.emoji_level || DEFAULT_SETTINGS.emojiLevel,
+                        humorLevel: data.humor_level || 'medium',
+                        slangLevel: data.slang_level || 'low',
                         responseLength: data.response_length || DEFAULT_SETTINGS.responseLength,
                         trainingExamples: data.training_examples || [],
                         negotiationEnabled: data.negotiation_enabled ?? DEFAULT_SETTINGS.negotiationEnabled,

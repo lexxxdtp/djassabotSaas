@@ -123,11 +123,13 @@ create table if not exists settings (
   notification_phone text, -- Added for admin alerts
   
   -- Logistics
+  delivery_enabled boolean default true,
   delivery_abidjan_price numeric default 1500,
   delivery_interior_price numeric default 3000,
   free_delivery_threshold numeric default 50000,
   accepted_payments jsonb default '["wave", "cash"]',
   delivery_zones jsonb default '[]',
+  opening_hours jsonb,
   
   -- Vendor Payment (Split Payments)
   settlement_bank text,
