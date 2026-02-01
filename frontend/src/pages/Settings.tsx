@@ -186,7 +186,28 @@ export default function Settings() {
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    setConfig(prev => ({ ...prev, ...data }));
+
+                    // Defensive merge to prevent white screen crashes on partial data
+                    setConfig(prev => ({
+                        ...prev,
+                        ...data,
+                        // Deep merge for nested objects to preserve defaults if DB has empty/partial json
+                        openingHours: {
+                            ...prev.openingHours,
+                            ...(data.openingHours || {})
+                        },
+                        socialMedia: {
+                            ...prev.socialMedia,
+                            ...(data.socialMedia || {})
+                        },
+                        // Ensure arrays are at least arrays
+                        deliveryZones: data.deliveryZones || prev.deliveryZones || [],
+                        acceptedPayments: data.acceptedPayments || prev.acceptedPayments || [],
+                        trainingExamples: data.trainingExamples || prev.trainingExamples || [],
+                        // Ensure new fields have fallbacks
+                        humorLevel: data.humorLevel || prev.humorLevel || 'medium',
+                        slangLevel: data.slangLevel || prev.slangLevel || 'low',
+                    }));
                 }
             } catch (error) {
                 console.error('Failed to fetch settings', error);

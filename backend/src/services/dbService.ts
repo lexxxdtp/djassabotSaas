@@ -28,6 +28,8 @@ const DEFAULT_SETTINGS: Settings = {
     // Personality defaults
     politeness: 'informal',
     emojiLevel: 'medium',
+    humorLevel: 'medium',
+    slangLevel: 'low',
     responseLength: 'medium',
     trainingExamples: [],
 
@@ -36,8 +38,17 @@ const DEFAULT_SETTINGS: Settings = {
     voiceEnabled: true,
     systemInstructions: '',
     storeName: 'Ma Boutique Mode',
+    businessType: 'Mode & Vêtements',
     address: 'Cocody Riviera 2, Abidjan',
+    locationUrl: '',
+    gpsCoordinates: '',
     phone: '+225 07 00 00 00 00',
+    socialMedia: {
+        facebook: '',
+        instagram: '',
+        tiktok: '',
+        website: ''
+    },
 
     // New Defaults
     openingHours: {
