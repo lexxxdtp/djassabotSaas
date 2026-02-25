@@ -2,6 +2,9 @@ import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { generateToken, authenticateTenant } from '../middleware/auth';
 import { db } from '../services/dbService';
+import { createUser } from '../services/tenantService';
+import { sendVerificationEmail } from '../services/resendService';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
 
@@ -12,7 +15,7 @@ const router = express.Router();
  */
 router.post('/signup', async (req: Request, res: Response) => {
     try {
-        const { businessName, email, phone, password, businessType, fullName, birthDate } = req.body;
+        const { businessName, email, phone, password, businessType, fullName, birthDate, phoneVerified } = req.body;
 
         // Validation - au moins email OU phone
         if (!businessName || !password) {
@@ -78,6 +81,8 @@ router.post('/signup', async (req: Request, res: Response) => {
         const passwordHash = await bcrypt.hash(password, 10);
 
         // 3. Créer l'utilisateur
+        // Si phone est présent et vient de Firebase, phoneVerified est TRUE
+        // Si c'est un email, on le crée non-vérifié par défaut
         const user = await db.createUser({
             tenantId: tenant.id,
             email: normalizedEmail,
@@ -88,7 +93,24 @@ router.post('/signup', async (req: Request, res: Response) => {
             role: 'owner'
         });
 
+        // Forcer la validation si elle vient du front (Firebase)
+        if (phoneVerified && phone) {
+            await db.updateUser(user.id, { phoneVerified: true });
+            user.phoneVerified = true;
+            console.log(`[Signup] 📱 Phone verified set to True for ${phone}`);
+        }
+
         console.log(`[Signup] ✅ User créé: ${user.id} - ${email || phone}`);
+
+        // 3.bis - Envoyer l'email de confirmation (si inscription par email)
+        if (normalizedEmail) {
+            // Créer un token simple (en prod, stocker dans la DB)
+            const verifyToken = uuidv4();
+            // TODO : stocker verifyToken dans la DB pour l'utilisateur
+
+            await sendVerificationEmail(normalizedEmail, verifyToken);
+            console.log(`[Signup] 📧 Email de vérification envoyé à ${normalizedEmail}`);
+        }
 
         // 4. Créer les settings par défaut
         await db.createDefaultSettings(tenant.id, businessName);
@@ -121,7 +143,10 @@ router.post('/signup', async (req: Request, res: Response) => {
             user: {
                 id: user.id,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                phoneVerified: user.phoneVerified || false,
+                emailVerified: user.emailVerified || false,
+                message: normalizedEmail ? "Rendez-vous dans vos emails pour valider votre compte." : undefined
             }
         });
 

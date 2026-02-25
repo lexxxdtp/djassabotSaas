@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
-import { ShoppingBag, ArrowRight, Mail, Lock, Store, Phone, User, Calendar, Eye, EyeOff } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Mail, Lock, Store, Phone, User, Calendar, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../utils/apiConfig';
+import { auth } from '../firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import type { ConfirmationResult } from 'firebase/auth';
+
+declare global {
+    interface Window {
+        recaptchaVerifier: RecaptchaVerifier;
+        grecaptcha: {
+            reset: (widgetId?: number) => void;
+        };
+    }
+}
 
 const Signup: React.FC = () => {
     const [usePhone, setUsePhone] = useState(false); // Toggle email/téléphone
@@ -20,9 +32,26 @@ const Signup: React.FC = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    // OTP State
+    const [otpSent, setOtpSent] = useState(false);
+    const [otpCode, setOtpCode] = useState('');
+    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+
     const navigate = useNavigate();
     const { login, isAuthenticated } = useAuth();
     const API_URL = getApiUrl();
+
+    // Setup Invisible Recaptcha for Firebase
+    React.useEffect(() => {
+        if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                'size': 'invisible',
+                'callback': () => {
+                    // reCAPTCHA solved, allow signInWithPhoneNumber.
+                }
+            });
+        }
+    }, []);
 
     // Redirect to dashboard if already authenticated
     React.useEffect(() => {
@@ -77,15 +106,55 @@ const Signup: React.FC = () => {
         setLoading(true);
 
         try {
-            // Formater pour le backend : ajouter +225 automatiquement
-            const finalPhone = usePhone ? `+225${formData.phone}` : null;
+            if (usePhone) {
+                if (!otpSent) {
+                    // Etape 1 : Obtenir un code OTP via Firebase
+                    const finalPhoneFirebase = `+225${formData.phone}`;
+                    const appVerifier = window.recaptchaVerifier;
+                    const confirmation = await signInWithPhoneNumber(auth, finalPhoneFirebase, appVerifier);
+                    setConfirmationResult(confirmation);
+                    setOtpSent(true);
+                    setLoading(false);
+                    return; // On arrête ici pour afficher le champ OTP
+                } else {
+                    // Etape 2 : Vérification du code
+                    if (!confirmationResult) throw new Error("Erreur de session OTP");
+                    await confirmationResult.confirm(otpCode);
+
+                    const finalPhone = `+225${formData.phone}`;
+                    const response = await fetch(`${API_URL}/auth/signup`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            businessName: formData.businessName,
+                            email: null,
+                            phone: finalPhone,
+                            fullName: formData.fullName,
+                            birthDate: formData.birthDate,
+                            password: formData.password,
+                            phoneVerified: true
+                        }),
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || "Erreur lors de l'inscription");
+
+                    login(data.token, data.user, data.tenant);
+                    navigate('/dashboard');
+                    return;
+                }
+            }
+
+            // --- Si C'EST UN EMAIL, ON FAIT L'INSCRIPTION DIRECTE POUR L'INSTANT ---
+            // Formater pour le backend : ajouter +225 automatiquement si phone (mais ici on est dans email)
+            const finalPhone = null;
 
             const response = await fetch(`${API_URL}/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     businessName: formData.businessName,
-                    email: usePhone ? null : formData.email.toLowerCase().trim(),
+                    email: formData.email.toLowerCase().trim(),
                     phone: finalPhone,
                     fullName: formData.fullName,
                     birthDate: formData.birthDate,
@@ -105,14 +174,27 @@ const Signup: React.FC = () => {
 
         } catch (err: unknown) {
             if (err instanceof Error) {
-                setError(err.message);
+                if (err.message.includes('auth/invalid-verification-code')) {
+                    setError("Le code de vérification est incorrect.");
+                } else if (err.message.includes('auth/code-expired')) {
+                    setError("Le code a expiré. Veuillez recommencer.");
+                } else {
+                    setError(err.message);
+                }
             } else {
                 setError("Une erreur inconnue est survenue");
+            }
+            if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.render().then((widgetId: number) => {
+                    window.grecaptcha.reset(widgetId);
+                });
             }
         } finally {
             setLoading(false);
         }
     };
+
+
 
     return (
         <div className="min-h-screen bg-[#0f111a] flex items-center justify-center p-4">
@@ -131,6 +213,8 @@ const Signup: React.FC = () => {
                         {error}
                     </div>
                 )}
+
+                <div id="recaptcha-container"></div>
 
                 <form onSubmit={handleSignup} className="space-y-4">
                     <div>
@@ -184,7 +268,7 @@ const Signup: React.FC = () => {
                     <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
                         <button
                             type="button"
-                            onClick={() => setUsePhone(false)}
+                            onClick={() => { setUsePhone(false); setOtpSent(false); }}
                             className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${!usePhone
                                 ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
                                 : 'text-gray-500 hover:text-white'
@@ -222,26 +306,51 @@ const Signup: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Téléphone</label>
-                            <div className="relative group">
-                                {/* Préfixe Fixe +225 visualisé à l'intérieur de l'input */}
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none z-10">
-                                    <Phone className="text-gray-500 w-5 h-5" />
-                                    <span className="text-gray-400 font-bold font-mono text-sm border-r border-gray-600 pr-2">+225</span>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Téléphone</label>
+                                <div className="relative group">
+                                    {/* Préfixe Fixe +225 visualisé à l'intérieur de l'input */}
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none z-10">
+                                        <Phone className="text-gray-500 w-5 h-5" />
+                                        <span className="text-gray-400 font-bold font-mono text-sm border-r border-gray-600 pr-2">+225</span>
+                                    </div>
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handlePhoneChange}
+                                        placeholder="0709483812"
+                                        required
+                                        maxLength={10}
+                                        disabled={otpSent}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-[90px] pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono text-lg tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
+                                    />
                                 </div>
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handlePhoneChange}
-                                    placeholder="0709483812"
-                                    required
-                                    maxLength={10}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-[90px] pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono text-lg tracking-wide"
-                                />
+                                {!otpSent ? (
+                                    <p className="mt-1 text-xs text-gray-600">Entrez les 10 chiffres de votre numéro</p>
+                                ) : (
+                                    <button type="button" onClick={() => { setOtpSent(false); setOtpCode(''); }} className="mt-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Modifier le numéro</button>
+                                )}
                             </div>
-                            <p className="mt-1 text-xs text-gray-600">Entrez les 10 chiffres de votre numéro</p>
+
+                            {/* OTP Field inline */}
+                            {otpSent && (
+                                <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Code de validation (OTP)</label>
+                                    <input
+                                        type="text"
+                                        name="otpCode"
+                                        value={otpCode}
+                                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        placeholder="123456"
+                                        required
+                                        maxLength={6}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-center text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono text-2xl tracking-[0.5em]"
+                                    />
+                                    <p className="mt-2 text-xs text-green-400 flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> SMS envoyé ! Vérifiez votre téléphone.</p>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -272,13 +381,13 @@ const Signup: React.FC = () => {
                         <div className="mt-3 space-y-2">
                             <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden flex">
                                 <div className={`h-full transition-all duration-300 ${formData.password.length === 0 ? 'w-0' :
-                                        (() => {
-                                            const score = (formData.password.length >= 8 ? 1 : 0) + (/[A-Z]/.test(formData.password) ? 1 : 0) + (/\d/.test(formData.password) ? 1 : 0);
-                                            if (score === 1) return 'bg-red-500 w-1/3';
-                                            if (score === 2) return 'bg-orange-500 w-2/3';
-                                            if (score === 3) return 'bg-green-500 w-full shadow-[0_0_10px_rgba(34,197,94,0.5)]';
-                                            return 'bg-red-500 w-1/4';
-                                        })()
+                                    (() => {
+                                        const score = (formData.password.length >= 8 ? 1 : 0) + (/[A-Z]/.test(formData.password) ? 1 : 0) + (/\d/.test(formData.password) ? 1 : 0);
+                                        if (score === 1) return 'bg-red-500 w-1/3';
+                                        if (score === 2) return 'bg-orange-500 w-2/3';
+                                        if (score === 3) return 'bg-green-500 w-full shadow-[0_0_10px_rgba(34,197,94,0.5)]';
+                                        return 'bg-red-500 w-1/4';
+                                    })()
                                     }`}></div>
                             </div>
 
@@ -324,10 +433,16 @@ const Signup: React.FC = () => {
 
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || (usePhone && otpSent && otpCode.length !== 6)}
                         className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/25 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6 hover:scale-[1.02]"
                     >
-                        <span>{loading ? 'Création en cours...' : 'S\'inscrire'}</span>
+                        <span>
+                            {loading ? 'Traitement en cours...' : (
+                                usePhone ? (
+                                    !otpSent ? '1. Recevoir le code par SMS' : '2. Valider et S\'inscrire'
+                                ) : 'S\'inscrire'
+                            )}
+                        </span>
                         {!loading && <ArrowRight className="w-5 h-5" />}
                     </button>
                 </form>
