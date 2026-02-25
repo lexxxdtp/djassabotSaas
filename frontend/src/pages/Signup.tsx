@@ -36,6 +36,7 @@ const Signup: React.FC = () => {
     const [otpSent, setOtpSent] = useState(false);
     const [otpCode, setOtpCode] = useState('');
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+    const [countdown, setCountdown] = useState(0);
 
     const navigate = useNavigate();
     const { login, isAuthenticated } = useAuth();
@@ -59,6 +60,15 @@ const Signup: React.FC = () => {
             navigate('/dashboard', { replace: true });
         }
     }, [isAuthenticated, navigate]);
+
+    // OTP Timer effect
+    React.useEffect(() => {
+        let timer: ReturnType<typeof setTimeout>;
+        if (countdown > 0) {
+            timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [countdown]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -114,6 +124,7 @@ const Signup: React.FC = () => {
                     const confirmation = await signInWithPhoneNumber(auth, finalPhoneFirebase, appVerifier);
                     setConfirmationResult(confirmation);
                     setOtpSent(true);
+                    setCountdown(30); // Start 30s countdown
                     setLoading(false);
                     return; // On arrête ici pour afficher le champ OTP
                 } else {
@@ -194,7 +205,26 @@ const Signup: React.FC = () => {
         }
     };
 
-
+    const resendOTP = async () => {
+        setError('');
+        setLoading(true);
+        try {
+            const finalPhoneFirebase = `+225${formData.phone}`;
+            const appVerifier = window.recaptchaVerifier;
+            const confirmation = await signInWithPhoneNumber(auth, finalPhoneFirebase, appVerifier);
+            setConfirmationResult(confirmation);
+            setCountdown(30);
+            setOtpCode('');
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("Erreur lors du renvoi du code");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#0f111a] flex items-center justify-center p-4">
@@ -348,7 +378,17 @@ const Signup: React.FC = () => {
                                         maxLength={6}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-center text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono text-2xl tracking-[0.5em]"
                                     />
-                                    <p className="mt-2 text-xs text-green-400 flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> SMS envoyé ! Vérifiez votre téléphone.</p>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <p className="text-xs text-green-400 flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> SMS envoyé ! Vérifiez votre téléphone.</p>
+                                        <button
+                                            type="button"
+                                            onClick={resendOTP}
+                                            disabled={countdown > 0 || loading}
+                                            className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {countdown > 0 ? `Renvoyer le code (${countdown}s)` : 'Renvoyer le code'}
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
