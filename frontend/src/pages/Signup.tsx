@@ -32,11 +32,16 @@ const Signup: React.FC = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // OTP State
+    // Phone OTP State
     const [otpSent, setOtpSent] = useState(false);
     const [otpCode, setOtpCode] = useState('');
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const [countdown, setCountdown] = useState(0);
+
+    // Email OTP State
+    const [emailOtpSent, setEmailOtpSent] = useState(false);
+    const [emailOtpCode, setEmailOtpCode] = useState('');
+    const [emailCountdown, setEmailCountdown] = useState(0);
 
     const navigate = useNavigate();
     const { login, isAuthenticated } = useAuth();
@@ -61,7 +66,7 @@ const Signup: React.FC = () => {
         }
     }, [isAuthenticated, navigate]);
 
-    // OTP Timer effect
+    // Phone OTP Timer effect
     React.useEffect(() => {
         let timer: ReturnType<typeof setTimeout>;
         if (countdown > 0) {
@@ -69,6 +74,15 @@ const Signup: React.FC = () => {
         }
         return () => clearTimeout(timer);
     }, [countdown]);
+
+    // Email OTP Timer effect
+    React.useEffect(() => {
+        let timer: ReturnType<typeof setTimeout>;
+        if (emailCountdown > 0) {
+            timer = setTimeout(() => setEmailCountdown(emailCountdown - 1), 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [emailCountdown]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -156,32 +170,55 @@ const Signup: React.FC = () => {
                 }
             }
 
-            // --- Si C'EST UN EMAIL, ON FAIT L'INSCRIPTION DIRECTE POUR L'INSTANT ---
-            // Formater pour le backend : ajouter +225 automatiquement si phone (mais ici on est dans email)
-            const finalPhone = null;
+            // --- EMAIL OTP FLOW ---
+            if (!emailOtpSent) {
+                // Étape 1 : Envoyer le code OTP par email
+                const sendRes = await fetch(`${API_URL}/auth/send-email-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: formData.email.toLowerCase().trim() }),
+                });
+                const sendData = await sendRes.json();
+                if (!sendRes.ok) throw new Error(sendData.error || "Erreur lors de l'envoi du code");
 
-            const response = await fetch(`${API_URL}/auth/signup`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    businessName: formData.businessName,
-                    email: formData.email.toLowerCase().trim(),
-                    phone: finalPhone,
-                    fullName: formData.fullName,
-                    birthDate: formData.birthDate,
-                    password: formData.password
-                }),
-            });
+                setEmailOtpSent(true);
+                setEmailCountdown(30);
+                setLoading(false);
+                return;
+            } else {
+                // Étape 2 : Vérifier le code OTP
+                const verifyRes = await fetch(`${API_URL}/auth/verify-email-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: formData.email.toLowerCase().trim(),
+                        code: emailOtpCode
+                    }),
+                });
+                const verifyData = await verifyRes.json();
+                if (!verifyRes.ok) throw new Error(verifyData.error || 'Code incorrect');
 
-            const data = await response.json();
+                // Étape 3 : Inscription avec email vérifié
+                const response = await fetch(`${API_URL}/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        businessName: formData.businessName,
+                        email: formData.email.toLowerCase().trim(),
+                        phone: null,
+                        fullName: formData.fullName,
+                        birthDate: formData.birthDate,
+                        password: formData.password,
+                        emailVerified: true
+                    }),
+                });
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Erreur lors de l\'inscription');
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Erreur lors de l\'inscription');
+
+                login(data.token, data.user, data.tenant);
+                navigate('/dashboard');
             }
-
-            // Auto-login after signup
-            login(data.token, data.user, data.tenant);
-            navigate('/dashboard');
 
         } catch (err: unknown) {
             if (err instanceof Error) {
@@ -194,11 +231,6 @@ const Signup: React.FC = () => {
                 }
             } else {
                 setError("Une erreur inconnue est survenue");
-            }
-            if (window.recaptchaVerifier) {
-                window.recaptchaVerifier.render().then((widgetId: number) => {
-                    window.grecaptcha.reset(widgetId);
-                });
             }
         } finally {
             setLoading(false);
@@ -215,6 +247,30 @@ const Signup: React.FC = () => {
             setConfirmationResult(confirmation);
             setCountdown(30);
             setOtpCode('');
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("Erreur lors du renvoi du code");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const resendEmailOTP = async () => {
+        setError('');
+        setLoading(true);
+        try {
+            const sendRes = await fetch(`${API_URL}/auth/send-email-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: formData.email.toLowerCase().trim() }),
+            });
+            const sendData = await sendRes.json();
+            if (!sendRes.ok) throw new Error(sendData.error || "Erreur lors du renvoi");
+            setEmailCountdown(30);
+            setEmailOtpCode('');
         } catch (err: unknown) {
             if (err instanceof Error) {
                 setError(err.message);
@@ -320,20 +376,54 @@ const Signup: React.FC = () => {
 
                     {/* Champ Email OU Téléphone */}
                     {!usePhone ? (
-                        <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Email</label>
-                            <div className="relative group">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-500 transition-colors w-5 h-5" />
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    placeholder="votre@email.com"
-                                    required
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                                />
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Email</label>
+                                <div className="relative group">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-500 transition-colors w-5 h-5" />
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        placeholder="votre@email.com"
+                                        required
+                                        disabled={emailOtpSent}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    />
+                                </div>
+                                {emailOtpSent && (
+                                    <button type="button" onClick={() => { setEmailOtpSent(false); setEmailOtpCode(''); }} className="mt-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors">Modifier l'email</button>
+                                )}
                             </div>
+
+                            {/* Email OTP Field */}
+                            {emailOtpSent && (
+                                <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Code de validation (OTP)</label>
+                                    <input
+                                        type="text"
+                                        name="emailOtpCode"
+                                        value={emailOtpCode}
+                                        onChange={(e) => setEmailOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        placeholder="123456"
+                                        required
+                                        maxLength={6}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-center text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono text-2xl tracking-[0.5em]"
+                                    />
+                                    <div className="flex items-center justify-between mt-2">
+                                        <p className="text-xs text-green-400 flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Code envoyé ! Vérifiez votre boîte mail.</p>
+                                        <button
+                                            type="button"
+                                            onClick={resendEmailOTP}
+                                            disabled={emailCountdown > 0 || loading}
+                                            className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {emailCountdown > 0 ? `Renvoyer le code (${emailCountdown}s)` : 'Renvoyer le code'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -473,14 +563,16 @@ const Signup: React.FC = () => {
 
                     <button
                         type="submit"
-                        disabled={loading || (usePhone && otpSent && otpCode.length !== 6)}
+                        disabled={loading || (usePhone && otpSent && otpCode.length !== 6) || (!usePhone && emailOtpSent && emailOtpCode.length !== 6)}
                         className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/25 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6 hover:scale-[1.02]"
                     >
                         <span>
                             {loading ? 'Traitement en cours...' : (
                                 usePhone ? (
                                     !otpSent ? '1. Recevoir le code par SMS' : '2. Valider et S\'inscrire'
-                                ) : 'S\'inscrire'
+                                ) : (
+                                    !emailOtpSent ? '1. Recevoir le code par Email' : '2. Valider et S\'inscrire'
+                                )
                             )}
                         </span>
                         {!loading && <ArrowRight className="w-5 h-5" />}

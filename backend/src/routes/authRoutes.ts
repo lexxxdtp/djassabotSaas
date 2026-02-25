@@ -3,10 +3,13 @@ import bcrypt from 'bcryptjs';
 import { generateToken, authenticateTenant } from '../middleware/auth';
 import { db } from '../services/dbService';
 import { createUser } from '../services/tenantService';
-import { sendVerificationEmail } from '../services/resendService';
+import { sendVerificationEmail, sendOtpEmail } from '../services/resendService';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
+
+// In-memory store for email OTP codes (email -> { code, expiresAt })
+const emailOtpStore = new Map<string, { code: string; expiresAt: number }>();
 
 /**
  * POST /api/auth/signup
@@ -15,7 +18,7 @@ const router = express.Router();
  */
 router.post('/signup', async (req: Request, res: Response) => {
     try {
-        const { businessName, email, phone, password, businessType, fullName, birthDate, phoneVerified } = req.body;
+        const { businessName, email, phone, password, businessType, fullName, birthDate, phoneVerified, emailVerified } = req.body;
 
         // Validation - au moins email OU phone
         if (!businessName || !password) {
@@ -102,14 +105,11 @@ router.post('/signup', async (req: Request, res: Response) => {
 
         console.log(`[Signup] ✅ User créé: ${user.id} - ${email || phone}`);
 
-        // 3.bis - Envoyer l'email de confirmation (si inscription par email)
-        if (normalizedEmail) {
-            // Créer un token simple (en prod, stocker dans la DB)
-            const verifyToken = uuidv4();
-            // TODO : stocker verifyToken dans la DB pour l'utilisateur
-
-            await sendVerificationEmail(normalizedEmail, verifyToken);
-            console.log(`[Signup] 📧 Email de vérification envoyé à ${normalizedEmail}`);
+        // 3.bis - Marquer l'email comme vérifié si l'OTP a été validé côté front
+        if (emailVerified && normalizedEmail) {
+            await db.updateUser(user.id, { emailVerified: true });
+            user.emailVerified = true;
+            console.log(`[Signup] 📧 Email verified set to True for ${normalizedEmail}`);
         }
 
         // 4. Créer les settings par défaut
@@ -342,6 +342,94 @@ router.put('/me', authenticateTenant, async (req: Request, res: Response) => {
         });
     } catch (error: any) {
         console.error('[Update Me] Erreur:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+/**
+ * POST /api/auth/send-email-otp
+ * Génère un code OTP à 6 chiffres et l'envoie par email via Resend
+ */
+router.post('/send-email-otp', async (req: Request, res: Response) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            res.status(400).json({ error: 'Email requis' });
+            return;
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
+
+        // Vérifier si l'email est déjà utilisé
+        const existingUser = await db.getUserByEmail(normalizedEmail);
+        if (existingUser) {
+            res.status(409).json({ error: 'Cet email est déjà utilisé' });
+            return;
+        }
+
+        // Générer un code à 6 chiffres
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Stocker avec expiration de 10 minutes
+        emailOtpStore.set(normalizedEmail, {
+            code,
+            expiresAt: Date.now() + 10 * 60 * 1000
+        });
+
+        // Envoyer par email
+        const result = await sendOtpEmail(normalizedEmail, code);
+
+        if (!result.success) {
+            res.status(500).json({ error: "Erreur lors de l'envoi de l'email" });
+            return;
+        }
+
+        console.log(`[Email OTP] 📧 Code envoyé à ${normalizedEmail}`);
+        res.json({ success: true, message: 'Code envoyé par email' });
+    } catch (error: any) {
+        console.error('[Email OTP] Erreur:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+/**
+ * POST /api/auth/verify-email-otp
+ * Vérifie le code OTP soumis par l'utilisateur
+ */
+router.post('/verify-email-otp', async (req: Request, res: Response) => {
+    try {
+        const { email, code } = req.body;
+        if (!email || !code) {
+            res.status(400).json({ error: 'Email et code requis' });
+            return;
+        }
+
+        const normalizedEmail = email.toLowerCase().trim();
+        const stored = emailOtpStore.get(normalizedEmail);
+
+        if (!stored) {
+            res.status(400).json({ error: 'Aucun code envoyé pour cet email. Veuillez redemander un code.' });
+            return;
+        }
+
+        if (Date.now() > stored.expiresAt) {
+            emailOtpStore.delete(normalizedEmail);
+            res.status(400).json({ error: 'Le code a expiré. Veuillez redemander un code.' });
+            return;
+        }
+
+        if (stored.code !== code) {
+            res.status(400).json({ error: 'Code incorrect' });
+            return;
+        }
+
+        // Code valide, supprimer de la mémoire
+        emailOtpStore.delete(normalizedEmail);
+
+        console.log(`[Email OTP] ✅ Email vérifié: ${normalizedEmail}`);
+        res.json({ success: true, verified: true });
+    } catch (error: any) {
+        console.error('[Verify Email OTP] Erreur:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
