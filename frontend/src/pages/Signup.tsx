@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { ShoppingBag, ArrowRight, Mail, Lock, Store, Phone, User, Calendar } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Mail, Lock, Store, Phone, User, Calendar, Eye, EyeOff } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../utils/apiConfig';
 
 const Signup: React.FC = () => {
     const [usePhone, setUsePhone] = useState(false); // Toggle email/téléphone
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [formData, setFormData] = useState({
         businessName: '',
         email: '',
@@ -248,25 +250,35 @@ const Signup: React.FC = () => {
                         <div className="relative group">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-500 transition-colors w-5 h-5" />
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 name="password"
                                 value={formData.password}
                                 onChange={handleChange}
                                 placeholder="••••••••"
                                 required
                                 minLength={8}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                            >
+                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            </button>
                         </div>
 
                         {/* Indicateur de force du mot de passe */}
                         <div className="mt-3 space-y-2">
                             <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden flex">
                                 <div className={`h-full transition-all duration-300 ${formData.password.length === 0 ? 'w-0' :
-                                        (formData.password.length >= 8 ? 1 : 0) + (/[A-Z]/.test(formData.password) ? 1 : 0) + (/\d/.test(formData.password) ? 1 : 0) === 1 ? 'bg-red-500 w-1/3' :
-                                            (formData.password.length >= 8 ? 1 : 0) + (/[A-Z]/.test(formData.password) ? 1 : 0) + (/\d/.test(formData.password) ? 1 : 0) === 2 ? 'bg-yellow-500 w-2/3' :
-                                                (formData.password.length >= 8 ? 1 : 0) + (/[A-Z]/.test(formData.password) ? 1 : 0) + (/\d/.test(formData.password) ? 1 : 0) === 3 ? 'bg-green-500 w-full' :
-                                                    'bg-red-500 w-1/4'
+                                        (() => {
+                                            const score = (formData.password.length >= 8 ? 1 : 0) + (/[A-Z]/.test(formData.password) ? 1 : 0) + (/\d/.test(formData.password) ? 1 : 0);
+                                            if (score === 1) return 'bg-red-500 w-1/3';
+                                            if (score === 2) return 'bg-orange-500 w-2/3';
+                                            if (score === 3) return 'bg-green-500 w-full shadow-[0_0_10px_rgba(34,197,94,0.5)]';
+                                            return 'bg-red-500 w-1/4';
+                                        })()
                                     }`}></div>
                             </div>
 
@@ -292,14 +304,21 @@ const Signup: React.FC = () => {
                         <div className="relative group">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-500 transition-colors w-5 h-5" />
                             <input
-                                type="password"
+                                type={showConfirmPassword ? "text" : "password"}
                                 name="confirmPassword"
                                 value={formData.confirmPassword}
                                 onChange={handleChange}
                                 placeholder="••••••••"
                                 required
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                            >
+                                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            </button>
                         </div>
                     </div>
 
