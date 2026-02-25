@@ -56,9 +56,9 @@ export default function Settings() {
         slangLevel: 'low',
         responseLength: 'medium',
         trainingExamples: [
-            { input: "C'est combien ?", output: "5000 FCFA" },
-            { input: "Vous livrez à Cocody ?", output: "Oui, 1500 FCFA pour la livraison." },
-            { input: "Vous avez d'autres couleurs ?", output: "Oui, nous avons du bleu et du rouge." }
+            { question: "C'est combien ?", answer: "5000 FCFA" },
+            { question: "Vous livrez à Cocody ?", answer: "Oui, 1500 FCFA pour la livraison." },
+            { question: "Vous avez d'autres couleurs ?", answer: "Oui, nous avons du bleu et du rouge." }
         ],
 
         // Options
@@ -135,9 +135,9 @@ export default function Settings() {
                         deliveryZones: data.deliveryZones || prev.deliveryZones || [],
                         acceptedPayments: data.acceptedPayments || prev.acceptedPayments || [],
                         trainingExamples: (data.trainingExamples && data.trainingExamples.length > 0) ? data.trainingExamples : [
-                            { input: "C'est combien ?", output: "5000 FCFA" },
-                            { input: "Vous livrez à Cocody ?", output: "Oui, 1500 FCFA pour la livraison." },
-                            { input: "Vous avez d'autres couleurs ?", output: "Oui, nous avons du bleu et du rouge." }
+                            { question: "C'est combien ?", answer: "5000 FCFA" },
+                            { question: "Vous livrez à Cocody ?", answer: "Oui, 1500 FCFA pour la livraison." },
+                            { question: "Vous avez d'autres couleurs ?", answer: "Oui, nous avons du bleu et du rouge." }
                         ],
                         // Ensure new fields have fallbacks
                         humorLevel: data.humorLevel || prev.humorLevel || 'medium',

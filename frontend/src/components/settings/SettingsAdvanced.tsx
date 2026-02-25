@@ -61,10 +61,10 @@ export default function SettingsAdvanced({ config, setConfig }: SettingsAdvanced
                                     <div className="flex-1">
                                         <input
                                             type="text"
-                                            value={example.input}
+                                            value={example.question}
                                             onChange={e => {
                                                 const newExamples = [...(config.trainingExamples || [])];
-                                                newExamples[index].input = e.target.value;
+                                                newExamples[index].question = e.target.value;
                                                 setConfig({ ...config, trainingExamples: newExamples });
                                             }}
                                             className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-zinc-200 focus:border-blue-500 outline-none placeholder:text-zinc-600"
@@ -74,10 +74,10 @@ export default function SettingsAdvanced({ config, setConfig }: SettingsAdvanced
                                     <div className="flex-1">
                                         <input
                                             type="text"
-                                            value={example.output}
+                                            value={example.answer}
                                             onChange={e => {
                                                 const newExamples = [...(config.trainingExamples || [])];
-                                                newExamples[index].output = e.target.value;
+                                                newExamples[index].answer = e.target.value;
                                                 setConfig({ ...config, trainingExamples: newExamples });
                                             }}
                                             className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-zinc-200 focus:border-blue-500 outline-none placeholder:text-zinc-600"
@@ -100,7 +100,7 @@ export default function SettingsAdvanced({ config, setConfig }: SettingsAdvanced
                         <button
                             onClick={() => setConfig({
                                 ...config,
-                                trainingExamples: [...(config.trainingExamples || []), { input: '', output: '' }]
+                                trainingExamples: [...(config.trainingExamples || []), { question: '', answer: '' }]
                             })}
                             className="w-full py-3 border border-dashed border-zinc-700 hover:border-blue-500 hover:text-blue-400 text-zinc-500 text-sm font-medium rounded-lg transition-all border-2"
                         >

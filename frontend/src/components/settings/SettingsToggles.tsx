@@ -1,4 +1,4 @@
-import { Handshake, Mic } from 'lucide-react';
+import { Handshake } from 'lucide-react';
 import type { SettingsConfig } from '../../types';
 
 interface SettingsTogglesProps {
