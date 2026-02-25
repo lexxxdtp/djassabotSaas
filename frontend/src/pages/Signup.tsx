@@ -258,7 +258,33 @@ const Signup: React.FC = () => {
                                 className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                             />
                         </div>
-                        <p className="mt-1 text-xs text-gray-600">Minimum 8 caractères</p>
+
+                        {/* Indicateur de force du mot de passe */}
+                        <div className="mt-3 space-y-2">
+                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden flex">
+                                <div className={`h-full transition-all duration-300 ${formData.password.length === 0 ? 'w-0' :
+                                        (formData.password.length >= 8 ? 1 : 0) + (/[A-Z]/.test(formData.password) ? 1 : 0) + (/\d/.test(formData.password) ? 1 : 0) === 1 ? 'bg-red-500 w-1/3' :
+                                            (formData.password.length >= 8 ? 1 : 0) + (/[A-Z]/.test(formData.password) ? 1 : 0) + (/\d/.test(formData.password) ? 1 : 0) === 2 ? 'bg-yellow-500 w-2/3' :
+                                                (formData.password.length >= 8 ? 1 : 0) + (/[A-Z]/.test(formData.password) ? 1 : 0) + (/\d/.test(formData.password) ? 1 : 0) === 3 ? 'bg-green-500 w-full' :
+                                                    'bg-red-500 w-1/4'
+                                    }`}></div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-1.5 text-xs text-gray-500 mt-2">
+                                <div className={`flex items-center gap-2 transition-colors ${formData.password.length >= 8 ? 'text-green-400' : ''}`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full transition-colors ${formData.password.length >= 8 ? 'bg-green-400' : 'bg-gray-600'}`}></div>
+                                    Minimum 8 caractères
+                                </div>
+                                <div className={`flex items-center gap-2 transition-colors ${/[A-Z]/.test(formData.password) ? 'text-green-400' : ''}`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full transition-colors ${/[A-Z]/.test(formData.password) ? 'bg-green-400' : 'bg-gray-600'}`}></div>
+                                    Une lettre majuscule
+                                </div>
+                                <div className={`flex items-center gap-2 transition-colors ${/\d/.test(formData.password) ? 'text-green-400' : ''}`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full transition-colors ${/\d/.test(formData.password) ? 'bg-green-400' : 'bg-gray-600'}`}></div>
+                                    Un chiffre
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
