@@ -2,13 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase, isSupabaseEnabled } from '../config/supabase';
 import { Tenant, User, Subscription } from '../types';
 
-// Local fallback storage for dev/testing when Supabase is not ready
-const localStore = {
-    tenants: [] as Tenant[],
-    users: [] as User[],
-    subscriptions: [] as Subscription[],
-    settings: [] as any[]
-};
+
 
 /**
  * TENANT MANAGEMENT FUNCTIONS
