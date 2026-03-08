@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Trash2, Image as ImageIcon, X, Plus, Tags } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { getApiUrl } from '../utils/apiConfig';
+import { useAuth } from '../context/AuthContext';
 
 // Option within a variation (with stock and price modifier)
 interface VariationOption {
@@ -28,7 +29,6 @@ interface Product {
     images: string[];
     variations: ProductVariation[];
     aiInstructions: string;
-    ai_instructions?: string; // from DB
 }
 
 interface VariationTemplate {
@@ -40,6 +40,7 @@ interface VariationTemplate {
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { token } = useAuth();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [product, setProduct] = useState<Product>({
@@ -62,7 +63,6 @@ const ProductDetail: React.FC = () => {
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const token = localStorage.getItem('token');
                 const API_URL = getApiUrl();
                 const res = await fetch(`${API_URL}/variation-templates`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -75,13 +75,12 @@ const ProductDetail: React.FC = () => {
                 console.error('Failed to fetch variation templates', error);
             }
         };
-        fetchTemplates();
-    }, []);
+        if (token) fetchTemplates();
+    }, [token]);
 
     useEffect(() => {
         const fetchProduct = async () => {
             try {
-                const token = localStorage.getItem('token');
                 if (!token) {
                     navigate('/login');
                     return;
@@ -128,12 +127,11 @@ const ProductDetail: React.FC = () => {
         };
 
         if (id) fetchProduct();
-    }, [id, navigate]);
+    }, [id, navigate, token]);
 
     const handleSave = async () => {
         setSaving(true);
         try {
-            const token = localStorage.getItem('token');
             const API_URL = getApiUrl();
             const res = await fetch(`${API_URL}/products/${id}`, {
                 method: 'PUT',
@@ -163,7 +161,6 @@ const ProductDetail: React.FC = () => {
     const handleDelete = async () => {
         if (!confirm('Voulez-vous vraiment supprimer ce produit ?')) return;
         try {
-            const token = localStorage.getItem('token');
             const API_URL = getApiUrl();
             await fetch(`${API_URL}/products/${id}`, {
                 method: 'DELETE',
@@ -247,7 +244,6 @@ const ProductDetail: React.FC = () => {
     // Save a new custom variation template
     const saveVariationTemplate = async (name: string, options: VariationOption[]) => {
         try {
-            const token = localStorage.getItem('token');
             const API_URL = getApiUrl();
             await fetch(`${API_URL}/variation-templates`, {
                 method: 'POST',

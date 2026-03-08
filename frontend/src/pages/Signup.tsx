@@ -47,16 +47,22 @@ const Signup: React.FC = () => {
     const { login, isAuthenticated } = useAuth();
     const API_URL = getApiUrl();
 
-    // Setup Invisible Recaptcha for Firebase
+    // Setup Visible Recaptcha for Firebase (Safari/React 18 Strict Mode Fix)
     React.useEffect(() => {
         if (!window.recaptchaVerifier) {
             window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                'size': 'invisible',
-                'callback': () => {
-                    // reCAPTCHA solved, allow signInWithPhoneNumber.
-                }
+                'size': 'normal',
             });
+            window.recaptchaVerifier.render(); // Explicitly render it
         }
+
+        return () => {
+            // Unmount: Clear recaptchaVerifier to avoid "auth/invalid-app-credential" React 18 bug
+            if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.clear();
+                window.recaptchaVerifier = undefined as unknown as RecaptchaVerifier;
+            }
+        };
     }, []);
 
     // Redirect to dashboard if already authenticated
@@ -221,6 +227,19 @@ const Signup: React.FC = () => {
             }
 
         } catch (err: unknown) {
+            // Re-initialize recaptcha on error so the user can try again
+            if (window.recaptchaVerifier) {
+                try {
+                    window.recaptchaVerifier.clear();
+                    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                        'size': 'normal',
+                    });
+                    window.recaptchaVerifier.render();
+                } catch (e) {
+                    console.error("Could not reset recaptcha", e);
+                }
+            }
+
             if (err instanceof Error) {
                 if (err.message.includes('auth/invalid-verification-code')) {
                     setError("Le code de vérification est incorrect.");
@@ -299,8 +318,6 @@ const Signup: React.FC = () => {
                         {error}
                     </div>
                 )}
-
-                <div id="recaptcha-container"></div>
 
                 <form onSubmit={handleSignup} className="space-y-4">
                     <div>
@@ -560,6 +577,9 @@ const Signup: React.FC = () => {
                             </button>
                         </div>
                     </div>
+
+                    {/* Force recaptcha to be visible when testing phone */}
+                    <div id="recaptcha-container" className="my-4 flex justify-center w-full overflow-hidden"></div>
 
                     <button
                         type="submit"

@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
-import { ShoppingBag, Clock, MapPin, X, AlertCircle, Package } from 'lucide-react';
-import { getApiUrl } from '../utils/apiConfig';
+import { useEffect, useState, useCallback } from 'react';
+import { ShoppingBag, Clock, MapPin, X, AlertCircle, Package, Send } from 'lucide-react';
+import { apiClient } from '../utils/apiClient';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 
 interface Order {
     id: string;
@@ -28,6 +30,35 @@ const getStatusColor = (status: string) => {
         case 'DELIVERED': return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
         case 'CANCELLED': return 'text-red-500 bg-red-500/10 border-red-500/20';
         default: return 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20';
+    }
+};
+
+// Generate a formatted delivery message for a confirmed order
+const generateDeliveryMessage = (order: Order): string => {
+    const items = order.items.map(i => `  • ${i.quantity}x ${i.productName}${i.selectedVariations?.length ? ` (${i.selectedVariations.map(v => v.value).join(', ')})` : ''}`).join('\n');
+    return `📦 COMMANDE #${order.id}\n\n👤 Client : ${order.userId}\n\n🛒 Articles :\n${items}\n\n💰 Total : ${order.total.toLocaleString()} FCFA\n📍 Adresse : ${order.address || 'Non renseignée'}\n🕐 Date : ${new Date(order.createdAt).toLocaleString('fr-FR')}`;
+};
+
+// Share or copy the delivery message
+const shareOrder = async (order: Order) => {
+    const message = generateDeliveryMessage(order);
+
+    // Try native share first (works on mobile)
+    if (navigator.share) {
+        try {
+            await navigator.share({ text: message });
+            return;
+        } catch {
+            // User cancelled or share failed — fall through to clipboard
+        }
+    }
+
+    // Fallback: copy to clipboard
+    try {
+        await navigator.clipboard.writeText(message);
+        toast.success('📋 Résumé copié ! Collez-le dans votre groupe livreurs.');
+    } catch {
+        toast.error('Impossible de copier');
     }
 };
 
@@ -79,12 +110,21 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
                         </>
                     )}
                     {order.status === 'CONFIRMED' && (
-                        <button
-                            onClick={() => onUpdateStatus(order.id, 'DELIVERED')}
-                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-black rounded-lg text-xs font-bold uppercase transition-all shadow-lg shadow-emerald-500/20"
-                        >
-                            Marquer comme Terminée
-                        </button>
+                        <>
+                            <button
+                                onClick={() => shareOrder(order)}
+                                className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-2"
+                            >
+                                <Send size={14} />
+                                Envoyer au livreur
+                            </button>
+                            <button
+                                onClick={() => onUpdateStatus(order.id, 'DELIVERED')}
+                                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-black rounded-lg text-xs font-bold uppercase transition-all shadow-lg shadow-emerald-500/20"
+                            >
+                                Marquer comme Terminée
+                            </button>
+                        </>
                     )}
                     {order.status !== 'PENDING' && order.status !== 'CONFIRMED' && (
                         <span className="text-zinc-500 text-sm italic">Commande cloturée</span>
@@ -156,14 +196,13 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
 );
 
 export default function Orders() {
+    const { token } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-    const fetchOrders = () => {
-        const API_URL = getApiUrl();
-        const token = localStorage.getItem('token');
-        fetch(`${API_URL}/orders`, { headers: { 'Authorization': `Bearer ${token}` } })
+    const fetchOrders = useCallback(() => {
+        apiClient('/orders')
             .then(res => res.ok ? res.json() : [])
             .then(data => {
                 setOrders(Array.isArray(data) ? data : []);
@@ -174,22 +213,19 @@ export default function Orders() {
                 setOrders([]);
                 setLoading(false);
             });
-    };
+    }, []);
 
     useEffect(() => {
-        fetchOrders();
-    }, []);
+        if (token) fetchOrders();
+    }, [token, fetchOrders]);
 
     const updateStatus = async (orderId: string, newStatus: string) => {
         try {
             const tempOrders = orders.map(o => o.id === orderId ? { ...o, status: newStatus as Order['status'] } : o);
             setOrders(tempOrders); // Optimistic UI
 
-            const API_URL = getApiUrl();
-            const token = localStorage.getItem('token');
-            await fetch(`${API_URL}/orders/${orderId}/status`, {
+            await apiClient(`/orders/${orderId}/status`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ status: newStatus })
             });
             fetchOrders(); // Refresh to ensure sync
@@ -225,29 +261,40 @@ export default function Orders() {
                         </div>
                     ) : (
                         orders.map((order) => (
-                            <div key={order.id} onClick={() => setSelectedOrder(order)} className="bg-[#0a0c10] border border-white/5 rounded-xl p-6 hover:border-indigo-500/30 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center group transition-all gap-4">
-                                <div className="flex items-center gap-4">
-                                    <div className={`p-3 rounded-full ${order.status === 'PENDING' ? 'bg-orange-500/10 text-orange-500' : 'bg-white/5 text-gray-400'}`}>
+                            <div key={order.id} className="bg-[#0a0c10] border border-white/5 rounded-xl p-4 sm:p-6 hover:border-indigo-500/30 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center group transition-all gap-3 sm:gap-4">
+                                <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0" onClick={() => setSelectedOrder(order)}>
+                                    <div className={`p-2.5 sm:p-3 rounded-full shrink-0 ${order.status === 'PENDING' ? 'bg-orange-500/10 text-orange-500' : 'bg-white/5 text-gray-400'}`}>
                                         {order.status === 'PENDING' ? <AlertCircle size={20} /> : <Package size={20} />}
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-white text-lg">#{order.id.split('-')[1]}</h3>
-                                        <p className="text-zinc-500 text-sm flex items-center gap-2">
+                                    <div className="min-w-0">
+                                        <h3 className="font-bold text-white text-base sm:text-lg">#{order.id.split('-')[1]}</h3>
+                                        <p className="text-zinc-500 text-xs sm:text-sm flex items-center gap-2">
                                             <Clock size={12} /> {new Date(order.createdAt).toLocaleDateString()}
                                             <span className="text-zinc-700">•</span>
-                                            <span className="text-zinc-400">{order.items.length} articles</span>
+                                            <span className="text-zinc-400">{order.items.length} art.</span>
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
-                                    <div className="text-left sm:text-right">
-                                        <div className="font-mono text-white text-lg font-bold">{order.total.toLocaleString()} <span className="text-sm text-zinc-500">FCFA</span></div>
-                                        <div className="text-zinc-600 text-xs truncate max-w-[150px]">{order.address}</div>
+                                <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto justify-between sm:justify-end pl-12 sm:pl-0">
+                                    <div className="text-left sm:text-right min-w-0">
+                                        <div className="font-mono text-white text-base sm:text-lg font-bold">{order.total.toLocaleString()} <span className="text-xs sm:text-sm text-zinc-500">FCFA</span></div>
+                                        <div className="text-zinc-600 text-xs truncate max-w-[120px] sm:max-w-[150px]">{order.address}</div>
                                     </div>
-                                    <span className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider border ${getStatusColor(order.status)}`}>
-                                        {order.status === 'PENDING' ? 'NOUVELLE' : order.status === 'CONFIRMED' ? 'CONFIRMÉE' : order.status}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        {order.status === 'CONFIRMED' && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); shareOrder(order); }}
+                                                className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 active:scale-90 transition-all"
+                                                title="Envoyer au livreur"
+                                            >
+                                                <Send size={16} />
+                                            </button>
+                                        )}
+                                        <span className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded text-[10px] sm:text-xs font-bold uppercase tracking-wider border shrink-0 ${getStatusColor(order.status)}`}>
+                                            {order.status === 'PENDING' ? 'NOUVELLE' : order.status === 'CONFIRMED' ? 'CONFIRMÉE' : order.status}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         ))

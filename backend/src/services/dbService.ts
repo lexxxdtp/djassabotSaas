@@ -18,6 +18,7 @@ interface LocalData {
     products: Product[];
     orders: Order[];
     carts: Record<string, CartItem[]>;
+    authTokens: { identifier: string, tokenType: string, tokenValue: string, expiresAt: string }[];
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -79,7 +80,8 @@ let localData: LocalData = {
     settings: DEFAULT_SETTINGS,
     products: DEFAULT_PRODUCTS,
     orders: [],
-    carts: {}
+    carts: {},
+    authTokens: []
 };
 
 // Helpers
@@ -129,8 +131,13 @@ export const db = {
                 if (error) throw error;
                 // Map snake_case DB columns to camelCase for app usage
                 return (data || []).map(o => ({
-                    ...o,
-                    userId: o.user_id,  // Map user_id to userId
+                    id: o.id,
+                    tenantId: o.tenant_id,
+                    userId: o.user_id,
+                    items: o.items,
+                    total: o.total,
+                    status: o.status,
+                    address: o.address,
                     createdAt: new Date(o.created_at)
                 }));
             } catch (e) {
@@ -638,7 +645,16 @@ export const db = {
                 .eq('tenant_id', tenantId)
                 .order('created_at', { ascending: false })
                 .limit(limit);
-            return data || [];
+            // Map snake_case to camelCase for frontend
+            return (data || []).map(o => ({
+                id: o.id,
+                userId: o.user_id,
+                items: o.items,
+                total: o.total,
+                status: o.status,
+                address: o.address,
+                createdAt: o.created_at
+            }));
         }
         return [];
     },
@@ -733,5 +749,90 @@ export const db = {
     getSubscriptionByTenantId: tenantService.getSubscriptionByTenantId,
 
     // Default Settings Creation
-    createDefaultSettings: tenantService.createDefaultSettings
+    createDefaultSettings: tenantService.createDefaultSettings,
+
+    // Auth Tokens (OTP / Resets)
+    storeAuthToken: async (identifier: string, tokenType: 'EMAIL_OTP' | 'PASSWORD_RESET', tokenValue: string, expiresAt: Date) => {
+        if (isSupabaseEnabled && supabase) {
+            try {
+                const { error } = await supabase.from('auth_tokens').insert([{
+                    identifier,
+                    token_type: tokenType,
+                    token_value: tokenValue,
+                    expires_at: expiresAt.toISOString()
+                }]);
+                if (error) throw error;
+                return;
+            } catch (e) {
+                console.error('[DB] storeAuthToken Failed, fallback to local', e);
+            }
+        }
+
+        // Remove existing tokens for this identifier+type to prevent clutter
+        localData.authTokens = localData.authTokens.filter(t => !(t.identifier === identifier && t.tokenType === tokenType));
+        localData.authTokens.push({
+            identifier, tokenType, tokenValue, expiresAt: expiresAt.toISOString()
+        });
+        saveData();
+    },
+
+    verifyAuthToken: async (identifierOrTokenValue: string, tokenType: 'EMAIL_OTP' | 'PASSWORD_RESET', valueToMatch?: string): Promise<{ valid: boolean, identifier?: string }> => {
+        const now = new Date().toISOString();
+
+        if (isSupabaseEnabled && supabase) {
+            try {
+                let query = supabase.from('auth_tokens').select('*').eq('token_type', tokenType).gt('expires_at', now);
+
+                if (tokenType === 'EMAIL_OTP') {
+                    // For OTP, we check by identifier (email) and match the value
+                    query = query.eq('identifier', identifierOrTokenValue).eq('token_value', valueToMatch);
+                } else {
+                    // For Password Reset, we check by the token value itself
+                    query = query.eq('token_value', identifierOrTokenValue);
+                }
+
+                const { data, error } = await query.single();
+                if (error || !data) return { valid: false };
+                return { valid: true, identifier: data.identifier };
+            } catch (e) {
+                console.warn('[DB] verifyAuthToken Failed, checking local map', e);
+            }
+        }
+
+        // Local DB Check
+        const token = localData.authTokens.find(t => {
+            if (t.tokenType !== tokenType || t.expiresAt <= now) return false;
+            if (tokenType === 'EMAIL_OTP') {
+                return t.identifier === identifierOrTokenValue && t.tokenValue === valueToMatch;
+            } else {
+                return t.tokenValue === identifierOrTokenValue; // Reset token
+            }
+        });
+
+        if (token) return { valid: true, identifier: token.identifier };
+        return { valid: false };
+    },
+
+    deleteAuthToken: async (identifierOrTokenValue: string, tokenType: 'EMAIL_OTP' | 'PASSWORD_RESET') => {
+        if (isSupabaseEnabled && supabase) {
+            try {
+                let query = supabase.from('auth_tokens').delete().eq('token_type', tokenType);
+                if (tokenType === 'EMAIL_OTP') {
+                    query = query.eq('identifier', identifierOrTokenValue);
+                } else {
+                    query = query.eq('token_value', identifierOrTokenValue);
+                }
+                await query;
+            } catch (e) {
+                console.error('[DB] deleteAuthToken Failed', e);
+            }
+        }
+
+        localData.authTokens = localData.authTokens.filter(t => {
+            if (t.tokenType !== tokenType) return true; // KEEP
+            if (tokenType === 'EMAIL_OTP') return t.identifier !== identifierOrTokenValue;
+            return t.tokenValue !== identifierOrTokenValue;
+        });
+        saveData();
+    }
 };

@@ -67,7 +67,7 @@ const PlanCard = ({ id, title, price, features, recommended, currentPlan, loadin
 };
 
 export default function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
-    const { user, tenant } = useAuth();
+    const { user, tenant, token } = useAuth();
     const [activeTab, setActiveTab] = useState<'profile' | 'subscription'>('subscription');
     const [currentPlan] = useState(tenant?.subscription_tier || 'starter');
     const [loading, setLoading] = useState(false);
@@ -79,8 +79,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
         setError(null);
 
         try {
-            const token = localStorage.getItem('token') || localStorage.getItem('authToken') || sessionStorage.getItem('token');
-            const userEmail = user?.email || localStorage.getItem('userEmail') || 'user@example.com';
+            const userEmail = user?.email || 'user@example.com';
 
             const res = await fetch(`${getApiUrl()}/paystack/subscribe`, {
                 method: 'POST',

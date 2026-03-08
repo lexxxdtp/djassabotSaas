@@ -41,7 +41,7 @@ export interface CartItem {
     selectedVariations?: SelectedVariation[]; // Which variations were selected
 }
 
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
 
 export interface Order {
     id: string;

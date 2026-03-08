@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { getApiUrl } from '../utils/apiConfig';
 
 interface User {
@@ -71,8 +71,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return storedTenant;
     });
 
-
     const [isLoadingData, setIsLoadingData] = useState(false);
+
+    const logout = useCallback(() => {
+        setToken(null);
+        setUser(null);
+        setTenant(null);
+
+        // Clear from both storages
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+        localStorage.removeItem('user');
+        sessionStorage.removeItem('user');
+        localStorage.removeItem('tenant');
+        sessionStorage.removeItem('tenant');
+    }, []);
 
     useEffect(() => {
         const fetchMe = async () => {
@@ -114,7 +127,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
 
         fetchMe();
-    }, [token]);
+    }, [token, logout]);
 
     console.log('[AuthContext] isAuthenticated:', !!token);
 
@@ -147,14 +160,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log('[AuthContext] Data stored successfully. Token length:', newToken.length);
     };
 
-    const logout = () => {
-        setToken(null);
-        setUser(null);
-        setTenant(null);
-
-        // Clear from both storages
-        clearStoredItems();
-    };
+    useEffect(() => {
+        const handleUnauthorized = () => {
+            console.log('[AuthContext] Global 401 caught, logging out');
+            logout();
+        };
+        window.addEventListener('auth:unauthorized', handleUnauthorized);
+        return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    }, [logout]);
 
     return (
         <AuthContext.Provider value={{

@@ -16,6 +16,8 @@ const Overview = lazy(() => import('./pages/Overview'));
 const Settings = lazy(() => import('./pages/Settings'));
 const WhatsAppConnect = lazy(() => import('./pages/WhatsAppConnect'));
 const Subscription = lazy(() => import('./pages/Subscription'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 
 // Loading fallback component
@@ -60,6 +62,8 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<DashboardLayout />}>

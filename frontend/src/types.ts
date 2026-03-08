@@ -82,13 +82,13 @@ export interface ProductVariation {
 export interface Product {
     id: string;
     name: string;
-    price: string | number;
+    price: number;
     stock: number;
     description?: string;
     images: string[];
+    minPrice?: number;
     variations?: ProductVariation[];
     aiInstructions?: string;
-    ai_instructions?: string;
     manageStock?: boolean;
 }
 

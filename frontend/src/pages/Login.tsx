@@ -116,28 +116,33 @@ const Login: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Remember Me Checkbox */}
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={() => setRememberMe(!rememberMe)}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${rememberMe
-                                ? 'bg-indigo-500 border-indigo-500'
-                                : 'bg-transparent border-gray-600 hover:border-gray-500'
-                                }`}
-                        >
-                            {rememberMe && (
-                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                            )}
-                        </button>
-                        <label
-                            onClick={() => setRememberMe(!rememberMe)}
-                            className="text-sm text-gray-400 cursor-pointer select-none hover:text-gray-300 transition-colors"
-                        >
-                            Me garder connecté
-                        </label>
+                    {/* Remember Me Checkbox & Forgot Password */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setRememberMe(!rememberMe)}
+                                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${rememberMe
+                                    ? 'bg-indigo-500 border-indigo-500'
+                                    : 'bg-transparent border-gray-600 hover:border-gray-500'
+                                    }`}
+                            >
+                                {rememberMe && (
+                                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                            </button>
+                            <label
+                                onClick={() => setRememberMe(!rememberMe)}
+                                className="text-sm text-gray-400 cursor-pointer select-none hover:text-gray-300 transition-colors"
+                            >
+                                Me garder connecté
+                            </label>
+                        </div>
+                        <Link to="/forgot-password" className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+                            Mot de passe oublié ?
+                        </Link>
                     </div>
 
                     <button

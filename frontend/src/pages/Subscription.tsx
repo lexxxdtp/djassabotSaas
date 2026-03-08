@@ -95,7 +95,7 @@ const PlanCard = ({ title, price, features, planId, recommended = false, current
 
 export default function Subscription() {
     // currentPlan will be fetched from API after Paystack callback
-    const { tenant } = useAuth();
+    const { tenant, token, user } = useAuth();
     // Use actual tenant plan, defaulting to 'starter' only if verified or checking specific statuses
     // For visual correctness, if status is 'trial', we might want to show that.
     // However, sticking to the implementation request: use real data.
@@ -134,8 +134,7 @@ export default function Subscription() {
         setError(null);
 
         try {
-            const token = localStorage.getItem('authToken');
-            const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
+            const userEmail = user?.email || 'user@example.com';
 
             const res = await fetch(`${getApiUrl()}/paystack/subscribe`, {
                 method: 'POST',

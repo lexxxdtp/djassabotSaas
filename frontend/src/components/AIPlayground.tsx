@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Trash2, Smartphone, Bot } from 'lucide-react';
 import { getApiUrl } from '../utils/apiConfig';
+import { useAuth } from '../context/AuthContext';
 
 interface Message {
     role: 'user' | 'model';
@@ -15,6 +16,7 @@ export default function AIPlayground() {
     const [loading, setLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const API_URL = getApiUrl();
+    const { token } = useAuth();
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -32,7 +34,6 @@ export default function AIPlayground() {
         setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
         setLoading(true);
 
-        const token = localStorage.getItem('token');
         if (!token) {
             setMessages(prev => [...prev, { role: 'model', text: '⚠️ Vous devez être connecté pour tester le bot.' }]);
             setLoading(false);
@@ -68,7 +69,6 @@ export default function AIPlayground() {
     };
 
     const handleReset = async () => {
-        const token = localStorage.getItem('token');
         if (!token) return;
 
         try {

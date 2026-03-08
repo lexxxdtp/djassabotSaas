@@ -71,3 +71,41 @@ export const sendVerificationEmail = async (email: string, token: string) => {
         return { success: false, error };
     }
 };
+
+/**
+ * Envoie un email contenant un lien pour réinitialiser le mot de passe.
+ */
+export const sendPasswordResetEmail = async (email: string, token: string) => {
+    try {
+        const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+
+        const data = await resend.emails.send({
+            from: 'DjassaBot <onboarding@resend.dev>',
+            to: [email],
+            subject: 'Réinitialisation de votre mot de passe DjassaBot',
+            html: `
+                <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #4F46E5;">Réinitialisation de mot de passe</h2>
+                    <p>Bonjour,</p>
+                    <p>Nous avons reçu une demande pour réinitialiser le mot de passe de votre compte DjassaBot.</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${resetLink}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                            Réinitialiser mon mot de passe
+                        </a>
+                    </div>
+                    <p style="color: #666; font-size: 14px;">⏱️ Ce lien est valide pendant <strong>1 heure</strong>.</p>
+                    <p>Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :</p>
+                    <p style="word-break: break-all; color: #666; font-size: 12px;">${resetLink}</p>
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+                    <p style="color: #999; font-size: 12px;">Si vous n'avez pas demandé à réinitialiser votre mot de passe, vous pouvez ignorer cet email.</p>
+                </div>
+            `,
+        });
+
+        console.log(`[Resend] Email de réinitialisation de mot de passe envoyé à ${email}`, data);
+        return { success: true, data };
+    } catch (error) {
+        console.error(`[Resend] Erreur lors de l'envoi de l'email de réinitialisation à ${email}:`, error);
+        return { success: false, error };
+    }
+};

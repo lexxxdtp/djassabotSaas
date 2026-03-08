@@ -18,7 +18,7 @@ import SettingsLogistics from '../components/settings/SettingsLogistics';
 import UserProfileModal from '../components/UserProfileModal';
 
 export default function Settings() {
-    const { token } = useAuth();
+    const { token, tenant } = useAuth();
     const [loading, setLoading] = useState(false);
     const [loadingVendor, setLoadingVendor] = useState(false);
     const [activeTab, setActiveTab] = useState<'profile' | 'identity' | 'business' | 'whatsapp' | 'simulation'>('identity');
@@ -216,7 +216,7 @@ export default function Settings() {
             } else {
                 // Save Settings
                 const res = await fetch(`${API_URL}/settings`, {
-                    method: 'PUT',
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
@@ -522,8 +522,8 @@ export default function Settings() {
                                 <div>
                                     <div className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Abonnement</div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-white font-medium">Plan Pro</span>
-                                        <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-bold">ACTIF</span>
+                                        <span className="text-sm text-white font-medium">Plan {tenant?.subscription_tier ? tenant.subscription_tier.charAt(0).toUpperCase() + tenant.subscription_tier.slice(1) : 'Starter'}</span>
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${tenant?.status === 'active' || tenant?.status === 'trial' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{tenant?.status === 'active' ? 'ACTIF' : tenant?.status === 'trial' ? 'ESSAI' : tenant?.status?.toUpperCase() || 'ACTIF'}</span>
                                     </div>
                                     <button
                                         onClick={() => setShowProfileModal(true)}
@@ -531,15 +531,6 @@ export default function Settings() {
                                     >
                                         Gérer l'abonnement
                                     </button>
-                                </div>
-                                <div>
-                                    <div className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Quota IA</div>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-xs text-zinc-400">12,450 / 50,000 tokens</span>
-                                    </div>
-                                    <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                                        <div className="bg-indigo-500 h-full w-[25%] rounded-full"></div>
-                                    </div>
                                 </div>
                             </div>
                         </div>

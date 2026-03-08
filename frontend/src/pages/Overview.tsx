@@ -15,21 +15,21 @@ interface StatCardProps {
 }
 
 const StatCard = ({ title, value, change, icon: Icon, subtitle }: StatCardProps) => (
-    <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-6 hover:border-indigo-500/30 transition-all group shadow-sm hover:shadow-indigo-500/10">
-        <div className="flex justify-between items-start mb-4">
+    <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-4 md:p-6 hover:border-indigo-500/30 transition-all group shadow-sm hover:shadow-indigo-500/10">
+        <div className="flex justify-between items-start mb-3 md:mb-4">
             <div>
-                <p className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">{title}</p>
-                <h3 className="text-2xl font-bold text-white tracking-tight">{value}</h3>
+                <p className="text-gray-400 text-[10px] md:text-xs font-medium uppercase tracking-wider mb-1">{title}</p>
+                <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">{value}</h3>
             </div>
-            <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
-                <Icon className="w-6 h-6" />
+            <div className="p-2 md:p-3 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
+                <Icon className="w-5 h-5 md:w-6 md:h-6" />
             </div>
         </div>
         <div className="flex items-center text-sm">
-            <span className="text-emerald-400 flex items-center gap-1 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-xs border border-emerald-500/20">
+            <span className="text-emerald-400 flex items-center gap-1 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] md:text-xs border border-emerald-500/20">
                 <TrendingUp className="w-3 h-3" /> {change}
             </span>
-            <span className="text-gray-500 ml-2 text-xs font-medium uppercase">{subtitle}</span>
+            <span className="text-gray-500 ml-2 text-[10px] md:text-xs font-medium uppercase">{subtitle}</span>
         </div>
     </div>
 );
@@ -83,12 +83,35 @@ const RecentOrders = ({ orders }: { orders: DashboardOrder[] }) => {
     };
 
     return (
-        <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-6 mt-6">
-            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+        <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-4 md:p-6 mt-6">
+            <h3 className="text-base md:text-lg font-bold text-white mb-4 md:mb-6 flex items-center gap-2">
                 <Package className="text-indigo-500 w-5 h-5" />
                 Commandes Récentes
             </h3>
-            <div className="overflow-x-auto">
+
+            {/* Mobile: Card layout */}
+            <div className="md:hidden space-y-3">
+                {orders.length === 0 ? (
+                    <div className="text-zinc-500 text-sm text-center py-8">Aucune commande récente</div>
+                ) : (
+                    orders.map((order) => (
+                        <div key={order.id} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border shrink-0 ${getStatusColor(order.status)}`}>
+                                    {order.status}
+                                </span>
+                                <div className="min-w-0">
+                                    <p className="text-sm text-white font-mono font-bold">{order.total.toLocaleString()} F</p>
+                                    <p className="text-[10px] text-zinc-500">{order.items.length} art. • {new Date(order.createdAt || order.created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Desktop: Table layout */}
+            <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                     <thead>
                         <tr className="text-left text-xs text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
@@ -108,7 +131,6 @@ const RecentOrders = ({ orders }: { orders: DashboardOrder[] }) => {
                             orders.map((order) => (
                                 <tr key={order.id} className="group hover:bg-white/5 transition-colors">
                                     <td className="py-3 text-sm text-white font-medium">
-                                        {/* Mask phone number for privacy */}
                                         {order.userId.replace(/@s.whatsapp.net/, '').replace(/^(\d{4}).*(\d{2})$/, '$1...$2')}
                                     </td>
                                     <td className="py-3 text-sm text-zinc-400">
@@ -235,7 +257,7 @@ export default function Overview() {
         };
 
         fetchData();
-        const interval = setInterval(fetchData, 5000); // Poll every 5s
+        const interval = setInterval(fetchData, 15000); // Poll every 15s (reduced from 5s)
         return () => clearInterval(interval);
     }, [token]);
 
@@ -261,18 +283,18 @@ export default function Overview() {
     }[lang];
 
     return (
-        <div className="space-y-6 animate-in fade-in zoom-in duration-500 pb-10">
+        <div className="space-y-4 md:space-y-6 animate-in fade-in zoom-in duration-500 pb-4 md:pb-10">
             {/* Header */}
-            <div className="flex justify-between items-end pb-4 border-b border-white/5">
+            <div className="flex justify-between items-end pb-3 md:pb-4 border-b border-white/5">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">{greeting}</h1>
-                    <p className="text-zinc-500">{content.welcome}</p>
+                    <h1 className="text-xl md:text-3xl font-bold text-white mb-1 md:mb-2 tracking-tight">{greeting}</h1>
+                    <p className="text-zinc-500 text-xs md:text-base">{content.welcome}</p>
                 </div>
 
-                {/* Lang Switch */}
+                {/* Lang Switch — hide on mobile to save space */}
                 <button
                     onClick={() => setLang(l => l === 'fr' ? 'en' : 'fr')}
-                    className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 hover:text-white text-xs hover:border-indigo-500/50 transition-all font-medium uppercase tracking-wide"
+                    className="hidden md:flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 hover:text-white text-xs hover:border-indigo-500/50 transition-all font-medium uppercase tracking-wide"
                 >
                     <Globe className="w-3 h-3" />
                     <span>{lang === 'fr' ? 'Français' : 'English'}</span>
@@ -280,7 +302,7 @@ export default function Overview() {
             </div>
 
             {/* Row 1: KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
                 <StatCard
                     title={content.revenue}
                     value={stats.revenue}
@@ -295,24 +317,26 @@ export default function Overview() {
                     icon={ShoppingCart}
                     subtitle={content.vs}
                 />
-                <StatCard
-                    title={content.conversion}
-                    value={`${stats.conversion}%`}
-                    change="+2.4%"
-                    icon={Activity}
-                    subtitle={content.vs}
-                />
+                <div className="col-span-2 md:col-span-1">
+                    <StatCard
+                        title={content.conversion}
+                        value={`${stats.conversion}%`}
+                        change="+2.4%"
+                        icon={Activity}
+                        subtitle={content.vs}
+                    />
+                </div>
             </div>
 
             {/* Row 2: Main Content Split */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[500px]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 lg:h-[500px]">
 
                 {/* Left Column (2/3): Analytics + Recent Orders */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     {/* Analytics Chart */}
-                    <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-6 flex-1 min-h-[300px]">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold text-white tracking-tight">{content.analytics}</h3>
+                    <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-4 md:p-6 flex-1 min-h-[250px] md:min-h-[300px]">
+                        <div className="flex justify-between items-center mb-4 md:mb-6">
+                            <h3 className="text-base md:text-lg font-bold text-white tracking-tight">{content.analytics}</h3>
                             <div className="flex items-center gap-2">
                                 <span className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-full animate-pulse border border-indigo-500/20">
                                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
@@ -320,7 +344,7 @@ export default function Overview() {
                                 </span>
                             </div>
                         </div>
-                        <div className="h-[250px] w-full">
+                        <div className="h-[180px] md:h-[250px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData}>
                                     <defs>

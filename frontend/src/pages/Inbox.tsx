@@ -73,7 +73,7 @@ const Inbox: React.FC = () => {
     // Initial Load & Polling
     useEffect(() => {
         fetchChats();
-        const interval = setInterval(fetchChats, 5000); // Poll chats list
+        const interval = setInterval(fetchChats, 15000); // Poll chats every 15s (reduced from 5s)
         return () => clearInterval(interval);
     }, [fetchChats]);
 
@@ -90,7 +90,7 @@ const Inbox: React.FC = () => {
                 .then(res => res.json())
                 .then(data => setMessages(data))
                 .catch(e => console.error(e));
-        }, 3000);
+        }, 8000); // Poll messages every 8s (reduced from 3s)
 
         return () => clearInterval(interval);
     }, [selectedChat, API_URL, token, fetchMessages]);

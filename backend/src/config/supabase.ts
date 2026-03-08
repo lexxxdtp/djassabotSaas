@@ -16,8 +16,8 @@ let isConfigured = false;
 // CRITICAL FIX: Force connection check
 if (ENABLE_SUPABASE) {
     // Fallback for Railway if env vars are missing but we want to hardcode for test
-    const finalUrl = supabaseUrl || 'https://dnglgyviycbpoerywanc.supabase.co';
-    const finalKey = supabaseKey || process.env.VITE_SUPABASE_KEY;
+    const finalUrl = supabaseUrl;
+    const finalKey = supabaseKey;
 
     if (finalUrl && finalKey) {
         try {

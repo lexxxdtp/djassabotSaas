@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, ImageIcon } from 'lucide-react';
 import { getApiUrl } from '../utils/apiConfig';
 import type { Product, VariationTemplate } from '../types';
 import ProductCard from '../components/products/ProductCard';
 import ProductFormModal from '../components/products/ProductFormModal';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 export default function Products() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -18,9 +19,9 @@ export default function Products() {
     const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
 
     const API_URL = getApiUrl();
-    const token = localStorage.getItem('token');
+    const { token } = useAuth();
 
-    const fetchProducts = async () => {
+    const fetchProducts = useCallback(async () => {
         try {
             const res = await fetch(`${API_URL}/products`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -34,9 +35,9 @@ export default function Products() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [API_URL, token]);
 
-    const fetchVariationTemplates = async () => {
+    const fetchVariationTemplates = useCallback(async () => {
         try {
             const res = await fetch(`${API_URL}/variation-templates`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -48,14 +49,14 @@ export default function Products() {
         } catch (error) {
             console.error('Failed to fetch variation templates', error);
         }
-    };
+    }, [API_URL, token]);
 
     useEffect(() => {
         if (token) {
             fetchProducts();
             fetchVariationTemplates();
         }
-    }, [token, API_URL]);
+    }, [token, fetchProducts, fetchVariationTemplates]);
 
     const handleCreate = () => {
         setEditingProduct(undefined);
@@ -99,12 +100,12 @@ export default function Products() {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 border-b border-white/5 pb-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">Inventaire</h1>
-                    <p className="text-zinc-400">Gérez vos produits en vente sur WhatsApp</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Inventaire</h1>
+                    <p className="text-zinc-400 text-sm">Gérez vos produits en vente sur WhatsApp</p>
                 </div>
                 <button
                     onClick={handleCreate}
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/25 text-white px-6 py-3 rounded-lg font-bold flex items-center space-x-2 transition-all hover:scale-[1.02]"
+                    className="hidden md:flex bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/25 text-white px-6 py-3 rounded-lg font-bold items-center space-x-2 transition-all hover:scale-[1.02]"
                 >
                     <Plus size={20} />
                     <span>Ajouter Produit</span>
@@ -118,7 +119,7 @@ export default function Products() {
                     Chargement de l'inventaire...
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                     {products.map((product) => (
                         <ProductCard
                             key={product.id}
@@ -134,7 +135,7 @@ export default function Products() {
                         <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-2xl bg-white/5">
                             <ImageIcon className="mx-auto h-12 w-12 text-zinc-600 mb-4" />
                             <h3 className="text-lg font-medium text-white">Votre boutique est vide</h3>
-                            <p className="text-zinc-500 mt-1 mb-6">Commencez par ajouter votre premier produit.</p>
+                            <p className="text-zinc-500 mt-1 mb-6 text-sm">Commencez par ajouter votre premier produit.</p>
                             <button
                                 onClick={handleCreate}
                                 className="text-indigo-400 hover:text-indigo-300 font-bold text-sm uppercase tracking-wide border-b border-indigo-500/30 hover:border-indigo-500"
@@ -178,6 +179,14 @@ export default function Products() {
                     </div>
                 </div>
             )}
+
+            {/* Mobile FAB — Add product */}
+            <button
+                onClick={handleCreate}
+                className="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full shadow-lg shadow-indigo-500/30 flex items-center justify-center text-white active:scale-90 transition-transform"
+            >
+                <Plus size={24} />
+            </button>
         </div>
     );
 }

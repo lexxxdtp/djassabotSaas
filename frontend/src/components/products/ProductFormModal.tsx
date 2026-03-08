@@ -5,6 +5,7 @@ import { getApiUrl } from '../../utils/apiConfig';
 import type { Product, ProductVariation, VariationTemplate } from '../../types';
 import ProductVariations from './ProductVariations';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
 
 interface ProductFormModalProps {
     isOpen: boolean;
@@ -47,6 +48,7 @@ export default function ProductFormModal({
     const [uploading, setUploading] = useState(false);
     const [variationsEnabled, setVariationsEnabled] = useState(false);
     const [loading, setLoading] = useState(false);
+    const { token } = useAuth();
 
     useEffect(() => {
         if (isOpen) {
@@ -58,7 +60,7 @@ export default function ProductFormModal({
                     description: productToEdit.description || '',
                     images: productToEdit.images || [],
                     variations: productToEdit.variations || [],
-                    aiInstructions: productToEdit.aiInstructions || productToEdit.ai_instructions || '',
+                    aiInstructions: productToEdit.aiInstructions || '',
                     manageStock: productToEdit.manageStock ?? true
                 });
                 const hasActiveVars = productToEdit.variations && productToEdit.variations.some(v => v.name && v.options.length > 0);
@@ -102,7 +104,6 @@ export default function ProductFormModal({
             };
 
             const API_URL = getApiUrl();
-            const token = localStorage.getItem('token');
             const headers = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`

@@ -363,9 +363,11 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
             const dbUpdates: any = { ...safeUpdates };
             if (safeUpdates.emailVerified !== undefined) dbUpdates.email_verified = safeUpdates.emailVerified;
             if (safeUpdates.phoneVerified !== undefined) dbUpdates.phone_verified = safeUpdates.phoneVerified;
+            if (safeUpdates.passwordHash !== undefined) dbUpdates.password_hash = safeUpdates.passwordHash;
             // Remove camelCase keys
             delete dbUpdates.emailVerified;
             delete dbUpdates.phoneVerified;
+            delete dbUpdates.passwordHash;
 
             const { data, error } = await supabase
                 .from('users')
@@ -463,7 +465,19 @@ export const getSubscriptionByTenantId = async (tenantId: string): Promise<Subsc
                 .limit(1)
                 .single();
 
-            if (!error) return data;
+            if (!error && data) {
+                return {
+                    id: data.id,
+                    tenantId: data.tenant_id,
+                    plan: data.plan,
+                    status: data.status,
+                    startedAt: data.started_at,
+                    expiresAt: data.expires_at,
+                    autoRenew: data.auto_renew,
+                    paymentMethod: data.payment_method,
+                    lastPaymentDate: data.last_payment_date
+                };
+            }
         }
     } catch (e) {
         console.error('[getSubscriptionByTenantId] Error:', e);
