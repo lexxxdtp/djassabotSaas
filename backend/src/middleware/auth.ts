@@ -1,10 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is required');
-}
+// Lazy getter to ensure dotenv.config() has been called before reading JWT_SECRET
+let _jwtSecret: string | undefined;
+const getJwtSecret = (): string => {
+    if (!_jwtSecret) {
+        _jwtSecret = process.env.JWT_SECRET;
+        if (!_jwtSecret) {
+            throw new Error('JWT_SECRET environment variable is required');
+        }
+    }
+    return _jwtSecret;
+};
 
 // Extend Express Request to include tenant info
 declare global {
@@ -48,7 +55,7 @@ export const authenticateTenant = (
         }
 
         // Vérifier et décoder le JWT
-        const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+        const decoded = jwt.verify(token, getJwtSecret()) as JWTPayload;
 
         // Injecter les infos dans la requête
         req.tenantId = decoded.tenantId;
@@ -76,7 +83,7 @@ export const authenticateTenant = (
  * Générer un JWT pour un utilisateur
  */
 export const generateToken = (payload: JWTPayload): string => {
-    return jwt.sign(payload, JWT_SECRET, {
+    return jwt.sign(payload, getJwtSecret(), {
         expiresIn: '30d' // Token valide 30 jours
     });
 };
@@ -100,7 +107,7 @@ export const optionalAuth = (
         const token = authHeader.split(' ')[1];
 
         if (token) {
-            const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+            const decoded = jwt.verify(token, getJwtSecret()) as JWTPayload;
             req.tenantId = decoded.tenantId;
             req.userId = decoded.userId;
         }

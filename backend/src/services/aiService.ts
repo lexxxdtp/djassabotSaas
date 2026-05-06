@@ -36,7 +36,7 @@ export interface DiscountRule {
 
 // Default rules (Fallback)
 const DEFAULT_RULES: DiscountRule[] = [
-    { description: "Réduction de bienvnue", condition: "First time customer", action: "Give 5% off max" }
+    { description: "Réduction de bienvenue", condition: "First time customer", action: "Give 5% off max" }
 ];
 
 const BASE_SYSTEM_INSTRUCTION = `
@@ -79,7 +79,7 @@ const mockNegotiationLogic = (userText: string, context: any) => {
         if (line.includes("Min:")) {
             const nameMatch = line.match(/- (.*?):/);
             const name = nameMatch ? nameMatch[1].toLowerCase() : "";
-            if (name && text.includes(name) || text.includes('bazin')) { // Hardcoded 'bazin' fallback for test
+            if (name && (text.includes(name) || text.includes('bazin'))) { // Hardcoded 'bazin' fallback for test
                 const minMatch = line.match(/Min:\s*(\d+)/);
                 const publicMatch = line.match(/Public Price\s*(\d+)/);
                 if (minMatch) {

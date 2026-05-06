@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import axios from 'axios';
 import { sendTextMessage, getMediaUrl } from '../services/whatsappService';
 import { generateAIResponse, analyzeImage, transcribeAudio, detectPurchaseIntent } from '../services/aiService';
 import { db } from '../services/dbService';
@@ -153,7 +154,7 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                     const imageUrl = await getMediaUrl(imageId);
 
                     // Analyze with AI
-                    const analysis = await analyzeImage(imageUrl, caption);
+                    const analysis = await analyzeImage(imageUrl, 'image/jpeg', caption);
                     await sendTextMessage(from, analysis);
 
                     // Add to session history as context
@@ -170,7 +171,7 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                     const audioUrl = await getMediaUrl(audioId);
 
                     // Download Audio Buffer
-                    const axios = require('axios'); // Ensure axios is available
+                    // axios is imported at the top of the file
                     const audioResp = await axios.get(audioUrl, { responseType: 'arraybuffer' });
                     const audioBuffer = Buffer.from(audioResp.data);
 

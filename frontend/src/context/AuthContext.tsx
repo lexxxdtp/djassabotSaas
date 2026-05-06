@@ -56,19 +56,13 @@ const clearStoredItems = () => {
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     // Initialize state from storage
     const [token, setToken] = useState<string | null>(() => {
-        const storedToken = getStoredItem('token');
-        console.log('[AuthContext] Init - token from storage:', storedToken ? 'Found (length: ' + storedToken.length + ')' : 'Not found');
-        return storedToken;
+        return getStoredItem('token');
     });
     const [user, setUser] = useState<User | null>(() => {
-        const storedUser = getStoredJSON('user') as User | null;
-        console.log('[AuthContext] Init - user from storage:', storedUser ? storedUser.email || storedUser.phone : 'Not found');
-        return storedUser;
+        return getStoredJSON('user') as User | null;
     });
     const [tenant, setTenant] = useState<Tenant | null>(() => {
-        const storedTenant = getStoredJSON('tenant') as Tenant | null;
-        console.log('[AuthContext] Init - tenant from storage:', storedTenant?.name || 'Not found');
-        return storedTenant;
+        return getStoredJSON('tenant') as Tenant | null;
     });
 
     const [isLoadingData, setIsLoadingData] = useState(false);
@@ -112,8 +106,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         storage.setItem('user', JSON.stringify(data.user));
                         storage.setItem('tenant', JSON.stringify(data.tenant));
 
-                        console.log('[AuthContext] Refreshed user data from API');
-                        console.log('[AuthContext] Current Plan:', data.tenant.subscription_tier);
+
                     }
                 } else if (res.status === 401) {
                     // Token invalid/expired
@@ -129,17 +122,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         fetchMe();
     }, [token, logout]);
 
-    console.log('[AuthContext] isAuthenticated:', !!token);
+
 
     const login = (newToken: string, newUser: User, newTenant: Tenant, rememberMe: boolean = true) => {
-        console.log('[AuthContext] Login called with rememberMe:', rememberMe);
         setToken(newToken);
         setUser(newUser);
         setTenant(newTenant);
 
         // Choose storage based on rememberMe preference
         const storage = rememberMe ? localStorage : sessionStorage;
-        console.log('[AuthContext] Using storage:', rememberMe ? 'localStorage' : 'sessionStorage');
 
         // Clear old data from both storages first
         clearStoredItems();
@@ -157,12 +148,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             storage.setItem('userEmail', newUser.email);
         }
 
-        console.log('[AuthContext] Data stored successfully. Token length:', newToken.length);
+
     };
 
     useEffect(() => {
         const handleUnauthorized = () => {
-            console.log('[AuthContext] Global 401 caught, logging out');
             logout();
         };
         window.addEventListener('auth:unauthorized', handleUnauthorized);

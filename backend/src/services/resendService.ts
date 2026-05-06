@@ -42,7 +42,8 @@ export const sendOtpEmail = async (email: string, code: string) => {
 export const sendVerificationEmail = async (email: string, token: string) => {
     try {
         // En vrai, utiliser l'URL front-end en production
-        const verificationLink = `http://localhost:5173/verify-email?token=${token}`;
+        const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const verificationLink = `${baseUrl}/verify-email?token=${token}`;
 
         const data = await resend.emails.send({
             from: 'DjassaBot <onboarding@resend.dev>', // Modifiez avec votre domaine validé sur Resend
@@ -77,7 +78,8 @@ export const sendVerificationEmail = async (email: string, token: string) => {
  */
 export const sendPasswordResetEmail = async (email: string, token: string) => {
     try {
-        const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+        const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
         const data = await resend.emails.send({
             from: 'DjassaBot <onboarding@resend.dev>',
