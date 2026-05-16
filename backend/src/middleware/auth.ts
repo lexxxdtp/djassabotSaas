@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { logger } from '../utils/logger';
 
 // Lazy getter to ensure dotenv.config() has been called before reading JWT_SECRET
 let _jwtSecret: string | undefined;
@@ -57,11 +58,10 @@ export const authenticateTenant = (
         // Vérifier et décoder le JWT
         const decoded = jwt.verify(token, getJwtSecret()) as JWTPayload;
 
-        // Injecter les infos dans la requête
         req.tenantId = decoded.tenantId;
         req.userId = decoded.userId;
 
-        console.log(`[Auth] ✅ Tenant ${decoded.tenantId} authentifié`);
+        logger.debug({ tenantId: decoded.tenantId }, 'Tenant authenticated');
 
         next();
     } catch (error) {
@@ -84,7 +84,7 @@ export const authenticateTenant = (
  */
 export const generateToken = (payload: JWTPayload): string => {
     return jwt.sign(payload, getJwtSecret(), {
-        expiresIn: '30d' // Token valide 30 jours
+        expiresIn: '7d'
     });
 };
 

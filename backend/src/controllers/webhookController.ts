@@ -6,6 +6,7 @@ import { db } from '../services/dbService';
 import { generateWavePaymentLink } from '../services/paymentService';
 import { notifyMerchant } from '../services/notificationService';
 import { getSession, updateSession, addToHistory, clearHistory } from '../services/sessionService';
+import { logger } from '../utils/logger';
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
@@ -35,7 +36,7 @@ export const verifyWebhook = (req: Request, res: Response) => {
 export const receiveWebhook = async (req: Request, res: Response) => {
     const body = req.body;
 
-    console.log('Incoming webhook:', JSON.stringify(body, null, 2));
+    logger.debug({ body }, 'Incoming WhatsApp webhook');
 
     if (body.object) {
         // Ack immediately
@@ -49,7 +50,7 @@ export const receiveWebhook = async (req: Request, res: Response) => {
             try {
                 if (type === 'text') {
                     const textBody = message.text.body;
-                    console.log(`Received text from ${from}: ${textBody}`);
+                    logger.info({ from, type }, 'Received WhatsApp text');
 
                     const session = await getSession(DEFAULT_TENANT_ID, from);
 
@@ -148,7 +149,7 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                 else if (type === 'image') {
                     const imageId = message.image.id;
                     const caption = message.image.caption;
-                    console.log(`Received image from ${from}, ID: ${imageId}`);
+                    logger.info({ from, imageId }, 'Received WhatsApp image');
 
                     // Get URL
                     const imageUrl = await getMediaUrl(imageId);
@@ -164,7 +165,7 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                 else if (type === 'audio') {
                     const audioId = message.audio.id;
                     const session = await getSession(DEFAULT_TENANT_ID, from);
-                    console.log(`Received audio from ${from}, ID: ${audioId}`);
+                    logger.info({ from, audioId }, 'Received WhatsApp audio');
 
                     // Get URL
                     // Analyze Audio
@@ -177,7 +178,7 @@ export const receiveWebhook = async (req: Request, res: Response) => {
 
                     // Transcribe
                     const transcription = await transcribeAudio(audioBuffer);
-                    console.log(`[Audio] Transcribed: "${transcription}"`);
+                    logger.info({ from, transcription: transcription.substring(0, 50) }, 'Audio transcribed');
 
                     // Generate AI Response based on transcription
                     // Reuse existing context logic if possible, or just simple response for now to fix the break
@@ -193,11 +194,11 @@ export const receiveWebhook = async (req: Request, res: Response) => {
                     await addToHistory(DEFAULT_TENANT_ID, from, 'model', aiReply);
                 }
                 else {
-                    console.log(`Received unhandled message type: ${type}`);
+                    logger.info({ from, type }, 'Unhandled WhatsApp message type');
                     await sendTextMessage(from, `Désolé, je ne gère pas encore ce type de message.`);
                 }
             } catch (error) {
-                console.error('Error processing message:', error);
+                logger.error({ err: error }, 'Error processing WhatsApp message');
             }
         }
     } else {

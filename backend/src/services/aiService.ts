@@ -1,9 +1,7 @@
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
-import dotenv from 'dotenv';
 import axios from 'axios';
 import { Settings } from '../types';
-
-dotenv.config();
+import { logger } from '../utils/logger';
 
 // Lazy initialization to ensure env is loaded before API key is read
 let genAI: GoogleGenerativeAI | null = null;
@@ -13,12 +11,12 @@ const getModel = (): GenerativeModel | null => {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey || apiKey.length < 20) {
-        console.warn('[AI] No valid GEMINI_API_KEY found in environment');
+        logger.warn('No valid GEMINI_API_KEY found in environment');
         return null;
     }
 
     if (!model) {
-        console.log('[AI] Initializing Gemini with key:', apiKey.substring(0, 10) + '...');
+        logger.info({ keyPrefix: apiKey.substring(0, 10) }, 'Initializing Gemini');
         genAI = new GoogleGenerativeAI(apiKey);
         // Using Gemini 2.5 Flash (available for this account)
         model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
@@ -241,9 +239,15 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         ACCEPTED PAYMENTS: ${paymentMethods}
         `;
 
-        // Sanitize user instructions to prevent prompt injection
+        // Sanitize merchant instructions to prevent prompt injection
         const rawInstructions = settings?.systemInstructions || 'No specific instructions.';
-        const sanitizedInstructions = rawInstructions.replace(/[{}]/g, '').substring(0, 1000); // Remove braces and limit length
+        const sanitizedInstructions = rawInstructions
+            .replace(/[<>{}\[\]\\]/g, '')           // Remove structural characters
+            .replace(/system\s*:/gi, '')              // Block "System:" keyword
+            .replace(/ignore\s+previous/gi, '')       // Block common injection phrases
+            .replace(/ignore\s+all/gi, '')
+            .replace(/you\s+are\s+now/gi, '')
+            .substring(0, 500);                       // Limit length
 
         // We already built deliveryDetails above, no need to redo it differently
         const deliveryContext = deliveryDetails;
@@ -372,6 +376,10 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
       - When a user wants to buy a quantity, CHECK if there's a consigne that applies, and PROPOSE IT FIRST before adding to cart.
     `;
 
+        // Limit conversation history to last 20 turns to control cost and context size
+        const MAX_HISTORY = 20;
+        const trimmedHistory = (context.history || []).slice(-MAX_HISTORY);
+
         const chat = currentModel.startChat({
             history: [
                 {
@@ -382,8 +390,8 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
                     role: 'model',
                     parts: [{ text: "C'est compris chef. Je suis prêt à vendre avec ce style spécifique !" }],
                 },
-                ...fewShotHistory, // Inject training examples here
-                ...(context.history || [])
+                ...fewShotHistory,
+                ...trimmedHistory
             ],
         });
 
@@ -391,9 +399,8 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         const response = await result.response;
         return response.text();
     } catch (error: any) {
-        console.error('Error generating AI response:', error);
+        logger.error({ err: error }, 'AI response generation error');
 
-        // Handle Quota/Rate Limits (429)
         if (error.message?.includes('429') || error.status === 429 || error.message?.includes('quota')) {
             return "⏳ (Quota IA) Je reçois trop de demandes ! Attendez quelques secondes svp.";
         }
@@ -404,7 +411,7 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         }
 
         // Other Errors
-        return `⚠️ Erreur IA: ${error.message?.substring(0, 100)}...`;
+        return "⚠️ Une erreur est survenue. Veuillez réessayer.";
     }
 };
 
@@ -457,7 +464,7 @@ export const analyzeImage = async (imageInput: string | Buffer, mimeType: string
         ]);
         return result.response.text();
     } catch (error) {
-        console.error('Error analyzing image:', error);
+        logger.error({ err: error }, 'Image analysis error');
         return "J'ai bien reçu l'image mais je n'arrive pas à l'analyser pour l'instant.";
     }
 };
@@ -485,8 +492,8 @@ export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "a
         ]);
         return result.response.text();
     } catch (error) {
-        console.error('Error transcribing audio:', error);
-        return ""; // Return empty string if failed, so we can ignore it or handle gracefully
+        logger.error({ err: error }, 'Audio transcription error');
+        return "";
     }
 };
 
@@ -525,7 +532,7 @@ export const detectPurchaseIntent = async (userText: string, productContext: str
         const jsonString = jsonMatch ? jsonMatch[0] : rawText.trim().replace(/```json/g, '').replace(/```/g, '');
         return JSON.parse(jsonString);
     } catch (e: any) {
-        console.error("Intent Detection Failed:", e.message);
+        logger.warn({ err: e }, 'Intent detection failed, defaulting to CHAT');
         return { intent: "CHAT" };
     }
 }
@@ -552,7 +559,7 @@ export const generateIdentitySummary = async (settings: Settings) => {
         const result = await currentModel.generateContent(prompt);
         return result.response.text();
     } catch (e) {
-        console.error("Error generating summary:", e);
+        logger.error({ err: e }, 'Error generating identity summary');
         return "Erreur génération résumé.";
     }
 };

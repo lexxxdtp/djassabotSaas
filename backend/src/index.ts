@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import webhookRoutes from './routes/webhookRoutes';
 import whatsappRoutes from './routes/whatsappRoutes';
 import { startAllTenantInstances } from './services/baileysManager';
@@ -9,40 +10,68 @@ import aiRoutes from './routes/aiRoutes';
 import variationTemplateRoutes from './routes/variationTemplateRoutes';
 import paystackRoutes from './routes/paystackRoutes';
 import chatRoutes from './routes/chatRoutes';
-import './jobs/abandonedCart'; // Start Cron Jobs
+import './jobs/abandonedCart';
 import { db } from './services/dbService';
 import { authenticateTenant } from './middleware/auth';
+import { logger } from './utils/logger';
 
 dotenv.config();
 
-// Global Error Handlers
 process.on('uncaughtException', (err) => {
-    console.error('UNCAUGHT EXCEPTION:', err);
+    logger.error({ err }, 'UNCAUGHT EXCEPTION');
+    process.exit(1);
 });
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('UNHANDLED REJECTION:', reason);
+process.on('unhandledRejection', (reason) => {
+    logger.error({ reason }, 'UNHANDLED REJECTION');
 });
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors()); // Enable CORS for frontend development
+// CORS — restrict to known origins
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',');
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, Postman, server-to-server)
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+}));
+
 app.use(express.json());
 
-// Public Routes (No authentication required)
-// IMPORTANT: Register specific routes BEFORE catch-all routes
+// Rate limiters
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20,
+    message: { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+const otpLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 5,
+    message: { error: 'Trop de demandes de code. Réessayez dans 10 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Public Routes
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/signup', authLimiter);
+app.use('/api/auth/send-otp', otpLimiter);
+app.use('/api/auth/forgot-password', otpLimiter);
 app.use('/api/auth', authRoutes);
 
-
-
 // Protected Routes
-app.use('/api/whatsapp', whatsappRoutes); // Auth handled inside router
-app.use('/api/chats', chatRoutes); // Chat Management
-app.use('/api/ai', aiRoutes); // New AI Simulation Routes
-app.use('/api', variationTemplateRoutes); // Variation Templates
+app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/chats', chatRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api', variationTemplateRoutes);
 
-// Webhooks (Public but should be AFTER specific routes)
+// Webhooks
 app.use('/api/webhooks', webhookRoutes);
 
 // Paystack Payment Routes
@@ -56,15 +85,12 @@ app.get('/api/settings', authenticateTenant, async (req, res) => {
 
 app.post('/api/settings', authenticateTenant, async (req, res) => {
     try {
-        console.log(`[API] Updating settings for tenant: ${req.tenantId}`);
+        logger.info({ tenantId: req.tenantId }, 'Updating settings');
         const settings = await db.updateSettings(req.tenantId!, req.body);
         res.json(settings);
     } catch (e: any) {
-        console.error('[API] Settings Error Details:', e);
-        res.status(500).json({
-            error: e.message || 'Failed to update settings',
-            details: e.toString()
-        });
+        logger.error({ err: e, tenantId: req.tenantId }, 'Settings update error');
+        res.status(500).json({ error: 'Failed to update settings' });
     }
 });
 
@@ -82,51 +108,69 @@ app.put('/api/orders/:id/status', authenticateTenant, async (req, res) => {
     else res.status(400).json({ error: 'Failed to update status' });
 });
 
-// Dashboard: Activity Feed (The Pulse)
+// Dashboard
 app.get('/api/dashboard/pulse', authenticateTenant, async (req, res) => {
     try {
         const logs = await db.getRecentActivity(req.tenantId!, 20);
         res.json(logs);
-    } catch (e) {
+    } catch {
         res.status(500).json({ error: 'Failed to fetch activity logs' });
     }
 });
 
-// Dashboard: Recent Orders (Widget)
 app.get('/api/dashboard/recent-orders', authenticateTenant, async (req, res) => {
     try {
         const orders = await db.getRecentOrders(req.tenantId!, 5);
         res.json(orders);
-    } catch (e) {
+    } catch {
         res.status(500).json({ error: 'Failed to fetch recent orders' });
     }
 });
 
-// Products (Protected by JWT)
+// Products (Protected by JWT) — minPrice stripped from response
 app.get('/api/products', authenticateTenant, async (req, res) => {
     const products = await db.getProducts(req.tenantId!);
-    res.json(products);
+    // Never expose minPrice to the frontend (used only by AI internally)
+    const sanitized = products.map(({ minPrice: _mp, ...p }: any) => p);
+    res.json(sanitized);
 });
 
 app.post('/api/products', authenticateTenant, async (req, res) => {
     try {
+        const { name, price, stock } = req.body;
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+            return res.status(400).json({ error: 'Nom du produit requis' });
+        }
+        if (price !== undefined && (typeof price !== 'number' || price < 0)) {
+            return res.status(400).json({ error: 'Prix invalide' });
+        }
+        if (stock !== undefined && (typeof stock !== 'number' || stock < 0)) {
+            return res.status(400).json({ error: 'Stock invalide' });
+        }
         const product = await db.createProduct(req.tenantId!, req.body);
         res.json(product);
     } catch (e: any) {
-        console.error('[API] Create Product Error:', e);
-        res.status(500).json({ error: e.message || 'Failed to create product' });
+        logger.error({ err: e, tenantId: req.tenantId }, 'Create product error');
+        res.status(500).json({ error: 'Failed to create product' });
     }
 });
 
 app.put('/api/products/:id', authenticateTenant, async (req, res) => {
     try {
         const productId = req.params.id as string;
+        const { price, stock } = req.body;
+        if (price !== undefined && (typeof price !== 'number' || price < 0)) {
+            return res.status(400).json({ error: 'Prix invalide' });
+        }
+        if (stock !== undefined && (typeof stock !== 'number' || stock < 0)) {
+            return res.status(400).json({ error: 'Stock invalide' });
+        }
         const product = await db.updateProduct(req.tenantId!, productId, req.body);
         if (product) res.json(product);
         else res.status(404).json({ error: 'Product not found' });
     } catch (e: any) {
-        console.error('[API] Update Product Error:', e);
-        res.status(500).json({ error: e.message || 'Failed' });
+        logger.error({ err: e, tenantId: req.tenantId }, 'Update product error');
+        res.status(500).json({ error: 'Failed to update product' });
     }
 });
 
@@ -136,12 +180,12 @@ app.delete('/api/products/:id', authenticateTenant, async (req, res) => {
         const success = await db.deleteProduct(req.tenantId!, productId);
         res.json({ success });
     } catch (e: any) {
-        console.error('[API] Delete Product Error:', e);
-        res.status(500).json({ error: e.message || 'Failed' });
+        logger.error({ err: e, tenantId: req.tenantId }, 'Delete product error');
+        res.status(500).json({ error: 'Failed to delete product' });
     }
 });
 
-// Debug seed endpoint (Protected - only for authenticated users to seed THEIR data)
+// Seed (Protected — debug only)
 app.post('/api/debug/seed', authenticateTenant, async (req, res) => {
     const products = [
         { id: '1', name: 'Bazin Riche', price: 15000 },
@@ -155,10 +199,9 @@ app.post('/api/debug/seed', authenticateTenant, async (req, res) => {
         const p = products[Math.floor(Math.random() * products.length)];
         const qty = Math.floor(Math.random() * 3) + 1;
         const date = new Date();
-        date.setDate(date.getDate() - Math.floor(Math.random() * 7)); // Last 7 days
-
+        date.setDate(date.getDate() - Math.floor(Math.random() * 7));
         await db.createOrder(
-            req.tenantId!, // Use authenticated tenant ID
+            req.tenantId!,
             '22507000000',
             [{ productId: p.id, quantity: qty, productName: p.name, price: p.price }],
             p.price * qty,
@@ -166,17 +209,15 @@ app.post('/api/debug/seed', authenticateTenant, async (req, res) => {
             date
         );
     }
-    console.log(`[Seed] ✅ Créé 40 commandes pour tenant ${req.tenantId}`);
+    logger.info({ tenantId: req.tenantId }, 'Seeded 40 orders');
     res.json({ success: true, count: 40 });
 });
 
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (_req: Request, res: Response) => {
     res.send('WhatsApp Commerce Bot Backend is running');
 });
 
 app.listen(port, async () => {
-    console.log(`[server]: Server is running at http://localhost:${port}`);
-
-    // Start all active tenant WhatsApp sessions
+    logger.info({ port }, 'Server started');
     await startAllTenantInstances();
 });

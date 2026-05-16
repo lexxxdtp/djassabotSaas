@@ -4,6 +4,7 @@ import { generateToken } from '../middleware/auth';
 import { db } from '../services/dbService';
 import { sendOtpEmail, sendPasswordResetEmail } from '../services/resendService';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../utils/logger';
 
 export const signup = async (req: Request, res: Response) => {
     try {
@@ -113,8 +114,8 @@ export const signup = async (req: Request, res: Response) => {
         });
 
     } catch (error: any) {
-        console.error('[Signup] Erreur:', error);
-        res.status(500).json({ error: 'Erreur lors de la création du compte', details: error.message });
+        logger.error({ err: error }, 'Signup error');
+        res.status(500).json({ error: 'Erreur lors de la création du compte' });
     }
 };
 
@@ -187,8 +188,8 @@ export const login = async (req: Request, res: Response) => {
         });
 
     } catch (error: any) {
-        console.error('[Login] Erreur:', error);
-        res.status(500).json({ error: 'Erreur lors de la connexion', details: error.message });
+        logger.error({ err: error }, 'Login error');
+        res.status(500).json({ error: 'Erreur lors de la connexion' });
     }
 };
 
@@ -228,7 +229,7 @@ export const getMe = async (req: Request, res: Response) => {
             }
         });
     } catch (error: any) {
-        console.error('[Me] Erreur:', error);
+        logger.error({ err: error }, 'GetMe error');
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };
@@ -243,11 +244,42 @@ export const updateMe = async (req: Request, res: Response) => {
             return;
         }
 
-        const updates: any = {};
-        if (full_name !== undefined) updates.full_name = full_name;
-        if (email !== undefined) updates.email = email;
-        if (phone !== undefined) updates.phone = phone;
-        if (birth_date !== undefined) updates.birth_date = birth_date;
+        const updates: Record<string, string> = {};
+
+        if (full_name !== undefined) {
+            if (typeof full_name !== 'string' || full_name.trim().length === 0 || full_name.length > 100) {
+                res.status(400).json({ error: 'Nom invalide (1-100 caractères)' });
+                return;
+            }
+            updates.full_name = full_name.trim();
+        }
+
+        if (email !== undefined) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                res.status(400).json({ error: 'Format email invalide' });
+                return;
+            }
+            updates.email = email.toLowerCase().trim();
+        }
+
+        if (phone !== undefined) {
+            const phoneRegex = /^\+225[0-9]{10}$/;
+            if (!phoneRegex.test(phone)) {
+                res.status(400).json({ error: 'Format de téléphone invalide. Utilisez: +225XXXXXXXXXX' });
+                return;
+            }
+            updates.phone = phone;
+        }
+
+        if (birth_date !== undefined) {
+            const date = new Date(birth_date);
+            if (isNaN(date.getTime())) {
+                res.status(400).json({ error: 'Date de naissance invalide' });
+                return;
+            }
+            updates.birth_date = birth_date;
+        }
 
         const updatedUser = await db.updateUser(userId, updates);
 
@@ -268,7 +300,7 @@ export const updateMe = async (req: Request, res: Response) => {
             }
         });
     } catch (error: any) {
-        console.error('[Update Me] Erreur:', error);
+        logger.error({ err: error }, 'UpdateMe error');
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };
@@ -302,7 +334,7 @@ export const sendEmailOtp = async (req: Request, res: Response) => {
 
         res.json({ success: true, message: 'Code envoyé par email' });
     } catch (error: any) {
-        console.error('[Email OTP] Erreur:', error);
+        logger.error({ err: error }, 'Email OTP error');
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };
@@ -327,7 +359,7 @@ export const verifyEmailOtp = async (req: Request, res: Response) => {
 
         res.json({ success: true, verified: true });
     } catch (error: any) {
-        console.error('[Verify Email OTP] Erreur:', error);
+        logger.error({ err: error }, 'Verify email OTP error');
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };
@@ -355,12 +387,12 @@ export const forgotPassword = async (req: Request, res: Response) => {
         const result = await sendPasswordResetEmail(normalizedEmail, resetToken);
 
         if (!result.success) {
-            console.error('[Forgot Password] Erreur d\'envoi email.');
+            logger.error('Forgot password: email send failed');
         }
 
         res.json({ success: true, message: 'Un lien de réinitialisation a été envoyé.' });
     } catch (error: any) {
-        console.error('[Forgot Password] Erreur:', error);
+        logger.error({ err: error }, 'Forgot password error');
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };
@@ -374,20 +406,22 @@ export const verifyPhoneReset = async (req: Request, res: Response) => {
         }
 
         const user = await db.getUserByPhone(phone);
+        // Return the same response whether the user exists or not (prevents enumeration)
         if (!user) {
-            res.status(404).json({ error: 'Aucun compte associé à ce numéro.' });
+            res.json({ success: true, message: 'Si ce numéro est enregistré, vous recevrez un code.' });
             return;
         }
 
-        // Generate a secure DB reset token
         const resetToken = uuidv4();
-        const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins for SMS flow
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
         await db.storeAuthToken(user.id, 'PASSWORD_RESET', resetToken, expiresAt);
 
-        res.json({ success: true, token: resetToken });
+        // Token must be delivered out-of-band (SMS), never returned directly in the response
+        logger.info({ userId: user.id }, 'Phone reset token generated');
+        res.json({ success: true, message: 'Si ce numéro est enregistré, vous recevrez un code.' });
     } catch (error: any) {
-        console.error('[Verify Phone Reset] Erreur:', error);
+        logger.error({ err: error }, 'Verify phone reset error');
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };
@@ -420,7 +454,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 
         res.json({ success: true, message: 'Mot de passe réinitialisé.' });
     } catch (error: any) {
-        console.error('[Reset Password] Erreur:', error);
+        logger.error({ err: error }, 'Reset password error');
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };

@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { authenticateTenant } from '../middleware/auth';
 import paystackService from '../services/paystackService';
 import { db } from '../services/dbService';
+import { logger } from '../utils/logger';
 
 const router = express.Router();
 
@@ -77,9 +78,15 @@ router.post('/subscribe', authenticateTenant, async (req, res) => {
             return res.status(404).json({ error: 'Tenant non trouvé' });
         }
 
-        // Get user email (assuming we have it from the user table)
-        // For now, we'll use a placeholder or require it in the request
-        const email = req.body.email || 'customer@example.com';
+        // Require email — either passed in body or fetched from the user record
+        let email = req.body.email;
+        if (!email) {
+            const user = await db.getUserById(req.userId!);
+            email = user?.email;
+        }
+        if (!email) {
+            return res.status(400).json({ error: 'Email requis pour le paiement' });
+        }
 
         const result = await paystackService.initializeSubscription(
             tenantId,
@@ -257,26 +264,26 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     try {
         const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
 
-        // Verify webhook signature
+        // req.body is a Buffer when using express.raw() — use it directly for HMAC
         const hash = crypto
             .createHmac('sha512', PAYSTACK_SECRET)
-            .update(JSON.stringify(req.body))
+            .update(req.body)
             .digest('hex');
 
         if (hash !== req.headers['x-paystack-signature']) {
-            console.warn('[Paystack Webhook] Invalid signature');
+            logger.warn('Paystack webhook: invalid signature');
             return res.status(401).json({ error: 'Invalid signature' });
         }
 
-        const event = req.body;
-        console.log(`[Paystack Webhook] Received: ${event.event}`);
+        const event = JSON.parse(req.body.toString());
+        logger.info({ event: event.event }, 'Paystack webhook received');
 
         await paystackService.handlePaystackWebhook(event.event, event.data);
 
         res.status(200).json({ received: true });
     } catch (error: any) {
-        console.error('[Paystack Webhook] Error:', error);
-        res.status(500).json({ error: error.message });
+        logger.error({ err: error }, 'Paystack webhook error');
+        res.status(500).json({ error: 'Webhook processing failed' });
     }
 });
 
