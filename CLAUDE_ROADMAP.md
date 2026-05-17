@@ -307,6 +307,38 @@ git add -A && git commit -m "message" && git push origin main
 - **Bug DEFAULT_TENANT_ID** : webhookController désactivé dans `index.ts` (mort code dangereux). Baileys reste le système principal.
 - **Guide Railway** : `RAILWAY_SETUP.md` créé avec JWT_SECRET fort généré (`openssl rand -hex 64`).
 
+### Session 1 — 17 mai 2026 (partie 3 — Migration vers VPS Hostinger)
+- **Décision** : abandon de Railway (trial expiré, payant pour 1 seule app). Choix d'un VPS Hostinger KVM 2 à 7.99€/mois pour héberger DjassaBot + n8n + futurs projets.
+- **VPS configuré** : Ubuntu 24.04 LTS, 2 vCPU, 8GB RAM, 96GB SSD NVMe
+- **IP** : `187.77.171.44` (latence ~105ms CI→Allemagne)
+- **Sécurité** :
+  - User non-root `alex` créé avec sudo + clé SSH
+  - SSH password auth désactivée (clé uniquement)
+  - UFW firewall (ports 22, 80, 443 uniquement)
+  - Fail2ban actif (bannit 1h après 5 tentatives en 10min)
+  - Swap 2GB pour stabilité
+  - Timezone Africa/Abidjan
+- **Stack installée** :
+  - Node.js 20 LTS + PM2 (process manager auto-restart au boot)
+  - Docker + Docker Compose (pour n8n + futurs containers)
+  - Nginx (reverse proxy)
+  - Certbot (HTTPS, en attente d'un domaine)
+- **Backend déployé** :
+  - `/home/alex/djassabotSaas/backend` (clone du repo GitHub)
+  - PM2 process `djassabot-backend` → port 3000 (interne)
+  - Logs : `pm2 logs djassabot-backend`
+  - `.env` configuré avec Supabase + JWT_SECRET fort (autres clés à compléter)
+- **n8n déployé** :
+  - Docker container `n8n` (image officielle)
+  - Port 5678 (interne uniquement, exposé via nginx /n8n/)
+  - Auth basique : user `alex` / password dans `/home/alex/n8n/CREDENTIALS.txt`
+  - Volume persistant `n8n_n8n_data`
+- **Endpoints publics** :
+  - Backend API : `http://187.77.171.44/api/*`
+  - n8n : `http://187.77.171.44/n8n/`
+- **Tests OK** : `/api/auth/login` répond 401 sur mauvais identifiants ✅, n8n accessible ✅
+- **Manque** : domaine + HTTPS, clés Gemini/Resend/Paystack dans le `.env`
+
 ### Décisions stratégiques (validées par Alex)
 - **Validation paiements** : Screenshot Validator IA (Gemini Vision lit les reçus Wave/OM) → Phase 2
 - **App mobile** : PWA d'abord (vite-plugin-pwa déjà installé), Capacitor ensuite → Phase 3
