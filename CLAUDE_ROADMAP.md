@@ -296,8 +296,18 @@ git add -A && git commit -m "message" && git push origin main
 
 ## 📝 JOURNAL DES SESSIONS
 
-### Session 1 — 17 mai 2026
+### Session 1 — 17 mai 2026 (partie 1)
 - Repo cloné + git configuré avec PAT
 - Audit sécurité complet → 11 vulnérabilités corrigées
 - Supabase connecté + base de données réparée
 - Fichier CLAUDE_ROADMAP.md créé
+
+### Session 1 — 17 mai 2026 (partie 2 — Phase 1 fondations)
+- **Découverte** : le Pairing Code est DÉJÀ implémenté côté backend (`sessionManager.requestPairingCode`) ET côté frontend (`WhatsAppConnect.tsx` avec sélecteur pays 🇨🇮🇸🇳🇲🇱🇧🇫🇧🇯🇹🇬🇳🇪🇬🇳🇬🇭🇳🇬). Plus rien à coder côté WhatsApp connect.
+- **Bug DEFAULT_TENANT_ID** : webhookController désactivé dans `index.ts` (mort code dangereux). Baileys reste le système principal.
+- **Guide Railway** : `RAILWAY_SETUP.md` créé avec JWT_SECRET fort généré (`openssl rand -hex 64`).
+
+### Décisions stratégiques (validées par Alex)
+- **Validation paiements** : Screenshot Validator IA (Gemini Vision lit les reçus Wave/OM) → Phase 2
+- **App mobile** : PWA d'abord (vite-plugin-pwa déjà installé), Capacitor ensuite → Phase 3
+- **WhatsApp** : Pairing Code en méthode principale (UX mobile), QR Code en fallback desktop
