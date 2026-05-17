@@ -28,6 +28,10 @@ process.on('unhandledRejection', (reason) => {
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Trust the reverse proxy (nginx) — needed for correct client IP detection
+// behind nginx for express-rate-limit and other middleware.
+app.set('trust proxy', 1);
+
 // CORS — restrict to known origins
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',');
 app.use(cors({
