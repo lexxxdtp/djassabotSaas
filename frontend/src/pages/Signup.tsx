@@ -48,7 +48,9 @@ const Signup: React.FC = () => {
     const API_URL = getApiUrl();
 
     // Setup Visible Recaptcha for Firebase (Safari/React 18 Strict Mode Fix)
+    // Skipped entirely if Firebase isn't configured — email signup still works.
     React.useEffect(() => {
+        if (!auth) return; // Firebase disabled — no recaptcha needed
         if (!window.recaptchaVerifier) {
             window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
                 'size': 'normal',
@@ -137,6 +139,11 @@ const Signup: React.FC = () => {
 
         try {
             if (usePhone) {
+                if (!auth) {
+                    setError("Inscription par téléphone temporairement indisponible. Utilisez l'inscription par email.");
+                    setLoading(false);
+                    return;
+                }
                 if (!otpSent) {
                     // Etape 1 : Obtenir un code OTP via Firebase
                     const finalPhoneFirebase = `+225${formData.phone}`;
@@ -228,7 +235,7 @@ const Signup: React.FC = () => {
 
         } catch (err: unknown) {
             // Re-initialize recaptcha on error so the user can try again
-            if (window.recaptchaVerifier) {
+            if (auth && window.recaptchaVerifier) {
                 try {
                     window.recaptchaVerifier.clear();
                     window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
@@ -260,6 +267,7 @@ const Signup: React.FC = () => {
         setError('');
         setLoading(true);
         try {
+            if (!auth) throw new Error("Firebase non configuré");
             const finalPhoneFirebase = `+225${formData.phone}`;
             const appVerifier = window.recaptchaVerifier;
             const confirmation = await signInWithPhoneNumber(auth, finalPhoneFirebase, appVerifier);

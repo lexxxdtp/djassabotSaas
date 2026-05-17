@@ -31,7 +31,9 @@ const ForgotPassword: React.FC = () => {
     }, [countdown]);
 
     // Setup Invisible Recaptcha for Firebase (React 18 Strict Mode Fix)
+    // Skipped if Firebase isn't configured — email reset still works.
     useEffect(() => {
+        if (!auth) return;
         if (!window.recaptchaVerifier) {
             window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
                 size: 'invisible',
@@ -53,6 +55,11 @@ const ForgotPassword: React.FC = () => {
 
         try {
             if (usePhone) {
+                if (!auth) {
+                    setError("Réinitialisation par téléphone temporairement indisponible. Utilisez l'email.");
+                    setLoading(false);
+                    return;
+                }
                 if (phone.length !== 10) {
                     setError('Le numéro de téléphone doit contenir 10 chiffres.');
                     setLoading(false);
@@ -65,7 +72,7 @@ const ForgotPassword: React.FC = () => {
                     const appVerifier = window.recaptchaVerifier;
 
                     if (!appVerifier) {
-                        throw new Error("Recaptcha non initialisé, rfechargez la page.");
+                        throw new Error("Recaptcha non initialisé, rechargez la page.");
                     }
 
                     const confirmation = await signInWithPhoneNumber(auth, finalPhoneFirebase, appVerifier);
@@ -247,6 +254,7 @@ const ForgotPassword: React.FC = () => {
                                             setError('');
                                             setLoading(true);
                                             try {
+                                                if (!auth) throw new Error("Firebase non configuré");
                                                 const finalPhoneFirebase = `+225${phone}`;
                                                 const appVerifier = window.recaptchaVerifier;
                                                 if (!appVerifier) throw new Error("Recaptcha non initialisé");
