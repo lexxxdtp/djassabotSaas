@@ -109,9 +109,28 @@ const Signup: React.FC = () => {
             return;
         }
         if (!auth) {
-            // Firebase pas configuré — on accepte le numéro sans OTP (mode dégradé)
-            setIdentifierVerified(true);
-            setOtpSent(false);
+            // Firebase pas configuré — vérifier quand même si le numéro existe déjà
+            setLoading(true);
+            setError('');
+            try {
+                const res = await fetch(`${API_URL}/auth/check-phone`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: `+225${phone}` }),
+                });
+                const data = await res.json();
+                if (data.exists) {
+                    setError('Ce numéro est déjà inscrit. Connectez-vous ou réinitialisez votre mot de passe.');
+                    return;
+                }
+                setIdentifierVerified(true);
+                setOtpSent(false);
+            } catch {
+                // Si l'endpoint n'existe pas encore, on accepte quand même (fallback)
+                setIdentifierVerified(true);
+            } finally {
+                setLoading(false);
+            }
             return;
         }
         setError('');
@@ -296,9 +315,21 @@ const Signup: React.FC = () => {
                 </div>
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-lg mb-4 text-sm flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                        {error}
+                    <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-lg mb-4 text-sm">
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                            <span>{error}</span>
+                        </div>
+                        {error.includes('déjà inscrit') && (
+                            <div className="mt-2 ml-3.5 flex gap-3 text-xs">
+                                <Link to="/login" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">
+                                    Se connecter
+                                </Link>
+                                <Link to="/forgot-password" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">
+                                    Mot de passe oublié ?
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 )}
 

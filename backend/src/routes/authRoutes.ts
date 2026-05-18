@@ -7,9 +7,11 @@ const router = express.Router();
 // Public Routes
 router.post('/signup', authController.signup);
 router.post('/login', authController.login);
+router.post('/check-phone', authController.checkPhone);
 router.post('/send-email-otp', authController.sendEmailOtp);
 router.post('/verify-email-otp', authController.verifyEmailOtp);
 router.post('/forgot-password', authController.forgotPassword);
+router.post('/forgot-password-phone', authController.forgotPasswordPhone);
 router.post('/verify-phone-reset', authController.verifyPhoneReset);
 router.post('/reset-password', authController.resetPassword);
 

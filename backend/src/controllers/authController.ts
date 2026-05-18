@@ -305,6 +305,70 @@ export const updateMe = async (req: Request, res: Response) => {
     }
 };
 
+/**
+ * Mot de passe oublié via numéro de téléphone
+ * - Si l'utilisateur a un email → envoie un lien de reset par email
+ * - Si OTP Firebase vérifié (otpVerified=true) ET pas d'email → retourne un resetToken directement
+ * - Si aucun email et pas d'OTP → retourne hasEmail:false
+ */
+export const forgotPasswordPhone = async (req: Request, res: Response) => {
+    try {
+        const { phone, otpVerified } = req.body;
+        if (!phone) {
+            res.status(400).json({ error: 'Numéro de téléphone requis' });
+            return;
+        }
+
+        const user = await db.getUserByPhone(phone);
+
+        // Ne jamais révéler si le numéro existe ou non (sauf si OTP vérifié)
+        if (!user) {
+            res.json({ success: true, hasEmail: false });
+            return;
+        }
+
+        // Si l'utilisateur a un email, on envoie un lien de reset par email
+        if (user.email) {
+            const resetToken = uuidv4();
+            const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+            await db.storeAuthToken(user.id, 'PASSWORD_RESET', resetToken, expiresAt);
+            await sendPasswordResetEmail(user.email, resetToken);
+            res.json({ success: true, hasEmail: true });
+            return;
+        }
+
+        // Pas d'email : si l'OTP Firebase a été vérifié côté front, on peut retourner un token de reset
+        if (otpVerified) {
+            const resetToken = uuidv4();
+            const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+            await db.storeAuthToken(user.id, 'PASSWORD_RESET', resetToken, expiresAt);
+            res.json({ success: true, hasEmail: false, resetToken });
+            return;
+        }
+
+        // Pas d'email, pas d'OTP → dire à l'utilisateur de contacter le support
+        res.json({ success: true, hasEmail: false });
+    } catch (error: any) {
+        logger.error({ err: error }, 'ForgotPasswordPhone error');
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+};
+
+export const checkPhone = async (req: Request, res: Response) => {
+    try {
+        const { phone } = req.body;
+        if (!phone) {
+            res.status(400).json({ error: 'Numéro de téléphone requis' });
+            return;
+        }
+        const existingUser = await db.getUserByPhone(phone);
+        res.json({ exists: !!existingUser });
+    } catch (error: any) {
+        logger.error({ err: error }, 'CheckPhone error');
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+};
+
 export const sendEmailOtp = async (req: Request, res: Response) => {
     try {
         const { email } = req.body;

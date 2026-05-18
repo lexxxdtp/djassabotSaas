@@ -55,26 +55,36 @@ const ForgotPassword: React.FC = () => {
 
         try {
             if (usePhone) {
-                if (!auth) {
-                    setError("Réinitialisation par téléphone temporairement indisponible. Utilisez l'email.");
-                    setLoading(false);
-                    return;
-                }
                 if (phone.length !== 10) {
                     setError('Le numéro de téléphone doit contenir 10 chiffres.');
                     setLoading(false);
                     return;
                 }
 
+                if (!auth) {
+                    // Firebase non configuré → demander au backend d'envoyer un lien par email si possible
+                    const finalPhone = `+225${phone}`;
+                    const response = await fetch(`${API_URL}/auth/forgot-password-phone`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: finalPhone }),
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Erreur serveur');
+
+                    if (data.hasEmail) {
+                        setSuccess('Un lien de réinitialisation a été envoyé à l\'adresse email liée à ce numéro.');
+                    } else {
+                        setSuccess('Aucun email associé à ce compte. Contactez le support sur WhatsApp pour réinitialiser votre mot de passe.');
+                    }
+                    return;
+                }
+
                 if (!otpSent) {
-                    // Send OTP
+                    // Firebase configuré → envoyer OTP SMS
                     const finalPhoneFirebase = `+225${phone}`;
                     const appVerifier = window.recaptchaVerifier;
-
-                    if (!appVerifier) {
-                        throw new Error("Recaptcha non initialisé, rechargez la page.");
-                    }
-
+                    if (!appVerifier) throw new Error("Recaptcha non initialisé, rechargez la page.");
                     const confirmation = await signInWithPhoneNumber(auth, finalPhoneFirebase, appVerifier);
                     setConfirmationResult(confirmation);
                     setOtpSent(true);
@@ -82,25 +92,24 @@ const ForgotPassword: React.FC = () => {
                     setLoading(false);
                     return;
                 } else {
-                    // Verify OTP
+                    // Vérifier l'OTP Firebase puis envoyer un lien de reset par email/WhatsApp
                     if (!confirmationResult) throw new Error("Erreur de session OTP");
                     await confirmationResult.confirm(otpCode);
 
-                    // Ask backend for a DB reset token
                     const finalPhone = `+225${phone}`;
-                    const response = await fetch(`${API_URL}/auth/verify-phone-reset`, {
+                    const response = await fetch(`${API_URL}/auth/forgot-password-phone`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone: finalPhone }),
+                        body: JSON.stringify({ phone: finalPhone, otpVerified: true }),
                     });
-
                     const data = await response.json();
-                    if (!response.ok) {
-                        throw new Error(data.error || 'Erreur lors de la réinitialisation');
-                    }
+                    if (!response.ok) throw new Error(data.error || 'Erreur lors de la réinitialisation');
 
-                    // Redirect to reset password with the backend token
-                    navigate(`/reset-password?token=${data.token}`);
+                    if (data.resetToken) {
+                        navigate(`/reset-password?token=${data.resetToken}`);
+                    } else {
+                        setSuccess('Un lien de réinitialisation a été envoyé à l\'adresse email liée à ce numéro.');
+                    }
                     return;
                 }
             } else {
