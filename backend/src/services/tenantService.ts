@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { supabase, isSupabaseEnabled } from '../config/supabase';
 import { Tenant, User, Subscription } from '../types';
+import { logger } from '../utils/logger';
 
 
 
@@ -12,7 +13,7 @@ export const createTenant = async (data: {
     name: string;
     businessType?: string;
 }): Promise<Tenant> => {
-    console.log('[createTenant] Called for:', data.name);
+    logger.info({ name: data.name }, '[createTenant] Called');
     const tenant: Tenant = {
         id: uuidv4(),
         name: data.name,
@@ -26,7 +27,7 @@ export const createTenant = async (data: {
     };
 
     if (isSupabaseEnabled && supabase) {
-        console.log('[createTenant] Attempting Supabase insert...');
+        logger.debug('[createTenant] Attempting Supabase insert...');
         const dbTenant = {
             id: tenant.id,
             name: tenant.name,
@@ -46,7 +47,7 @@ export const createTenant = async (data: {
             .single();
 
         if (error) {
-            console.error('[createTenant] Supabase Error:', error);
+            logger.error({ err: error }, '[createTenant] Supabase Error');
             throw new Error(`Database Error (Tenants): ${error.message}`);
         }
 
@@ -90,7 +91,7 @@ export const getTenantById = async (id: string): Promise<Tenant | null> => {
             }
         }
     } catch (e) {
-        console.error('[getTenantById] Error:', e);
+        logger.error({ err: e }, '[getTenantById] Error');
     }
     return null;
 };
@@ -120,7 +121,7 @@ export const getActiveTenants = async (): Promise<Tenant[]> => {
             }
         }
     } catch (e) {
-        console.error('[getActiveTenants] Error:', e);
+        logger.error({ err: e }, '[getActiveTenants] Error');
     }
     return [];
 };
@@ -143,7 +144,7 @@ export const updateTenantWhatsAppStatus = async (
                 .eq('id', tenantId);
         }
     } catch (e) {
-        console.error('[updateTenantWhatsAppStatus] Error:', e);
+        logger.error({ err: e }, '[updateTenantWhatsAppStatus] Error');
     }
 };
 
@@ -184,7 +185,7 @@ export const updateTenant = async (
             }
         }
     } catch (e) {
-        console.error('[updateTenant] Error:', e);
+        logger.error({ err: e }, '[updateTenant] Error');
     }
     return null;
 };
@@ -206,7 +207,7 @@ export const createUser = async (data: {
     passwordHash: string;
     role?: 'owner' | 'admin' | 'staff';
 }): Promise<User> => {
-    console.log('[createUser] Called for:', data.email || data.phone);
+    logger.info({ contact: data.email || data.phone }, '[createUser] Called');
     const user: User = {
         id: uuidv4(),
         tenantId: data.tenantId,
@@ -222,7 +223,7 @@ export const createUser = async (data: {
     };
 
     if (isSupabaseEnabled && supabase) {
-        console.log('[createUser] Attempting Supabase insert...');
+        logger.debug('[createUser] Attempting Supabase insert...');
         const dbUser = {
             id: user.id,
             tenant_id: user.tenantId,
@@ -244,7 +245,7 @@ export const createUser = async (data: {
             .single();
 
         if (error) {
-            console.error('[createUser] Supabase Error:', error);
+            logger.error({ err: error }, '[createUser] Supabase Error');
             throw new Error(`Database Error (Users): ${error.message}`);
         }
 
@@ -287,7 +288,7 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
             }
         }
     } catch (e) {
-        console.error('[getUserByEmail] Error:', e);
+        logger.error({ err: e }, '[getUserByEmail] Error');
     }
     return null;
 };
@@ -318,7 +319,7 @@ export const getUserByPhone = async (phone: string): Promise<User | null> => {
             }
         }
     } catch (e) {
-        console.error('[getUserByPhone] Error:', e);
+        logger.error({ err: e }, '[getUserByPhone] Error');
     }
     return null;
 };
@@ -349,7 +350,7 @@ export const getUserById = async (id: string): Promise<User | null> => {
             }
         }
     } catch (e) {
-        console.error('[getUserById] Error:', e);
+        logger.error({ err: e }, '[getUserById] Error');
     }
     return null;
 };
@@ -393,7 +394,7 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
             }
         }
     } catch (e) {
-        console.error('[updateUser] Error:', e);
+        logger.error({ err: e }, '[updateUser] Error');
     }
     return null;
 };
@@ -436,7 +437,7 @@ export const createSubscription = async (data: {
             .single();
 
         if (error) {
-            console.error('[createSubscription] Supabase Error:', error);
+            logger.error({ err: error }, '[createSubscription] Supabase Error');
             throw new Error(`Database Error (Sub): ${error.message}`);
         }
 
@@ -480,7 +481,7 @@ export const getSubscriptionByTenantId = async (tenantId: string): Promise<Subsc
             }
         }
     } catch (e) {
-        console.error('[getSubscriptionByTenantId] Error:', e);
+        logger.error({ err: e }, '[getSubscriptionByTenantId] Error');
     }
     return null;
 };
@@ -508,7 +509,7 @@ export const createDefaultSettings = async (tenantId: string, businessName: stri
             .insert(settings);
 
         if (error) {
-            console.error('[createDefaultSettings] DB Error:', error);
+            logger.error({ err: error }, '[createDefaultSettings] DB Error');
             // Don't throw here to avoid blocking signup, just log
         }
         return;
