@@ -114,6 +114,11 @@ const ForgotPassword: React.FC = () => {
                 }
             } else {
                 // Email Flow
+                if (!email.includes('@') || !email.includes('.')) {
+                    setError('Adresse email invalide.');
+                    setLoading(false);
+                    return;
+                }
                 const response = await fetch(`${API_URL}/auth/forgot-password`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -199,11 +204,11 @@ const ForgotPassword: React.FC = () => {
                             <div className="relative group">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-500 transition-colors w-5 h-5" />
                                 <input
-                                    type="email"
+                                    type="text"
+                                    inputMode="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="email@exemple.com"
-                                    required
                                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                                 />
                             </div>
@@ -219,11 +224,11 @@ const ForgotPassword: React.FC = () => {
                                     <span className="text-sm font-medium group-focus-within:text-white">+225</span>
                                 </div>
                                 <input
-                                    type="tel"
+                                    type="text"
+                                    inputMode="numeric"
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                     placeholder="0700000000"
-                                    required
                                     className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-24 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono tracking-wider"
                                 />
                             </div>
