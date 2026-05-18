@@ -296,11 +296,11 @@ const Signup: React.FC = () => {
         + (/\d/.test(password) ? 1 : 0);
 
     return (
-        <div className="min-h-screen bg-[#0f111a] flex items-center justify-center p-4">
-            <div className="bg-[#0a0c10] border border-white/5 p-8 rounded-3xl w-full max-w-md shadow-2xl shadow-indigo-500/10">
+        <div className="min-h-screen bg-[#020B18] flex items-center justify-center p-4">
+            <div className="bg-white/[0.04] border border-white/7 p-8 rounded-3xl w-full max-w-md shadow-2xl shadow-[#00D97E]/5 backdrop-blur-sm">
                 {/* Header */}
                 <div className="text-center mb-6">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/20">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00D97E] to-[#0EA5E9] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#00D97E]/20">
                         <ShoppingBag className="text-white w-8 h-8" />
                     </div>
                     <h1 className="text-2xl font-bold text-white mb-1 tracking-tight">Créer votre Commerce IA</h1>
@@ -310,7 +310,7 @@ const Signup: React.FC = () => {
                 {/* Progress bar */}
                 <div className="flex gap-2 mb-6">
                     {[1, 2, 3].map(n => (
-                        <div key={n} className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${step >= n ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-white/5'}`} />
+                        <div key={n} className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${step >= n ? 'bg-gradient-to-r from-[#00D97E] to-[#0EA5E9]' : 'bg-white/5'}`} />
                     ))}
                 </div>
 
@@ -322,10 +322,10 @@ const Signup: React.FC = () => {
                         </div>
                         {error.includes('déjà inscrit') && (
                             <div className="mt-2 ml-3.5 flex gap-3 text-xs">
-                                <Link to="/login" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">
+                                <Link to="/login" className="text-[#00D97E] hover:text-[#00D97E]/80 underline underline-offset-2">
                                     Se connecter
                                 </Link>
-                                <Link to="/forgot-password" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2">
+                                <Link to="/forgot-password" className="text-[#00D97E] hover:text-[#00D97E]/80 underline underline-offset-2">
                                     Mot de passe oublié ?
                                 </Link>
                             </div>
@@ -343,12 +343,12 @@ const Signup: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => { setAuthMethod('phone'); setOtpSent(false); setIdentifierVerified(false); setOtpCode(''); }}
-                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${authMethod === 'phone' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-white'}`}
+                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${authMethod === 'phone' ? 'bg-[#00D97E] text-white shadow-lg shadow-[#00D97E]/20' : 'text-gray-500 hover:text-white'}`}
                             >📱 Téléphone</button>
                             <button
                                 type="button"
                                 onClick={() => { setAuthMethod('email'); setOtpSent(false); setIdentifierVerified(false); setOtpCode(''); }}
-                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${authMethod === 'email' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-white'}`}
+                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${authMethod === 'email' ? 'bg-[#00D97E] text-white shadow-lg shadow-[#00D97E]/20' : 'text-gray-500 hover:text-white'}`}
                             >📧 Email</button>
                         </div>
 
@@ -367,7 +367,7 @@ const Signup: React.FC = () => {
                                         onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                         placeholder="0709483812"
                                         disabled={otpSent || identifierVerified}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-[90px] pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono text-lg disabled:opacity-50"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-[90px] pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all font-mono text-lg disabled:opacity-50"
                                     />
                                 </div>
                                 <p className="mt-1 text-xs text-gray-600">10 chiffres — c'est le numéro qui sera lié à votre bot</p>
@@ -383,7 +383,7 @@ const Signup: React.FC = () => {
                                         onChange={e => setEmail(e.target.value)}
                                         placeholder="votre@email.com"
                                         disabled={otpSent || identifierVerified}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all disabled:opacity-50"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all disabled:opacity-50"
                                     />
                                 </div>
                             </div>
@@ -400,7 +400,7 @@ const Signup: React.FC = () => {
                                     onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                     placeholder="123456"
                                     maxLength={6}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-center text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-all font-mono text-2xl tracking-[0.5em]"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-center text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 transition-all font-mono text-2xl tracking-[0.5em]"
                                 />
                                 <div className="flex items-center justify-between mt-2">
                                     <p className="text-xs text-green-400 flex items-center gap-1">
@@ -410,7 +410,7 @@ const Signup: React.FC = () => {
                                         type="button"
                                         onClick={authMethod === 'phone' ? sendPhoneOTP : sendEmailOTP}
                                         disabled={countdown > 0 || loading}
-                                        className="text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
+                                        className="text-xs text-[#00D97E] hover:text-[#00D97E]/80 disabled:opacity-50"
                                     >
                                         {countdown > 0 ? `Renvoyer (${countdown}s)` : 'Renvoyer le code'}
                                     </button>
@@ -439,7 +439,7 @@ const Signup: React.FC = () => {
                                     if (!otpSent) authMethod === 'phone' ? sendPhoneOTP() : sendEmailOTP();
                                     else authMethod === 'phone' ? verifyPhoneOTP() : verifyEmailOTP();
                                 }}
-                                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/25 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="w-full bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] hover:shadow-lg hover:shadow-[#00D97E]/20 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 {loading ? 'Traitement...' : (
                                     !otpSent ? 'Recevoir le code' : 'Vérifier le code'
@@ -472,7 +472,7 @@ const Signup: React.FC = () => {
                                     value={businessName}
                                     onChange={e => setBusinessName(e.target.value)}
                                     placeholder="Ma Super Boutique"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                             </div>
                         </div>
@@ -485,7 +485,7 @@ const Signup: React.FC = () => {
                                         key={bt.id}
                                         type="button"
                                         onClick={() => setBusinessType(bt.id)}
-                                        className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${businessType === bt.id ? 'bg-indigo-500/20 border-indigo-500 ring-1 ring-indigo-500' : 'bg-white/5 border-white/10 hover:border-white/20'}`}
+                                        className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${businessType === bt.id ? 'bg-[#00D97E]/15 border-[#00D97E] ring-1 ring-[#00D97E]' : 'bg-white/5 border-white/10 hover:border-white/20'}`}
                                     >
                                         <span className="text-2xl">{bt.emoji}</span>
                                         <span className={`text-[10px] leading-tight text-center ${businessType === bt.id ? 'text-white' : 'text-gray-400'}`}>{bt.label}</span>
@@ -503,7 +503,7 @@ const Signup: React.FC = () => {
                                     value={fullName}
                                     onChange={e => setFullName(e.target.value)}
                                     placeholder="Jean Kouassi"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                             </div>
                         </div>
@@ -513,11 +513,11 @@ const Signup: React.FC = () => {
                             <select
                                 value={birthYear}
                                 onChange={e => setBirthYear(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                             >
-                                <option value="" disabled className="bg-[#0a0c10]">Sélectionnez une année</option>
+                                <option value="" disabled className="bg-[#020B18]">Sélectionnez une année</option>
                                 {BIRTH_YEARS.map(y => (
-                                    <option key={y} value={y} className="bg-[#0a0c10]">{y}</option>
+                                    <option key={y} value={y} className="bg-[#020B18]">{y}</option>
                                 ))}
                             </select>
                             <p className="mt-1 text-xs text-gray-600">Vous devez avoir au moins 18 ans</p>
@@ -532,7 +532,7 @@ const Signup: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={goNext}
-                                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/25 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
+                                className="flex-1 bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] hover:shadow-lg hover:shadow-[#00D97E]/20 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
                             >Continuer <ArrowRight className="w-5 h-5" /></button>
                         </div>
                     </div>
@@ -552,7 +552,7 @@ const Signup: React.FC = () => {
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                                 <button
                                     type="button"
@@ -586,7 +586,7 @@ const Signup: React.FC = () => {
                                     value={confirmPassword}
                                     onChange={e => setConfirmPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                                 <button
                                     type="button"
@@ -597,11 +597,11 @@ const Signup: React.FC = () => {
                         </div>
 
                         {/* Preview: what happens next */}
-                        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 text-xs text-indigo-200">
-                            <p className="font-bold flex items-center gap-1 mb-2 text-indigo-300">
+                        <div className="bg-[#00D97E]/8 border border-[#00D97E]/20 rounded-xl p-4 text-xs text-slate-300">
+                            <p className="font-bold flex items-center gap-1 mb-2 text-[#00D97E]">
                                 <Sparkles className="w-3.5 h-3.5" /> Après votre inscription :
                             </p>
-                            <ol className="space-y-1 list-decimal list-inside text-indigo-200/80">
+                            <ol className="space-y-1 list-decimal list-inside text-slate-400">
                                 <li>Connectez votre WhatsApp (30 secondes)</li>
                                 <li>Ajoutez vos produits avec prix et stock</li>
                                 <li>Le bot vend pour vous 24h/24 🚀</li>
@@ -619,7 +619,7 @@ const Signup: React.FC = () => {
                                 type="button"
                                 onClick={submitSignup}
                                 disabled={loading || passwordScore < 3 || !confirmPassword}
-                                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/25 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="flex-1 bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] hover:shadow-lg hover:shadow-[#00D97E]/20 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 {loading ? 'Création...' : 'Créer mon compte'}
                                 {!loading && <ArrowRight className="w-5 h-5" />}
@@ -629,7 +629,7 @@ const Signup: React.FC = () => {
                 )}
 
                 <p className="mt-6 text-center text-sm text-gray-500">
-                    Déjà un compte ? <Link to="/login" className="text-indigo-400 hover:text-indigo-300 font-bold tracking-wide hover:underline">Se connecter</Link>
+                    Déjà un compte ? <Link to="/login" className="text-[#00D97E] hover:text-[#00D97E]/80 font-bold tracking-wide hover:underline">Se connecter</Link>
                 </p>
             </div>
         </div>
