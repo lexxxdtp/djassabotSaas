@@ -19,6 +19,7 @@ const Subscription = lazy(() => import('./pages/Subscription'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -66,6 +67,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route element={<ProtectedRoute />}>
+              <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<Overview />} />
                 <Route path="products" element={<Products />} />

@@ -240,7 +240,7 @@ const Signup: React.FC = () => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erreur inscription.');
             login(data.token, data.user, data.tenant);
-            navigate('/dashboard');
+            navigate('/onboarding');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erreur inconnue.');
         } finally {
