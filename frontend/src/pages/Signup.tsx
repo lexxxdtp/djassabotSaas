@@ -52,6 +52,7 @@ const Signup: React.FC = () => {
     const [otpSent, setOtpSent] = useState(false);
     const [otpCode, setOtpCode] = useState('');
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+    const [phoneIdToken, setPhoneIdToken] = useState<string | null>(null);
     const [identifierVerified, setIdentifierVerified] = useState(false);
     const [countdown, setCountdown] = useState(0);
 
@@ -162,7 +163,10 @@ const Signup: React.FC = () => {
         setError('');
         setLoading(true);
         try {
-            await confirmationResult.confirm(otpCode);
+            const credential = await confirmationResult.confirm(otpCode);
+            // Capture the Firebase ID token so the backend can verify the OTP server-side.
+            const idToken = await credential.user.getIdToken();
+            setPhoneIdToken(idToken);
             setIdentifierVerified(true);
         } catch (err) {
             const msg = err instanceof Error ? err.message : '';
@@ -245,7 +249,7 @@ const Signup: React.FC = () => {
             if (authMethod === 'phone') {
                 body.phone = `+225${phone}`;
                 body.email = null;
-                body.phoneVerified = true;
+                body.phoneIdToken = phoneIdToken;
             } else {
                 body.email = email.toLowerCase().trim();
                 body.phone = null;

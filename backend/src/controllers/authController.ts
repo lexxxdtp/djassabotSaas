@@ -3,12 +3,13 @@ import bcrypt from 'bcryptjs';
 import { generateToken } from '../middleware/auth';
 import { db } from '../services/dbService';
 import { sendOtpEmail, sendPasswordResetEmail } from '../services/resendService';
+import { verifyPhoneToken, isFirebaseAdminConfigured } from '../services/firebaseAdminService';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
 
 export const signup = async (req: Request, res: Response) => {
     try {
-        const { businessName, email, phone, password, businessType, fullName, birthDate, phoneVerified, emailVerified } = req.body;
+        const { businessName, email, phone, password, businessType, fullName, birthDate, phoneIdToken, emailVerified } = req.body;
 
         if (!businessName || !password) {
             res.status(400).json({ error: 'Le nom du commerce et le mot de passe sont requis' });
@@ -26,6 +27,28 @@ export const signup = async (req: Request, res: Response) => {
                 res.status(400).json({ error: 'Format de téléphone invalide. Utilisez: +225XXXXXXXXXX (10 chiffres)' });
                 return;
             }
+        }
+
+        // Phone signup MUST be backed by a verified Firebase ID token.
+        // Without this check, a malicious client could send arbitrary phone numbers.
+        let phoneVerifiedReal = false;
+        if (phone) {
+            if (!phoneIdToken) {
+                res.status(400).json({ error: 'Vérification téléphone requise. Veuillez compléter le code SMS.' });
+                return;
+            }
+            if (!isFirebaseAdminConfigured()) {
+                logger.error('[signup] Firebase Admin not configured — cannot verify phone token');
+                res.status(503).json({ error: 'Service de vérification téléphone indisponible. Contactez le support.' });
+                return;
+            }
+            const verifiedPhone = await verifyPhoneToken(phoneIdToken);
+            if (!verifiedPhone || verifiedPhone !== phone) {
+                logger.warn({ phone, verifiedPhone }, '[signup] Phone token mismatch or invalid');
+                res.status(401).json({ error: 'Le code de vérification est invalide ou expiré.' });
+                return;
+            }
+            phoneVerifiedReal = true;
         }
 
         const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
@@ -68,7 +91,7 @@ export const signup = async (req: Request, res: Response) => {
             role: 'owner'
         });
 
-        if (phoneVerified && phone) {
+        if (phoneVerifiedReal && phone) {
             await db.updateUser(user.id, { phoneVerified: true });
             user.phoneVerified = true;
         }
@@ -313,7 +336,7 @@ export const updateMe = async (req: Request, res: Response) => {
  */
 export const forgotPasswordPhone = async (req: Request, res: Response) => {
     try {
-        const { phone, otpVerified } = req.body;
+        const { phone, phoneIdToken } = req.body;
         if (!phone) {
             res.status(400).json({ error: 'Numéro de téléphone requis' });
             return;
@@ -321,13 +344,13 @@ export const forgotPasswordPhone = async (req: Request, res: Response) => {
 
         const user = await db.getUserByPhone(phone);
 
-        // Ne jamais révéler si le numéro existe ou non (sauf si OTP vérifié)
+        // Ne jamais révéler si le numéro existe ou non
         if (!user) {
             res.json({ success: true, hasEmail: false });
             return;
         }
 
-        // Si l'utilisateur a un email, on envoie un lien de reset par email
+        // Si l'utilisateur a un email, on envoie un lien de reset par email (pas besoin d'OTP)
         if (user.email) {
             const resetToken = uuidv4();
             const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
@@ -337,8 +360,19 @@ export const forgotPasswordPhone = async (req: Request, res: Response) => {
             return;
         }
 
-        // Pas d'email : si l'OTP Firebase a été vérifié côté front, on peut retourner un token de reset
-        if (otpVerified) {
+        // Pas d'email : verifier OBLIGATOIREMENT l'OTP Firebase server-side
+        if (phoneIdToken) {
+            if (!isFirebaseAdminConfigured()) {
+                logger.error('[forgotPasswordPhone] Firebase Admin not configured');
+                res.status(503).json({ error: 'Service de vérification téléphone indisponible.' });
+                return;
+            }
+            const verifiedPhone = await verifyPhoneToken(phoneIdToken);
+            if (!verifiedPhone || verifiedPhone !== phone) {
+                logger.warn({ phone, verifiedPhone }, '[forgotPasswordPhone] Phone token mismatch');
+                res.status(401).json({ error: 'Code de vérification invalide.' });
+                return;
+            }
             const resetToken = uuidv4();
             const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
             await db.storeAuthToken(user.id, 'PASSWORD_RESET', resetToken, expiresAt);

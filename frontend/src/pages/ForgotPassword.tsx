@@ -91,13 +91,14 @@ const ForgotPassword: React.FC = () => {
                     return;
                 } else {
                     if (!confirmationResult) throw new Error("Erreur de session OTP");
-                    await confirmationResult.confirm(otpCode);
+                    const credential = await confirmationResult.confirm(otpCode);
+                    const phoneIdToken = await credential.user.getIdToken();
 
                     const finalPhone = `+225${phone}`;
                     const response = await fetch(`${API_URL}/auth/forgot-password-phone`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phone: finalPhone, otpVerified: true }),
+                        body: JSON.stringify({ phone: finalPhone, phoneIdToken }),
                     });
                     const data = await response.json();
                     if (!response.ok) throw new Error(data.error || 'Erreur lors de la réinitialisation');
