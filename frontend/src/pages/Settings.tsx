@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Bot, Store, PlayCircle, Save, User, QrCode } from 'lucide-react';
+import { Bot, Store, Save, User, QrCode, PlayCircle, ChevronDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 import WhatsAppConnect from './WhatsAppConnect';
+import Subscription from './Subscription';
 import AIPlayground from '../components/AIPlayground';
 import { getApiUrl } from '../utils/apiConfig';
 import { useAuth } from '../context/AuthContext';
@@ -15,14 +16,15 @@ import SettingsToggles from '../components/settings/SettingsToggles';
 import SettingsAdvanced from '../components/settings/SettingsAdvanced';
 import SettingsBusiness from '../components/settings/SettingsBusiness';
 import SettingsLogistics from '../components/settings/SettingsLogistics';
-import UserProfileModal from '../components/UserProfileModal';
+
+type TabId = 'bot' | 'shop' | 'whatsapp' | 'account';
 
 export default function Settings() {
     const { token, tenant } = useAuth();
     const [loading, setLoading] = useState(false);
     const [loadingVendor, setLoadingVendor] = useState(false);
-    const [activeTab, setActiveTab] = useState<'profile' | 'identity' | 'business' | 'whatsapp' | 'simulation'>('identity');
-    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [activeTab, setActiveTab] = useState<TabId>('bot');
+    const [showTestPanel, setShowTestPanel] = useState(false);
 
     const [userProfile, setUserProfile] = useState<{
         fullName: string;
@@ -42,14 +44,11 @@ export default function Settings() {
 
     const API_URL = getApiUrl();
 
-    // Initial Config State
     const [config, setConfig] = useState<SettingsConfig>({
-        // Identity
         botName: 'Awa',
         language: 'fr',
         persona: 'friendly',
         greeting: 'Bonjour ! Je suis Awa, votre assistante virtuelle. Comment puis-je vous aider ?',
-        // Personality
         politeness: 'informal',
         emojiLevel: 'medium',
         humorLevel: 'medium',
@@ -60,14 +59,10 @@ export default function Settings() {
             { question: "Vous livrez à Cocody ?", answer: "Oui, 1500 FCFA pour la livraison." },
             { question: "Vous avez d'autres couleurs ?", answer: "Oui, nous avons du bleu et du rouge." }
         ],
-
-        // Options
         negotiationEnabled: true,
         negotiationFlexibility: 5,
         voiceEnabled: true,
         systemInstructions: '',
-
-        // Business
         storeName: 'Ma Boutique Mode',
         businessType: 'Mode & Vêtements',
         address: 'Cocody Riviera 2, Abidjan',
@@ -91,8 +86,6 @@ export default function Settings() {
         },
         policyDescription: '',
         notificationPhone: '',
-
-        // Logistics
         deliveryEnabled: true,
         deliveryZones: [
             { name: 'Abidjan', price: 1500 },
@@ -100,8 +93,6 @@ export default function Settings() {
         ],
         freeDeliveryThreshold: 50000,
         acceptedPayments: ['wave', 'om', 'cash'],
-
-        // Vendor Payment
         settlementBank: '',
         settlementAccount: '',
     });
@@ -109,7 +100,6 @@ export default function Settings() {
     useEffect(() => {
         if (!token) return;
 
-        // Fetch Business Settings
         const fetchSettings = async () => {
             try {
                 const res = await fetch(`${API_URL}/settings`, {
@@ -117,29 +107,14 @@ export default function Settings() {
                 });
                 if (res.ok) {
                     const data = await res.json();
-
-                    // Defensive merge to prevent white screen crashes on partial data
                     setConfig(prev => ({
                         ...prev,
                         ...data,
-                        // Deep merge for nested objects to preserve defaults if DB has empty/partial json
-                        openingHours: {
-                            ...prev.openingHours,
-                            ...(data.openingHours || {})
-                        },
-                        socialMedia: {
-                            ...prev.socialMedia,
-                            ...(data.socialMedia || {})
-                        },
-                        // Ensure arrays are at least arrays
+                        openingHours: { ...prev.openingHours, ...(data.openingHours || {}) },
+                        socialMedia: { ...prev.socialMedia, ...(data.socialMedia || {}) },
                         deliveryZones: data.deliveryZones || prev.deliveryZones || [],
                         acceptedPayments: data.acceptedPayments || prev.acceptedPayments || [],
-                        trainingExamples: (data.trainingExamples && data.trainingExamples.length > 0) ? data.trainingExamples : [
-                            { question: "C'est combien ?", answer: "5000 FCFA" },
-                            { question: "Vous livrez à Cocody ?", answer: "Oui, 1500 FCFA pour la livraison." },
-                            { question: "Vous avez d'autres couleurs ?", answer: "Oui, nous avons du bleu et du rouge." }
-                        ],
-                        // Ensure new fields have fallbacks
+                        trainingExamples: (data.trainingExamples && data.trainingExamples.length > 0) ? data.trainingExamples : prev.trainingExamples,
                         humorLevel: data.humorLevel || prev.humorLevel || 'medium',
                         slangLevel: data.slangLevel || prev.slangLevel || 'low',
                     }));
@@ -149,7 +124,6 @@ export default function Settings() {
             }
         };
 
-        // Fetch User Profile
         const fetchProfile = async () => {
             try {
                 const res = await fetch(`${API_URL}/auth/me`, {
@@ -178,7 +152,6 @@ export default function Settings() {
         fetchProfile();
     }, [token, API_URL]);
 
-    // Load cached summary on mount to save API quota
     useEffect(() => {
         const saved = localStorage.getItem('aiSummary');
         if (saved) setAiSummary(saved);
@@ -191,14 +164,10 @@ export default function Settings() {
         }
         setLoading(true);
         try {
-            if (activeTab === 'profile') {
-                // Save User Profile
+            if (activeTab === 'account') {
                 const res = await fetch(`${API_URL}/auth/me`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
                         full_name: userProfile.fullName,
                         email: userProfile.email,
@@ -206,32 +175,22 @@ export default function Settings() {
                         birth_date: userProfile.birthDate
                     })
                 });
-
-                if (res.ok) {
-                    toast.success('Profil mis à jour avec succès !');
-                } else {
+                if (res.ok) toast.success('Profil mis à jour !');
+                else {
                     const err = await res.json();
-                    toast.error(err.error || 'Erreur lors de la mise à jour du profil.');
+                    toast.error(err.error || 'Erreur lors de la mise à jour.');
                 }
             } else {
-                // Save Settings
                 const res = await fetch(`${API_URL}/settings`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(config)
                 });
-
                 if (res.ok) {
-                    toast.success('Paramètres sauvegardés avec succès !');
-                    // Clear cached summary on save (since data changed)
+                    toast.success('Paramètres sauvegardés !');
                     localStorage.removeItem('aiSummary');
                     setAiSummary('');
-                } else {
-                    toast.error('Erreur lors de la sauvegarde');
-                }
+                } else toast.error('Erreur lors de la sauvegarde');
             }
         } catch (error) {
             console.error('Error saving settings:', error);
@@ -247,10 +206,7 @@ export default function Settings() {
         try {
             const res = await fetch(`${API_URL}/ai/summarize-identity`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(config)
             });
             const data = await res.json();
@@ -272,25 +228,19 @@ export default function Settings() {
         }
         setLoadingVendor(true);
         try {
-            // First save the bank details to settings
             await handleSave();
-
             const res = await fetch(`${API_URL}/paystack/create-subaccount`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
                     settlement_bank: config.settlementBank,
                     account_number: config.settlementAccount,
-                    percentage_charge: 5 // Platform fee 5%
+                    percentage_charge: 5
                 })
             });
-
             const data = await res.json();
             if (res.ok) {
-                toast.success('Compte de paiement configuré avec succès !');
+                toast.success('Compte de paiement configuré !');
                 setPaystackSubaccountCode(data.subaccount_code);
             } else {
                 toast.error('Erreur Paystack: ' + (data.message || 'Impossible de créer le sous-compte'));
@@ -303,248 +253,233 @@ export default function Settings() {
         }
     };
 
-    type TabId = 'profile' | 'business' | 'identity' | 'whatsapp' | 'simulation';
+    const tabs: { id: TabId; label: string; icon: React.ElementType; desc: string }[] = [
+        { id: 'bot', label: 'Mon Bot', icon: Bot, desc: 'Personnalité, instructions, comportement' },
+        { id: 'shop', label: 'Ma Boutique', icon: Store, desc: 'Identité, horaires, livraison' },
+        { id: 'whatsapp', label: 'WhatsApp', icon: QrCode, desc: 'Connexion du numéro WhatsApp' },
+        { id: 'account', label: 'Compte', icon: User, desc: 'Profil et abonnement' },
+    ];
 
-    const TabButton = ({ id, label, icon: Icon }: { id: TabId; label: string; icon: React.ElementType }) => (
-        <button
-            onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all text-sm border ${activeTab === id
-                ? 'bg-[#00D97E]/10 text-[#00D97E] border-[#00D97E]/20'
-                : 'bg-[#111] text-[#888] border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white'
-                }`}
-        >
-            <Icon size={16} />
-            <span>{label}</span>
-        </button>
-    );
+    const activeTabConfig = tabs.find(t => t.id === activeTab);
+    const showSaveButton = activeTab === 'bot' || activeTab === 'shop' || activeTab === 'account';
 
     return (
-        <div className="min-h-screen bg-[#05070a] text-zinc-100 p-8">
-            <div className="max-w-7xl mx-auto space-y-8">
-                {/* En-tête avec bouton Sauvegarder Fixe en bas sur mobile ou en haut sur desktop */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">Paramètres</h1>
-                        <p className="text-[#888] mt-1">Configurez l'identité, le comportement et la logistique de votre bot.</p>
-                    </div>
+        <div className="space-y-6 animate-in fade-in duration-300">
+            {/* HEADER */}
+            <div className="border-b border-[#1a1a1a] pb-4">
+                <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Réglages</h1>
+                <p className="text-[#888] text-xs md:text-sm mt-1">{activeTabConfig?.desc}</p>
+            </div>
 
-                    <button
-                        onClick={handleSave}
-                        disabled={loading}
-                        className="fixed bottom-6 right-6 md:static z-50 bg-[#00D97E] hover:bg-[#00D97E]/90 disabled:opacity-50 disabled:cursor-not-allowed text-black px-6 py-3 rounded-xl font-bold shadow-lg shadow-[#00D97E]/20 flex items-center gap-2 transition-all"
-                    >
-                        {loading ? <span className="animate-spin">⏳</span> : <Save size={20} />}
-                        {loading ? 'Sauvegarde...' : 'Sauvegarder les changements'}
-                    </button>
-                </div>
+            {/* TABS — segmented control */}
+            <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-1.5 grid grid-cols-4 gap-1">
+                {tabs.map(tab => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-2.5 rounded-xl text-xs font-medium transition-all ${isActive
+                                ? 'bg-[#00D97E] text-black shadow-lg'
+                                : 'text-[#888] hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            <tab.icon className="w-4 h-4 shrink-0" />
+                            <span className="hidden sm:inline">{tab.label}</span>
+                            <span className="sm:hidden text-[10px]">{tab.label}</span>
+                        </button>
+                    );
+                })}
+            </div>
 
-                {/* Tabs Navigation */}
-                <div className="flex flex-wrap gap-3 border-b border-[#1a1a1a] pb-4">
-                    <TabButton id="profile" label="Mon Profil" icon={User} />
-                    <TabButton id="identity" label="Identité & IA" icon={Bot} />
-                    <TabButton id="business" label="Infos Boutique" icon={Store} />
-                    <TabButton id="whatsapp" label="Connexion" icon={QrCode} />
-                    <TabButton id="simulation" label="Test & Simulation" icon={PlayCircle} />
-                </div>
+            {/* TAB CONTENT */}
+            <div className="space-y-6">
 
-                <div className="grid md:grid-cols-4 gap-8">
-                    {/* Main Content Area */}
-                    <div className="md:col-span-3 space-y-8">
+                {/* MON BOT */}
+                {activeTab === 'bot' && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <SettingsIdentity config={config} setConfig={setConfig} />
+                        <SettingsPersonality config={config} setConfig={setConfig} />
+                        <SettingsToggles config={config} setConfig={setConfig} />
+                        <SettingsAdvanced config={config} setConfig={setConfig} />
 
-                        {/* --- TAB 0: MON PROFIL --- */}
-                        {activeTab === 'profile' && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-8">
-                                    <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                                        <span className="w-2 h-2 rounded-full bg-[#00D97E]"></span> Mes Informations Personnelles
-                                    </h2>
-
-                                    <div className="grid md:grid-cols-2 gap-8">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Nom Complet</label>
-                                            <input
-                                                type="text"
-                                                value={userProfile.fullName}
-                                                onChange={e => setUserProfile({ ...userProfile, fullName: e.target.value })}
-                                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-[#555]"
-                                                placeholder="Votre nom"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Date de Naissance</label>
-                                            <input
-                                                type="date"
-                                                value={userProfile.birthDate}
-                                                onChange={e => setUserProfile({ ...userProfile, birthDate: e.target.value })}
-                                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all [&::-webkit-calendar-picker-indicator]:invert"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Téléphone</label>
-                                            <input
-                                                type="text"
-                                                value={userProfile.phone}
-                                                onChange={e => setUserProfile({ ...userProfile, phone: e.target.value })}
-                                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-[#555]"
-                                                placeholder="+225..."
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Email (Optionnel)</label>
-                                            <input
-                                                type="email"
-                                                value={userProfile.email}
-                                                onChange={e => setUserProfile({ ...userProfile, email: e.target.value })}
-                                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-[#555]"
-                                                placeholder="email@exemple.com"
-                                            />
-                                        </div>
+                        {/* Test panel — collapsible */}
+                        <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl overflow-hidden">
+                            <button
+                                onClick={() => setShowTestPanel(s => !s)}
+                                className="w-full flex items-center justify-between p-5 hover:bg-white/[0.02] transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-[#00D97E]/10 text-[#00D97E]">
+                                        <PlayCircle className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-left">
+                                        <h3 className="text-white font-bold text-sm">Tester votre bot</h3>
+                                        <p className="text-[#888] text-xs mt-0.5">Discutez avec votre IA pour valider la personnalité</p>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-
-                        {/* --- TAB 1: IDENTITY & AI --- */}
-                        {activeTab === 'identity' && (
-                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <SettingsIdentity config={config} setConfig={setConfig} />
-                                <SettingsPersonality config={config} setConfig={setConfig} />
-                                <SettingsToggles config={config} setConfig={setConfig} />
-                                <SettingsAdvanced config={config} setConfig={setConfig} />
-                            </div>
-                        )}
-
-                        {/* --- TAB 2: BUSINESS & LOGISTICS --- */}
-                        {activeTab === 'business' && (
-                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <SettingsBusiness config={config} setConfig={setConfig} />
-                                <SettingsLogistics
-                                    config={config}
-                                    setConfig={setConfig}
-                                    paystackSubaccountCode={paystackSubaccountCode}
-                                    handleSetupVendor={handleSetupVendor}
-                                    loadingVendor={loadingVendor}
-                                />
-                            </div>
-                        )}
-
-                        {/* --- TAB 3: WHATSAPP --- */}
-                        {activeTab === 'whatsapp' && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <WhatsAppConnect />
-                            </div>
-                        )}
-
-                        {/* --- TAB 4: SIMULATION --- */}
-                        {activeTab === 'simulation' && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="grid md:grid-cols-3 gap-6">
-                                    {/* Left Col: Explainer & Summary */}
-                                    <div className="md:col-span-1 space-y-6">
-                                        {/* Zone d'Explication */}
-                                        <div className="bg-gradient-to-br from-[#00D97E]/5 to-[#0D1117] border border-[#00D97E]/20 rounded-xl p-6">
-                                            <h3 className="text-white font-bold text-lg mb-2">Zone de Test</h3>
-                                            <p className="text-[#888] text-sm leading-relaxed">
-                                                Testez votre bot en temps réel. Les changements s'appliquent immédiatement ici.
-                                            </p>
-                                        </div>
-
-                                        {/* Résumé IA Auto-Généré */}
-                                        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6">
-                                            <div className="flex justify-between items-center mb-4">
-                                                <h3 className="text-white font-bold text-sm flex items-center gap-2">
-                                                    <Bot size={16} className="text-[#00D97E]" /> Synthèse IA
-                                                </h3>
-                                                {aiSummary && (
-                                                    <button
-                                                        onClick={handleGenerateSummary}
-                                                        className="text-[10px] text-[#888] hover:text-white"
-                                                    >
-                                                        Regénérer
-                                                    </button>
+                                <ChevronDown className={`w-5 h-5 text-[#888] transition-transform ${showTestPanel ? 'rotate-180' : ''}`} />
+                            </button>
+                            {showTestPanel && (
+                                <div className="border-t border-[#1a1a1a] p-4 md:p-6">
+                                    <div className="grid lg:grid-cols-3 gap-6">
+                                        <div className="lg:col-span-1">
+                                            <div className="bg-black border border-[#1a1a1a] rounded-xl p-5">
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                                                        <Bot size={16} className="text-[#00D97E]" /> Synthèse IA
+                                                    </h3>
+                                                    {aiSummary && (
+                                                        <button onClick={handleGenerateSummary} className="text-[10px] text-[#888] hover:text-white">
+                                                            Regénérer
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                {!aiSummary ? (
+                                                    <div className="text-center py-4">
+                                                        <p className="text-xs text-[#888] mb-4">Générez une synthèse pour voir ce que l'IA a compris.</p>
+                                                        <button
+                                                            onClick={handleGenerateSummary}
+                                                            disabled={summarizing}
+                                                            className="bg-[#00D97E]/10 hover:bg-[#00D97E]/20 text-[#00D97E] border border-[#00D97E]/20 px-4 py-2 rounded-lg text-xs font-bold transition-all w-full flex items-center justify-center gap-2"
+                                                        >
+                                                            {summarizing ? <span className="animate-spin">⏳</span> : <Bot size={14} />}
+                                                            {summarizing ? 'Analyse...' : 'Générer'}
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="max-h-60 overflow-y-auto">
+                                                        <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-line">{aiSummary}</p>
+                                                    </div>
                                                 )}
                                             </div>
-
-                                            {!aiSummary ? (
-                                                <div className="text-center py-6">
-                                                    <p className="text-xs text-[#888] mb-4">
-                                                        Générez une synthèse pour voir ce que l'IA a compris de votre business.
-                                                    </p>
-                                                    <button
-                                                        onClick={handleGenerateSummary}
-                                                        disabled={summarizing}
-                                                        className="bg-[#00D97E]/10 hover:bg-[#00D97E]/20 text-[#00D97E] border border-[#00D97E]/20 px-4 py-2 rounded-lg text-xs font-bold transition-all w-full flex items-center justify-center gap-2 text-zinc-100"
-                                                    >
-                                                        {summarizing ? <span className="animate-spin">⏳</span> : <Bot size={14} />}
-                                                        {summarizing ? 'Analyse...' : 'Générer le Résumé'}
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="bg-[#111] rounded-lg p-3 max-h-60 overflow-y-auto custom-scrollbar">
-                                                    <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-line">
-                                                        {aiSummary}
-                                                    </p>
-                                                </div>
-                                            )}
+                                        </div>
+                                        <div className="lg:col-span-2 h-[500px] flex flex-col">
+                                            <AIPlayground />
                                         </div>
                                     </div>
-
-                                    {/* Right Col: Chat Interface */}
-                                    <div className="md:col-span-2 h-[600px] flex flex-col">
-                                        <AIPlayground />
-                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
+                )}
 
-                    {/* Sidebar Profile Card */}
-                    <div className="hidden md:block md:col-span-1 space-y-6">
-                        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 sticky top-8">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00D97E] to-[#0EA5E9] flex items-center justify-center text-white font-bold text-lg">
-                                    {userProfile.fullName.charAt(0) || 'U'}
-                                </div>
-                                <div className="overflow-hidden">
-                                    <h3 className="font-bold text-white truncate">{userProfile.fullName || 'Utilisateur'}</h3>
-                                    <p className="text-xs text-[#888] truncate">{userProfile.email}</p>
-                                </div>
-                            </div>
+                {/* MA BOUTIQUE */}
+                {activeTab === 'shop' && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <SettingsBusiness config={config} setConfig={setConfig} />
+                        <SettingsLogistics
+                            config={config}
+                            setConfig={setConfig}
+                            paystackSubaccountCode={paystackSubaccountCode}
+                            handleSetupVendor={handleSetupVendor}
+                            loadingVendor={loadingVendor}
+                        />
+                    </div>
+                )}
 
-                            <button
-                                onClick={() => setActiveTab('profile')}
-                                className="w-full py-2 bg-white/5 hover:bg-[#1a1a1a] text-zinc-300 rounded-lg text-sm font-medium transition-colors mb-4"
-                            >
-                                Modifier mon profil
-                            </button>
+                {/* WHATSAPP */}
+                {activeTab === 'whatsapp' && (
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <WhatsAppConnect />
+                    </div>
+                )}
 
-                            <div className="space-y-4 pt-4 border-t border-[#1a1a1a]">
+                {/* COMPTE — profile + subscription */}
+                {activeTab === 'account' && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* Profil */}
+                        <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-6 md:p-8">
+                            <h2 className="text-sm font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider">
+                                <span className="w-1 h-4 rounded-full bg-[#00D97E]" />
+                                Informations personnelles
+                            </h2>
+
+                            <div className="grid md:grid-cols-2 gap-6">
                                 <div>
-                                    <div className="text-xs text-[#888] uppercase tracking-wider font-bold mb-1">Abonnement</div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-white font-medium">Plan {tenant?.subscription_tier ? tenant.subscription_tier.charAt(0).toUpperCase() + tenant.subscription_tier.slice(1) : 'Starter'}</span>
-                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${tenant?.status === 'active' || tenant?.status === 'trial' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{tenant?.status === 'active' ? 'ACTIF' : tenant?.status === 'trial' ? 'ESSAI' : tenant?.status?.toUpperCase() || 'ACTIF'}</span>
-                                    </div>
-                                    <button
-                                        onClick={() => setShowProfileModal(true)}
-                                        className="mt-2 text-xs text-[#00D97E] hover:text-[#00D97E]/80 w-full text-left"
-                                    >
-                                        Gérer l'abonnement
-                                    </button>
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Nom complet</label>
+                                    <input
+                                        type="text"
+                                        value={userProfile.fullName}
+                                        onChange={e => setUserProfile({ ...userProfile, fullName: e.target.value })}
+                                        className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl p-3 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none transition-all placeholder:text-[#555]"
+                                        placeholder="Votre nom"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Date de naissance</label>
+                                    <input
+                                        type="date"
+                                        value={userProfile.birthDate}
+                                        onChange={e => setUserProfile({ ...userProfile, birthDate: e.target.value })}
+                                        className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl p-3 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none transition-all [&::-webkit-calendar-picker-indicator]:invert"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Téléphone</label>
+                                    <input
+                                        type="text"
+                                        value={userProfile.phone}
+                                        onChange={e => setUserProfile({ ...userProfile, phone: e.target.value })}
+                                        className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl p-3 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none transition-all placeholder:text-[#555]"
+                                        placeholder="+225..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Email (optionnel)</label>
+                                    <input
+                                        type="email"
+                                        value={userProfile.email}
+                                        onChange={e => setUserProfile({ ...userProfile, email: e.target.value })}
+                                        className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl p-3 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none transition-all placeholder:text-[#555]"
+                                        placeholder="email@exemple.com"
+                                    />
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* Profile Edit Modal - ONLY FOR SUBSCRIPTION NOW */}
-                {showProfileModal && (
-                    <UserProfileModal
-                        isOpen={showProfileModal}
-                        onClose={() => setShowProfileModal(false)}
-                    />
+                        {/* Plan actuel — petit récap */}
+                        <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-6 md:p-8">
+                            <h2 className="text-sm font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider">
+                                <span className="w-1 h-4 rounded-full bg-[#00D97E]" />
+                                Abonnement
+                            </h2>
+
+                            <div className="flex items-center justify-between p-4 bg-black border border-[#1a1a1a] rounded-xl mb-6">
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold tracking-wider text-[#888]">Plan actuel</p>
+                                    <p className="text-xl font-bold text-white mt-1">
+                                        {tenant?.subscription_tier ? tenant.subscription_tier.charAt(0).toUpperCase() + tenant.subscription_tier.slice(1) : 'Starter'}
+                                    </p>
+                                </div>
+                                <span className={`text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider ${tenant?.status === 'active' || tenant?.status === 'trial'
+                                    ? 'bg-[#00D97E]/10 text-[#00D97E] border border-[#00D97E]/20'
+                                    : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                    }`}>
+                                    {tenant?.status === 'trial' ? 'Essai' : tenant?.status === 'active' ? 'Actif' : tenant?.status || 'Actif'}
+                                </span>
+                            </div>
+
+                            {/* Plans embed */}
+                            <Subscription />
+                        </div>
+                    </div>
                 )}
             </div>
+
+            {/* SAVE BUTTON — fixed mobile, inline desktop */}
+            {showSaveButton && (
+                <div className="fixed bottom-20 md:bottom-6 right-4 md:right-8 z-40">
+                    <button
+                        onClick={handleSave}
+                        disabled={loading}
+                        className="bg-[#00D97E] hover:bg-[#00D97E]/90 disabled:opacity-50 disabled:cursor-not-allowed text-black px-5 md:px-6 py-3 rounded-xl font-bold shadow-2xl shadow-[#00D97E]/20 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
+                    >
+                        {loading ? <span className="animate-spin">⏳</span> : <Save size={18} />}
+                        <span className="text-sm">{loading ? 'Sauvegarde…' : 'Sauvegarder'}</span>
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
