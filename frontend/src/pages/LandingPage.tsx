@@ -1,267 +1,327 @@
-
-
 import { useNavigate } from 'react-router-dom';
-import {
-    Bot,
-    MessageCircle,
-    ShoppingBag,
-    TrendingUp,
-    CheckCircle2,
-    ArrowRight,
-    Zap,
-    Shield,
-    Globe
-} from 'lucide-react';
-
+import { ArrowRight, Bot, MessageSquare, Package, BarChart2, Zap, Shield, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const LandingPage = () => {
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
 
-    const handleAuthAction = (path: string) => {
-        if (isAuthenticated) {
-            navigate('/dashboard');
-        } else {
-            navigate(path);
-        }
-    };
+    const go = (path: string) => navigate(isAuthenticated ? '/dashboard' : path);
 
     return (
-        <div className="min-h-screen bg-[#0f111a] text-white selection:bg-indigo-500 selection:text-white font-sans overflow-x-hidden">
+        <div className="min-h-screen bg-black text-white font-sans antialiased">
 
-            {/* Navigation */}
-            <nav className="fixed w-full z-50 bg-[#0f111a]/80 backdrop-blur-lg border-b border-white/5">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-20">
-                        <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                                <Bot className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                                DjassaBot
-                            </span>
+            {/* ═══ NAV ═══ */}
+            <header className="fixed top-0 left-0 right-0 z-50 border-b border-[#1a1a1a] bg-black/90 backdrop-blur-md">
+                <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+                    {/* Logo */}
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-[#00D97E] flex items-center justify-center">
+                            <Bot className="w-4 h-4 text-black" />
                         </div>
-
-                        <div className="hidden md:flex items-center gap-8">
-                            <a href="#features" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Fonctionnalités</a>
-                            <a href="#how-it-works" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Comment ça marche</a>
-                            <a href="#pricing" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Tarifs</a>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => handleAuthAction('/login')}
-                                className="px-5 py-2.5 text-sm font-medium text-white bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition-all hover:scale-105"
-                            >
-                                {isAuthenticated ? 'Dashboard' : 'Connexion'}
-                            </button>
-                            <button
-                                onClick={() => handleAuthAction('/signup')}
-                                className="hidden md:flex px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full hover:shadow-lg hover:shadow-indigo-500/25 transition-all hover:scale-105"
-                            >
-                                {isAuthenticated ? 'Mon Espace' : 'Commencer Gratuitement'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            {/* Hero Section */}
-            <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-                {/* Background Elements */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
-                    <div className="absolute top-20 left-20 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl animate-pulse"></div>
-                    <div className="absolute top-40 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-                </div>
-
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-8 animate-fade-in-up">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                        </span>
-                        <span className="text-xs font-medium text-indigo-300">Nouvelle Version 2.0 Disponible</span>
+                        <span className="font-bold text-[15px] tracking-tight">DjassaBot</span>
                     </div>
 
-                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8 bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-gray-500">
-                        Votre Commercial IA <br />
-                        sur WhatsApp
+                    {/* Nav links - desktop */}
+                    <nav className="hidden md:flex items-center gap-8">
+                        {['#features', '#pricing'].map((href, i) => (
+                            <a key={i} href={href}
+                                className="text-[13px] text-[#888] hover:text-white transition-colors">
+                                {['Fonctionnalités', 'Tarifs'][i]}
+                            </a>
+                        ))}
+                    </nav>
+
+                    {/* CTA */}
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => go('/login')}
+                            className="text-[13px] text-[#888] hover:text-white transition-colors px-3 py-1.5">
+                            {isAuthenticated ? 'Dashboard' : 'Connexion'}
+                        </button>
+                        <button onClick={() => go('/signup')}
+                            className="text-[13px] font-medium bg-white text-black px-4 py-1.5 rounded-md hover:bg-[#eee] transition-colors">
+                            {isAuthenticated ? 'Mon Espace' : 'Démarrer'}
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            {/* ═══ HERO ═══ */}
+            <section className="pt-40 pb-32 px-6">
+                <div className="max-w-4xl mx-auto text-center">
+
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-2 border border-[#00D97E]/30 bg-[#00D97E]/5 text-[#00D97E] text-[12px] font-medium px-3 py-1 rounded-full mb-10">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#00D97E]" />
+                        Conçu pour les commerçants d'Afrique de l'Ouest
+                    </div>
+
+                    {/* Headline */}
+                    <h1 className="text-[56px] sm:text-[72px] lg:text-[88px] font-black leading-[0.95] tracking-tight mb-8">
+                        Votre boutique<br />
+                        <span className="text-[#00D97E]">WhatsApp</span><br />
+                        tourne seule.
                     </h1>
 
-                    <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed">
-                        Automatisez vos ventes, gérez votre stock et offrez un support client 24/7.
-                        Laissez l'IA s'occuper de vos clients pendant que vous vous concentrez sur la croissance.
+                    {/* Tagline */}
+                    <p className="text-[#888] text-lg max-w-xl mx-auto mb-12 leading-relaxed">
+                        DjassaBot répond à vos clients, prend les commandes et gère votre stock.
+                        Vous encaissez, l'IA travaille.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <button
-                            onClick={() => handleAuthAction('/signup')}
-                            className="w-full sm:w-auto px-8 py-4 text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full font-medium hover:shadow-xl hover:shadow-indigo-500/25 transition-all hover:scale-105 flex items-center justify-center gap-2 group"
-                        >
-                            {isAuthenticated ? 'Accéder au Dashboard' : 'Essayer Gratuitement'}
-                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    {/* CTAs */}
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <button onClick={() => go('/signup')}
+                            className="flex items-center gap-2 bg-[#00D97E] text-black font-semibold px-6 py-3 rounded-lg hover:bg-[#00c470] transition-colors text-sm group">
+                            Commencer gratuitement
+                            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                         </button>
-                        <button className="w-full sm:w-auto px-8 py-4 text-white bg-white/5 border border-white/10 rounded-full font-medium hover:bg-white/10 transition-all flex items-center justify-center gap-2">
-                            <Zap className="w-4 h-4 text-yellow-500" />
-                            Voir la Démo
+                        <button onClick={() => go('/login')}
+                            className="flex items-center gap-2 border border-[#333] text-[#aaa] hover:text-white hover:border-[#555] px-6 py-3 rounded-lg transition-colors text-sm">
+                            Se connecter
                         </button>
-                    </div>
-
-                    {/* Stats / Social Proof */}
-                    <div className="mt-20 pt-10 border-t border-white/5 grid grid-cols-2 md:grid-cols-4 gap-8">
-                        {[
-                            { label: 'Messages Traités', value: '10k+' },
-                            { label: 'Ventes Générées', value: '50M+' },
-                            { label: 'Taux de Réponse', value: '100%' },
-                            { label: 'Satisfaction Client', value: '4.9/5' },
-                        ].map((stat, i) => (
-                            <div key={i}>
-                                <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
-                                <div className="text-sm text-gray-500">{stat.label}</div>
-                            </div>
-                        ))}
                     </div>
                 </div>
             </section>
 
-            {/* Features Grid */}
-            <section id="features" className="py-24 bg-[#0a0c10]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold mb-4">Tout ce dont vous avez besoin</h2>
-                        <p className="text-gray-400 max-w-2xl mx-auto">
-                            Une suite complète d'outils pour transformer votre WhatsApp en machine de vente.
-                        </p>
+            {/* ═══ DIVIDER ═══ */}
+            <div className="border-t border-[#1a1a1a]" />
+
+            {/* ═══ STATS ═══ */}
+            <section className="py-16 px-6">
+                <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
+                    {[
+                        { value: '30 sec', label: 'pour connecter WhatsApp' },
+                        { value: '24/7', label: 'bot actif sans interruption' },
+                        { value: '100%', label: 'taux de réponse client' },
+                        { value: 'Gratuit', label: 'pour commencer' },
+                    ].map((s, i) => (
+                        <div key={i} className="text-center">
+                            <div className="text-3xl font-black text-white mb-1">{s.value}</div>
+                            <div className="text-[12px] text-[#555] leading-tight">{s.label}</div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* ═══ DIVIDER ═══ */}
+            <div className="border-t border-[#1a1a1a]" />
+
+            {/* ═══ FEATURES ═══ */}
+            <section id="features" className="py-24 px-6">
+                <div className="max-w-6xl mx-auto">
+
+                    <div className="mb-16">
+                        <p className="text-[#00D97E] text-[12px] font-semibold uppercase tracking-widest mb-3">Fonctionnalités</p>
+                        <h2 className="text-[36px] md:text-[48px] font-black leading-tight max-w-lg">
+                            Tout pour vendre<br />sur WhatsApp.
+                        </h2>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8">
+                    <div className="grid md:grid-cols-3 gap-px bg-[#1a1a1a] border border-[#1a1a1a] rounded-xl overflow-hidden">
                         {[
                             {
-                                icon: <MessageCircle className="w-6 h-6 text-blue-400" />,
-                                title: "Réponses Intelligentes",
-                                desc: "Notre IA comprend le contexte et répond naturellement à vos clients, 24/7."
+                                icon: MessageSquare,
+                                title: 'Réponses automatiques',
+                                desc: "L'IA lit les messages, comprend la demande et répond naturellement — même en nouchi.",
+                                color: '#00D97E'
                             },
                             {
-                                icon: <ShoppingBag className="w-6 h-6 text-purple-400" />,
-                                title: "Gestion de Commandes",
-                                desc: "Transformez les conversations en commandes automatiquement. Suivi de stock en temps réel."
+                                icon: Package,
+                                title: 'Gestion des commandes',
+                                desc: "Les commandes sont prises, enregistrées et notifiées en temps réel. Stock mis à jour automatiquement.",
+                                color: '#0EA5E9'
                             },
                             {
-                                icon: <TrendingUp className="w-6 h-6 text-green-400" />,
-                                title: "Analyses Détaillées",
-                                desc: "Suivez vos performances, identifiez vos meilleurs produits et optimisez vos ventes."
+                                icon: BarChart2,
+                                title: 'Tableau de bord',
+                                desc: 'Suivez vos ventes, commandes et messages depuis un seul endroit, sur mobile ou desktop.',
+                                color: '#F59E0B'
                             },
                             {
-                                icon: <Shield className="w-6 h-6 text-indigo-400" />,
-                                title: "Sécurité Maximale",
-                                desc: "Vos données et celles de vos clients sont chiffrées et protégées."
+                                icon: Zap,
+                                title: 'Connexion instantanée',
+                                desc: "Scannez un QR code ou entrez un code de jumelage. Votre bot est en ligne en moins d'une minute.",
+                                color: '#A855F7'
                             },
                             {
-                                icon: <Globe className="w-6 h-6 text-pink-400" />,
-                                title: "Multi-langues",
-                                desc: "L'IA s'adapte à la langue de vos clients pour une expérience personnalisée."
+                                icon: Shield,
+                                title: 'Multi-marchands isolé',
+                                desc: "Chaque marchand a ses propres données. Rien ne se mélange, jamais. Architecture SaaS sécurisée.",
+                                color: '#EC4899'
                             },
                             {
-                                icon: <Zap className="w-6 h-6 text-yellow-400" />,
-                                title: "Installation Rapide",
-                                desc: "Connectez votre WhatsApp en quelques secondes via QR Code."
-                            }
-                        ].map((feature, i) => (
-                            <div key={i} className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-indigo-500/30 transition-all hover:-translate-y-1 group">
-                                <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                    {feature.icon}
+                                icon: Bot,
+                                title: 'IA personnalisée',
+                                desc: 'Choisissez la personnalité de votre bot : sympa, ivoirien nouchi, ou commercial. Il s\'adapte.',
+                                color: '#00D97E'
+                            },
+                        ].map((f, i) => (
+                            <div key={i} className="bg-black p-8 hover:bg-[#0a0a0a] transition-colors group">
+                                <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-5"
+                                    style={{ backgroundColor: `${f.color}15` }}>
+                                    <f.icon className="w-4 h-4" style={{ color: f.color }} />
                                 </div>
-                                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                                <p className="text-gray-400 leading-relaxed text-sm">
-                                    {feature.desc}
-                                </p>
+                                <h3 className="font-bold text-[15px] mb-2">{f.title}</h3>
+                                <p className="text-[#555] text-[13px] leading-relaxed">{f.desc}</p>
                             </div>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* Pricing Section */}
-            <section id="pricing" className="py-24 relative overflow-hidden">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold mb-4">Tarifs Simples</h2>
-                        <p className="text-gray-400 max-w-2xl mx-auto">
-                            Choisissez le plan qui correspond à la taille de votre business.
-                        </p>
+            {/* ═══ DIVIDER ═══ */}
+            <div className="border-t border-[#1a1a1a]" />
+
+            {/* ═══ HOW IT WORKS ═══ */}
+            <section className="py-24 px-6">
+                <div className="max-w-4xl mx-auto">
+                    <div className="mb-16 text-center">
+                        <p className="text-[#00D97E] text-[12px] font-semibold uppercase tracking-widest mb-3">Comment ça marche</p>
+                        <h2 className="text-[36px] md:text-[48px] font-black">3 étapes. C'est tout.</h2>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                        {/* Starter */}
-                        <div className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/20 transition-all">
-                            <div className="text-sm font-medium text-gray-400 mb-2">Starter</div>
-                            <div className="text-4xl font-bold mb-6">5.000 <span className="text-lg text-gray-500 font-normal">FCFA</span></div>
-                            <ul className="space-y-4 mb-8">
-                                {['1 Compte WhatsApp', 'Réponses IA illimitées', 'Support Basique', 'Tableau de bord'].map((item, i) => (
-                                    <li key={i} className="flex items-center gap-3 text-sm text-gray-300">
-                                        <CheckCircle2 className="w-4 h-4 text-indigo-500" />
-                                        {item}
-                                    </li>
-                                ))}
-                            </ul>
-                            <button onClick={() => navigate('/signup')} className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition-colors">
-                                Choisir
-                            </button>
-                        </div>
-
-                        {/* Pro - Featured */}
-                        <div className="p-8 rounded-3xl bg-gradient-to-b from-indigo-900/50 to-indigo-900/10 border border-indigo-500/50 relative">
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full text-center whitespace-nowrap">
-                                POPULAIRE
+                    <div className="space-y-px">
+                        {[
+                            {
+                                num: '01',
+                                title: 'Créez votre compte',
+                                desc: 'Inscrivez-vous avec votre numéro ou email. 2 minutes chrono.',
+                            },
+                            {
+                                num: '02',
+                                title: 'Connectez WhatsApp',
+                                desc: 'Scannez le QR code ou saisissez le code de jumelage. Votre numéro reste le vôtre.',
+                            },
+                            {
+                                num: '03',
+                                title: 'Ajoutez vos produits',
+                                desc: 'Renseignez vos articles, leurs prix, vos conditions. Le bot vend pour vous dès maintenant.',
+                            },
+                        ].map((step, i) => (
+                            <div key={i} className="flex gap-8 py-8 border-b border-[#1a1a1a] last:border-0">
+                                <div className="text-[#333] text-[13px] font-mono font-bold w-8 pt-0.5 flex-shrink-0">{step.num}</div>
+                                <div>
+                                    <h3 className="font-bold text-[17px] mb-1.5">{step.title}</h3>
+                                    <p className="text-[#555] text-[14px] leading-relaxed">{step.desc}</p>
+                                </div>
                             </div>
-                            <div className="text-sm font-medium text-indigo-300 mb-2">Pro</div>
-                            <div className="text-4xl font-bold mb-6">10.000 <span className="text-lg text-gray-500 font-normal">FCFA</span></div>
-                            <ul className="space-y-4 mb-8">
-                                {['Tout du Starter', 'Support Prioritaire', 'Analytiques Avancées', 'Export des données', 'Personnalisation IA'].map((item, i) => (
-                                    <li key={i} className="flex items-center gap-3 text-sm text-gray-300">
-                                        <CheckCircle2 className="w-4 h-4 text-indigo-400" />
-                                        {item}
-                                    </li>
-                                ))}
-                            </ul>
-                            <button onClick={() => navigate('/signup')} className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors shadow-lg shadow-indigo-500/25">
-                                Choisir
-                            </button>
-                        </div>
-
-                        {/* Business */}
-                        <div className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/20 transition-all">
-                            <div className="text-sm font-medium text-gray-400 mb-2">Business</div>
-                            <div className="text-4xl font-bold mb-6">15.000 <span className="text-lg text-gray-500 font-normal">FCFA</span></div>
-                            <ul className="space-y-4 mb-8">
-                                {['Tout du Pro', 'Gestion multi-comptes', 'API Access', 'Account Manager Dedie'].map((item, i) => (
-                                    <li key={i} className="flex items-center gap-3 text-sm text-gray-300">
-                                        <CheckCircle2 className="w-4 h-4 text-indigo-500" />
-                                        {item}
-                                    </li>
-                                ))}
-                            </ul>
-                            <button onClick={() => navigate('/signup')} className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition-colors">
-                                Choisir
-                            </button>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer className="py-12 border-t border-white/5 bg-[#0a0c10]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-                            <Bot className="w-5 h-5 text-white" />
-                        </div>
-                        <span className="font-bold text-lg">DjassaBot</span>
+            {/* ═══ DIVIDER ═══ */}
+            <div className="border-t border-[#1a1a1a]" />
+
+            {/* ═══ PRICING ═══ */}
+            <section id="pricing" className="py-24 px-6">
+                <div className="max-w-5xl mx-auto">
+                    <div className="mb-16 text-center">
+                        <p className="text-[#00D97E] text-[12px] font-semibold uppercase tracking-widest mb-3">Tarifs</p>
+                        <h2 className="text-[36px] md:text-[48px] font-black mb-3">Simple et transparent.</h2>
+                        <p className="text-[#555] text-[14px]">30 jours d'essai gratuit. Aucune carte bancaire requise.</p>
                     </div>
 
-                    <div className="text-gray-500 text-sm">
-                        © 2024 DjassaBot. Tous droits réservés.
+                    <div className="grid md:grid-cols-3 gap-4">
+                        {[
+                            {
+                                name: 'Starter',
+                                price: '5 000',
+                                desc: 'Pour lancer votre boutique WhatsApp.',
+                                features: ['1 numéro WhatsApp', 'Produits illimités', 'Bot IA actif 24/7', 'Tableau de bord'],
+                                cta: 'Commencer',
+                                featured: false,
+                            },
+                            {
+                                name: 'Pro',
+                                price: '10 000',
+                                desc: 'Pour les marchands en croissance.',
+                                features: ['Tout du Starter', 'Analytics avancées', 'IA personnalisée', 'Support prioritaire', 'Export des données'],
+                                cta: 'Choisir Pro',
+                                featured: true,
+                            },
+                            {
+                                name: 'Business',
+                                price: '20 000',
+                                desc: 'Pour les équipes et multi-boutiques.',
+                                features: ['Tout du Pro', 'Multi-comptes', 'Accès API', 'Account manager dédié'],
+                                cta: 'Nous contacter',
+                                featured: false,
+                            },
+                        ].map((plan, i) => (
+                            <div key={i}
+                                className={`rounded-xl p-7 flex flex-col ${plan.featured
+                                    ? 'bg-[#00D97E] text-black'
+                                    : 'bg-[#0d0d0d] border border-[#1a1a1a] text-white'
+                                    }`}>
+                                <div className="mb-6">
+                                    <div className={`text-[12px] font-semibold uppercase tracking-widest mb-1 ${plan.featured ? 'text-black/60' : 'text-[#555]'}`}>
+                                        {plan.name}
+                                    </div>
+                                    <div className="text-[36px] font-black leading-none mb-1">
+                                        {plan.price}
+                                        <span className={`text-[14px] font-normal ml-1 ${plan.featured ? 'text-black/60' : 'text-[#555]'}`}>FCFA/mois</span>
+                                    </div>
+                                    <p className={`text-[13px] mt-2 ${plan.featured ? 'text-black/70' : 'text-[#555]'}`}>{plan.desc}</p>
+                                </div>
+
+                                <ul className="space-y-2.5 flex-1 mb-6">
+                                    {plan.features.map((f, j) => (
+                                        <li key={j} className="flex items-center gap-2.5 text-[13px]">
+                                            <Check className={`w-3.5 h-3.5 flex-shrink-0 ${plan.featured ? 'text-black' : 'text-[#00D97E]'}`} />
+                                            {f}
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                <button onClick={() => go('/signup')}
+                                    className={`w-full py-2.5 rounded-lg text-[13px] font-semibold transition-colors ${plan.featured
+                                        ? 'bg-black text-white hover:bg-[#111]'
+                                        : 'bg-[#1a1a1a] text-white hover:bg-[#222] border border-[#333]'
+                                        }`}>
+                                    {plan.cta}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ═══ CTA BAND ═══ */}
+            <section className="py-24 px-6 border-t border-[#1a1a1a]">
+                <div className="max-w-3xl mx-auto text-center">
+                    <h2 className="text-[40px] md:text-[56px] font-black leading-tight mb-6">
+                        Prêt à automatiser<br />vos ventes ?
+                    </h2>
+                    <p className="text-[#555] text-[15px] mb-10">
+                        Rejoignez les commerçants qui font confiance à DjassaBot.
+                    </p>
+                    <button onClick={() => go('/signup')}
+                        className="inline-flex items-center gap-2 bg-[#00D97E] text-black font-semibold px-8 py-3.5 rounded-lg hover:bg-[#00c470] transition-colors group">
+                        Créer mon compte gratuitement
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                </div>
+            </section>
+
+            {/* ═══ FOOTER ═══ */}
+            <footer className="border-t border-[#1a1a1a] py-10 px-6">
+                <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded bg-[#00D97E] flex items-center justify-center">
+                            <Bot className="w-3.5 h-3.5 text-black" />
+                        </div>
+                        <span className="font-bold text-[14px]">DjassaBot</span>
+                    </div>
+                    <p className="text-[#333] text-[12px]">© 2026 DjassaBot — Abidjan, Côte d'Ivoire 🇨🇮</p>
+                    <div className="flex gap-5">
+                        {['Connexion', 'Créer un compte'].map((label, i) => (
+                            <button key={i} onClick={() => go(i === 0 ? '/login' : '/signup')}
+                                className="text-[#444] hover:text-white text-[12px] transition-colors">
+                                {label}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </footer>
