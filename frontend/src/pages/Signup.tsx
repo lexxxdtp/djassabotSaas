@@ -80,13 +80,13 @@ const Signup: React.FC = () => {
         return () => clearTimeout(t);
     }, [countdown]);
 
-    // Setup Firebase recaptcha — only if we're on step 1, phone method, and Firebase is configured
+    // Setup Firebase recaptcha — invisible mode, Google validates in the background
+    // and only surfaces a challenge popup if it detects suspicious activity.
     useEffect(() => {
         if (step !== 1 || authMethod !== 'phone' || !auth) return;
         if (!window.recaptchaVerifier) {
             try {
-                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'normal' });
-                window.recaptchaVerifier.render();
+                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
             } catch (e) {
                 console.error('Recaptcha init failed', e);
             }
