@@ -4,7 +4,7 @@
 > Donne le contexte produit, technique et l'historique des décisions clés
 > sans qu'il soit nécessaire de relire tout le code ou les anciens docs.
 
-**Dernière mise à jour :** mai 2026 — fin session refonte UX vendeur
+**Dernière mise à jour :** mai 2026 — fin session sécurisation Firebase Auth + animations landing
 
 ---
 
@@ -38,12 +38,48 @@ restos, friperies). Mobile-first. Pas tech-savvy. Vendent déjà via WhatsApp.
 │  Node.js + Express + TypeScript                    │
 │  Baileys → WhatsApp Web (pas d'API Meta payante)   │
 │  Gemini 2.5 Flash (cerveau IA + Vision)            │
+│  firebase-admin → vérification serveur des OTP     │
 │  Supabase (Postgres + Auth + RLS)                  │
 │  Paystack (paiements abonnements SaaS)             │
 │  Resend (emails transactionnels)                   │
-│  Déployé sur Railway                               │
+│  Déployé sur VPS Hostinger Ubuntu via PM2          │
 └────────────────────────────────────────────────────┘
 ```
+
+### Détails infra VPS (mai 2026)
+
+- **Host** : `187.77.171.44` (alias Hostinger : `srv1679088.hstgr.cloud`)
+- **OS** : Ubuntu (Linux 6.8.0-111)
+- **User backend** : `alex` (PAS root)
+- **Path backend** : `/home/alex/djassabotSaas/`
+- **Process manager** : **PM2** installé sous le user `alex` (pas visible si tu fais `pm2 list` en root)
+- **App PM2** : `djassabot-backend` (id 0, fork mode)
+- **Logs PM2** : `/home/alex/.pm2/logs/djassabot-backend-{out,error}.log`
+- **Port** : 3000
+- **Auto-restart** : oui (PM2 redémarre si crash)
+- **Auto-start au reboot** : ⚠️ pas confirmé — `pm2 startup` peut-être pas activé
+
+### Comment se connecter au VPS depuis le Mac d'Alex
+
+```bash
+ssh alex@187.77.171.44   # clé SSH déjà configurée, passwordless
+```
+
+### Comment redéployer le backend après un push git
+
+```bash
+ssh alex@187.77.171.44
+cd /home/alex/djassabotSaas
+git pull origin main
+cd backend && npm install && npm run build
+pm2 restart djassabot-backend
+pm2 logs djassabot-backend --lines 30  # vérifier
+```
+
+### Aussi sur le VPS
+
+- **n8n** tourne en Docker (`n8n` container) sur le même VPS
+- Probablement utilisé pour des automatisations marketing/CRM
 
 **Auth utilisateurs vendeurs** : email + password OU téléphone + OTP (Firebase Phone Auth).
 **Auth des clients du vendeur** : aucune — ils discutent juste sur WhatsApp.
@@ -184,7 +220,63 @@ dans son dashboard.
 
 Broadcast et coupons sont 100% à coder backend si on les veut.
 
-### E. Screenshot Validator (ARME #1 vision stratégique)
+### E1. Firebase Phone OTP — sécurisation serveur + setup réel (session mai 2026)
+
+**Contexte projet Firebase** :
+- Projet Firebase : `gen-lang-client-0191931206` (nom interne `fresh api kay` / "kay")
+- Web app : `DjassabotWeb`, appId `1:699530305094:web:54b857307688df7f2ff447`
+- Plan : **Blaze** (pay-as-you-go) — requis pour les vrais SMS en prod
+- Phone provider : activé
+- Régions SMS autorisées : Côte d'Ivoire, Burkina, Mali, France
+- Quota SMS : 1000/jour (limite par défaut sur compte Blaze récent)
+
+**Faille colmatée** :
+Le backend faisait confiance aveugle au flag `{ phoneVerified: true }` envoyé
+par le client. Un attaquant pouvait créer un compte pour n'importe quel
+numéro sans recevoir de SMS.
+
+**Fix** :
+- `backend/src/services/firebaseAdminService.ts` créé
+- Endpoint `/auth/signup` et `/auth/forgot-password-phone` exigent maintenant
+  un `phoneIdToken` (Firebase ID token obtenu après `confirmationResult.confirm()`)
+- Le backend appelle `admin.auth().verifyIdToken(idToken)` et vérifie que le
+  `phone_number` du token décodé match exactement le `phone` envoyé
+- Sans ces conditions → 401 (token invalide) ou 503 (Firebase Admin pas configuré)
+
+**Service account côté VPS** :
+- Fichier : `/home/alex/djassabotSaas/backend/firebase-admin-key.json`
+- Permissions : `chmod 600`, owner `alex:alex`
+- Ajouté à `.gitignore` (ne JAMAIS commit)
+- Référencé dans `.env` via : `FIREBASE_SERVICE_ACCOUNT_PATH=/home/alex/djassabotSaas/backend/firebase-admin-key.json`
+- Le service backend supporte aussi `FIREBASE_SERVICE_ACCOUNT_JSON` (inline) pour les PaaS
+
+**Côté frontend** :
+- 7 variables `VITE_FIREBASE_*` sur Vercel (Production + Preview)
+- ⚠️ Les variables Vercel **NE sont PAS marquées "Sensitive"** (sinon impossibles à vérifier après création)
+- Le `apiKey` Firebase web n'est pas un secret au sens admin — c'est un identifiant client public, OK de le partager
+- reCAPTCHA en mode **invisible** (cohérent Signup + ForgotPassword)
+- Domaine `djassabot-saas.vercel.app` ajouté dans **Authorized domains** (Firebase Auth → Settings)
+
+**Important pour le multi-tenant Firebase** :
+Le `projectId` côté frontend (`VITE_FIREBASE_PROJECT_ID`) **DOIT être identique** au
+`project_id` dans la service account JSON côté backend. Sinon : le client génère
+un token pour le projet X, le backend essaie de le vérifier avec les credentials
+du projet Y → fail. C'est `gen-lang-client-0191931206` des deux côtés.
+
+**État opérationnel à la fin de session** :
+- Backend Firebase Admin : ✅ initialisé (vu dans les logs `[FirebaseAdmin] Initialized`)
+- Frontend config : ✅ déployé sur Vercel avec les bonnes valeurs
+- Vrais SMS : ⚠️ **NON validé end-to-end**. Dernier test → erreur `auth/error-code:-39`
+  hypothèse rate limit anti-abus Firebase (suite à plusieurs tentatives en série
+  avec le numéro `+225 0777225277` qui était whitelist test précédemment).
+  Test à reprendre après 15+ min sans tentative.
+
+**Numéro test à éviter** :
+Le numéro `+225 0777225277` a été retiré de la liste "Phone numbers for testing"
+mais peut rester suspect côté anti-abus Firebase pendant quelques heures.
+Pour tester proprement : utiliser **un autre numéro CI** au premier essai propre.
+
+### E2. Screenshot Validator (ARME #1 vision stratégique)
 
 État réel : **pas implémenté en backend**. Le code dans `aiService.ts` mentionne
 *"IF IT'S A PAYMENT RECEIPT: Extract amount and Transaction ID"* mais c'est juste
@@ -206,6 +298,12 @@ vers `PAID` après validation d'un screenshot Wave/OM.
 ✅ ÉTAPE 2 — Settings 5→4 onglets, Abonnement intégré
 ✅ ÉTAPE 3 — Orders simplifiée 6→4 statuts, filtres URL
 ✅ FIX     — Login + Signup + autres : retrait dégradés legacy bleu/vert
+✅ AUDIT   — Code mort backend supprimé, lint clean, pipeline IA validé
+✅ SÉCU    — Firebase Admin SDK + vérification serveur des OTP
+✅ INFRA   — Backend migré sur VPS Hostinger via PM2 (n'est plus sur Railway)
+✅ LANDING — Animations Emil Kowalski (stagger, scroll reveal, micro-interactions)
+✅ UX      — reCAPTCHA passé en mode invisible (UX cohérente)
+⏳ TEST    — Validation end-to-end signup SMS réel (rate limit Firebase à attendre)
 ⏳ ÉTAPE 4 — PWA install (manifest custom + icônes branded + prompt)
 ```
 
@@ -230,6 +328,15 @@ vers `PAID` après validation d'un screenshot Wave/OM.
 
 **Reste à faire (par priorité)** :
 
+0. **🚨 OUVERT — Valider end-to-end le signup SMS réel**
+   - Attendre 15+ min après dernière tentative (rate limit anti-abus)
+   - Tester avec un numéro CI **propre** (pas le `+225 0777225277` qui est
+     suspect côté Firebase)
+   - Vérifier dans Google Cloud Console → Logs Explorer si encore `error -39`
+   - Si toujours `-39` après 15 min → creuser reCAPTCHA Enterprise
+     (configurer une clé site dans Cloud Console, mode "Audit" d'abord)
+   - L'opérateur cible (Orange CI, MTN, Moov) peut aussi mettre du délai
+
 1. **🔴 RLS Supabase désactivée de fait** — toutes les policies sont
    `using (true) with check (true)` dans `supabase_full_schema.sql`.
    Fonctionnel car backend filtre `tenantId` à la main, mais zéro
@@ -246,12 +353,26 @@ vers `PAID` après validation d'un screenshot Wave/OM.
    → backend utilise service role → return URL) → drop le client Supabase
    du bundle frontend.
 
-4. **🟢 Table `customers` créée dans schéma mais jamais utilisée**.
+4. **🟡 PM2 startup au reboot VPS** — vérifier que `pm2 startup` + `pm2 save`
+   sont activés, sinon le backend ne redémarre pas après un reboot serveur.
+
+5. **🟢 Table `customers` créée dans schéma mais jamais utilisée**.
    Soit on l'exploite (CRM léger : nb commandes par client, panier moyen,
    utile pour broadcast ciblé), soit on la drop.
 
-5. **🟢 Console.log à nettoyer** — ProductDetail 8x, Settings 5x, Inbox 5x.
+6. **🟢 Console.log à nettoyer** — ProductDetail 8x, Settings 5x, Inbox 5x.
    Plugin `vite-plugin-strip` pour build prod.
+
+7. **🟢 Tenant orphelin** `3b7d4665-0e25-48a3-bd7e-f1a0c8585b56` — boucle
+   de reconnexion WhatsApp permanente dans les logs PM2 (raison 408,
+   reconnect en boucle). Soit nettoyer ce tenant, soit ajouter un
+   max-retry dans baileysManager.
+
+8. **🟢 Badge "protégé par reCAPTCHA"** — Google affiche un petit badge
+   en bas à droite avec reCAPTCHA invisible. Conforme aux CG mais peut
+   être masqué via CSS + ajout d'une mention textuelle dans le footer
+   ("Ce site est protégé par reCAPTCHA et la politique de confidentialité
+   et les conditions d'utilisation de Google s'appliquent.")
 
 ---
 
@@ -318,7 +439,37 @@ gère 401 → logout. NE PAS utiliser `fetch` direct sauf cas où on a besoin du
 
 ---
 
-## 10. Fichiers à lire si besoin d'approfondir
+## 10. Skills installés (Claude Code agentic skills)
+
+Alex a installé une vingtaine de skills agentic qui peuvent être invoqués via
+le tool `Skill` quand pertinent. Les plus utiles pour ce projet :
+
+| Skill | Usage |
+|---|---|
+| `emil-design-eng` | Animations / micro-interactions Emil Kowalski (déjà appliqué sur LandingPage) |
+| `impeccable` | Critique design + polish UI |
+| `minimalist-ui` | Confirme notre direction style éditorial minimal |
+| `sleek-design-mobile-apps` | Pour la PWA mobile |
+| `redesign-existing-projects` | Pour refonte de pages existantes |
+| `frontend-design` | Composants distinctifs |
+| `supabase-postgres-best-practices` | Pour le fix RLS futur |
+| `security-best-practices` | Audit sécurité |
+| `extract-design-system` | Si on veut documenter le DS |
+
+**Animations LandingPage appliquées (Emil Kowalski framework)** :
+- Tokens motion CSS dans `src/index.css` : `--ease-out-strong`, `--ease-in-out-strong`, `--ease-drawer`
+- Hook `src/hooks/useInView.ts` pour scroll-triggered reveals
+- Composant `<Reveal />` wrapper utilisé sur Stats / Features / Pricing / CTA band
+- `.reveal-stagger` pour cascade au mount (Hero)
+- `.stagger-child` pour cascade enfants au scroll
+- `.ambient-blob` radial-gradient drift 24s opacity 0.04 (Hero + CTA band)
+- Tous CTAs : `active:scale-[0.97]` + custom easing
+- Cards features : `hover:-translate-y-0.5`
+- `prefers-reduced-motion` respecté
+
+---
+
+## 11. Fichiers à lire si besoin d'approfondir
 
 - `docs/PROJECT_BRIEF.md` — résumé exécutif initial
 - `docs/PRICING_STRATEGY.md` — modèle économique détaillé
@@ -326,7 +477,10 @@ gère 401 → logout. NE PAS utiliser `fetch` direct sauf cas où on a besoin du
 - `docs/ARCHITECTURE_SAAS.md` — détail technique multi-tenant
 - `frontend/src/pages/Today.tsx` — référence du design system unifié
 - `frontend/src/pages/Orders.tsx` — référence du workflow simplifié
-- `frontend/src/pages/LandingPage.tsx` — référence visuelle du style attendu
+- `frontend/src/pages/LandingPage.tsx` — référence visuelle du style attendu + animations Emil
+- `frontend/src/index.css` — tokens motion + classes utilitaires reveal/stagger
+- `frontend/src/hooks/useInView.ts` — IntersectionObserver pour scroll reveals
+- `backend/src/services/firebaseAdminService.ts` — vérification serveur OTP
 - `backend/src/types/index.ts` — types canoniques (Order, User, Tenant…)
 
 ---
