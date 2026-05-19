@@ -128,7 +128,7 @@ const WhatsAppConnect: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Status Card */}
                 <div className="bg-[#111] rounded-xl border border-[#1a1a1a] p-8 flex flex-col items-center justify-center text-center space-y-6 shadow-xl min-h-[400px] relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] opacity-50"></div>
+                    <div className="absolute top-0 left-0 w-full h-1 bg-[#00D97E]/40"></div>
 
                     {loading ? (
                         <div className="text-[#888] animate-pulse text-xs uppercase tracking-widest">Chargement du statut...</div>

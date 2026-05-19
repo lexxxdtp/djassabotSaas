@@ -91,7 +91,7 @@ export default function AIPlayground() {
             {/* Header */}
             <div className="bg-[#111] border-b border-[#1a1a1a] p-4 flex justify-between items-center z-20">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-[#00D97E] to-[#0EA5E9] rounded-lg shadow-lg shadow-[#00D97E]/10">
+                    <div className="p-2 bg-[#00D97E] rounded-lg">
                         <Smartphone size={18} className="text-white" />
                     </div>
                     <div>
@@ -125,7 +125,7 @@ export default function AIPlayground() {
                 {messages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm ${msg.role === 'user'
-                            ? 'bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] text-white rounded-tr-none shadow-[#00D97E]/10'
+                            ? 'bg-[#00D97E] text-black rounded-tr-none'
                             : 'bg-[#111] text-zinc-200 rounded-tl-none border border-[#1a1a1a]'
                             }`}>
                             {/* Afficher les images si présentes */}
@@ -184,7 +184,7 @@ export default function AIPlayground() {
                 <button
                     type="submit"
                     disabled={!input.trim() || loading}
-                    className="w-10 h-10 flex items-center justify-center bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-white rounded-full transition-all shadow-lg shadow-[#00D97E]/10"
+                    className="w-10 h-10 flex items-center justify-center bg-[#00D97E] hover:bg-[#00D97E]/90 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-black rounded-full transition-all shadow-lg shadow-[#00D97E]/10"
                 >
                     <Send size={18} className={loading ? 'opacity-0' : 'ml-0.5'} />
                 </button>

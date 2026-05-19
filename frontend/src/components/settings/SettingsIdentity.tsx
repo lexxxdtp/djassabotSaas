@@ -14,7 +14,7 @@ export default function SettingsIdentity({ config, setConfig }: SettingsIdentity
 
             <div className="flex items-start gap-6">
                 {/* Avatar Preview */}
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#00D97E] to-[#0EA5E9] flex items-center justify-center text-white font-bold text-3xl shadow-lg shrink-0">
+                <div className="w-20 h-20 rounded-2xl bg-[#00D97E] flex items-center justify-center text-black font-bold text-3xl shrink-0">
                     {config.botName?.substring(0, 1) || 'A'}
                 </div>
 

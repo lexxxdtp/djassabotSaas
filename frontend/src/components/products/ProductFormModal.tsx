@@ -386,7 +386,7 @@ export default function ProductFormModal({
                         <button
                             type="submit"
                             disabled={loading || uploading}
-                            className="flex-1 bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] text-black py-3 rounded-lg font-bold hover:shadow-lg hover:shadow-[#00D97E]/20 transition-all text-sm uppercase tracking-wide disabled:opacity-50"
+                            className="flex-1 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black py-3 rounded-lg font-bold transition-all text-sm uppercase tracking-wide disabled:opacity-50"
                         >
                             {loading ? 'Sauvegarde...' : 'Enregistrer'}
                         </button>

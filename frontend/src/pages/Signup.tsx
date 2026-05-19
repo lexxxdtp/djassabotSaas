@@ -297,10 +297,10 @@ const Signup: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-black flex items-center justify-center p-4">
-            <div className="bg-[#111] border border-white/7 p-8 rounded-3xl w-full max-w-md shadow-2xl shadow-[#00D97E]/5 backdrop-blur-sm">
+            <div className="bg-[#111] border border-[#1a1a1a] p-8 rounded-3xl w-full max-w-md shadow-2xl shadow-[#00D97E]/5 backdrop-blur-sm">
                 {/* Header */}
                 <div className="text-center mb-6">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00D97E] to-[#0EA5E9] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#00D97E]/20">
+                    <div className="w-16 h-16 rounded-2xl bg-[#00D97E] flex items-center justify-center mx-auto mb-4">
                         <ShoppingBag className="text-white w-8 h-8" />
                     </div>
                     <h1 className="text-2xl font-bold text-white mb-1 tracking-tight">Créer votre Commerce IA</h1>
@@ -310,7 +310,7 @@ const Signup: React.FC = () => {
                 {/* Progress bar */}
                 <div className="flex gap-2 mb-6">
                     {[1, 2, 3].map(n => (
-                        <div key={n} className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${step >= n ? 'bg-gradient-to-r from-[#00D97E] to-[#0EA5E9]' : 'bg-[#111]'}`} />
+                        <div key={n} className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${step >= n ? 'bg-[#00D97E]' : 'bg-[#111]'}`} />
                     ))}
                 </div>
 
@@ -439,7 +439,7 @@ const Signup: React.FC = () => {
                                     if (!otpSent) authMethod === 'phone' ? sendPhoneOTP() : sendEmailOTP();
                                     else authMethod === 'phone' ? verifyPhoneOTP() : verifyEmailOTP();
                                 }}
-                                className="w-full bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] hover:shadow-lg hover:shadow-[#00D97E]/20 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="w-full bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 {loading ? 'Traitement...' : (
                                     !otpSent ? 'Recevoir le code' : 'Vérifier le code'
@@ -532,7 +532,7 @@ const Signup: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={goNext}
-                                className="flex-1 bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] hover:shadow-lg hover:shadow-[#00D97E]/20 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
+                                className="flex-1 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
                             >Continuer <ArrowRight className="w-5 h-5" /></button>
                         </div>
                     </div>
@@ -597,11 +597,11 @@ const Signup: React.FC = () => {
                         </div>
 
                         {/* Preview: what happens next */}
-                        <div className="bg-[#00D97E]/8 border border-[#00D97E]/20 rounded-xl p-4 text-xs text-slate-300">
+                        <div className="bg-[#00D97E]/8 border border-[#00D97E]/20 rounded-xl p-4 text-xs text-zinc-300">
                             <p className="font-bold flex items-center gap-1 mb-2 text-[#00D97E]">
                                 <Sparkles className="w-3.5 h-3.5" /> Après votre inscription :
                             </p>
-                            <ol className="space-y-1 list-decimal list-inside text-slate-400">
+                            <ol className="space-y-1 list-decimal list-inside text-[#888]">
                                 <li>Connectez votre WhatsApp (30 secondes)</li>
                                 <li>Ajoutez vos produits avec prix et stock</li>
                                 <li>Le bot vend pour vous 24h/24 🚀</li>
@@ -619,7 +619,7 @@ const Signup: React.FC = () => {
                                 type="button"
                                 onClick={submitSignup}
                                 disabled={loading || passwordScore < 3 || !confirmPassword}
-                                className="flex-1 bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] hover:shadow-lg hover:shadow-[#00D97E]/20 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="flex-1 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 {loading ? 'Création...' : 'Créer mon compte'}
                                 {!loading && <ArrowRight className="w-5 h-5" />}
