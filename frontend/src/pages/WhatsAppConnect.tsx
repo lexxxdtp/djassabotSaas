@@ -127,16 +127,16 @@ const WhatsAppConnect: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Status Card */}
-                <div className="bg-[#0a0c10] rounded-xl border border-white/5 p-8 flex flex-col items-center justify-center text-center space-y-6 shadow-xl min-h-[400px] relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-50"></div>
+                <div className="bg-[#0D1117] rounded-xl border border-white/5 p-8 flex flex-col items-center justify-center text-center space-y-6 shadow-xl min-h-[400px] relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] opacity-50"></div>
 
                     {loading ? (
                         <div className="text-zinc-500 animate-pulse text-xs uppercase tracking-widest">Chargement du statut...</div>
                     ) : status === 'connected' ? (
                         <>
                             <div className="relative">
-                                <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 animate-pulse"></div>
-                                <div className="w-24 h-24 bg-[#0a0c10] rounded-full flex items-center justify-center text-indigo-500 border-2 border-indigo-500/50 relative z-10 shadow-2xl">
+                                <div className="absolute inset-0 bg-[#00D97E] blur-xl opacity-10 animate-pulse"></div>
+                                <div className="w-24 h-24 bg-[#0D1117] rounded-full flex items-center justify-center text-[#00D97E] border-2 border-[#00D97E]/50 relative z-10 shadow-2xl">
                                     <CheckCircle size={48} />
                                 </div>
                             </div>
@@ -194,14 +194,14 @@ const WhatsAppConnect: React.FC = () => {
                                                 placeholder="07 07..."
                                                 value={phoneNumber}
                                                 onChange={e => setPhoneNumber(e.target.value)}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-32 pr-4 py-3 text-white tracking-widest focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono"
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg pl-32 pr-4 py-3 text-white tracking-widest focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all font-mono"
                                                 required
                                             />
                                         </div>
                                         <button
                                             type="submit"
                                             disabled={requestingCode || phoneNumber.length < 10}
-                                            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold uppercase py-3 rounded-lg transition-colors"
+                                            className="w-full bg-[#00D97E] hover:bg-[#00D97E]/90 disabled:opacity-50 disabled:cursor-not-allowed text-black text-xs font-bold uppercase py-3 rounded-lg transition-colors"
                                         >
                                             {requestingCode ? 'Génération...' : 'Recevoir le Code'}
                                         </button>
@@ -219,7 +219,7 @@ const WhatsAppConnect: React.FC = () => {
                                             ))}
                                         </div>
                                     </div>
-                                    <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 text-xs text-indigo-300 text-left">
+                                    <div className="bg-[#00D97E]/10 border border-[#00D97E]/20 rounded-lg p-3 text-xs text-[#00D97E]/80 text-left">
                                         <p>1. Ouvrez WhatsApp &gt; <strong>Appareils connectés</strong></p>
                                         <p>2. Cliquez sur <strong>Connecter un appareil</strong></p>
                                         <p>3. Cliquez sur <strong>"Connecter avec un numéro de téléphone"</strong></p>
@@ -246,13 +246,13 @@ const WhatsAppConnect: React.FC = () => {
                         </div>
                     ) : (
                         <>
-                            <div className="bg-white p-4 rounded-xl shadow-2xl shadow-indigo-500/10 border-4 border-white/5 group-hover:border-indigo-500/50 transition-colors">
+                            <div className="bg-white p-4 rounded-xl shadow-2xl shadow-black/20 border-4 border-white/5 group-hover:border-[#00D97E]/30 transition-colors">
                                 {qr ? (
                                     <QRCode value={qr} size={180} />
                                 ) : (
                                     <div className="w-48 h-48 flex items-center justify-center bg-zinc-100 rounded-lg text-zinc-400">
                                         <div className="flex flex-col items-center">
-                                            <RefreshCw className="animate-spin mb-2 text-indigo-500" size={24} />
+                                            <RefreshCw className="animate-spin mb-2 text-[#00D97E]" size={24} />
                                             <span className="text-xs font-mono text-zinc-500">Génération QR...</span>
                                         </div>
                                     </div>
@@ -268,7 +268,7 @@ const WhatsAppConnect: React.FC = () => {
                                 <div className="pt-2 border-t border-white/5">
                                     <button
                                         onClick={() => setUsePairingCode(true)}
-                                        className="text-indigo-400 hover:text-indigo-300 text-xs font-bold uppercase tracking-wide flex items-center justify-center mx-auto transition-colors"
+                                        className="text-[#00D97E] hover:text-[#00D97E]/80 text-xs font-bold uppercase tracking-wide flex items-center justify-center mx-auto transition-colors"
                                     >
                                         <Keyboard size={14} className="mr-2" />
                                         Lier avec numéro de téléphone
@@ -282,12 +282,12 @@ const WhatsAppConnect: React.FC = () => {
 
                 {/* Instructions / Info */}
                 <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-indigo-900/30 to-[#0a0c10] border border-white/5 rounded-xl p-6 relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-[#00D97E]/5 to-[#0D1117] border border-white/5 rounded-xl p-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
                             <Smartphone size={100} className="text-white" />
                         </div>
                         <div className="flex items-start space-x-4 relative z-10">
-                            <div className="p-3 bg-indigo-500/10 rounded-lg text-indigo-500 border border-indigo-500/20">
+                            <div className="p-3 bg-[#00D97E]/10 rounded-lg text-[#00D97E] border border-[#00D97E]/20">
                                 <Smartphone size={24} />
                             </div>
                             <div>
@@ -299,15 +299,15 @@ const WhatsAppConnect: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-6">
+                    <div className="bg-[#0D1117] border border-white/5 rounded-xl p-6">
                         <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Procédure de connexion</h3>
-                        <ol className="space-y-4 text-zinc-300 text-sm list-decimal list-inside marker:text-indigo-500 marker:font-bold">
+                        <ol className="space-y-4 text-zinc-300 text-sm list-decimal list-inside marker:text-[#00D97E] marker:font-bold">
                             <li className="pl-2">Ouvrez <strong>WhatsApp</strong> sur votre mobile.</li>
                             <li className="pl-2">Menu <strong>⋮</strong> ou <strong>Réglages</strong> &gt; <strong>Appareils connectés</strong>.</li>
-                            <li className="pl-2">Appuyez sur <span className="text-indigo-500 font-bold">Connecter un appareil</span>.</li>
+                            <li className="pl-2">Appuyez sur <span className="text-[#00D97E] font-bold">Connecter un appareil</span>.</li>
                             <li className="pl-2">
                                 {usePairingCode ? (
-                                    <>Choisissez <span className="text-indigo-300 font-bold">"Connecter avec un numéro"</span> en bas.</>
+                                    <>Choisissez <span className="text-[#00D97E]/80 font-bold">"Connecter avec un numéro"</span> en bas.</>
                                 ) : (
                                     <>Scannez le QRCode affiché à l'écran.</>
                                 )}

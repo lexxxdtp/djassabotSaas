@@ -9,7 +9,7 @@ interface SettingsAdvancedProps {
 export default function SettingsAdvanced({ config, setConfig }: SettingsAdvancedProps) {
     return (
         <details className="group">
-            <summary className="bg-[#0a0c10] border border-white/5 rounded-xl p-6 cursor-pointer list-none flex items-center justify-between hover:bg-white/5 transition-all">
+            <summary className="bg-[#0D1117] border border-white/5 rounded-xl p-6 cursor-pointer list-none flex items-center justify-between hover:bg-white/5 transition-all">
                 <div className="flex items-center gap-3">
                     <span className="w-2 h-2 rounded-full bg-zinc-500"></span>
                     <span className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Options Avancées</span>
@@ -19,7 +19,7 @@ export default function SettingsAdvanced({ config, setConfig }: SettingsAdvanced
 
             <div className="mt-4 space-y-6">
                 {/* Instructions Personnalisées */}
-                <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+                <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
                     <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
                         <Bot size={16} className="text-zinc-400" /> Instructions Personnalisées
                     </h3>
@@ -28,13 +28,13 @@ export default function SettingsAdvanced({ config, setConfig }: SettingsAdvanced
                         value={config.systemInstructions}
                         onChange={e => setConfig({ ...config, systemInstructions: e.target.value })}
                         rows={6}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600 leading-relaxed font-mono text-xs"
+                        className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600 leading-relaxed font-mono text-xs"
                         placeholder="Ex: Sois toujours très poli. Ne propose pas de réduction si le client n'insiste pas."
                     />
                 </div>
 
                 {/* Training Examples */}
-                <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+                <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
                     <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-500"></span> Questions d'Entraînement
                     </h3>

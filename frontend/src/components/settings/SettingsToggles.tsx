@@ -8,7 +8,7 @@ interface SettingsTogglesProps {
 
 export default function SettingsToggles({ config, setConfig }: SettingsTogglesProps) {
     return (
-        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+        <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                 <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Options Rapides
             </h2>

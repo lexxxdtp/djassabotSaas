@@ -15,13 +15,13 @@ interface StatCardProps {
 }
 
 const StatCard = ({ title, value, change, icon: Icon, subtitle }: StatCardProps) => (
-    <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-4 md:p-6 hover:border-indigo-500/30 transition-all group shadow-sm hover:shadow-indigo-500/10">
+    <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-4 md:p-6 hover:border-[#00D97E]/20 transition-all group shadow-sm">
         <div className="flex justify-between items-start mb-3 md:mb-4">
             <div>
                 <p className="text-gray-400 text-[10px] md:text-xs font-medium uppercase tracking-wider mb-1">{title}</p>
                 <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">{value}</h3>
             </div>
-            <div className="p-2 md:p-3 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
+            <div className="p-2 md:p-3 rounded-xl bg-[#00D97E]/10 text-[#00D97E] group-hover:bg-[#00D97E] group-hover:text-black transition-all duration-300">
                 <Icon className="w-5 h-5 md:w-6 md:h-6" />
             </div>
         </div>
@@ -36,10 +36,10 @@ const StatCard = ({ title, value, change, icon: Icon, subtitle }: StatCardProps)
 
 const ActivityFeed = ({ logs }: { logs: Log[] }) => {
     return (
-        <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-6 h-full flex flex-col">
+        <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Activity className="text-indigo-500 w-5 h-5 animate-pulse" />
+                    <Activity className="text-[#00D97E] w-5 h-5 animate-pulse" />
                     Le Pulse
                 </h3>
                 <span className="text-[10px] text-gray-400 uppercase font-semibold bg-white/5 px-2 py-1 rounded">En Direct</span>
@@ -52,7 +52,7 @@ const ActivityFeed = ({ logs }: { logs: Log[] }) => {
                         <div key={log.id} className="flex gap-3 items-start group">
                             <div className={`mt-1 min-w-[8px] h-2 rounded-full ${log.type === 'sale' ? 'bg-emerald-500' :
                                 log.type === 'warning' ? 'bg-amber-500' :
-                                    log.type === 'action' ? 'bg-indigo-500' : 'bg-blue-500'
+                                    log.type === 'action' ? 'bg-[#00D97E]' : 'bg-[#0EA5E9]'
                                 }`} />
                             <div>
                                 <p className="text-xs text-zinc-300 leading-relaxed group-hover:text-white transition-colors">
@@ -83,9 +83,9 @@ const RecentOrders = ({ orders }: { orders: DashboardOrder[] }) => {
     };
 
     return (
-        <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-4 md:p-6 mt-6">
+        <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-4 md:p-6 mt-6">
             <h3 className="text-base md:text-lg font-bold text-white mb-4 md:mb-6 flex items-center gap-2">
-                <Package className="text-indigo-500 w-5 h-5" />
+                <Package className="text-[#00D97E] w-5 h-5" />
                 Commandes Récentes
             </h3>
 
@@ -294,7 +294,7 @@ export default function Overview() {
                 {/* Lang Switch — hide on mobile to save space */}
                 <button
                     onClick={() => setLang(l => l === 'fr' ? 'en' : 'fr')}
-                    className="hidden md:flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 hover:text-white text-xs hover:border-indigo-500/50 transition-all font-medium uppercase tracking-wide"
+                    className="hidden md:flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 hover:text-white text-xs hover:border-[#00D97E]/30 transition-all font-medium uppercase tracking-wide"
                 >
                     <Globe className="w-3 h-3" />
                     <span>{lang === 'fr' ? 'Français' : 'English'}</span>
@@ -334,12 +334,12 @@ export default function Overview() {
                 {/* Left Column (2/3): Analytics + Recent Orders */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     {/* Analytics Chart */}
-                    <div className="bg-[#0a0c10] border border-white/5 rounded-2xl p-4 md:p-6 flex-1 min-h-[250px] md:min-h-[300px]">
+                    <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-4 md:p-6 flex-1 min-h-[250px] md:min-h-[300px]">
                         <div className="flex justify-between items-center mb-4 md:mb-6">
                             <h3 className="text-base md:text-lg font-bold text-white tracking-tight">{content.analytics}</h3>
                             <div className="flex items-center gap-2">
-                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-full animate-pulse border border-indigo-500/20">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                                <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#00D97E] bg-[#00D97E]/10 px-2 py-1 rounded-full animate-pulse border border-[#00D97E]/20">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#00D97E]"></div>
                                     {content.live}
                                 </span>
                             </div>
@@ -349,8 +349,8 @@ export default function Overview() {
                                 <AreaChart data={chartData}>
                                     <defs>
                                         <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#00D97E" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#00D97E" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272a" />
@@ -370,12 +370,12 @@ export default function Overview() {
                                     <Tooltip
                                         contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }}
                                         itemStyle={{ color: '#fff' }}
-                                        cursor={{ stroke: '#6366f1', strokeWidth: 1 }}
+                                        cursor={{ stroke: '#00D97E', strokeWidth: 1 }}
                                     />
                                     <Area
                                         type="monotone"
                                         dataKey="sales"
-                                        stroke="#6366f1"
+                                        stroke="#00D97E"
                                         strokeWidth={3}
                                         fillOpacity={1}
                                         fill="url(#colorSales)"

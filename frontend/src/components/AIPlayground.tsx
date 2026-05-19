@@ -87,11 +87,11 @@ export default function AIPlayground() {
     };
 
     return (
-        <div className="bg-[#0a0c10] border border-white/5 rounded-2xl overflow-hidden flex flex-col h-[500px] shadow-2xl relative">
+        <div className="bg-[#0D1117] border border-white/5 rounded-2xl overflow-hidden flex flex-col h-[500px] shadow-2xl relative">
             {/* Header */}
             <div className="bg-white/5 border-b border-white/5 p-4 flex justify-between items-center z-20">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg shadow-lg shadow-indigo-500/20">
+                    <div className="p-2 bg-gradient-to-br from-[#00D97E] to-[#0EA5E9] rounded-lg shadow-lg shadow-[#00D97E]/10">
                         <Smartphone size={18} className="text-white" />
                     </div>
                     <div>
@@ -125,7 +125,7 @@ export default function AIPlayground() {
                 {messages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm ${msg.role === 'user'
-                            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-tr-none shadow-indigo-500/10'
+                            ? 'bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] text-white rounded-tr-none shadow-[#00D97E]/10'
                             : 'bg-white/5 text-zinc-200 rounded-tl-none border border-white/10'
                             }`}>
                             {/* Afficher les images si présentes */}
@@ -173,18 +173,18 @@ export default function AIPlayground() {
             </div>
 
             {/* Input Area */}
-            <form onSubmit={handleSend} className="p-3 bg-[#0a0c10] border-t border-white/5 flex gap-2 relative z-10">
+            <form onSubmit={handleSend} className="p-3 bg-[#0D1117] border-t border-white/5 flex gap-2 relative z-10">
                 <input
                     type="text"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     placeholder="Tapez un message..."
-                    className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none placeholder:text-zinc-600 text-sm"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none placeholder:text-zinc-600 text-sm"
                 />
                 <button
                     type="submit"
                     disabled={!input.trim() || loading}
-                    className="w-10 h-10 flex items-center justify-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-white rounded-full transition-all shadow-lg shadow-indigo-500/20"
+                    className="w-10 h-10 flex items-center justify-center bg-gradient-to-r from-[#00D97E] to-[#0EA5E9] hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-white rounded-full transition-all shadow-lg shadow-[#00D97E]/10"
                 >
                     <Send size={18} className={loading ? 'opacity-0' : 'ml-0.5'} />
                 </button>

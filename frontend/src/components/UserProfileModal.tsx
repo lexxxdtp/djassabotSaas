@@ -23,10 +23,10 @@ const PlanCard = ({ id, title, price, features, recommended, currentPlan, loadin
     const isCurrent = currentPlan === id;
     return (
         <div
-            className={`relative border rounded-xl p-4 transition-all cursor-pointer hover:border-indigo-500/50 ${isCurrent
-                ? 'bg-[#0a0c10] border-emerald-500 ring-1 ring-emerald-500'
+            className={`relative border rounded-xl p-4 transition-all cursor-pointer hover:border-[#00D97E]/30 ${isCurrent
+                ? 'bg-[#0D1117] border-emerald-500 ring-1 ring-emerald-500'
                 : recommended
-                    ? 'bg-gradient-to-b from-indigo-950/20 to-black border-indigo-500/30'
+                    ? 'bg-gradient-to-b from-[#00D97E]/5 to-black border-[#00D97E]/20'
                     : 'bg-black border-white/5'
                 }`}
             onClick={() => !isCurrent && onUpgrade(id)}
@@ -37,7 +37,7 @@ const PlanCard = ({ id, title, price, features, recommended, currentPlan, loadin
                 </div>
             )}
             {recommended && !isCurrent && (
-                <div className="absolute top-2 right-2 text-[10px] font-bold text-indigo-400 bg-indigo-950/30 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                <div className="absolute top-2 right-2 text-[10px] font-bold text-[#00D97E] bg-[#00D97E]/10 px-2 py-0.5 rounded-full border border-[#00D97E]/20">
                     POPULAIRE
                 </div>
             )}
@@ -114,8 +114,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0f111a]/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-4xl bg-[#0a0c10] border border-white/5 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#020B18]/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-4xl bg-[#0D1117] border border-white/5 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
 
                 {/* Sidebar Menu */}
                 <div className="md:w-64 bg-black border-r border-zinc-900 p-6 flex flex-col gap-2">
@@ -132,14 +132,14 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
 
                     <button
                         onClick={() => setActiveTab('subscription')}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'subscription' ? 'bg-indigo-500/10 text-indigo-400' : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'subscription' ? 'bg-[#00D97E]/10 text-[#00D97E]' : 'text-zinc-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         <Crown size={16} /> Abonnement
                     </button>
                     <button
                         onClick={() => setActiveTab('profile')}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'profile' ? 'bg-indigo-500/10 text-indigo-400' : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'profile' ? 'bg-[#00D97E]/10 text-[#00D97E]' : 'text-zinc-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         <User size={16} /> Mon Profil
@@ -156,7 +156,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                         <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
                             <div>
                                 <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                                    <Crown size={20} className="text-indigo-500" /> Gestion de l'abonnement
+                                    <Crown size={20} className="text-[#00D97E]" /> Gestion de l'abonnement
                                 </h2>
                                 <p className="text-zinc-500 text-sm mt-1">Changez de plan pour débloquer plus de puissance.</p>
                             </div>
@@ -212,7 +212,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                         <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
                             <div>
                                 <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                                    <User size={20} className="text-indigo-500" /> Infos Personnelles
+                                    <User size={20} className="text-[#00D97E]" /> Infos Personnelles
                                 </h2>
                                 <p className="text-zinc-500 text-sm mt-1">Mettez à jour vos informations de contact.</p>
                             </div>
@@ -222,7 +222,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                                     <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase">Nom Complet</label>
                                     <div className="relative">
                                         <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-                                        <input type="text" defaultValue={user?.full_name} className="w-full bg-black border border-white/5 rounded p-2.5 pl-9 text-white text-sm focus:border-indigo-500 outline-none" />
+                                        <input type="text" defaultValue={user?.full_name} className="w-full bg-black border border-white/5 rounded p-2.5 pl-9 text-white text-sm focus:border-[#00D97E] outline-none" />
                                     </div>
                                 </div>
                                 <div>
@@ -236,7 +236,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
                                     <label className="block text-xs font-bold text-zinc-400 mb-1 uppercase">Nom du Business</label>
                                     <div className="relative">
                                         <Building size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-                                        <input type="text" defaultValue={tenant?.name} className="w-full bg-black border border-white/5 rounded p-2.5 pl-9 text-white text-sm focus:border-indigo-500 outline-none" />
+                                        <input type="text" defaultValue={tenant?.name} className="w-full bg-black border border-white/5 rounded p-2.5 pl-9 text-white text-sm focus:border-[#00D97E] outline-none" />
                                     </div>
                                 </div>
 

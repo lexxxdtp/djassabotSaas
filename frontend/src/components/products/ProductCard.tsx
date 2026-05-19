@@ -51,7 +51,7 @@ export default function ProductCard({ product, onEdit, onDelete, onUpdate }: Pro
     return (
         <div
             onClick={() => navigate(`/dashboard/products/${product.id}`)}
-            className="bg-[#0a0c10] rounded-xl border border-white/5 overflow-hidden group hover:border-indigo-500/30 transition-all shadow-sm hover:shadow-indigo-500/10 cursor-pointer"
+            className="bg-[#0D1117] rounded-xl border border-white/5 overflow-hidden group hover:border-[#00D97E]/20 transition-all shadow-sm hover:shadow-[#00D97E]/5 cursor-pointer"
         >
             <div className="h-48 overflow-hidden relative bg-black/50">
                 <img
@@ -65,7 +65,7 @@ export default function ProductCard({ product, onEdit, onDelete, onUpdate }: Pro
                             e.stopPropagation();
                             onEdit(product);
                         }}
-                        className="bg-black/60 hover:bg-indigo-500 hover:text-white p-2 rounded-lg text-white backdrop-blur-md transition-colors border border-white/10"
+                        className="bg-black/60 hover:bg-[#00D97E] hover:text-white p-2 rounded-lg text-white backdrop-blur-md transition-colors border border-white/10"
                     >
                         <Edit size={16} />
                     </button>
@@ -83,7 +83,7 @@ export default function ProductCard({ product, onEdit, onDelete, onUpdate }: Pro
 
             <div className="p-5">
                 <h3 className="text-lg font-bold mb-1 text-white truncate">{product.name}</h3>
-                <p className="text-indigo-400 font-bold mb-4 font-mono text-sm">{Number(product.price).toLocaleString()} FCFA</p>
+                <p className="text-[#00D97E] font-bold mb-4 font-mono text-sm">{Number(product.price).toLocaleString()} FCFA</p>
 
                 <div className="flex justify-between items-center" onClick={(e) => e.stopPropagation()}>
                     <div className="flex flex-wrap gap-2 mt-3" onClick={(e) => e.stopPropagation()}>

@@ -309,7 +309,7 @@ export default function Settings() {
         <button
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all text-sm border ${activeTab === id
-                ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+                ? 'bg-[#00D97E]/10 text-[#00D97E] border-[#00D97E]/20'
                 : 'bg-white/5 text-zinc-400 border-white/5 hover:bg-white/10 hover:text-white'
                 }`}
         >
@@ -331,7 +331,7 @@ export default function Settings() {
                     <button
                         onClick={handleSave}
                         disabled={loading}
-                        className="fixed bottom-6 right-6 md:static z-50 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-all"
+                        className="fixed bottom-6 right-6 md:static z-50 bg-[#00D97E] hover:bg-[#00D97E]/90 disabled:opacity-50 disabled:cursor-not-allowed text-black px-6 py-3 rounded-xl font-bold shadow-lg shadow-[#00D97E]/20 flex items-center gap-2 transition-all"
                     >
                         {loading ? <span className="animate-spin">⏳</span> : <Save size={20} />}
                         {loading ? 'Sauvegarde...' : 'Sauvegarder les changements'}
@@ -354,9 +354,9 @@ export default function Settings() {
                         {/* --- TAB 0: MON PROFIL --- */}
                         {activeTab === 'profile' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+                                <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
                                     <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                                        <span className="w-2 h-2 rounded-full bg-purple-500"></span> Mes Informations Personnelles
+                                        <span className="w-2 h-2 rounded-full bg-[#00D97E]"></span> Mes Informations Personnelles
                                     </h2>
 
                                     <div className="grid md:grid-cols-2 gap-8">
@@ -366,7 +366,7 @@ export default function Settings() {
                                                 type="text"
                                                 value={userProfile.fullName}
                                                 onChange={e => setUserProfile({ ...userProfile, fullName: e.target.value })}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-600"
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-zinc-600"
                                                 placeholder="Votre nom"
                                             />
                                         </div>
@@ -376,7 +376,7 @@ export default function Settings() {
                                                 type="date"
                                                 value={userProfile.birthDate}
                                                 onChange={e => setUserProfile({ ...userProfile, birthDate: e.target.value })}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all [&::-webkit-calendar-picker-indicator]:invert"
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all [&::-webkit-calendar-picker-indicator]:invert"
                                             />
                                         </div>
                                         <div>
@@ -385,7 +385,7 @@ export default function Settings() {
                                                 type="text"
                                                 value={userProfile.phone}
                                                 onChange={e => setUserProfile({ ...userProfile, phone: e.target.value })}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-600"
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-zinc-600"
                                                 placeholder="+225..."
                                             />
                                         </div>
@@ -395,7 +395,7 @@ export default function Settings() {
                                                 type="email"
                                                 value={userProfile.email}
                                                 onChange={e => setUserProfile({ ...userProfile, email: e.target.value })}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none transition-all placeholder:text-zinc-600"
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-zinc-600"
                                                 placeholder="email@exemple.com"
                                             />
                                         </div>
@@ -442,7 +442,7 @@ export default function Settings() {
                                     {/* Left Col: Explainer & Summary */}
                                     <div className="md:col-span-1 space-y-6">
                                         {/* Zone d'Explication */}
-                                        <div className="bg-gradient-to-br from-indigo-900/30 to-[#0a0c10] border border-indigo-500/20 rounded-xl p-6">
+                                        <div className="bg-gradient-to-br from-[#00D97E]/5 to-[#0D1117] border border-[#00D97E]/20 rounded-xl p-6">
                                             <h3 className="text-white font-bold text-lg mb-2">Zone de Test</h3>
                                             <p className="text-zinc-400 text-sm leading-relaxed">
                                                 Testez votre bot en temps réel. Les changements s'appliquent immédiatement ici.
@@ -450,10 +450,10 @@ export default function Settings() {
                                         </div>
 
                                         {/* Résumé IA Auto-Généré */}
-                                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-6">
+                                        <div className="bg-[#0D1117] border border-white/5 rounded-xl p-6">
                                             <div className="flex justify-between items-center mb-4">
                                                 <h3 className="text-white font-bold text-sm flex items-center gap-2">
-                                                    <Bot size={16} className="text-purple-500" /> Synthèse IA
+                                                    <Bot size={16} className="text-[#00D97E]" /> Synthèse IA
                                                 </h3>
                                                 {aiSummary && (
                                                     <button
@@ -473,7 +473,7 @@ export default function Settings() {
                                                     <button
                                                         onClick={handleGenerateSummary}
                                                         disabled={summarizing}
-                                                        className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 border border-purple-600/50 px-4 py-2 rounded-lg text-xs font-bold transition-all w-full flex items-center justify-center gap-2 text-zinc-100"
+                                                        className="bg-[#00D97E]/10 hover:bg-[#00D97E]/20 text-[#00D97E] border border-[#00D97E]/20 px-4 py-2 rounded-lg text-xs font-bold transition-all w-full flex items-center justify-center gap-2 text-zinc-100"
                                                     >
                                                         {summarizing ? <span className="animate-spin">⏳</span> : <Bot size={14} />}
                                                         {summarizing ? 'Analyse...' : 'Générer le Résumé'}
@@ -500,9 +500,9 @@ export default function Settings() {
 
                     {/* Sidebar Profile Card */}
                     <div className="hidden md:block md:col-span-1 space-y-6">
-                        <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-6 sticky top-8">
+                        <div className="bg-[#0D1117] border border-white/5 rounded-xl p-6 sticky top-8">
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00D97E] to-[#0EA5E9] flex items-center justify-center text-white font-bold text-lg">
                                     {userProfile.fullName.charAt(0) || 'U'}
                                 </div>
                                 <div className="overflow-hidden">
@@ -527,7 +527,7 @@ export default function Settings() {
                                     </div>
                                     <button
                                         onClick={() => setShowProfileModal(true)}
-                                        className="mt-2 text-xs text-indigo-400 hover:text-indigo-300 w-full text-left"
+                                        className="mt-2 text-xs text-[#00D97E] hover:text-[#00D97E]/80 w-full text-left"
                                     >
                                         Gérer l'abonnement
                                     </button>

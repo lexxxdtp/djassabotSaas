@@ -450,7 +450,7 @@ const Signup: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={goNext}
-                                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/25 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
+                                className="w-full bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
                             >
                                 Continuer <ArrowRight className="w-5 h-5" />
                             </button>

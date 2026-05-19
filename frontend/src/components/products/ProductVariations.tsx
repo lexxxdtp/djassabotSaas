@@ -62,7 +62,7 @@ export default function ProductVariations({
         <div className="border-t border-white/5 pt-4 mt-4">
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
-                    <Tags size={16} className="text-indigo-500" />
+                    <Tags size={16} className="text-[#00D97E]" />
                     <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Déclinaisons</span>
 
                     {/* Toggle Switch */}
@@ -75,11 +75,11 @@ export default function ProductVariations({
                                 onChange([]);
                             }
                         }}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${enabled ? 'bg-indigo-500' : 'bg-zinc-700'}`}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${enabled ? 'bg-[#00D97E]' : 'bg-zinc-700'}`}
                     >
                         <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-1'}`} />
                     </button>
-                    <span className={`text-[10px] ${enabled ? 'text-indigo-400' : 'text-zinc-600'}`}>
+                    <span className={`text-[10px] ${enabled ? 'text-[#00D97E]' : 'text-zinc-600'}`}>
                         {enabled ? 'ON' : 'OFF'}
                     </span>
                 </div>
@@ -88,7 +88,7 @@ export default function ProductVariations({
                     <button
                         type="button"
                         onClick={() => onChange([...variations, { name: '', options: [] }])}
-                        className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                        className="text-xs text-[#00D97E] hover:text-[#00D97E]/80 flex items-center gap-1"
                     >
                         <Plus size={14} />
                         Ajouter
@@ -122,7 +122,7 @@ export default function ProductVariations({
                                                 newVars[varIdx].name = e.target.value;
                                                 onChange(newVars);
                                             }}
-                                            className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-white text-sm focus:border-indigo-500 outline-none"
+                                            className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-white text-sm focus:border-[#00D97E] outline-none"
                                         />
                                         <button
                                             type="button"
@@ -159,7 +159,7 @@ export default function ProductVariations({
                                                     onChange(newVars);
                                                 }}
                                                 className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors border ${variation.name === optName
-                                                    ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50'
+                                                    ? 'bg-[#00D97E]/20 text-[#00D97E] border-[#00D97E]/50'
                                                     : 'bg-white/5 text-zinc-400 border-white/5 hover:bg-white/10'
                                                     }`}
                                             >
@@ -194,7 +194,7 @@ export default function ProductVariations({
                                 {variation.options.map((opt, optIdx) => (
                                     <div key={optIdx} className="group relative bg-white/5 rounded p-2 flex items-start gap-3">
                                         {/* Image Upload for Option */}
-                                        <label className="relative w-10 h-10 flex-shrink-0 bg-black/30 rounded border border-white/10 flex items-center justify-center cursor-pointer hover:border-indigo-500 overflow-hidden">
+                                        <label className="relative w-10 h-10 flex-shrink-0 bg-black/30 rounded border border-white/10 flex items-center justify-center cursor-pointer hover:border-[#00D97E] overflow-hidden">
                                             {uploading ? (
                                                 <span className="animate-spin text-[8px]">⏳</span>
                                             ) : opt.images?.[0] ? (
@@ -244,7 +244,7 @@ export default function ProductVariations({
                                             ...newOptionInputs,
                                             [varIdx]: { ...newOptionInputs[varIdx], name: e.target.value }
                                         })}
-                                        className="flex-1 w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:border-indigo-500 outline-none"
+                                        className="flex-1 w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:border-[#00D97E] outline-none"
                                         onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption(varIdx))}
                                     />
                                     <input
@@ -255,7 +255,7 @@ export default function ProductVariations({
                                             ...newOptionInputs,
                                             [varIdx]: { ...newOptionInputs[varIdx], price: e.target.value }
                                         })}
-                                        className="w-16 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:border-indigo-500 outline-none"
+                                        className="w-16 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:border-[#00D97E] outline-none"
                                         onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption(varIdx))}
                                     />
                                     <input
@@ -266,13 +266,13 @@ export default function ProductVariations({
                                             ...newOptionInputs,
                                             [varIdx]: { ...newOptionInputs[varIdx], stock: e.target.value }
                                         })}
-                                        className="w-14 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:border-indigo-500 outline-none"
+                                        className="w-14 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:border-[#00D97E] outline-none"
                                         onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption(varIdx))}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => handleAddOption(varIdx)}
-                                        className="p-1.5 bg-indigo-500/20 text-indigo-400 rounded hover:bg-indigo-500 hover:text-white transition-colors"
+                                        className="p-1.5 bg-[#00D97E]/20 text-[#00D97E] rounded hover:bg-[#00D97E] hover:text-white transition-colors"
                                     >
                                         <Plus size={14} />
                                     </button>

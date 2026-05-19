@@ -19,7 +19,7 @@ export default function SettingsLogistics({
     return (
         <div className="space-y-6">
             {/* 1. Livraison & Frais */}
-            <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+            <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-lg font-bold text-white flex items-center gap-2 uppercase tracking-wider text-xs">
                         <span className="w-2 h-2 rounded-full bg-orange-500"></span>
@@ -136,7 +136,7 @@ export default function SettingsLogistics({
             </div>
 
             {/* 2. Paiement */}
-            <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+            <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
                 <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                     <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Paiement
                 </h2>
@@ -153,10 +153,10 @@ export default function SettingsLogistics({
                         return (
                             <label
                                 key={method.id}
-                                className={`flex items-center gap-2 bg-white/5 border rounded-lg px-4 py-3 cursor-pointer select-none transition-all ${isChecked ? 'border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'border-white/5 hover:border-white/10'
+                                className={`flex items-center gap-2 bg-white/5 border rounded-lg px-4 py-3 cursor-pointer select-none transition-all ${isChecked ? 'border-[#00D97E] shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'border-white/5 hover:border-white/10'
                                     }`}
                             >
-                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isChecked ? 'border-indigo-500 bg-indigo-500' : 'border-zinc-600'}`}>
+                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isChecked ? 'border-[#00D97E] bg-[#00D97E]' : 'border-zinc-600'}`}>
                                     {isChecked && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                                 </div>
                                 <input
@@ -178,7 +178,7 @@ export default function SettingsLogistics({
             </div>
 
             {/* 3. Coordonnées de Réception (Split Payments) */}
-            <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8 relative overflow-hidden">
+            <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8 relative overflow-hidden">
                 {/* Background Pattern */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 

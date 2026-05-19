@@ -10,7 +10,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
     return (
         <div className="space-y-6">
             {/* 1. Infos Boutique & Social */}
-            <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+            <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
                 <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                     <span className="w-2 h-2 rounded-full bg-blue-500"></span> Informations Boutique
                 </h2>
@@ -21,7 +21,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                             type="text"
                             value={config.storeName}
                             onChange={e => setConfig({ ...config, storeName: e.target.value })}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600"
                             placeholder="Ma Boutique"
                         />
                     </div>
@@ -31,7 +31,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                             type="text"
                             value={config.phone}
                             onChange={e => setConfig({ ...config, phone: e.target.value })}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600"
                             placeholder="+225 07..."
                         />
                     </div>
@@ -41,7 +41,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                             type="text"
                             value={config.businessType || ''}
                             onChange={e => setConfig({ ...config, businessType: e.target.value })}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600"
                             placeholder="Ex: Vente de vêtements, Restaurant, Service..."
                         />
                     </div>
@@ -57,7 +57,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                                 type="text"
                                 value={config.socialMedia?.facebook || ''}
                                 onChange={e => setConfig({ ...config, socialMedia: { ...config.socialMedia, facebook: e.target.value } })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
+                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600"
                                 placeholder="facebook.com/..."
                             />
                         </div>
@@ -67,7 +67,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                                 type="text"
                                 value={config.socialMedia?.instagram || ''}
                                 onChange={e => setConfig({ ...config, socialMedia: { ...config.socialMedia, instagram: e.target.value } })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
+                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600"
                                 placeholder="instagram.com/..."
                             />
                         </div>
@@ -77,7 +77,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                                 type="text"
                                 value={config.socialMedia?.website || ''}
                                 onChange={e => setConfig({ ...config, socialMedia: { ...config.socialMedia, website: e.target.value } })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
+                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600"
                                 placeholder="www.maboutique.com"
                             />
                         </div>
@@ -87,7 +87,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                                 type="text"
                                 value={config.socialMedia?.tiktok || ''}
                                 onChange={e => setConfig({ ...config, socialMedia: { ...config.socialMedia, tiktok: e.target.value } })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
+                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600"
                                 placeholder="tiktok.com/@user..."
                             />
                         </div>
@@ -96,7 +96,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
             </div>
 
             {/* 2. Localisation */}
-            <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+            <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
                 <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                     <span className="w-2 h-2 rounded-full bg-blue-500"></span> Localisation
                 </h2>
@@ -109,7 +109,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                                 type="text"
                                 value={config.address}
                                 onChange={e => setConfig({ ...config, address: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pl-10 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
+                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pl-10 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600"
                                 placeholder="Quartier, Ville, Commune..."
                             />
                         </div>
@@ -121,7 +121,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                                 type="text"
                                 value={config.locationUrl || ''}
                                 onChange={e => setConfig({ ...config, locationUrl: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
+                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600"
                                 placeholder="https://maps.google.com/..."
                             />
                         </div>
@@ -133,7 +133,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                                         type="text"
                                         value={config.gpsCoordinates || ''}
                                         onChange={e => setConfig({ ...config, gpsCoordinates: e.target.value })}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600"
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600"
                                         placeholder="5.3600, -3.9000"
                                     />
                                     <button
@@ -155,7 +155,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                                         className="bg-white/5 hover:bg-white/10 text-white p-3 rounded-lg transition-colors border border-white/5"
                                         title="Me géolocaliser"
                                     >
-                                        <MapPin size={20} className="text-indigo-500" />
+                                        <MapPin size={20} className="text-[#00D97E]" />
                                     </button>
                                 </div>
                             </div>
@@ -165,7 +165,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
             </div>
 
             {/* 3. Horaires & Politique */}
-            <div className="bg-[#0a0c10] border border-white/5 rounded-xl p-8">
+            <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
                 <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                     <span className="w-2 h-2 rounded-full bg-blue-500"></span> Horaires & Politique
                 </h2>
@@ -190,7 +190,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                                                     [day]: { ...config.openingHours[day], closed: !e.target.checked }
                                                 }
                                             })}
-                                            className="w-4 h-4 rounded accent-indigo-500"
+                                            className="w-4 h-4 rounded accent-[#00D97E]"
                                         />
                                         <span className="text-xs text-zinc-400">Ouvert</span>
                                     </label>
@@ -243,7 +243,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                             value={config.policyDescription || ''}
                             onChange={e => setConfig({ ...config, policyDescription: e.target.value })}
                             rows={6}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white focus:border-indigo-500 outline-none placeholder:text-zinc-600 leading-relaxed text-sm"
+                            className="w-full bg-white/5 border border-white/10 rounded-lg p-4 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600 leading-relaxed text-sm"
                             placeholder="Ex: ✅ Satisfait ou remboursé sous 7 jours
 🚚 Nous livrons partout à Abidjan sous 24h
 💳 Paiement à la livraison via Wave ou Cash

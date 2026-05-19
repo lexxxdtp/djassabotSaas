@@ -62,7 +62,6 @@ const ForgotPassword: React.FC = () => {
                 }
 
                 if (!auth) {
-                    // Firebase non configuré → demander au backend d'envoyer un lien par email si possible
                     const finalPhone = `+225${phone}`;
                     const response = await fetch(`${API_URL}/auth/forgot-password-phone`, {
                         method: 'POST',
@@ -81,7 +80,6 @@ const ForgotPassword: React.FC = () => {
                 }
 
                 if (!otpSent) {
-                    // Firebase configuré → envoyer OTP SMS
                     const finalPhoneFirebase = `+225${phone}`;
                     const appVerifier = window.recaptchaVerifier;
                     if (!appVerifier) throw new Error("Recaptcha non initialisé, rechargez la page.");
@@ -92,7 +90,6 @@ const ForgotPassword: React.FC = () => {
                     setLoading(false);
                     return;
                 } else {
-                    // Vérifier l'OTP Firebase puis envoyer un lien de reset par email/WhatsApp
                     if (!confirmationResult) throw new Error("Erreur de session OTP");
                     await confirmationResult.confirm(otpCode);
 
@@ -113,7 +110,6 @@ const ForgotPassword: React.FC = () => {
                     return;
                 }
             } else {
-                // Email Flow
                 if (!email.includes('@') || !email.includes('.')) {
                     setError('Adresse email invalide.');
                     setLoading(false);
@@ -144,7 +140,7 @@ const ForgotPassword: React.FC = () => {
                 setError(String(err) || "Une erreur inconnue est survenue");
             }
             if (otpSent && usePhone) {
-                setOtpCode(''); // clear input on error
+                setOtpCode('');
             }
         } finally {
             setLoading(false);
@@ -152,26 +148,26 @@ const ForgotPassword: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0f111a] flex items-center justify-center p-4">
-            <div className="bg-[#0a0c10] border border-white/5 p-8 rounded-3xl w-full max-w-md shadow-2xl shadow-indigo-500/10 backdrop-blur-xl">
+        <div className="min-h-screen bg-[#020B18] flex items-center justify-center p-4">
+            <div className="bg-[#0D1117] border border-white/5 p-8 rounded-2xl w-full max-w-md shadow-2xl shadow-black/50">
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/20">
-                        <ShoppingBag className="text-white w-8 h-8" />
+                    <div className="w-14 h-14 rounded-xl bg-[#00D97E] flex items-center justify-center mx-auto mb-4">
+                        <ShoppingBag className="text-black w-7 h-7" />
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Mot de Passe Oublié</h1>
-                    <p className="text-gray-400">Réinitialisez votre mot de passe pour retrouver l'accès à votre compte.</p>
+                    <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">Mot de Passe Oublié</h1>
+                    <p className="text-zinc-500 text-sm">Réinitialisez votre mot de passe pour retrouver l'accès.</p>
                 </div>
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg mb-6 text-sm flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg mb-6 text-sm flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></div>
                         {error}
                     </div>
                 )}
 
                 {success && (
-                    <div className="bg-green-500/10 border border-green-500/50 text-green-500 p-4 rounded-lg mb-6 text-sm flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5"></div>
+                    <div className="bg-[#00D97E]/10 border border-[#00D97E]/20 text-[#00D97E] p-4 rounded-lg mb-6 text-sm flex items-start gap-3">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#00D97E] mt-1.5 shrink-0"></div>
                         <p>{success}</p>
                     </div>
                 )}
@@ -184,14 +180,14 @@ const ForgotPassword: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => { setUsePhone(false); setError(''); }}
-                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 ${!usePhone ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 ${!usePhone ? 'bg-[#00D97E] text-black shadow-lg' : 'text-zinc-500 hover:text-white'}`}
                             >
                                 <Mail className="w-4 h-4" /> Email
                             </button>
                             <button
                                 type="button"
                                 onClick={() => { setUsePhone(true); setError(''); }}
-                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 ${usePhone ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-2 ${usePhone ? 'bg-[#00D97E] text-black shadow-lg' : 'text-zinc-500 hover:text-white'}`}
                             >
                                 <Phone className="w-4 h-4" /> Téléphone
                             </button>
@@ -200,16 +196,16 @@ const ForgotPassword: React.FC = () => {
 
                     {!usePhone && (
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Email</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Email</label>
                             <div className="relative group">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-500 transition-colors w-5 h-5" />
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-[#00D97E] transition-colors w-5 h-5" />
                                 <input
                                     type="text"
                                     inputMode="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="email@exemple.com"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all"
                                 />
                             </div>
                         </div>
@@ -217,10 +213,10 @@ const ForgotPassword: React.FC = () => {
 
                     {usePhone && !otpSent && (
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Téléphone</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Téléphone</label>
                             <div className="relative group">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-gray-400 border-r border-white/10 pr-2 pb-1">
-                                    <Phone className="w-4 h-4 group-focus-within:text-indigo-500 transition-colors" />
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-zinc-400 border-r border-white/10 pr-2 pb-1">
+                                    <Phone className="w-4 h-4 group-focus-within:text-[#00D97E] transition-colors" />
                                     <span className="text-sm font-medium group-focus-within:text-white">+225</span>
                                 </div>
                                 <input
@@ -229,7 +225,7 @@ const ForgotPassword: React.FC = () => {
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                     placeholder="0700000000"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-24 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono tracking-wider"
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-24 pr-4 text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all font-mono tracking-wider"
                                 />
                             </div>
                         </div>
@@ -238,16 +234,16 @@ const ForgotPassword: React.FC = () => {
                     {otpSent && (
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Code de validation (OTP)</label>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Code de validation (OTP)</label>
                                 <div className="relative group">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-500 transition-colors w-5 h-5" />
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-[#00D97E] transition-colors w-5 h-5" />
                                     <input
                                         type="text"
                                         value={otpCode}
                                         onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                         placeholder="123456"
                                         required
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-center text-xl font-mono tracking-[0.5em]"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-10 pr-4 text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all text-center text-xl font-mono tracking-[0.5em]"
                                     />
                                 </div>
                             </div>
@@ -255,12 +251,12 @@ const ForgotPassword: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => { setOtpSent(false); setOtpCode(''); setError(''); }}
-                                    className="text-gray-400 hover:text-white transition-colors"
+                                    className="text-zinc-500 hover:text-white transition-colors"
                                 >
                                     Modifier le numéro
                                 </button>
                                 {countdown > 0 ? (
-                                    <span className="text-gray-500">Renvoyer dans {countdown}s</span>
+                                    <span className="text-zinc-500">Renvoyer dans {countdown}s</span>
                                 ) : (
                                     <button
                                         type="button"
@@ -283,7 +279,7 @@ const ForgotPassword: React.FC = () => {
                                                 setLoading(false);
                                             }
                                         }}
-                                        className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                                        className="text-[#00D97E] hover:text-[#00D97E]/80 font-medium transition-colors"
                                     >
                                         Renvoyer le code
                                     </button>
@@ -295,7 +291,7 @@ const ForgotPassword: React.FC = () => {
                     <button
                         type="submit"
                         disabled={loading || !!success || (usePhone && otpSent && otpCode.length < 6)}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/25 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02]"
+                        className="w-full bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01]"
                     >
                         <span>
                             {loading && !otpSent ? 'Envoi...' :
@@ -308,8 +304,8 @@ const ForgotPassword: React.FC = () => {
                     </button>
                 </form>
 
-                <p className="mt-8 text-center text-sm text-gray-500">
-                    <Link to="/login" className="text-indigo-400 hover:text-indigo-300 font-bold tracking-wide hover:underline cursor-pointer transition-colors">
+                <p className="mt-8 text-center text-sm text-zinc-500">
+                    <Link to="/login" className="text-[#00D97E] hover:text-[#00D97E]/80 font-bold tracking-wide hover:underline cursor-pointer transition-colors">
                         ← Retour à la connexion
                     </Link>
                 </p>

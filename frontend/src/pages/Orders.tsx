@@ -70,9 +70,9 @@ interface OrderModalProps {
 
 const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/80 backdrop-blur-md animate-in fade-in duration-200">
-        <div className="bg-[#0a0c10] border border-white/5 rounded-2xl w-full max-w-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col">
+        <div className="bg-[#0D1117] border border-white/5 rounded-2xl w-full max-w-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col">
             {/* Header */}
-            <div className="bg-[#0a0c10] p-6 flex justify-between items-start border-b border-white/5 shrink-0">
+            <div className="bg-[#0D1117] p-6 flex justify-between items-start border-b border-white/5 shrink-0">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
                         <h2 className="text-xl font-bold text-white tracking-tight">COMMANDE #{order.id}</h2>
@@ -113,7 +113,7 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
                         <>
                             <button
                                 onClick={() => shareOrder(order)}
-                                className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-2"
+                                className="px-4 py-2 bg-[#00D97E]/10 hover:bg-[#00D97E]/20 text-[#00D97E] border border-[#00D97E]/20 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-2"
                             >
                                 <Send size={14} />
                                 Envoyer au livreur
@@ -141,7 +141,7 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
                     <div>
                         <h3 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-2">Livraison</h3>
                         <div className="flex items-start gap-2 text-zinc-300 text-sm">
-                            <MapPin className="w-4 h-4 mt-0.5 text-indigo-500" />
+                            <MapPin className="w-4 h-4 mt-0.5 text-[#00D97E]" />
                             <span>{order.address}</span>
                         </div>
                     </div>
@@ -171,11 +171,11 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
                                         </td>
                                         <td className="px-4 py-3 text-zinc-400 text-right font-mono">{item.price.toLocaleString()}</td>
                                         <td className="px-4 py-3 text-zinc-400 text-right font-mono">{item.quantity}</td>
-                                        <td className="px-4 py-3 text-white font-medium text-right font-mono text-indigo-400">{(item.price * item.quantity).toLocaleString()}</td>
+                                        <td className="px-4 py-3 text-white font-medium text-right font-mono text-[#00D97E]">{(item.price * item.quantity).toLocaleString()}</td>
                                     </tr>
                                 ))}
                             </tbody>
-                            <tfoot className="bg-[#0a0c10] border-t border-white/5">
+                            <tfoot className="bg-[#0D1117] border-t border-white/5">
                                 <tr>
                                     <td colSpan={3} className="px-4 py-4 text-right font-bold text-white text-sm uppercase tracking-wider">Total à Payer</td>
                                     <td className="px-4 py-4 text-right font-bold text-white text-xl font-mono">{order.total.toLocaleString()} <span className="text-xs text-gray-500">FCFA</span></td>
@@ -186,7 +186,7 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
                 </div>
             </div>
 
-            <div className="bg-[#0a0c10] p-6 flex justify-end gap-3 border-t border-white/5">
+            <div className="bg-[#0D1117] p-6 flex justify-end gap-3 border-t border-white/5">
                 <button onClick={onClose} className="px-4 py-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors text-sm font-medium">
                     Fermer
                 </button>
@@ -244,7 +244,7 @@ export default function Orders() {
                     <h1 className="text-3xl font-bold text-white tracking-tight">Commandes</h1>
                     <p className="text-zinc-500 mt-1">Liste des commandes</p>
                 </div>
-                <div className="text-xs text-gray-500 font-mono bg-[#0a0c10] border border-white/5 px-3 py-1 rounded-lg">
+                <div className="text-xs text-gray-500 font-mono bg-[#0D1117] border border-white/5 px-3 py-1 rounded-lg">
                     {orders.length} commandes
                 </div>
             </div>
@@ -261,7 +261,7 @@ export default function Orders() {
                         </div>
                     ) : (
                         orders.map((order) => (
-                            <div key={order.id} className="bg-[#0a0c10] border border-white/5 rounded-xl p-4 sm:p-6 hover:border-indigo-500/30 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center group transition-all gap-3 sm:gap-4">
+                            <div key={order.id} className="bg-[#0D1117] border border-white/5 rounded-xl p-4 sm:p-6 hover:border-[#00D97E]/20 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center group transition-all gap-3 sm:gap-4">
                                 <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0" onClick={() => setSelectedOrder(order)}>
                                     <div className={`p-2.5 sm:p-3 rounded-full shrink-0 ${order.status === 'PENDING' ? 'bg-orange-500/10 text-orange-500' : 'bg-white/5 text-gray-400'}`}>
                                         {order.status === 'PENDING' ? <AlertCircle size={20} /> : <Package size={20} />}
@@ -285,7 +285,7 @@ export default function Orders() {
                                         {order.status === 'CONFIRMED' && (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); shareOrder(order); }}
-                                                className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 active:scale-90 transition-all"
+                                                className="p-2 rounded-lg bg-[#00D97E]/10 text-[#00D97E] border border-[#00D97E]/20 hover:bg-[#00D97E]/20 active:scale-90 transition-all"
                                                 title="Envoyer au livreur"
                                             >
                                                 <Send size={16} />

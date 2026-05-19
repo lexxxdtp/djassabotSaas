@@ -105,7 +105,7 @@ export default function Products() {
                 </div>
                 <button
                     onClick={handleCreate}
-                    className="hidden md:flex bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/25 text-white px-6 py-3 rounded-lg font-bold items-center space-x-2 transition-all hover:scale-[1.02]"
+                    className="hidden md:flex bg-[#00D97E] hover:bg-[#00D97E]/90 text-black px-6 py-3 rounded-lg font-bold items-center space-x-2 transition-all hover:scale-[1.02]"
                 >
                     <Plus size={20} />
                     <span>Ajouter Produit</span>
@@ -115,7 +115,7 @@ export default function Products() {
             {/* Grid */}
             {loading ? (
                 <div className="text-zinc-500 text-center py-20 flex flex-col items-center">
-                    <div className="animate-spin text-indigo-500 mb-4">⌛️</div>
+                    <div className="animate-spin text-[#00D97E] mb-4">⌛️</div>
                     Chargement de l'inventaire...
                 </div>
             ) : (
@@ -138,7 +138,7 @@ export default function Products() {
                             <p className="text-zinc-500 mt-1 mb-6 text-sm">Commencez par ajouter votre premier produit.</p>
                             <button
                                 onClick={handleCreate}
-                                className="text-indigo-400 hover:text-indigo-300 font-bold text-sm uppercase tracking-wide border-b border-indigo-500/30 hover:border-indigo-500"
+                                className="text-[#00D97E] hover:text-[#00D97E]/80 font-bold text-sm uppercase tracking-wide border-b border-[#00D97E]/30 hover:border-[#00D97E]"
                             >
                                 + Ajouter maintenant
                             </button>
@@ -159,7 +159,7 @@ export default function Products() {
             {/* Delete Confirmation Modal */}
             {isDeleteModalOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-[#0a0c10] border border-white/10 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+                    <div className="bg-[#0D1117] border border-white/10 rounded-xl p-6 max-w-sm w-full shadow-2xl">
                         <h3 className="text-lg font-bold text-white mb-2">Supprimer ce produit ?</h3>
                         <p className="text-zinc-400 text-sm mb-6">Cette action est irréversible. Le produit ne sera plus disponible.</p>
                         <div className="flex gap-3">
@@ -183,7 +183,7 @@ export default function Products() {
             {/* Mobile FAB — Add product */}
             <button
                 onClick={handleCreate}
-                className="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full shadow-lg shadow-indigo-500/30 flex items-center justify-center text-white active:scale-90 transition-transform"
+                className="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-gradient-to-r bg-[#00D97E] rounded-full shadow-lg shadow-[#00D97E]/30 flex items-center justify-center text-white active:scale-90 transition-transform"
             >
                 <Plus size={24} />
             </button>
