@@ -1,4 +1,5 @@
 import admin from 'firebase-admin';
+import fs from 'fs';
 import { logger } from '../utils/logger';
 
 /**
@@ -9,11 +10,17 @@ import { logger } from '../utils/logger';
  * a malicious client could send `{ phoneVerified: true }` to bypass SMS
  * verification entirely.
  *
- * Configuration via env var FIREBASE_SERVICE_ACCOUNT_JSON containing the
- * stringified JSON of a Firebase service account key (see Firebase Console
- * → Project Settings → Service accounts → Generate new private key).
+ * Configuration — TWO methods supported, checked in this order:
  *
- * Graceful degradation: if the env var is missing or malformed, the module
+ *   1. FIREBASE_SERVICE_ACCOUNT_PATH (recommended on VPS)
+ *      Absolute path to the service account JSON file on disk.
+ *      Example: /home/alex/djassabotSaas/backend/firebase-admin-key.json
+ *      The file should be chmod 600, owned by the service user.
+ *
+ *   2. FIREBASE_SERVICE_ACCOUNT_JSON (recommended on Railway/Vercel/Heroku)
+ *      Stringified JSON inline. Easier on PaaS, harder to read raw secret.
+ *
+ * Graceful degradation: if neither is set or both are malformed, the module
  * exports `isAdminConfigured = false` and `verifyPhoneToken` returns null.
  * Callers MUST handle this — typically by refusing phone-based signup.
  */
@@ -21,25 +28,49 @@ import { logger } from '../utils/logger';
 let _initialized = false;
 let _isConfigured = false;
 
+const loadCredentials = (): admin.ServiceAccount | null => {
+    const path = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    if (path) {
+        try {
+            const raw = fs.readFileSync(path, 'utf-8');
+            return JSON.parse(raw);
+        } catch (error) {
+            logger.error({ err: error, path }, '[FirebaseAdmin] Failed to read FIREBASE_SERVICE_ACCOUNT_PATH file');
+            return null;
+        }
+    }
+
+    const inline = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (inline) {
+        try {
+            return JSON.parse(inline);
+        } catch (error) {
+            logger.error({ err: error }, '[FirebaseAdmin] Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON env var');
+            return null;
+        }
+    }
+
+    return null;
+};
+
 const initialize = () => {
     if (_initialized) return;
     _initialized = true;
 
-    const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-    if (!raw) {
-        logger.warn('[FirebaseAdmin] FIREBASE_SERVICE_ACCOUNT_JSON not set — phone token verification disabled');
+    const serviceAccount = loadCredentials();
+    if (!serviceAccount) {
+        logger.warn('[FirebaseAdmin] No credentials provided (set FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_SERVICE_ACCOUNT_JSON) — phone token verification disabled');
         return;
     }
 
     try {
-        const serviceAccount = JSON.parse(raw);
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
         });
         _isConfigured = true;
-        logger.info({ projectId: serviceAccount.project_id }, '[FirebaseAdmin] Initialized');
+        logger.info({ projectId: (serviceAccount as { project_id?: string }).project_id }, '[FirebaseAdmin] Initialized');
     } catch (error) {
-        logger.error({ err: error }, '[FirebaseAdmin] Initialization failed — check FIREBASE_SERVICE_ACCOUNT_JSON format');
+        logger.error({ err: error }, '[FirebaseAdmin] Initialization failed');
     }
 };
 
