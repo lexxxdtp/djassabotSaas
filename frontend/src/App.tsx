@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'));
+const Today = lazy(() => import('./pages/Today'));
 const Products = lazy(() => import('./pages/Products'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const Orders = lazy(() => import('./pages/Orders'));
@@ -21,14 +22,14 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 
-// Loading fallback component
+// Loading fallback — matches landing page design (pure black, #00D97E accent)
 const PageLoader = () => (
   <div style={{
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     height: '100vh',
-    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
+    background: '#000'
   }}>
     <div style={{
       display: 'flex',
@@ -37,14 +38,14 @@ const PageLoader = () => (
       gap: '1rem'
     }}>
       <div style={{
-        width: '50px',
-        height: '50px',
-        border: '3px solid rgba(99, 102, 241, 0.3)',
-        borderTop: '3px solid #6366f1',
+        width: '40px',
+        height: '40px',
+        border: '3px solid #1a1a1a',
+        borderTop: '3px solid #00D97E',
         borderRadius: '50%',
         animation: 'spin 1s linear infinite'
       }} />
-      <span style={{ color: '#a5b4fc', fontSize: '14px' }}>Chargement...</span>
+      <span style={{ color: '#888', fontSize: '12px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Chargement</span>
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
@@ -69,12 +70,17 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<DashboardLayout />}>
-                <Route index element={<Overview />} />
+                {/* New home: operational dashboard */}
+                <Route index element={<Today />} />
+                {/* Detailed analytics — accessible via "voir l'analyse détaillée" link */}
+                <Route path="analytics" element={<Overview />} />
                 <Route path="products" element={<Products />} />
                 <Route path="products/:id" element={<ProductDetail />} />
                 <Route path="orders" element={<Orders />} />
                 <Route path="inbox" element={<Inbox />} />
+                {/* Hidden from nav but route preserved — coming back when functional */}
                 <Route path="marketing" element={<MarketingTools />} />
+                {/* Moved under Settings UX but routes kept for direct links */}
                 <Route path="subscription" element={<Subscription />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="whatsapp" element={<WhatsAppConnect />} />

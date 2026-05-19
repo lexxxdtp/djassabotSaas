@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Settings, LogOut, Package, Share2, MessageSquare, User } from 'lucide-react';
+import { Home, ShoppingBag, Settings, LogOut, Package, MessageSquare, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
 
@@ -16,13 +16,13 @@ const DashboardLayout: React.FC = () => {
         navigate('/login');
     };
 
-    // All nav items for desktop sidebar
+    // Nav structure — task-oriented, not module-oriented
+    // Marketing hidden (not functional yet). WhatsApp + Subscription moved under Réglages.
     const navItems = [
-        { path: '/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard, mobileLabel: 'Accueil' },
-        { path: '/dashboard/inbox', label: 'Discussions', icon: MessageSquare, mobileLabel: 'Chat' },
+        { path: '/dashboard', label: 'Aujourd\'hui', icon: Home, mobileLabel: 'Accueil' },
+        { path: '/dashboard/inbox', label: 'Conversations', icon: MessageSquare, mobileLabel: 'Conv' },
         { path: '/dashboard/orders', label: 'Commandes', icon: ShoppingBag, mobileLabel: 'Commandes' },
         { path: '/dashboard/products', label: 'Produits', icon: Package, mobileLabel: 'Produits' },
-        { path: '/dashboard/marketing', label: 'Marketing', icon: Share2 },
         { path: '/dashboard/settings', label: 'Réglages', icon: Settings, mobileLabel: 'Réglages' },
     ];
 
