@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-    AlertTriangle,
     Package,
     MessageSquare,
     TrendingUp,
@@ -11,6 +10,8 @@ import {
     DollarSign,
     CheckCircle2,
     WifiOff,
+    Truck,
+    CreditCard,
 } from 'lucide-react';
 import { getApiUrl } from '../utils/apiConfig';
 import { useAuth } from '../context/AuthContext';
@@ -23,7 +24,6 @@ interface Order {
     items: unknown[];
     createdAt?: string;
     created_at?: string;
-    paymentStatus?: 'paid' | 'pending' | 'suspect';
 }
 
 interface Log {
@@ -103,16 +103,16 @@ const Today: React.FC = () => {
         ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100)
         : null;
 
-    const pendingOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED');
+    const todoOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED');
+    const paidOrders = orders.filter(o => o.status === 'PAID');
     const shippingOrders = orders.filter(o => o.status === 'SHIPPING');
-    const suspectPayments = orders.filter(o => o.paymentStatus === 'suspect');
 
     const lastSaleLog = logs.find(l => l.type === 'sale');
     const lastSaleAgo = lastSaleLog
         ? timeAgo(new Date(lastSaleLog.created_at))
         : null;
 
-    const hasUrgentTasks = pendingOrders.length > 0 || shippingOrders.length > 0 || suspectPayments.length > 0;
+    const hasUrgentTasks = todoOrders.length > 0 || paidOrders.length > 0 || shippingOrders.length > 0;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -163,30 +163,30 @@ const Today: React.FC = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {suspectPayments.length > 0 && (
+                        {todoOrders.length > 0 && (
                             <TaskCard
-                                to="/dashboard/orders?filter=suspect"
-                                icon={AlertTriangle}
-                                count={suspectPayments.length}
-                                label="Paiements à vérifier"
+                                to="/dashboard/orders?filter=todo"
+                                icon={Package}
+                                count={todoOrders.length}
+                                label="Commandes à traiter"
                                 tone="warning"
                             />
                         )}
-                        {pendingOrders.length > 0 && (
+                        {paidOrders.length > 0 && (
                             <TaskCard
-                                to="/dashboard/orders"
-                                icon={Package}
-                                count={pendingOrders.length}
-                                label="Commandes à préparer"
+                                to="/dashboard/orders?filter=paid"
+                                icon={CreditCard}
+                                count={paidOrders.length}
+                                label="Prêtes à livrer"
                                 tone="primary"
                             />
                         )}
                         {shippingOrders.length > 0 && (
                             <TaskCard
                                 to="/dashboard/orders?filter=shipping"
-                                icon={Package}
+                                icon={Truck}
                                 count={shippingOrders.length}
-                                label="Commandes en livraison"
+                                label="En livraison"
                                 tone="info"
                             />
                         )}
