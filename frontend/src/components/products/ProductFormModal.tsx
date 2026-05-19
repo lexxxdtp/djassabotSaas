@@ -233,10 +233,10 @@ export default function ProductFormModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="bg-[#0D1117] border border-white/5 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 relative shadow-2xl shadow-black/30">
+            <div className="bg-[#111] border border-[#1a1a1a] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 relative shadow-2xl shadow-black/30">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
+                    className="absolute top-4 right-4 text-[#888] hover:text-white transition-colors"
                 >
                     <X size={24} />
                 </button>
@@ -249,13 +249,13 @@ export default function ProductFormModal({
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Name */}
                     <div>
-                        <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Nom du Produit</label>
+                        <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Nom du Produit</label>
                         <input
                             required
                             type="text"
                             value={form.name}
                             onChange={e => setForm({ ...form, name: e.target.value })}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600 transition-colors"
+                            className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-[#555] transition-colors"
                             placeholder="Ex: Robe rouge"
                         />
                     </div>
@@ -263,19 +263,19 @@ export default function ProductFormModal({
                     {/* Price & Stock */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Prix (FCFA)</label>
+                            <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Prix (FCFA)</label>
                             <input
                                 required
                                 type="number"
                                 value={form.price}
                                 onChange={e => setForm({ ...form, price: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600 font-mono"
+                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-[#555] font-mono"
                                 placeholder="5000"
                             />
                         </div>
-                        <div className="bg-black/30 p-2 rounded border border-white/5">
+                        <div className="bg-black/30 p-2 rounded border border-[#1a1a1a]">
                             <div className="flex justify-between items-center mb-1.5">
-                                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                                <label className="block text-xs font-semibold text-[#888] uppercase tracking-wide">
                                     Stock {variationsEnabled && <span className="text-[#00D97E] text-[10px] ml-1">(Auto)</span>}
                                 </label>
 
@@ -283,10 +283,10 @@ export default function ProductFormModal({
                                 <button
                                     type="button"
                                     onClick={() => setForm({ ...form, manageStock: !form.manageStock })}
-                                    className="flex items-center gap-2 px-2 py-1 rounded bg-white/5 border border-white/10 hover:border-white/20 transition-all cursor-pointer group"
+                                    className="flex items-center gap-2 px-2 py-1 rounded bg-white/5 border border-[#1a1a1a] hover:border-[#333] transition-all cursor-pointer group"
                                     title={form.manageStock ? "Mode Strict" : "Mode Flexible"}
                                 >
-                                    <span className={`text-[9px] font-bold uppercase ${form.manageStock ? 'text-zinc-400 group-hover:text-white' : 'text-[#00D97E]'}`}>
+                                    <span className={`text-[9px] font-bold uppercase ${form.manageStock ? 'text-[#888] group-hover:text-white' : 'text-[#00D97E]'}`}>
                                         {form.manageStock ? 'STRICT' : 'FLEXIBLE'}
                                     </span>
                                     <div className={`w-6 h-3 rounded-full relative transition-colors ${form.manageStock ? 'bg-white/20' : 'bg-[#00D97E]'}`}>
@@ -301,7 +301,7 @@ export default function ProductFormModal({
                                 disabled={variationsEnabled}
                                 value={form.stock}
                                 onChange={e => setForm({ ...form, stock: Math.max(0, Number(e.target.value) || 0).toString() })}
-                                className={`w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-zinc-600 font-mono ${variationsEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-[#555] font-mono ${variationsEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 placeholder="10"
                             />
                         </div>
@@ -309,9 +309,9 @@ export default function ProductFormModal({
 
                     {/* Description */}
                     <div>
-                        <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Description</label>
+                        <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Description</label>
                         <textarea
-                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none h-20 placeholder:text-zinc-600 resize-none"
+                            className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none h-20 placeholder:text-[#555] resize-none"
                             placeholder="Détails du produit..."
                             value={form.description}
                             onChange={e => setForm({ ...form, description: e.target.value })}
@@ -319,12 +319,12 @@ export default function ProductFormModal({
                     </div>
 
                     {/* IA Instructions */}
-                    <div className="border-t border-white/5 pt-3 mt-2">
+                    <div className="border-t border-[#1a1a1a] pt-3 mt-2">
                         <label className="block text-xs font-semibold text-[#00D97E] mb-2 uppercase tracking-wide">
                             🤖 Consignes IA
                         </label>
                         <textarea
-                            className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none h-20 placeholder:text-zinc-600 resize-none text-sm"
+                            className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none h-20 placeholder:text-[#555] resize-none text-sm"
                             placeholder="Ex: Si le client prend 3+, proposer -10%..."
                             value={form.aiInstructions}
                             onChange={e => setForm({ ...form, aiInstructions: e.target.value })}
@@ -333,10 +333,10 @@ export default function ProductFormModal({
 
                     {/* Images */}
                     <div>
-                        <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Galerie</label>
+                        <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Galerie</label>
                         <div className="grid grid-cols-3 gap-2 mb-2">
                             {form.images.map((img, idx) => (
-                                <div key={idx} className="relative h-20 rounded-lg overflow-hidden group border border-white/10">
+                                <div key={idx} className="relative h-20 rounded-lg overflow-hidden group border border-[#1a1a1a]">
                                     <img src={img} alt="Product" className="w-full h-full object-cover" />
                                     <button
                                         type="button"
@@ -350,7 +350,7 @@ export default function ProductFormModal({
                                     </button>
                                 </div>
                             ))}
-                            <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-white/10 hover:border-[#00D97E] rounded-lg cursor-pointer transition-all text-zinc-500 hover:text-[#00D97E] bg-black/20 hover:bg-[#00D97E]/5 group">
+                            <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-[#1a1a1a] hover:border-[#00D97E] rounded-lg cursor-pointer transition-all text-[#888] hover:text-[#00D97E] bg-black/20 hover:bg-[#00D97E]/5 group">
                                 {uploading ? <span className="animate-spin text-lg">⏳</span> : <ImageIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />}
                                 <input
                                     type="file"
@@ -375,11 +375,11 @@ export default function ProductFormModal({
                     />
 
                     {/* Submit */}
-                    <div className="sticky bottom-0 bg-[#0D1117] border-t border-white/5 pt-4 pb-2 z-10 flex gap-3">
+                    <div className="sticky bottom-0 bg-[#111] border-t border-[#1a1a1a] pt-4 pb-2 z-10 flex gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-3 rounded-lg font-bold bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+                            className="flex-1 py-3 rounded-lg font-bold bg-white/5 text-[#888] hover:text-white hover:bg-[#1a1a1a] transition-colors"
                         >
                             Annuler
                         </button>

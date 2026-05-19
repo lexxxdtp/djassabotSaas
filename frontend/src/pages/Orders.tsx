@@ -29,7 +29,7 @@ const getStatusColor = (status: string) => {
         case 'SHIPPING': return 'text-purple-500 bg-purple-500/10 border-purple-500/20';
         case 'DELIVERED': return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
         case 'CANCELLED': return 'text-red-500 bg-red-500/10 border-red-500/20';
-        default: return 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20';
+        default: return 'text-[#888] bg-zinc-500/10 border-zinc-500/20';
     }
 };
 
@@ -70,9 +70,9 @@ interface OrderModalProps {
 
 const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/80 backdrop-blur-md animate-in fade-in duration-200">
-        <div className="bg-[#0D1117] border border-white/5 rounded-2xl w-full max-w-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col">
+        <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl w-full max-w-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col">
             {/* Header */}
-            <div className="bg-[#0D1117] p-6 flex justify-between items-start border-b border-white/5 shrink-0">
+            <div className="bg-[#111] p-6 flex justify-between items-start border-b border-[#1a1a1a] shrink-0">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
                         <h2 className="text-xl font-bold text-white tracking-tight">COMMANDE #{order.id}</h2>
@@ -80,11 +80,11 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
                             {order.status === 'PENDING' ? 'NOUVELLE' : order.status === 'CONFIRMED' ? 'CONFIRMÉE' : order.status}
                         </span>
                     </div>
-                    <p className="text-zinc-500 text-xs flex items-center gap-2 uppercase tracking-wide">
+                    <p className="text-[#888] text-xs flex items-center gap-2 uppercase tracking-wide">
                         <Clock className="w-3 h-3" /> {new Date(order.createdAt).toLocaleString('fr-FR')}
                     </p>
                 </div>
-                <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-2 rounded-lg">
+                <button onClick={onClose} className="text-[#888] hover:text-white transition-colors bg-white/5 hover:bg-[#1a1a1a] p-2 rounded-lg">
                     <X size={20} />
                 </button>
             </div>
@@ -127,19 +127,19 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
                         </>
                     )}
                     {order.status !== 'PENDING' && order.status !== 'CONFIRMED' && (
-                        <span className="text-zinc-500 text-sm italic">Commande cloturée</span>
+                        <span className="text-[#888] text-sm italic">Commande cloturée</span>
                     )}
                 </div>
 
                 {/* Customer Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 bg-white/5 rounded-xl border border-white/5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 bg-white/5 rounded-xl border border-[#1a1a1a]">
                     <div>
-                        <h3 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-2">Client</h3>
+                        <h3 className="text-[10px] uppercase tracking-widest text-[#888] font-bold mb-2">Client</h3>
                         <div className="text-white font-medium font-mono text-sm">{order.userId}</div>
-                        <div className="text-zinc-600 text-xs mt-1">Via WhatsApp</div>
+                        <div className="text-[#555] text-xs mt-1">Via WhatsApp</div>
                     </div>
                     <div>
-                        <h3 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-2">Livraison</h3>
+                        <h3 className="text-[10px] uppercase tracking-widest text-[#888] font-bold mb-2">Livraison</h3>
                         <div className="flex items-start gap-2 text-zinc-300 text-sm">
                             <MapPin className="w-4 h-4 mt-0.5 text-[#00D97E]" />
                             <span>{order.address}</span>
@@ -149,10 +149,10 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
 
                 {/* Order Items Table */}
                 <div>
-                    <h3 className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4">Détails Panier</h3>
-                    <div className="w-full overflow-hidden rounded-xl border border-white/5 bg-black overflow-x-auto">
+                    <h3 className="text-[10px] uppercase tracking-widest text-[#888] font-bold mb-4">Détails Panier</h3>
+                    <div className="w-full overflow-hidden rounded-xl border border-[#1a1a1a] bg-black overflow-x-auto">
                         <table className="w-full text-sm text-left min-w-[500px]">
-                            <thead className="bg-white/5 text-gray-500 border-b border-white/5">
+                            <thead className="bg-[#111] text-[#888] border-b border-[#1a1a1a]">
                                 <tr>
                                     <th className="px-4 py-3 font-medium text-xs uppercase tracking-wider">Produit</th>
                                     <th className="px-4 py-3 font-medium text-xs uppercase tracking-wider text-right">Prix</th>
@@ -162,23 +162,23 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {order.items.map((item, idx) => (
-                                    <tr key={idx} className="hover:bg-white/5 transition-colors">
+                                    <tr key={idx} className="hover:bg-[#111] transition-colors">
                                         <td className="px-4 py-3 text-white">
                                             {item.productName}
                                             {(item.selectedVariations || [])?.length > 0 && (
-                                                <div className="text-[10px] text-zinc-500">{item.selectedVariations?.map(v => `${v.name}: ${v.value}`).join(', ')}</div>
+                                                <div className="text-[10px] text-[#888]">{item.selectedVariations?.map(v => `${v.name}: ${v.value}`).join(', ')}</div>
                                             )}
                                         </td>
-                                        <td className="px-4 py-3 text-zinc-400 text-right font-mono">{item.price.toLocaleString()}</td>
-                                        <td className="px-4 py-3 text-zinc-400 text-right font-mono">{item.quantity}</td>
+                                        <td className="px-4 py-3 text-[#888] text-right font-mono">{item.price.toLocaleString()}</td>
+                                        <td className="px-4 py-3 text-[#888] text-right font-mono">{item.quantity}</td>
                                         <td className="px-4 py-3 text-white font-medium text-right font-mono text-[#00D97E]">{(item.price * item.quantity).toLocaleString()}</td>
                                     </tr>
                                 ))}
                             </tbody>
-                            <tfoot className="bg-[#0D1117] border-t border-white/5">
+                            <tfoot className="bg-[#111] border-t border-[#1a1a1a]">
                                 <tr>
                                     <td colSpan={3} className="px-4 py-4 text-right font-bold text-white text-sm uppercase tracking-wider">Total à Payer</td>
-                                    <td className="px-4 py-4 text-right font-bold text-white text-xl font-mono">{order.total.toLocaleString()} <span className="text-xs text-gray-500">FCFA</span></td>
+                                    <td className="px-4 py-4 text-right font-bold text-white text-xl font-mono">{order.total.toLocaleString()} <span className="text-xs text-[#888]">FCFA</span></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -186,8 +186,8 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => (
                 </div>
             </div>
 
-            <div className="bg-[#0D1117] p-6 flex justify-end gap-3 border-t border-white/5">
-                <button onClick={onClose} className="px-4 py-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors text-sm font-medium">
+            <div className="bg-[#111] p-6 flex justify-end gap-3 border-t border-[#1a1a1a]">
+                <button onClick={onClose} className="px-4 py-2 text-[#888] hover:text-white hover:bg-zinc-800 rounded-lg transition-colors text-sm font-medium">
                     Fermer
                 </button>
             </div>
@@ -239,47 +239,47 @@ export default function Orders() {
         <div className="space-y-6 animate-in fade-in duration-500 h-[calc(100vh-100px)]">
             {selectedOrder && <OrderModal order={selectedOrder} onClose={() => setSelectedOrder(null)} onUpdateStatus={updateStatus} />}
 
-            <div className="flex items-end justify-between border-b border-white/5 pb-4">
+            <div className="flex items-end justify-between border-b border-[#1a1a1a] pb-4">
                 <div>
                     <h1 className="text-3xl font-bold text-white tracking-tight">Commandes</h1>
-                    <p className="text-zinc-500 mt-1">Liste des commandes</p>
+                    <p className="text-[#888] mt-1">Liste des commandes</p>
                 </div>
-                <div className="text-xs text-gray-500 font-mono bg-[#0D1117] border border-white/5 px-3 py-1 rounded-lg">
+                <div className="text-xs text-[#888] font-mono bg-[#111] border border-[#1a1a1a] px-3 py-1 rounded-lg">
                     {orders.length} commandes
                 </div>
             </div>
 
             {loading ? (
-                <div className="text-zinc-500 text-center py-20 uppercase tracking-widest text-xs animate-pulse">Chargement des commandes...</div>
+                <div className="text-[#888] text-center py-20 uppercase tracking-widest text-xs animate-pulse">Chargement des commandes...</div>
             ) : (
                 /* LIST VIEW ONLY */
                 <div className="grid gap-4">
                     {orders.length === 0 ? (
-                        <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-2xl bg-white/5">
-                            <ShoppingBag className="mx-auto h-12 w-12 text-zinc-700 mb-4" />
+                        <div className="py-20 text-center border-2 border-dashed border-[#1a1a1a] rounded-2xl bg-white/5">
+                            <ShoppingBag className="mx-auto h-12 w-12 text-[#444] mb-4" />
                             <h3 className="text-lg font-medium text-white">Aucune commande</h3>
                         </div>
                     ) : (
                         orders.map((order) => (
-                            <div key={order.id} className="bg-[#0D1117] border border-white/5 rounded-xl p-4 sm:p-6 hover:border-[#00D97E]/20 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center group transition-all gap-3 sm:gap-4">
+                            <div key={order.id} className="bg-[#111] border border-[#1a1a1a] rounded-xl p-4 sm:p-6 hover:border-[#00D97E]/20 cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center group transition-all gap-3 sm:gap-4">
                                 <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0" onClick={() => setSelectedOrder(order)}>
-                                    <div className={`p-2.5 sm:p-3 rounded-full shrink-0 ${order.status === 'PENDING' ? 'bg-orange-500/10 text-orange-500' : 'bg-white/5 text-gray-400'}`}>
+                                    <div className={`p-2.5 sm:p-3 rounded-full shrink-0 ${order.status === 'PENDING' ? 'bg-orange-500/10 text-orange-500' : 'bg-[#111] text-[#888]'}`}>
                                         {order.status === 'PENDING' ? <AlertCircle size={20} /> : <Package size={20} />}
                                     </div>
                                     <div className="min-w-0">
                                         <h3 className="font-bold text-white text-base sm:text-lg">#{order.id.split('-')[1]}</h3>
-                                        <p className="text-zinc-500 text-xs sm:text-sm flex items-center gap-2">
+                                        <p className="text-[#888] text-xs sm:text-sm flex items-center gap-2">
                                             <Clock size={12} /> {new Date(order.createdAt).toLocaleDateString()}
-                                            <span className="text-zinc-700">•</span>
-                                            <span className="text-zinc-400">{order.items.length} art.</span>
+                                            <span className="text-[#444]">•</span>
+                                            <span className="text-[#888]">{order.items.length} art.</span>
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto justify-between sm:justify-end pl-12 sm:pl-0">
                                     <div className="text-left sm:text-right min-w-0">
-                                        <div className="font-mono text-white text-base sm:text-lg font-bold">{order.total.toLocaleString()} <span className="text-xs sm:text-sm text-zinc-500">FCFA</span></div>
-                                        <div className="text-zinc-600 text-xs truncate max-w-[120px] sm:max-w-[150px]">{order.address}</div>
+                                        <div className="font-mono text-white text-base sm:text-lg font-bold">{order.total.toLocaleString()} <span className="text-xs sm:text-sm text-[#888]">FCFA</span></div>
+                                        <div className="text-[#555] text-xs truncate max-w-[120px] sm:max-w-[150px]">{order.address}</div>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {order.status === 'CONFIRMED' && (

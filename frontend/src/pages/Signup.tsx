@@ -296,21 +296,21 @@ const Signup: React.FC = () => {
         + (/\d/.test(password) ? 1 : 0);
 
     return (
-        <div className="min-h-screen bg-[#020B18] flex items-center justify-center p-4">
-            <div className="bg-white/[0.04] border border-white/7 p-8 rounded-3xl w-full max-w-md shadow-2xl shadow-[#00D97E]/5 backdrop-blur-sm">
+        <div className="min-h-screen bg-black flex items-center justify-center p-4">
+            <div className="bg-[#111] border border-white/7 p-8 rounded-3xl w-full max-w-md shadow-2xl shadow-[#00D97E]/5 backdrop-blur-sm">
                 {/* Header */}
                 <div className="text-center mb-6">
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00D97E] to-[#0EA5E9] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#00D97E]/20">
                         <ShoppingBag className="text-white w-8 h-8" />
                     </div>
                     <h1 className="text-2xl font-bold text-white mb-1 tracking-tight">Créer votre Commerce IA</h1>
-                    <p className="text-gray-400 text-sm">Étape {step} sur 3</p>
+                    <p className="text-[#888] text-sm">Étape {step} sur 3</p>
                 </div>
 
                 {/* Progress bar */}
                 <div className="flex gap-2 mb-6">
                     {[1, 2, 3].map(n => (
-                        <div key={n} className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${step >= n ? 'bg-gradient-to-r from-[#00D97E] to-[#0EA5E9]' : 'bg-white/5'}`} />
+                        <div key={n} className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${step >= n ? 'bg-gradient-to-r from-[#00D97E] to-[#0EA5E9]' : 'bg-[#111]'}`} />
                     ))}
                 </div>
 
@@ -339,27 +339,27 @@ const Signup: React.FC = () => {
                         <h2 className="text-white font-bold text-lg">Comment voulez-vous vous identifier ?</h2>
 
                         {/* Tabs Phone / Email — Phone par défaut */}
-                        <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
+                        <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-[#1a1a1a]">
                             <button
                                 type="button"
                                 onClick={() => { setAuthMethod('phone'); setOtpSent(false); setIdentifierVerified(false); setOtpCode(''); }}
-                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${authMethod === 'phone' ? 'bg-[#00D97E] text-white shadow-lg shadow-[#00D97E]/20' : 'text-gray-500 hover:text-white'}`}
+                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${authMethod === 'phone' ? 'bg-[#00D97E] text-white shadow-lg shadow-[#00D97E]/20' : 'text-[#888] hover:text-white'}`}
                             >📱 Téléphone</button>
                             <button
                                 type="button"
                                 onClick={() => { setAuthMethod('email'); setOtpSent(false); setIdentifierVerified(false); setOtpCode(''); }}
-                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${authMethod === 'email' ? 'bg-[#00D97E] text-white shadow-lg shadow-[#00D97E]/20' : 'text-gray-500 hover:text-white'}`}
+                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${authMethod === 'email' ? 'bg-[#00D97E] text-white shadow-lg shadow-[#00D97E]/20' : 'text-[#888] hover:text-white'}`}
                             >📧 Email</button>
                         </div>
 
                         {/* Phone input or Email input */}
                         {authMethod === 'phone' ? (
                             <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Votre numéro WhatsApp</label>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre numéro WhatsApp</label>
                                 <div className="relative group">
                                     <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none z-10">
-                                        <Phone className="text-gray-500 w-5 h-5" />
-                                        <span className="text-gray-400 font-bold font-mono text-sm border-r border-gray-600 pr-2">+225</span>
+                                        <Phone className="text-[#888] w-5 h-5" />
+                                        <span className="text-[#888] font-bold font-mono text-sm border-r border-gray-600 pr-2">+225</span>
                                     </div>
                                     <input
                                         type="tel"
@@ -367,23 +367,23 @@ const Signup: React.FC = () => {
                                         onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                         placeholder="0709483812"
                                         disabled={otpSent || identifierVerified}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-[90px] pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all font-mono text-lg disabled:opacity-50"
+                                        className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-[90px] pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all font-mono text-lg disabled:opacity-50"
                                     />
                                 </div>
-                                <p className="mt-1 text-xs text-gray-600">10 chiffres — c'est le numéro qui sera lié à votre bot</p>
+                                <p className="mt-1 text-xs text-[#555]">10 chiffres — c'est le numéro qui sera lié à votre bot</p>
                             </div>
                         ) : (
                             <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Votre email</label>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre email</label>
                                 <div className="relative group">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
                                     <input
                                         type="email"
                                         value={email}
                                         onChange={e => setEmail(e.target.value)}
                                         placeholder="votre@email.com"
                                         disabled={otpSent || identifierVerified}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all disabled:opacity-50"
+                                        className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all disabled:opacity-50"
                                     />
                                 </div>
                             </div>
@@ -392,7 +392,7 @@ const Signup: React.FC = () => {
                         {/* OTP code field */}
                         {otpSent && !identifierVerified && (
                             <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Code de validation</label>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Code de validation</label>
                                 <input
                                     type="text"
                                     inputMode="numeric"
@@ -400,7 +400,7 @@ const Signup: React.FC = () => {
                                     onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                     placeholder="123456"
                                     maxLength={6}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-center text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 transition-all font-mono text-2xl tracking-[0.5em]"
+                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-4 px-4 text-center text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 transition-all font-mono text-2xl tracking-[0.5em]"
                                 />
                                 <div className="flex items-center justify-between mt-2">
                                     <p className="text-xs text-green-400 flex items-center gap-1">
@@ -464,70 +464,70 @@ const Signup: React.FC = () => {
                         <h2 className="text-white font-bold text-lg">Votre boutique</h2>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Nom du commerce</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Nom du commerce</label>
                             <div className="relative">
-                                <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                                <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
                                 <input
                                     type="text"
                                     value={businessName}
                                     onChange={e => setBusinessName(e.target.value)}
                                     placeholder="Ma Super Boutique"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Vous vendez quoi ?</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Vous vendez quoi ?</label>
                             <div className="grid grid-cols-4 gap-2">
                                 {BUSINESS_TYPES.map(bt => (
                                     <button
                                         key={bt.id}
                                         type="button"
                                         onClick={() => setBusinessType(bt.id)}
-                                        className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${businessType === bt.id ? 'bg-[#00D97E]/15 border-[#00D97E] ring-1 ring-[#00D97E]' : 'bg-white/5 border-white/10 hover:border-white/20'}`}
+                                        className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${businessType === bt.id ? 'bg-[#00D97E]/15 border-[#00D97E] ring-1 ring-[#00D97E]' : 'bg-[#111] border-[#1a1a1a] hover:border-[#333]'}`}
                                     >
                                         <span className="text-2xl">{bt.emoji}</span>
-                                        <span className={`text-[10px] leading-tight text-center ${businessType === bt.id ? 'text-white' : 'text-gray-400'}`}>{bt.label}</span>
+                                        <span className={`text-[10px] leading-tight text-center ${businessType === bt.id ? 'text-white' : 'text-[#888]'}`}>{bt.label}</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Votre nom complet</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre nom complet</label>
                             <div className="relative">
-                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
                                 <input
                                     type="text"
                                     value={fullName}
                                     onChange={e => setFullName(e.target.value)}
                                     placeholder="Jean Kouassi"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Année de naissance</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Année de naissance</label>
                             <select
                                 value={birthYear}
                                 onChange={e => setBirthYear(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                             >
-                                <option value="" disabled className="bg-[#020B18]">Sélectionnez une année</option>
+                                <option value="" disabled className="bg-black">Sélectionnez une année</option>
                                 {BIRTH_YEARS.map(y => (
-                                    <option key={y} value={y} className="bg-[#020B18]">{y}</option>
+                                    <option key={y} value={y} className="bg-black">{y}</option>
                                 ))}
                             </select>
-                            <p className="mt-1 text-xs text-gray-600">Vous devez avoir au moins 18 ans</p>
+                            <p className="mt-1 text-xs text-[#555]">Vous devez avoir au moins 18 ans</p>
                         </div>
 
                         <div className="flex gap-2 pt-2">
                             <button
                                 type="button"
                                 onClick={goBack}
-                                className="px-5 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold py-3.5 rounded-xl transition-all flex items-center gap-2"
+                                className="px-5 bg-white/5 border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white font-bold py-3.5 rounded-xl transition-all flex items-center gap-2"
                             ><ArrowLeft className="w-4 h-4" /> Retour</button>
                             <button
                                 type="button"
@@ -544,27 +544,27 @@ const Signup: React.FC = () => {
                         <h2 className="text-white font-bold text-lg">Sécurisez votre compte</h2>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Mot de passe</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Mot de passe</label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-12 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888] hover:text-white"
                                 >{showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
                             </div>
 
                             <div className="mt-3 h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                                 <div className={`h-full transition-all duration-300 ${passwordScore === 0 ? 'w-0' : passwordScore === 1 ? 'bg-red-500 w-1/3' : passwordScore === 2 ? 'bg-orange-500 w-2/3' : 'bg-green-500 w-full shadow-[0_0_10px_rgba(34,197,94,0.5)]'}`} />
                             </div>
-                            <div className="grid grid-cols-1 gap-1 text-xs text-gray-500 mt-2">
+                            <div className="grid grid-cols-1 gap-1 text-xs text-[#888] mt-2">
                                 <div className={`flex items-center gap-2 ${password.length >= 8 ? 'text-green-400' : ''}`}>
                                     <div className={`w-1.5 h-1.5 rounded-full ${password.length >= 8 ? 'bg-green-400' : 'bg-gray-600'}`} /> 8 caractères min
                                 </div>
@@ -578,20 +578,20 @@ const Signup: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Confirmer</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Confirmer</label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
                                 <input
                                     type={showConfirmPassword ? 'text' : 'password'}
                                     value={confirmPassword}
                                     onChange={e => setConfirmPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-white placeholder-gray-600 focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-12 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888] hover:text-white"
                                 >{showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
                             </div>
                         </div>
@@ -613,7 +613,7 @@ const Signup: React.FC = () => {
                                 type="button"
                                 onClick={goBack}
                                 disabled={loading}
-                                className="px-5 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold py-3.5 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+                                className="px-5 bg-white/5 border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white font-bold py-3.5 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
                             ><ArrowLeft className="w-4 h-4" /> Retour</button>
                             <button
                                 type="button"
@@ -628,7 +628,7 @@ const Signup: React.FC = () => {
                     </div>
                 )}
 
-                <p className="mt-6 text-center text-sm text-gray-500">
+                <p className="mt-6 text-center text-sm text-[#888]">
                     Déjà un compte ? <Link to="/login" className="text-[#00D97E] hover:text-[#00D97E]/80 font-bold tracking-wide hover:underline">Se connecter</Link>
                 </p>
             </div>

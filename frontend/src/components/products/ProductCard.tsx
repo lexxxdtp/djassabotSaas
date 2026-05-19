@@ -51,7 +51,7 @@ export default function ProductCard({ product, onEdit, onDelete, onUpdate }: Pro
     return (
         <div
             onClick={() => navigate(`/dashboard/products/${product.id}`)}
-            className="bg-[#0D1117] rounded-xl border border-white/5 overflow-hidden group hover:border-[#00D97E]/20 transition-all shadow-sm hover:shadow-[#00D97E]/5 cursor-pointer"
+            className="bg-[#111] rounded-xl border border-[#1a1a1a] overflow-hidden group hover:border-[#00D97E]/20 transition-all shadow-sm hover:shadow-[#00D97E]/5 cursor-pointer"
         >
             <div className="h-48 overflow-hidden relative bg-black/50">
                 <img
@@ -65,7 +65,7 @@ export default function ProductCard({ product, onEdit, onDelete, onUpdate }: Pro
                             e.stopPropagation();
                             onEdit(product);
                         }}
-                        className="bg-black/60 hover:bg-[#00D97E] hover:text-white p-2 rounded-lg text-white backdrop-blur-md transition-colors border border-white/10"
+                        className="bg-black/60 hover:bg-[#00D97E] hover:text-white p-2 rounded-lg text-white backdrop-blur-md transition-colors border border-[#1a1a1a]"
                     >
                         <Edit size={16} />
                     </button>
@@ -74,7 +74,7 @@ export default function ProductCard({ product, onEdit, onDelete, onUpdate }: Pro
                             e.stopPropagation();
                             onDelete(product.id);
                         }}
-                        className="bg-black/60 hover:bg-red-500 p-2 rounded-lg text-white backdrop-blur-md transition-colors border border-white/10"
+                        className="bg-black/60 hover:bg-red-500 p-2 rounded-lg text-white backdrop-blur-md transition-colors border border-[#1a1a1a]"
                     >
                         <Trash2 size={16} />
                     </button>
@@ -93,7 +93,7 @@ export default function ProductCard({ product, onEdit, onDelete, onUpdate }: Pro
                         </span>
 
                         {/* Badge Mode Stock */}
-                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider flex items-center border cursor-pointer hover:opacity-80 transition-opacity ${!product.manageStock ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-white/5 text-zinc-400 border-white/10'}`}
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider flex items-center border cursor-pointer hover:opacity-80 transition-opacity ${!product.manageStock ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-[#111] text-[#888] border-[#1a1a1a]'}`}
                             title={!product.manageStock ? "Vente illimitée autorisée" : "Vente bloquée si épuisé"}
                         >
                             {!product.manageStock ? 'FLEXIBLE' : 'STRICT'}
@@ -105,14 +105,14 @@ export default function ProductCard({ product, onEdit, onDelete, onUpdate }: Pro
                         <div className="flex items-center bg-black rounded border border-zinc-800 w-fit mt-2" onClick={(e) => e.stopPropagation()}>
                             <button
                                 onClick={() => handleStockChange(-1)}
-                                className="px-2 py-0.5 text-zinc-500 hover:text-white hover:bg-white/10 transition-colors text-xs"
+                                className="px-2 py-0.5 text-[#888] hover:text-white hover:bg-[#1a1a1a] transition-colors text-xs"
                             >
                                 -
                             </button>
                             <span className="text-xs font-mono font-bold w-6 text-center text-white">{product.stock}</span>
                             <button
                                 onClick={() => handleStockChange(1)}
-                                className="px-2 py-0.5 text-zinc-500 hover:text-white hover:bg-white/10 transition-colors text-xs"
+                                className="px-2 py-0.5 text-[#888] hover:text-white hover:bg-[#1a1a1a] transition-colors text-xs"
                             >
                                 +
                             </button>

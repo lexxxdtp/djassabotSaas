@@ -59,11 +59,11 @@ export default function ProductVariations({
     };
 
     return (
-        <div className="border-t border-white/5 pt-4 mt-4">
+        <div className="border-t border-[#1a1a1a] pt-4 mt-4">
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
                     <Tags size={16} className="text-[#00D97E]" />
-                    <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Déclinaisons</span>
+                    <span className="text-xs font-semibold text-[#888] uppercase tracking-wide">Déclinaisons</span>
 
                     {/* Toggle Switch */}
                     <button
@@ -79,7 +79,7 @@ export default function ProductVariations({
                     >
                         <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-1'}`} />
                     </button>
-                    <span className={`text-[10px] ${enabled ? 'text-[#00D97E]' : 'text-zinc-600'}`}>
+                    <span className={`text-[10px] ${enabled ? 'text-[#00D97E]' : 'text-[#555]'}`}>
                         {enabled ? 'ON' : 'OFF'}
                     </span>
                 </div>
@@ -96,7 +96,7 @@ export default function ProductVariations({
                 )}
             </div>
 
-            <p className="text-zinc-600 text-[10px] mb-3">
+            <p className="text-[#555] text-[10px] mb-3">
                 {enabled
                     ? 'Définissez les options (Taille, Couleur...). Le stock sera géré par variation.'
                     : 'Activez si votre produit a des tailles, couleurs, saveurs...'
@@ -104,11 +104,11 @@ export default function ProductVariations({
             </p>
 
             {!enabled ? null : variations.length === 0 ? (
-                <p className="text-zinc-500 text-xs py-2 text-center border border-dashed border-white/5 rounded-lg">Cliquez sur "Ajouter" pour créer une déclinaison</p>
+                <p className="text-[#888] text-xs py-2 text-center border border-dashed border-[#1a1a1a] rounded-lg">Cliquez sur "Ajouter" pour créer une déclinaison</p>
             ) : (
                 <div className="space-y-3">
                     {variations.map((variation, varIdx) => (
-                        <div key={varIdx} className="bg-black/40 border border-white/5 rounded-lg p-3">
+                        <div key={varIdx} className="bg-black/40 border border-[#1a1a1a] rounded-lg p-3">
                             <div className="flex items-center gap-2 mb-2">
                                 {variation.isCustom ? (
                                     <div className="flex-1 flex gap-2">
@@ -122,7 +122,7 @@ export default function ProductVariations({
                                                 newVars[varIdx].name = e.target.value;
                                                 onChange(newVars);
                                             }}
-                                            className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1.5 text-white text-sm focus:border-[#00D97E] outline-none"
+                                            className="flex-1 bg-white/5 border border-[#1a1a1a] rounded px-2 py-1.5 text-white text-sm focus:border-[#00D97E] outline-none"
                                         />
                                         <button
                                             type="button"
@@ -131,7 +131,7 @@ export default function ProductVariations({
                                                 newVars[varIdx].isCustom = false;
                                                 onChange(newVars);
                                             }}
-                                            className="text-xs text-zinc-500 hover:text-white"
+                                            className="text-xs text-[#888] hover:text-white"
                                         >
                                             Annuler
                                         </button>
@@ -160,7 +160,7 @@ export default function ProductVariations({
                                                 }}
                                                 className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors border ${variation.name === optName
                                                     ? 'bg-[#00D97E]/20 text-[#00D97E] border-[#00D97E]/50'
-                                                    : 'bg-white/5 text-zinc-400 border-white/5 hover:bg-white/10'
+                                                    : 'bg-[#111] text-[#888] border-[#1a1a1a] hover:bg-[#1a1a1a]'
                                                     }`}
                                             >
                                                 {optName}
@@ -174,7 +174,7 @@ export default function ProductVariations({
                                                 newVars[varIdx].name = '';
                                                 onChange(newVars);
                                             }}
-                                            className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-white/5 text-zinc-400 border border-white/5 hover:bg-white/10 hover:text-white"
+                                            className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-white/5 text-[#888] border border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white"
                                         >
                                             + Autre
                                         </button>
@@ -183,24 +183,24 @@ export default function ProductVariations({
                                 <button
                                     type="button"
                                     onClick={() => removeVariation(varIdx)}
-                                    className="p-1 text-zinc-600 hover:text-red-500 transition-colors"
+                                    className="p-1 text-[#555] hover:text-red-500 transition-colors"
                                 >
                                     <Trash2 size={14} />
                                 </button>
                             </div>
 
                             {/* Options List */}
-                            <div className="space-y-2 pl-2 border-l border-white/10 ml-1">
+                            <div className="space-y-2 pl-2 border-l border-[#1a1a1a] ml-1">
                                 {variation.options.map((opt, optIdx) => (
                                     <div key={optIdx} className="group relative bg-white/5 rounded p-2 flex items-start gap-3">
                                         {/* Image Upload for Option */}
-                                        <label className="relative w-10 h-10 flex-shrink-0 bg-black/30 rounded border border-white/10 flex items-center justify-center cursor-pointer hover:border-[#00D97E] overflow-hidden">
+                                        <label className="relative w-10 h-10 flex-shrink-0 bg-black/30 rounded border border-[#1a1a1a] flex items-center justify-center cursor-pointer hover:border-[#00D97E] overflow-hidden">
                                             {uploading ? (
                                                 <span className="animate-spin text-[8px]">⏳</span>
                                             ) : opt.images?.[0] ? (
                                                 <img src={opt.images[0]} alt="" className="w-full h-full object-cover" />
                                             ) : (
-                                                <ImageIcon size={14} className="text-zinc-600" />
+                                                <ImageIcon size={14} className="text-[#555]" />
                                             )}
                                             <input
                                                 type="file"
@@ -213,12 +213,12 @@ export default function ProductVariations({
                                         <div className="flex-1 min-w-0">
                                             <div className="flex justify-between items-baseline">
                                                 <span className="text-sm text-white font-medium truncate">{opt.value}</span>
-                                                <span className="text-[10px] bg-white/10 text-zinc-400 px-1.5 py-0.5 rounded ml-2">
+                                                <span className="text-[10px] bg-white/10 text-[#888] px-1.5 py-0.5 rounded ml-2">
                                                     Stock: {opt.stock ?? 'Inf'}
                                                 </span>
                                             </div>
                                             {opt.priceModifier !== 0 && (
-                                                <div className="text-[10px] text-zinc-500">
+                                                <div className="text-[10px] text-[#888]">
                                                     Prix: {opt.priceModifier && opt.priceModifier > 0 ? '+' : ''}{opt.priceModifier} FCFA
                                                 </div>
                                             )}
@@ -227,7 +227,7 @@ export default function ProductVariations({
                                         <button
                                             type="button"
                                             onClick={() => removeOption(varIdx, optIdx)}
-                                            className="opacity-0 group-hover:opacity-100 absolute top-1 right-1 text-zinc-600 hover:text-red-500 bg-black/50 rounded-full p-0.5"
+                                            className="opacity-0 group-hover:opacity-100 absolute top-1 right-1 text-[#555] hover:text-red-500 bg-black/50 rounded-full p-0.5"
                                         >
                                             <X size={12} />
                                         </button>
@@ -244,7 +244,7 @@ export default function ProductVariations({
                                             ...newOptionInputs,
                                             [varIdx]: { ...newOptionInputs[varIdx], name: e.target.value }
                                         })}
-                                        className="flex-1 w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:border-[#00D97E] outline-none"
+                                        className="flex-1 w-full bg-white/5 border border-[#1a1a1a] rounded px-2 py-1 text-xs text-white focus:border-[#00D97E] outline-none"
                                         onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption(varIdx))}
                                     />
                                     <input
@@ -255,7 +255,7 @@ export default function ProductVariations({
                                             ...newOptionInputs,
                                             [varIdx]: { ...newOptionInputs[varIdx], price: e.target.value }
                                         })}
-                                        className="w-16 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:border-[#00D97E] outline-none"
+                                        className="w-16 bg-white/5 border border-[#1a1a1a] rounded px-2 py-1 text-xs text-white focus:border-[#00D97E] outline-none"
                                         onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption(varIdx))}
                                     />
                                     <input
@@ -266,7 +266,7 @@ export default function ProductVariations({
                                             ...newOptionInputs,
                                             [varIdx]: { ...newOptionInputs[varIdx], stock: e.target.value }
                                         })}
-                                        className="w-14 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:border-[#00D97E] outline-none"
+                                        className="w-14 bg-white/5 border border-[#1a1a1a] rounded px-2 py-1 text-xs text-white focus:border-[#00D97E] outline-none"
                                         onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption(varIdx))}
                                     />
                                     <button

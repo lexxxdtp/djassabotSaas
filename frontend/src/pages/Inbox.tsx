@@ -156,19 +156,19 @@ const Inbox: React.FC = () => {
     );
 
     return (
-        <div className="flex h-[calc(100vh-6rem)] border border-white/5 rounded-xl overflow-hidden bg-[#0D1117] shadow-2xl animate-in zoom-in duration-300">
+        <div className="flex h-[calc(100vh-6rem)] border border-[#1a1a1a] rounded-xl overflow-hidden bg-[#111] shadow-2xl animate-in zoom-in duration-300">
             {/* Sidebar List */}
-            <div className={`w-full md:w-80 border-r border-white/5 flex flex-col ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
+            <div className={`w-full md:w-80 border-r border-[#1a1a1a] flex flex-col ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
                 {/* Search Header */}
-                <div className="p-4 border-b border-white/5 bg-[#0D1117]">
+                <div className="p-4 border-b border-[#1a1a1a] bg-[#111]">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888]" size={16} />
                         <input
                             type="text"
                             placeholder="Rechercher un client..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full bg-white/5 border border-white/5 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-[#00D97E] transition-colors"
+                            className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-[#00D97E] transition-colors"
                         />
                     </div>
                 </div>
@@ -177,11 +177,11 @@ const Inbox: React.FC = () => {
                 <div className="flex-1 overflow-y-auto scrollbar-hide">
                     {loadingChats ? (
                         <div className="flex flex-col items-center justify-center h-40 space-y-2">
-                            <RefreshCw className="animate-spin text-zinc-600" size={20} />
-                            <span className="text-zinc-600 text-xs">Chargement...</span>
+                            <RefreshCw className="animate-spin text-[#555]" size={20} />
+                            <span className="text-[#555] text-xs">Chargement...</span>
                         </div>
                     ) : filteredChats.length === 0 ? (
-                        <div className="p-8 text-center text-zinc-500 text-sm">
+                        <div className="p-8 text-center text-[#888] text-sm">
                             Aucune discussion trouvée.
                         </div>
                     ) : (
@@ -189,7 +189,7 @@ const Inbox: React.FC = () => {
                             <button
                                 key={chat.id}
                                 onClick={() => setSelectedChat(chat)}
-                                className={`w-full p-4 flex items-start gap-3 hover:bg-white/5 transition-colors text-left border-b border-white/5 ${selectedChat?.id === chat.id ? 'bg-[#00D97E]/10 border-l-2 border-l-[#00D97E]' : 'border-l-2 border-l-transparent'}`}
+                                className={`w-full p-4 flex items-start gap-3 hover:bg-[#111] transition-colors text-left border-b border-[#1a1a1a] ${selectedChat?.id === chat.id ? 'bg-[#00D97E]/10 border-l-2 border-l-[#00D97E]' : 'border-l-2 border-l-transparent'}`}
                             >
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00D97E]/10 to-[#0EA5E9]/10 flex items-center justify-center text-[#00D97E] font-bold shrink-0">
                                     {chat.name.substring(0, 2).toUpperCase()}
@@ -197,11 +197,11 @@ const Inbox: React.FC = () => {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-baseline mb-1">
                                         <h3 className="font-semibold text-white truncate text-sm">{chat.name}</h3>
-                                        <span className="text-[10px] text-zinc-500 font-mono">
+                                        <span className="text-[10px] text-[#888] font-mono">
                                             {new Date(chat.lastInteraction).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-zinc-400 truncate pr-2">
+                                    <p className="text-xs text-[#888] truncate pr-2">
                                         {chat.lastMessage || <span className="italic opacity-50">Pas de messages</span>}
                                     </p>
                                     <div className="flex items-center gap-2 mt-2">
@@ -210,7 +210,7 @@ const Inbox: React.FC = () => {
                                                 <Zap size={10} fill="currentColor" /> AUTO
                                             </span>
                                         ) : (
-                                            <span className="flex items-center gap-1 text-[10px] bg-zinc-500/10 text-zinc-500 px-1.5 py-0.5 rounded border border-zinc-500/20">
+                                            <span className="flex items-center gap-1 text-[10px] bg-zinc-500/10 text-[#888] px-1.5 py-0.5 rounded border border-zinc-500/20">
                                                 <ZapOff size={10} /> MANUEL
                                             </span>
                                         )}
@@ -229,11 +229,11 @@ const Inbox: React.FC = () => {
 
             {/* Chat View */}
             {selectedChat ? (
-                <div className="flex-1 flex flex-col bg-[#020B18] w-full">
+                <div className="flex-1 flex flex-col bg-black w-full">
                     {/* Header */}
-                    <div className="h-16 border-b border-white/5 flex justify-between items-center px-6 bg-[#0D1117]">
+                    <div className="h-16 border-b border-[#1a1a1a] flex justify-between items-center px-6 bg-[#111]">
                         <div className="flex items-center gap-3">
-                            <button onClick={() => setSelectedChat(null)} className="md:hidden text-zinc-400 hover:text-white">
+                            <button onClick={() => setSelectedChat(null)} className="md:hidden text-[#888] hover:text-white">
                                 <ArrowLeft size={20} />
                             </button>
                             <div className="w-8 h-8 rounded-full bg-[#00D97E]/10 flex items-center justify-center text-[#00D97E] font-bold text-xs">
@@ -241,7 +241,7 @@ const Inbox: React.FC = () => {
                             </div>
                             <div>
                                 <h2 className="font-bold text-white text-sm">{selectedChat.name}</h2>
-                                <p className="text-[10px] text-zinc-500 font-mono">{selectedChat.id}</p>
+                                <p className="text-[10px] text-[#888] font-mono">{selectedChat.id}</p>
                             </div>
                         </div>
 
@@ -251,26 +251,26 @@ const Inbox: React.FC = () => {
                                 onClick={toggleAutopilot}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${selectedChat.autopilotEnabled
                                     ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
-                                    : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
+                                    : 'bg-zinc-800 text-[#888] border-zinc-700 hover:bg-zinc-700'
                                     }`}
                             >
                                 {selectedChat.autopilotEnabled ? <Zap size={14} fill="currentColor" /> : <ZapOff size={14} />}
                                 {selectedChat.autopilotEnabled ? 'AUTOPILOTE ACTIVÉ' : 'MODE MANUEL'}
                             </button>
-                            <button className="text-zinc-500 hover:text-white">
+                            <button className="text-[#888] hover:text-white">
                                 <MoreVertical size={18} />
                             </button>
                         </div>
                     </div>
 
                     {/* Messages Area */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#020B18]">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-black">
                         {loadingMessages ? (
                             <div className="flex justify-center py-10">
                                 <RefreshCw className="animate-spin text-[#00D97E]" />
                             </div>
                         ) : messages.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-zinc-600 opacity-50">
+                            <div className="flex flex-col items-center justify-center h-full text-[#555] opacity-50">
                                 <MessageSquare size={48} className="mb-2" />
                                 <p>Aucun message pour l'instant</p>
                             </div>
@@ -278,11 +278,11 @@ const Inbox: React.FC = () => {
                             messages.map((msg, idx) => (
                                 <div key={idx} className={`flex ${msg.role === 'model' ? 'justify-start' : 'justify-end'}`}>
                                     <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-md ${msg.role === 'model'
-                                        ? 'bg-[#1a1c25] text-zinc-200 rounded-tl-sm border border-white/5'
+                                        ? 'bg-[#1a1c25] text-zinc-200 rounded-tl-sm border border-[#1a1a1a]'
                                         : 'bg-[#00D97E] text-black rounded-tr-sm'
                                         }`}>
                                         {msg.role === 'model' && (
-                                            <div className="flex items-center gap-1.5 mb-1 text-[10px] text-zinc-500">
+                                            <div className="flex items-center gap-1.5 mb-1 text-[10px] text-[#888]">
                                                 <Bot size={10} /> <span>Assistant</span>
                                             </div>
                                         )}
@@ -295,14 +295,14 @@ const Inbox: React.FC = () => {
                     </div>
 
                     {/* Input Area */}
-                    <div className="p-4 border-t border-white/5 bg-[#0D1117]">
+                    <div className="p-4 border-t border-[#1a1a1a] bg-[#111]">
                         <form onSubmit={handleSendMessage} className="flex gap-2">
                             <input
                                 type="text"
                                 value={newMessage}
                                 onChange={e => setNewMessage(e.target.value)}
                                 placeholder={selectedChat.autopilotEnabled ? "Désactivez l'autopilote pour répondre manuellement..." : "Écrivez votre message..."}
-                                className="flex-1 bg-white/5 text-white border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all placeholder:text-zinc-600 font-light"
+                                className="flex-1 bg-white/5 text-white border border-[#1a1a1a] rounded-lg px-4 py-3 focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all placeholder:text-[#555] font-light"
                                 disabled={sending /* || selectedChat.autopilotEnabled */} // Allow manual intervention even if autopilot is on? Maybe, but usually better to disable validation first.
                             />
                             <button
@@ -321,7 +321,7 @@ const Inbox: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                <div className="hidden md:flex flex-1 flex-col items-center justify-center text-zinc-500 space-y-4 bg-[#020B18]">
+                <div className="hidden md:flex flex-1 flex-col items-center justify-center text-[#888] space-y-4 bg-black">
                     <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center animate-pulse">
                         <MessageSquare size={40} className="text-[#00D97E]/50" />
                     </div>

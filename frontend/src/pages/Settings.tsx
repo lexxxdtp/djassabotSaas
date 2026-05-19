@@ -310,7 +310,7 @@ export default function Settings() {
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all text-sm border ${activeTab === id
                 ? 'bg-[#00D97E]/10 text-[#00D97E] border-[#00D97E]/20'
-                : 'bg-white/5 text-zinc-400 border-white/5 hover:bg-white/10 hover:text-white'
+                : 'bg-[#111] text-[#888] border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white'
                 }`}
         >
             <Icon size={16} />
@@ -325,7 +325,7 @@ export default function Settings() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-white tracking-tight">Paramètres</h1>
-                        <p className="text-zinc-500 mt-1">Configurez l'identité, le comportement et la logistique de votre bot.</p>
+                        <p className="text-[#888] mt-1">Configurez l'identité, le comportement et la logistique de votre bot.</p>
                     </div>
 
                     <button
@@ -339,7 +339,7 @@ export default function Settings() {
                 </div>
 
                 {/* Tabs Navigation */}
-                <div className="flex flex-wrap gap-3 border-b border-white/5 pb-4">
+                <div className="flex flex-wrap gap-3 border-b border-[#1a1a1a] pb-4">
                     <TabButton id="profile" label="Mon Profil" icon={User} />
                     <TabButton id="identity" label="Identité & IA" icon={Bot} />
                     <TabButton id="business" label="Infos Boutique" icon={Store} />
@@ -354,48 +354,48 @@ export default function Settings() {
                         {/* --- TAB 0: MON PROFIL --- */}
                         {activeTab === 'profile' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
+                                <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-8">
                                     <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                                         <span className="w-2 h-2 rounded-full bg-[#00D97E]"></span> Mes Informations Personnelles
                                     </h2>
 
                                     <div className="grid md:grid-cols-2 gap-8">
                                         <div>
-                                            <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Nom Complet</label>
+                                            <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Nom Complet</label>
                                             <input
                                                 type="text"
                                                 value={userProfile.fullName}
                                                 onChange={e => setUserProfile({ ...userProfile, fullName: e.target.value })}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-zinc-600"
+                                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-[#555]"
                                                 placeholder="Votre nom"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Date de Naissance</label>
+                                            <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Date de Naissance</label>
                                             <input
                                                 type="date"
                                                 value={userProfile.birthDate}
                                                 onChange={e => setUserProfile({ ...userProfile, birthDate: e.target.value })}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all [&::-webkit-calendar-picker-indicator]:invert"
+                                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all [&::-webkit-calendar-picker-indicator]:invert"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Téléphone</label>
+                                            <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Téléphone</label>
                                             <input
                                                 type="text"
                                                 value={userProfile.phone}
                                                 onChange={e => setUserProfile({ ...userProfile, phone: e.target.value })}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-zinc-600"
+                                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-[#555]"
                                                 placeholder="+225..."
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">Email (Optionnel)</label>
+                                            <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Email (Optionnel)</label>
                                             <input
                                                 type="email"
                                                 value={userProfile.email}
                                                 onChange={e => setUserProfile({ ...userProfile, email: e.target.value })}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-zinc-600"
+                                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-[#555]"
                                                 placeholder="email@exemple.com"
                                             />
                                         </div>
@@ -444,13 +444,13 @@ export default function Settings() {
                                         {/* Zone d'Explication */}
                                         <div className="bg-gradient-to-br from-[#00D97E]/5 to-[#0D1117] border border-[#00D97E]/20 rounded-xl p-6">
                                             <h3 className="text-white font-bold text-lg mb-2">Zone de Test</h3>
-                                            <p className="text-zinc-400 text-sm leading-relaxed">
+                                            <p className="text-[#888] text-sm leading-relaxed">
                                                 Testez votre bot en temps réel. Les changements s'appliquent immédiatement ici.
                                             </p>
                                         </div>
 
                                         {/* Résumé IA Auto-Généré */}
-                                        <div className="bg-[#0D1117] border border-white/5 rounded-xl p-6">
+                                        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6">
                                             <div className="flex justify-between items-center mb-4">
                                                 <h3 className="text-white font-bold text-sm flex items-center gap-2">
                                                     <Bot size={16} className="text-[#00D97E]" /> Synthèse IA
@@ -458,7 +458,7 @@ export default function Settings() {
                                                 {aiSummary && (
                                                     <button
                                                         onClick={handleGenerateSummary}
-                                                        className="text-[10px] text-zinc-500 hover:text-white"
+                                                        className="text-[10px] text-[#888] hover:text-white"
                                                     >
                                                         Regénérer
                                                     </button>
@@ -467,7 +467,7 @@ export default function Settings() {
 
                                             {!aiSummary ? (
                                                 <div className="text-center py-6">
-                                                    <p className="text-xs text-zinc-500 mb-4">
+                                                    <p className="text-xs text-[#888] mb-4">
                                                         Générez une synthèse pour voir ce que l'IA a compris de votre business.
                                                     </p>
                                                     <button
@@ -480,7 +480,7 @@ export default function Settings() {
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <div className="bg-white/5 rounded-lg p-3 max-h-60 overflow-y-auto custom-scrollbar">
+                                                <div className="bg-[#111] rounded-lg p-3 max-h-60 overflow-y-auto custom-scrollbar">
                                                     <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-line">
                                                         {aiSummary}
                                                     </p>
@@ -500,27 +500,27 @@ export default function Settings() {
 
                     {/* Sidebar Profile Card */}
                     <div className="hidden md:block md:col-span-1 space-y-6">
-                        <div className="bg-[#0D1117] border border-white/5 rounded-xl p-6 sticky top-8">
+                        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 sticky top-8">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00D97E] to-[#0EA5E9] flex items-center justify-center text-white font-bold text-lg">
                                     {userProfile.fullName.charAt(0) || 'U'}
                                 </div>
                                 <div className="overflow-hidden">
                                     <h3 className="font-bold text-white truncate">{userProfile.fullName || 'Utilisateur'}</h3>
-                                    <p className="text-xs text-zinc-500 truncate">{userProfile.email}</p>
+                                    <p className="text-xs text-[#888] truncate">{userProfile.email}</p>
                                 </div>
                             </div>
 
                             <button
                                 onClick={() => setActiveTab('profile')}
-                                className="w-full py-2 bg-white/5 hover:bg-white/10 text-zinc-300 rounded-lg text-sm font-medium transition-colors mb-4"
+                                className="w-full py-2 bg-white/5 hover:bg-[#1a1a1a] text-zinc-300 rounded-lg text-sm font-medium transition-colors mb-4"
                             >
                                 Modifier mon profil
                             </button>
 
-                            <div className="space-y-4 pt-4 border-t border-white/5">
+                            <div className="space-y-4 pt-4 border-t border-[#1a1a1a]">
                                 <div>
-                                    <div className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-1">Abonnement</div>
+                                    <div className="text-xs text-[#888] uppercase tracking-wider font-bold mb-1">Abonnement</div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm text-white font-medium">Plan {tenant?.subscription_tier ? tenant.subscription_tier.charAt(0).toUpperCase() + tenant.subscription_tier.slice(1) : 'Starter'}</span>
                                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${tenant?.status === 'active' || tenant?.status === 'trial' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{tenant?.status === 'active' ? 'ACTIF' : tenant?.status === 'trial' ? 'ESSAI' : tenant?.status?.toUpperCase() || 'ACTIF'}</span>

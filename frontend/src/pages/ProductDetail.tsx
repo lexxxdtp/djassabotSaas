@@ -344,7 +344,7 @@ const ProductDetail: React.FC = () => {
             <div className="flex items-center justify-between">
                 <button
                     onClick={() => navigate('/dashboard/products')}
-                    className="flex items-center text-zinc-400 hover:text-white transition-colors"
+                    className="flex items-center text-[#888] hover:text-white transition-colors"
                 >
                     <ArrowLeft className="mr-2" size={20} />
                     Retour aux produits
@@ -379,7 +379,7 @@ const ProductDetail: React.FC = () => {
                                 className="w-full h-full object-cover"
                             />
                         ) : (
-                            <div className="flex items-center justify-center h-full text-zinc-600">
+                            <div className="flex items-center justify-center h-full text-[#555]">
                                 <ImageIcon size={48} />
                             </div>
                         )}
@@ -406,7 +406,7 @@ const ProductDetail: React.FC = () => {
                                 </button>
                             </div>
                         ))}
-                        <label className="aspect-square bg-zinc-900/50 border-2 border-dashed border-zinc-700 rounded-lg flex items-center justify-center cursor-pointer hover:border-orange-500 hover:bg-zinc-900 transition-all text-zinc-500 hover:text-white">
+                        <label className="aspect-square bg-zinc-900/50 border-2 border-dashed border-zinc-700 rounded-lg flex items-center justify-center cursor-pointer hover:border-orange-500 hover:bg-zinc-900 transition-all text-[#888] hover:text-white">
                             <Plus size={24} />
                             <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} />
                         </label>
@@ -416,7 +416,7 @@ const ProductDetail: React.FC = () => {
                 {/* Right Column - Details Form */}
                 <div className="md:col-span-2 bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-zinc-400 mb-1">Nom du produit</label>
+                        <label className="block text-sm font-medium text-[#888] mb-1">Nom du produit</label>
                         <input
                             type="text"
                             value={product.name}
@@ -427,7 +427,7 @@ const ProductDetail: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-zinc-400 mb-1">Prix (FCFA)</label>
+                            <label className="block text-sm font-medium text-[#888] mb-1">Prix (FCFA)</label>
                             <input
                                 type="number"
                                 value={product.price}
@@ -436,7 +436,7 @@ const ProductDetail: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-400 mb-1">
+                            <label className="block text-sm font-medium text-[#888] mb-1">
                                 Stock disponible
                                 {(() => {
                                     // Helper: Vérifier si le produit a des variations ACTIVES
@@ -489,14 +489,14 @@ const ProductDetail: React.FC = () => {
                                 className={`w-full border rounded-xl p-3 font-mono outline-none ${product.variations && product.variations.some((v: ProductVariation) =>
                                     v.name && v.name.trim() !== '' && v.options && v.options.length > 0
                                 )
-                                    ? 'bg-zinc-800 border-zinc-700 text-zinc-400 cursor-not-allowed'
+                                    ? 'bg-zinc-800 border-zinc-700 text-[#888] cursor-not-allowed'
                                     : 'bg-black border-zinc-700 text-white focus:border-orange-500'
                                     }`}
                             />
                             {product.variations && product.variations.some((v: ProductVariation) =>
                                 v.name && v.name.trim() !== '' && v.options && v.options.length > 0
                             ) && (
-                                    <p className="text-xs text-zinc-600 mt-1">
+                                    <p className="text-xs text-[#555] mt-1">
                                         ℹ️ Le stock total est calculé depuis vos variations
                                     </p>
                                 )}
@@ -504,7 +504,7 @@ const ProductDetail: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-zinc-400 mb-1">Description détaillée</label>
+                        <label className="block text-sm font-medium text-[#888] mb-1">Description détaillée</label>
                         <textarea
                             value={product.description}
                             onChange={e => setProduct({ ...product, description: e.target.value })}
@@ -524,7 +524,7 @@ const ProductDetail: React.FC = () => {
                             className="w-full bg-black border border-zinc-700 rounded-xl p-4 text-white focus:border-orange-500 outline-none min-h-[100px] leading-relaxed text-sm"
                             placeholder="Ex: Si le client en prend 3+, proposer -10% sur le total. À partir de 5, offrir la livraison gratuite."
                         />
-                        <div className="mt-2 text-zinc-600 text-xs space-y-1">
+                        <div className="mt-2 text-[#555] text-xs space-y-1">
                             <p>💡 <strong>Exemples de consignes :</strong></p>
                             <p>• "Si le client veut 3+, proposer une réduction de 10%"</p>
                             <p>• "À partir de 10 articles, offrir la livraison gratuite"</p>
@@ -561,13 +561,13 @@ const ProductDetail: React.FC = () => {
                                         />
                                     </button>
 
-                                    <span className={`text-xs font-medium ${variationsEnabled ? 'text-orange-400' : 'text-zinc-500'}`}>
+                                    <span className={`text-xs font-medium ${variationsEnabled ? 'text-orange-400' : 'text-[#888]'}`}>
                                         {variationsEnabled ? 'Activé' : 'Désactivé'}
                                     </span>
                                 </div>
 
                                 {/* Texte explicatif */}
-                                <p className="text-zinc-500 text-sm leading-relaxed">
+                                <p className="text-[#888] text-sm leading-relaxed">
                                     {variationsEnabled ? (
                                         <>Votre produit est décliné en plusieurs versions (ex: Taille, Couleur). Le stock total est calculé automatiquement.</>
                                     ) : (
@@ -581,7 +581,7 @@ const ProductDetail: React.FC = () => {
                         {variationsEnabled && (
                             <>
                                 <div className="flex items-center justify-between mb-4 pt-4 border-t border-zinc-800">
-                                    <p className="text-zinc-400 text-sm">
+                                    <p className="text-[#888] text-sm">
                                         Définissez des options comme Taille, Couleur, Saveur, etc.
                                     </p>
                                     <button
@@ -649,7 +649,7 @@ const ProductDetail: React.FC = () => {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => updateVariationName(varIndex, '')}
-                                                                className="text-xs text-zinc-500 hover:text-orange-500"
+                                                                className="text-xs text-[#888] hover:text-orange-500"
                                                             >
                                                                 Changer
                                                             </button>
@@ -668,7 +668,7 @@ const ProductDetail: React.FC = () => {
                                                 {/* Options with stock and price */}
                                                 {variation.options && variation.options.length > 0 && (
                                                     <div className="space-y-2 mb-3">
-                                                        <div className="grid grid-cols-12 gap-2 text-xs text-zinc-500 px-2">
+                                                        <div className="grid grid-cols-12 gap-2 text-xs text-[#888] px-2">
                                                             <div className="col-span-3">Valeur</div>
                                                             <div className="col-span-2">Stock</div>
                                                             <div className="col-span-3">Prix (+/-)</div>
@@ -696,7 +696,7 @@ const ProductDetail: React.FC = () => {
                                                                     />
                                                                 </div>
                                                                 <div className="col-span-3 flex items-center">
-                                                                    <span className="text-zinc-500 text-xs mr-1">FCFA</span>
+                                                                    <span className="text-[#888] text-xs mr-1">FCFA</span>
                                                                     <input
                                                                         type="number"
                                                                         value={option.priceModifier ?? 0}
@@ -724,7 +724,7 @@ const ProductDetail: React.FC = () => {
                                                                     ))}
 
                                                                     {(!option.images || option.images.length < 2) && (
-                                                                        <label className="w-8 h-8 flex items-center justify-center bg-zinc-800 border border-zinc-700 border-dashed rounded cursor-pointer hover:border-orange-500 hover:text-orange-500 text-zinc-500 transition-colors">
+                                                                        <label className="w-8 h-8 flex items-center justify-center bg-zinc-800 border border-zinc-700 border-dashed rounded cursor-pointer hover:border-orange-500 hover:text-orange-500 text-[#888] transition-colors">
                                                                             <ImageIcon size={14} />
                                                                             <input
                                                                                 type="file"
@@ -741,7 +741,7 @@ const ProductDetail: React.FC = () => {
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => removeVariationOption(varIndex, optIndex)}
-                                                                        className="text-zinc-500 hover:text-red-500 transition-colors p-1"
+                                                                        className="text-[#888] hover:text-red-500 transition-colors p-1"
                                                                     >
                                                                         <X size={14} />
                                                                     </button>
@@ -774,7 +774,7 @@ const ProductDetail: React.FC = () => {
                                                                 input.value = '';
                                                             }
                                                         }}
-                                                        className="px-3 py-2 bg-zinc-800 text-zinc-400 rounded-lg hover:bg-zinc-700 hover:text-white transition-colors text-sm"
+                                                        className="px-3 py-2 bg-zinc-800 text-[#888] rounded-lg hover:bg-zinc-700 hover:text-white transition-colors text-sm"
                                                     >
                                                         <Plus size={16} />
                                                     </button>
@@ -784,9 +784,9 @@ const ProductDetail: React.FC = () => {
                                     </div>
                                 ) : (
                                     <div className="text-center py-8 bg-black border border-dashed border-zinc-800 rounded-xl">
-                                        <Tags size={32} className="mx-auto text-zinc-700 mb-2" />
-                                        <p className="text-zinc-500 text-sm">Aucune déclinaison définie</p>
-                                        <p className="text-zinc-600 text-xs mt-1">Cliquez sur "Ajouter une déclinaison" pour commencer</p>
+                                        <Tags size={32} className="mx-auto text-[#444] mb-2" />
+                                        <p className="text-[#888] text-sm">Aucune déclinaison définie</p>
+                                        <p className="text-[#555] text-xs mt-1">Cliquez sur "Ajouter une déclinaison" pour commencer</p>
                                     </div>
                                 )}
                             </>

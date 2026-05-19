@@ -98,10 +98,10 @@ export default function Products() {
     return (
         <div className="space-y-6 relative animate-in fade-in duration-500 p-8">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 border-b border-white/5 pb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 border-b border-[#1a1a1a] pb-6">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Inventaire</h1>
-                    <p className="text-zinc-400 text-sm">Gérez vos produits en vente sur WhatsApp</p>
+                    <p className="text-[#888] text-sm">Gérez vos produits en vente sur WhatsApp</p>
                 </div>
                 <button
                     onClick={handleCreate}
@@ -114,7 +114,7 @@ export default function Products() {
 
             {/* Grid */}
             {loading ? (
-                <div className="text-zinc-500 text-center py-20 flex flex-col items-center">
+                <div className="text-[#888] text-center py-20 flex flex-col items-center">
                     <div className="animate-spin text-[#00D97E] mb-4">⌛️</div>
                     Chargement de l'inventaire...
                 </div>
@@ -132,10 +132,10 @@ export default function Products() {
 
                     {/* Empty State */}
                     {products.length === 0 && (
-                        <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-2xl bg-white/5">
-                            <ImageIcon className="mx-auto h-12 w-12 text-zinc-600 mb-4" />
+                        <div className="col-span-full py-20 text-center border-2 border-dashed border-[#1a1a1a] rounded-2xl bg-white/5">
+                            <ImageIcon className="mx-auto h-12 w-12 text-[#555] mb-4" />
                             <h3 className="text-lg font-medium text-white">Votre boutique est vide</h3>
-                            <p className="text-zinc-500 mt-1 mb-6 text-sm">Commencez par ajouter votre premier produit.</p>
+                            <p className="text-[#888] mt-1 mb-6 text-sm">Commencez par ajouter votre premier produit.</p>
                             <button
                                 onClick={handleCreate}
                                 className="text-[#00D97E] hover:text-[#00D97E]/80 font-bold text-sm uppercase tracking-wide border-b border-[#00D97E]/30 hover:border-[#00D97E]"
@@ -159,13 +159,13 @@ export default function Products() {
             {/* Delete Confirmation Modal */}
             {isDeleteModalOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-[#0D1117] border border-white/10 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+                    <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 max-w-sm w-full shadow-2xl">
                         <h3 className="text-lg font-bold text-white mb-2">Supprimer ce produit ?</h3>
-                        <p className="text-zinc-400 text-sm mb-6">Cette action est irréversible. Le produit ne sera plus disponible.</p>
+                        <p className="text-[#888] text-sm mb-6">Cette action est irréversible. Le produit ne sera plus disponible.</p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setIsDeleteModalOpen(false)}
-                                className="flex-1 py-2 rounded-lg bg-white/5 text-zinc-300 hover:bg-white/10 font-bold text-sm"
+                                className="flex-1 py-2 rounded-lg bg-white/5 text-zinc-300 hover:bg-[#1a1a1a] font-bold text-sm"
                             >
                                 Annuler
                             </button>

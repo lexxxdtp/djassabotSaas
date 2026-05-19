@@ -15,10 +15,10 @@ interface StatCardProps {
 }
 
 const StatCard = ({ title, value, change, icon: Icon, subtitle }: StatCardProps) => (
-    <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-4 md:p-6 hover:border-[#00D97E]/20 transition-all group shadow-sm">
+    <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 md:p-6 hover:border-[#00D97E]/20 transition-all group shadow-sm">
         <div className="flex justify-between items-start mb-3 md:mb-4">
             <div>
-                <p className="text-gray-400 text-[10px] md:text-xs font-medium uppercase tracking-wider mb-1">{title}</p>
+                <p className="text-[#888] text-[10px] md:text-xs font-medium uppercase tracking-wider mb-1">{title}</p>
                 <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">{value}</h3>
             </div>
             <div className="p-2 md:p-3 rounded-xl bg-[#00D97E]/10 text-[#00D97E] group-hover:bg-[#00D97E] group-hover:text-black transition-all duration-300">
@@ -29,24 +29,24 @@ const StatCard = ({ title, value, change, icon: Icon, subtitle }: StatCardProps)
             <span className="text-emerald-400 flex items-center gap-1 font-bold bg-emerald-500/10 px-2 py-0.5 rounded text-[10px] md:text-xs border border-emerald-500/20">
                 <TrendingUp className="w-3 h-3" /> {change}
             </span>
-            <span className="text-gray-500 ml-2 text-[10px] md:text-xs font-medium uppercase">{subtitle}</span>
+            <span className="text-[#888] ml-2 text-[10px] md:text-xs font-medium uppercase">{subtitle}</span>
         </div>
     </div>
 );
 
 const ActivityFeed = ({ logs }: { logs: Log[] }) => {
     return (
-        <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-6 h-full flex flex-col">
+        <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <Activity className="text-[#00D97E] w-5 h-5 animate-pulse" />
                     Le Pulse
                 </h3>
-                <span className="text-[10px] text-gray-400 uppercase font-semibold bg-white/5 px-2 py-1 rounded">En Direct</span>
+                <span className="text-[10px] text-[#888] uppercase font-semibold bg-white/5 px-2 py-1 rounded">En Direct</span>
             </div>
             <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar max-h-[400px]">
                 {logs.length === 0 ? (
-                    <div className="text-zinc-500 text-xs text-center py-10">Aucune activité récente</div>
+                    <div className="text-[#888] text-xs text-center py-10">Aucune activité récente</div>
                 ) : (
                     logs.map((log) => (
                         <div key={log.id} className="flex gap-3 items-start group">
@@ -58,7 +58,7 @@ const ActivityFeed = ({ logs }: { logs: Log[] }) => {
                                 <p className="text-xs text-zinc-300 leading-relaxed group-hover:text-white transition-colors">
                                     {log.message}
                                 </p>
-                                <p className="text-[10px] text-zinc-600 mt-1 font-mono">
+                                <p className="text-[10px] text-[#555] mt-1 font-mono">
                                     {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                             </div>
@@ -78,12 +78,12 @@ const RecentOrders = ({ orders }: { orders: DashboardOrder[] }) => {
             case 'SHIPPING': return 'text-purple-500 bg-purple-500/10 border-purple-500/20';
             case 'DELIVERED': return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
             case 'CANCELLED': return 'text-red-500 bg-red-500/10 border-red-500/20';
-            default: return 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20';
+            default: return 'text-[#888] bg-zinc-500/10 border-zinc-500/20';
         }
     };
 
     return (
-        <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-4 md:p-6 mt-6">
+        <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 md:p-6 mt-6">
             <h3 className="text-base md:text-lg font-bold text-white mb-4 md:mb-6 flex items-center gap-2">
                 <Package className="text-[#00D97E] w-5 h-5" />
                 Commandes Récentes
@@ -92,17 +92,17 @@ const RecentOrders = ({ orders }: { orders: DashboardOrder[] }) => {
             {/* Mobile: Card layout */}
             <div className="md:hidden space-y-3">
                 {orders.length === 0 ? (
-                    <div className="text-zinc-500 text-sm text-center py-8">Aucune commande récente</div>
+                    <div className="text-[#888] text-sm text-center py-8">Aucune commande récente</div>
                 ) : (
                     orders.map((order) => (
-                        <div key={order.id} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+                        <div key={order.id} className="flex items-center justify-between py-3 border-b border-[#1a1a1a] last:border-0">
                             <div className="flex items-center gap-3 min-w-0">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border shrink-0 ${getStatusColor(order.status)}`}>
                                     {order.status}
                                 </span>
                                 <div className="min-w-0">
                                     <p className="text-sm text-white font-mono font-bold">{order.total.toLocaleString()} F</p>
-                                    <p className="text-[10px] text-zinc-500">{order.items.length} art. • {new Date(order.createdAt || order.created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                    <p className="text-[10px] text-[#888]">{order.items.length} art. • {new Date(order.createdAt || order.created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                 </div>
                             </div>
                         </div>
@@ -114,7 +114,7 @@ const RecentOrders = ({ orders }: { orders: DashboardOrder[] }) => {
             <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                     <thead>
-                        <tr className="text-left text-xs text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
+                        <tr className="text-left text-xs text-[#888] uppercase tracking-wider border-b border-zinc-800">
                             <th className="pb-3 font-medium">Client</th>
                             <th className="pb-3 font-medium">Produits</th>
                             <th className="pb-3 font-medium">Total</th>
@@ -125,15 +125,15 @@ const RecentOrders = ({ orders }: { orders: DashboardOrder[] }) => {
                     <tbody className="divide-y divide-zinc-800/50">
                         {orders.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="text-center py-8 text-zinc-500 text-sm">Aucune commande récente</td>
+                                <td colSpan={5} className="text-center py-8 text-[#888] text-sm">Aucune commande récente</td>
                             </tr>
                         ) : (
                             orders.map((order) => (
-                                <tr key={order.id} className="group hover:bg-white/5 transition-colors">
+                                <tr key={order.id} className="group hover:bg-[#111] transition-colors">
                                     <td className="py-3 text-sm text-white font-medium">
                                         {order.userId.replace(/@s.whatsapp.net/, '').replace(/^(\d{4}).*(\d{2})$/, '$1...$2')}
                                     </td>
-                                    <td className="py-3 text-sm text-zinc-400">
+                                    <td className="py-3 text-sm text-[#888]">
                                         {order.items.length} article(s)
                                     </td>
                                     <td className="py-3 text-sm text-white font-mono font-bold">
@@ -144,7 +144,7 @@ const RecentOrders = ({ orders }: { orders: DashboardOrder[] }) => {
                                             {order.status}
                                         </span>
                                     </td>
-                                    <td className="py-3 text-xs text-zinc-500 text-right font-mono">
+                                    <td className="py-3 text-xs text-[#888] text-right font-mono">
                                         {new Date(order.createdAt || order.created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </td>
                                 </tr>
@@ -285,16 +285,16 @@ export default function Overview() {
     return (
         <div className="space-y-4 md:space-y-6 animate-in fade-in zoom-in duration-500 pb-4 md:pb-10">
             {/* Header */}
-            <div className="flex justify-between items-end pb-3 md:pb-4 border-b border-white/5">
+            <div className="flex justify-between items-end pb-3 md:pb-4 border-b border-[#1a1a1a]">
                 <div>
                     <h1 className="text-xl md:text-3xl font-bold text-white mb-1 md:mb-2 tracking-tight">{greeting}</h1>
-                    <p className="text-zinc-500 text-xs md:text-base">{content.welcome}</p>
+                    <p className="text-[#888] text-xs md:text-base">{content.welcome}</p>
                 </div>
 
                 {/* Lang Switch — hide on mobile to save space */}
                 <button
                     onClick={() => setLang(l => l === 'fr' ? 'en' : 'fr')}
-                    className="hidden md:flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 hover:text-white text-xs hover:border-[#00D97E]/30 transition-all font-medium uppercase tracking-wide"
+                    className="hidden md:flex items-center gap-2 px-3 py-2 bg-white/5 border border-[#1a1a1a] rounded-lg text-[#888] hover:text-white text-xs hover:border-[#00D97E]/30 transition-all font-medium uppercase tracking-wide"
                 >
                     <Globe className="w-3 h-3" />
                     <span>{lang === 'fr' ? 'Français' : 'English'}</span>
@@ -334,7 +334,7 @@ export default function Overview() {
                 {/* Left Column (2/3): Analytics + Recent Orders */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     {/* Analytics Chart */}
-                    <div className="bg-[#0D1117] border border-white/5 rounded-2xl p-4 md:p-6 flex-1 min-h-[250px] md:min-h-[300px]">
+                    <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 md:p-6 flex-1 min-h-[250px] md:min-h-[300px]">
                         <div className="flex justify-between items-center mb-4 md:mb-6">
                             <h3 className="text-base md:text-lg font-bold text-white tracking-tight">{content.analytics}</h3>
                             <div className="flex items-center gap-2">

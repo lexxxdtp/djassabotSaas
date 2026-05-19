@@ -172,14 +172,14 @@ const Onboarding: React.FC = () => {
 
     // ============== Render ==============
     return (
-        <div className="min-h-screen bg-[#020B18] flex items-center justify-center p-4">
-            <div className="bg-[#0D1117] border border-white/5 p-8 rounded-2xl w-full max-w-lg shadow-2xl shadow-black/50">
+        <div className="min-h-screen bg-black flex items-center justify-center p-4">
+            <div className="bg-[#111] border border-[#1a1a1a] p-8 rounded-2xl w-full max-w-lg shadow-2xl shadow-black/50">
 
                 {/* Progress bar */}
                 {step !== 'done' && (
                     <div className="flex gap-2 mb-6">
                         {stepOrder.slice(0, -1).map((s, i) => (
-                            <div key={s} className={`flex-1 h-1 rounded-full transition-all duration-500 ${i <= stepIndex ? 'bg-[#00D97E]' : 'bg-white/5'}`} />
+                            <div key={s} className={`flex-1 h-1 rounded-full transition-all duration-500 ${i <= stepIndex ? 'bg-[#00D97E]' : 'bg-[#111]'}`} />
                         ))}
                     </div>
                 )}
@@ -195,7 +195,7 @@ const Onboarding: React.FC = () => {
                             <Sparkles className="w-8 h-8 text-black" />
                         </div>
                         <h1 className="text-2xl font-bold text-white mb-3">Bienvenue ! 🎉</h1>
-                        <p className="text-zinc-400 mb-8 text-sm">Configurons votre bot ensemble en <strong className="text-white">3 minutes</strong>.</p>
+                        <p className="text-[#888] mb-8 text-sm">Configurons votre bot ensemble en <strong className="text-white">3 minutes</strong>.</p>
 
                         <div className="space-y-3 text-left mb-8">
                             {[
@@ -203,11 +203,11 @@ const Onboarding: React.FC = () => {
                                 { n: '2', title: 'Ajouter votre 1er produit', sub: 'Pour que le bot ait quelque chose à vendre' },
                                 { n: '3', title: 'Choisir le ton du bot', sub: 'Sympa, pro ou nouchi 🇨🇮' },
                             ].map(item => (
-                                <div key={item.n} className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-xl p-4">
+                                <div key={item.n} className="flex items-center gap-3 bg-white/5 border border-[#1a1a1a] rounded-xl p-4">
                                     <div className="w-9 h-9 rounded-lg bg-[#00D97E]/10 border border-[#00D97E]/20 flex items-center justify-center text-[#00D97E] font-bold text-sm shrink-0">{item.n}</div>
                                     <div>
                                         <p className="text-white font-semibold text-sm">{item.title}</p>
-                                        <p className="text-zinc-500 text-xs">{item.sub}</p>
+                                        <p className="text-[#888] text-xs">{item.sub}</p>
                                     </div>
                                 </div>
                             ))}
@@ -221,7 +221,7 @@ const Onboarding: React.FC = () => {
                         </button>
                         <button
                             onClick={() => navigate('/dashboard')}
-                            className="w-full mt-3 text-zinc-500 hover:text-zinc-300 text-sm transition-colors"
+                            className="w-full mt-3 text-[#888] hover:text-zinc-300 text-sm transition-colors"
                         >
                             Plus tard, accéder au dashboard
                         </button>
@@ -232,7 +232,7 @@ const Onboarding: React.FC = () => {
                 {step === 'whatsapp' && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                         <h2 className="text-xl font-bold text-white mb-1">Connecter WhatsApp</h2>
-                        <p className="text-zinc-500 text-sm mb-6">Étape 1 sur 3</p>
+                        <p className="text-[#888] text-sm mb-6">Étape 1 sur 3</p>
 
                         {waConnected ? (
                             <div className="text-center py-8">
@@ -240,7 +240,7 @@ const Onboarding: React.FC = () => {
                                     <Check className="w-8 h-8 text-[#00D97E]" />
                                 </div>
                                 <h3 className="text-lg font-bold text-white mb-2">WhatsApp connecté ! ✨</h3>
-                                <p className="text-zinc-400 text-sm mb-6">Votre bot est lié à votre numéro.</p>
+                                <p className="text-[#888] text-sm mb-6">Votre bot est lié à votre numéro.</p>
                                 <button
                                     onClick={() => setStep('product')}
                                     className="w-full bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2"
@@ -248,31 +248,31 @@ const Onboarding: React.FC = () => {
                             </div>
                         ) : (
                             <>
-                                <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/5 mb-4">
+                                <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-[#1a1a1a] mb-4">
                                     <button
                                         type="button"
                                         onClick={() => setWaMethod('pairing')}
-                                        className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 ${waMethod === 'pairing' ? 'bg-[#00D97E] text-black' : 'text-zinc-500'}`}
+                                        className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 ${waMethod === 'pairing' ? 'bg-[#00D97E] text-black' : 'text-[#888]'}`}
                                     ><Keyboard className="w-4 h-4" /> Code à taper</button>
                                     <button
                                         type="button"
                                         onClick={() => setWaMethod('qr')}
-                                        className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 ${waMethod === 'qr' ? 'bg-[#00D97E] text-black' : 'text-zinc-500'}`}
+                                        className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-1 ${waMethod === 'qr' ? 'bg-[#00D97E] text-black' : 'text-[#888]'}`}
                                     ><Smartphone className="w-4 h-4" /> QR Code</button>
                                 </div>
 
                                 {waMethod === 'pairing' ? (
                                     !pairingCode ? (
                                         <>
-                                            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Votre numéro WhatsApp</label>
+                                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre numéro WhatsApp</label>
                                             <div className="relative mb-4">
-                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-bold font-mono text-sm border-r border-zinc-600 pr-2 pointer-events-none">+225</div>
+                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] font-bold font-mono text-sm border-r border-zinc-600 pr-2 pointer-events-none">+225</div>
                                                 <input
                                                     type="text"
                                                     value={waPhone}
                                                     onChange={e => setWaPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                                     placeholder="0709483812"
-                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-[70px] pr-4 text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D97E] font-mono"
+                                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-[70px] pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E] font-mono"
                                                 />
                                             </div>
                                             <button
@@ -285,10 +285,10 @@ const Onboarding: React.FC = () => {
                                         </>
                                     ) : (
                                         <div className="text-center animate-in zoom-in duration-300">
-                                            <p className="text-xs text-zinc-500 uppercase tracking-widest mb-3">Votre code de jumelage</p>
+                                            <p className="text-xs text-[#888] uppercase tracking-widest mb-3">Votre code de jumelage</p>
                                             <div className="flex justify-center gap-1.5 font-mono font-bold text-2xl text-white mb-6">
                                                 {pairingCode.split('').map((c, i) => (
-                                                    <span key={i} className="bg-white/10 p-2 rounded border border-white/5 min-w-[36px]">{c}</span>
+                                                    <span key={i} className="bg-white/10 p-2 rounded border border-[#1a1a1a] min-w-[36px]">{c}</span>
                                                 ))}
                                             </div>
                                             <div className="bg-[#00D97E]/10 border border-[#00D97E]/20 rounded-xl p-4 text-left text-xs text-[#00D97E]/80 space-y-1">
@@ -297,10 +297,10 @@ const Onboarding: React.FC = () => {
                                                 <p>3. <strong>Connecter un appareil → Avec un numéro</strong></p>
                                                 <p>4. Tapez ce code</p>
                                             </div>
-                                            <p className="text-xs text-zinc-500 mt-4 flex items-center justify-center gap-1">
+                                            <p className="text-xs text-[#888] mt-4 flex items-center justify-center gap-1">
                                                 <RefreshCw className="w-3 h-3 animate-spin" /> En attente de connexion...
                                             </p>
-                                            <button onClick={() => { setPairingCode(null); setWaPhone(''); }} className="text-xs text-zinc-500 hover:text-white mt-2">Essayer un autre numéro</button>
+                                            <button onClick={() => { setPairingCode(null); setWaPhone(''); }} className="text-xs text-[#888] hover:text-white mt-2">Essayer un autre numéro</button>
                                         </div>
                                     )
                                 ) : (
@@ -314,7 +314,7 @@ const Onboarding: React.FC = () => {
                                                 <RefreshCw className="w-8 h-8 text-[#00D97E] animate-spin" />
                                             </div>
                                         )}
-                                        <p className="text-xs text-zinc-500 mt-4">Scannez avec WhatsApp depuis un autre appareil</p>
+                                        <p className="text-xs text-[#888] mt-4">Scannez avec WhatsApp depuis un autre appareil</p>
                                     </div>
                                 )}
                             </>
@@ -322,10 +322,10 @@ const Onboarding: React.FC = () => {
 
                         {!waConnected && (
                             <div className="flex gap-2 mt-6">
-                                <button onClick={goPrev} className="px-5 bg-white/5 border border-white/5 hover:bg-white/10 text-white py-3 rounded-xl flex items-center gap-2">
+                                <button onClick={goPrev} className="px-5 bg-white/5 border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white py-3 rounded-xl flex items-center gap-2">
                                     <ArrowLeft className="w-4 h-4" /> Retour
                                 </button>
-                                <button onClick={skipStep} className="flex-1 text-zinc-500 hover:text-white py-3 rounded-xl">
+                                <button onClick={skipStep} className="flex-1 text-[#888] hover:text-white py-3 rounded-xl">
                                     Plus tard, passer cette étape
                                 </button>
                             </div>
@@ -337,7 +337,7 @@ const Onboarding: React.FC = () => {
                 {step === 'product' && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                         <h2 className="text-xl font-bold text-white mb-1">Votre 1er produit</h2>
-                        <p className="text-zinc-400 text-sm mb-6">Étape 2 sur 3 — pour que le bot ait quelque chose à proposer.</p>
+                        <p className="text-[#888] text-sm mb-6">Étape 2 sur 3 — pour que le bot ait quelque chose à proposer.</p>
 
                         {productAdded ? (
                             <div className="text-center py-8">
@@ -345,7 +345,7 @@ const Onboarding: React.FC = () => {
                                     <Package className="w-8 h-8 text-[#00D97E]" />
                                 </div>
                                 <h3 className="text-lg font-bold text-white mb-2">Produit ajouté ! 📦</h3>
-                                <p className="text-zinc-400 text-sm mb-6">{productName} — {parseInt(productPrice).toLocaleString()} FCFA</p>
+                                <p className="text-[#888] text-sm mb-6">{productName} — {parseInt(productPrice).toLocaleString()} FCFA</p>
                                 <button
                                     onClick={() => setStep('personality')}
                                     className="w-full bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2"
@@ -355,40 +355,40 @@ const Onboarding: React.FC = () => {
                             <>
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Nom du produit</label>
+                                        <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Nom du produit</label>
                                         <input
                                             type="text"
                                             value={productName}
                                             onChange={e => setProductName(e.target.value)}
                                             placeholder="Ex: Bazin Riche, Mèche Brésilienne..."
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D97E]"
+                                            className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 px-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Prix (FCFA)</label>
+                                        <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Prix (FCFA)</label>
                                         <input
                                             type="number"
                                             value={productPrice}
                                             onChange={e => setProductPrice(e.target.value)}
                                             placeholder="15000"
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D97E]"
+                                            className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 px-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Stock disponible (optionnel)</label>
+                                        <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Stock disponible (optionnel)</label>
                                         <input
                                             type="number"
                                             value={productStock}
                                             onChange={e => setProductStock(e.target.value)}
                                             placeholder="10"
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D97E]"
+                                            className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 px-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]"
                                         />
-                                        <p className="text-xs text-zinc-600 mt-1">Laisser vide = stock illimité</p>
+                                        <p className="text-xs text-[#555] mt-1">Laisser vide = stock illimité</p>
                                     </div>
                                 </div>
 
                                 <div className="flex gap-2 mt-6">
-                                    <button onClick={goPrev} className="px-5 bg-white/5 border border-white/5 hover:bg-white/10 text-white py-3 rounded-xl flex items-center gap-2">
+                                    <button onClick={goPrev} className="px-5 bg-white/5 border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white py-3 rounded-xl flex items-center gap-2">
                                         <ArrowLeft className="w-4 h-4" /> Retour
                                     </button>
                                     <button
@@ -400,7 +400,7 @@ const Onboarding: React.FC = () => {
                                         {!productSaving && <ArrowRight className="w-4 h-4" />}
                                     </button>
                                 </div>
-                                <button onClick={skipStep} className="w-full mt-2 text-zinc-500 hover:text-white text-sm py-2">
+                                <button onClick={skipStep} className="w-full mt-2 text-[#888] hover:text-white text-sm py-2">
                                     Plus tard, passer cette étape
                                 </button>
                             </>
@@ -412,7 +412,7 @@ const Onboarding: React.FC = () => {
                 {step === 'personality' && (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                         <h2 className="text-xl font-bold text-white mb-1">Le ton du bot</h2>
-                        <p className="text-zinc-400 text-sm mb-6">Étape 3 sur 3 — comment votre bot doit-il parler à vos clients ?</p>
+                        <p className="text-[#888] text-sm mb-6">Étape 3 sur 3 — comment votre bot doit-il parler à vos clients ?</p>
 
                         <div className="space-y-3 mb-6">
                             {PERSONALITIES.map(p => (
@@ -420,12 +420,12 @@ const Onboarding: React.FC = () => {
                                     key={p.id}
                                     type="button"
                                     onClick={() => setPersona(p.id)}
-                                    className={`w-full p-4 rounded-xl border text-left transition-all flex items-center gap-3 ${persona === p.id ? 'bg-[#00D97E]/10 border-[#00D97E] ring-1 ring-[#00D97E]' : 'bg-white/5 border-white/5 hover:border-white/20'}`}
+                                    className={`w-full p-4 rounded-xl border text-left transition-all flex items-center gap-3 ${persona === p.id ? 'bg-[#00D97E]/10 border-[#00D97E] ring-1 ring-[#00D97E]' : 'bg-[#111] border-[#1a1a1a] hover:border-[#333]'}`}
                                 >
                                     <span className="text-2xl">{p.emoji}</span>
                                     <div className="flex-1">
                                         <p className={`font-bold text-sm ${persona === p.id ? 'text-[#00D97E]' : 'text-zinc-300'}`}>{p.title}</p>
-                                        <p className="text-xs text-zinc-500 mt-0.5">{p.desc}</p>
+                                        <p className="text-xs text-[#888] mt-0.5">{p.desc}</p>
                                     </div>
                                     {persona === p.id && <Check className="w-4 h-4 text-[#00D97E]" />}
                                 </button>
@@ -433,7 +433,7 @@ const Onboarding: React.FC = () => {
                         </div>
 
                         <div className="flex gap-2">
-                            <button onClick={goPrev} className="px-5 bg-white/5 border border-white/5 hover:bg-white/10 text-white py-3 rounded-xl flex items-center gap-2">
+                            <button onClick={goPrev} className="px-5 bg-white/5 border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white py-3 rounded-xl flex items-center gap-2">
                                 <ArrowLeft className="w-4 h-4" /> Retour
                             </button>
                             <button
@@ -455,7 +455,7 @@ const Onboarding: React.FC = () => {
                             <PartyPopper className="w-10 h-10 text-black" />
                         </div>
                         <h2 className="text-2xl font-bold text-white mb-3">C'est prêt ! 🚀</h2>
-                        <p className="text-zinc-400 mb-8 max-w-sm mx-auto text-sm">
+                        <p className="text-[#888] mb-8 max-w-sm mx-auto text-sm">
                             Votre bot DjassaBot est configuré. Il va maintenant accueillir et vendre à vos clients sur WhatsApp 24h/24.
                         </p>
 
@@ -479,7 +479,7 @@ const Onboarding: React.FC = () => {
                             </button>
                             <button
                                 onClick={() => navigate('/dashboard/inbox')}
-                                className="w-full bg-white/5 hover:bg-white/10 border border-white/5 text-white py-3 rounded-xl flex items-center justify-center gap-2"
+                                className="w-full bg-white/5 hover:bg-[#1a1a1a] border border-[#1a1a1a] text-white py-3 rounded-xl flex items-center justify-center gap-2"
                             >
                                 <MessageCircle className="w-4 h-4" /> Tester le bot (Playground)
                             </button>
@@ -491,7 +491,7 @@ const Onboarding: React.FC = () => {
                 {step !== 'done' && (
                     <button
                         onClick={() => { localStorage.clear(); sessionStorage.clear(); navigate('/login'); }}
-                        className="mt-6 text-xs text-zinc-600 hover:text-zinc-400 flex items-center gap-1 mx-auto"
+                        className="mt-6 text-xs text-[#555] hover:text-[#888] flex items-center gap-1 mx-auto"
                     >
                         <LogOut className="w-3 h-3" /> Se déconnecter
                     </button>

@@ -19,7 +19,7 @@ export default function SettingsLogistics({
     return (
         <div className="space-y-6">
             {/* 1. Livraison & Frais */}
-            <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
+            <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-8">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-lg font-bold text-white flex items-center gap-2 uppercase tracking-wider text-xs">
                         <span className="w-2 h-2 rounded-full bg-orange-500"></span>
@@ -27,7 +27,7 @@ export default function SettingsLogistics({
                     </h2>
                     {/* Toggle Livraison */}
                     <label className="flex items-center gap-3 cursor-pointer">
-                        <span className="text-sm text-zinc-400">
+                        <span className="text-sm text-[#888]">
                             {config.deliveryEnabled ? 'Activée' : 'Désactivée'}
                         </span>
                         <div className="relative">
@@ -46,7 +46,7 @@ export default function SettingsLogistics({
 
                 {config.deliveryEnabled ? (
                     <div className="space-y-4">
-                        <p className="text-[10px] text-zinc-500">
+                        <p className="text-[10px] text-[#888]">
                             Définissez vos zones de livraison et leurs tarifs. L'IA utilisera ces informations pour calculer le total des commandes.
                         </p>
 
@@ -62,7 +62,7 @@ export default function SettingsLogistics({
                                             newZones[index].name = e.target.value;
                                             setConfig({ ...config, deliveryZones: newZones });
                                         }}
-                                        className="flex-1 bg-white/10 border border-white/10 rounded-lg p-2 text-white text-sm placeholder:text-zinc-600"
+                                        className="flex-1 bg-white/10 border border-[#1a1a1a] rounded-lg p-2 text-white text-sm placeholder:text-[#555]"
                                         placeholder="Nom de la zone (ex: Cocody, Yopougon...)"
                                     />
                                     <div className="relative">
@@ -74,10 +74,10 @@ export default function SettingsLogistics({
                                                 newZones[index].price = parseInt(e.target.value) || 0;
                                                 setConfig({ ...config, deliveryZones: newZones });
                                             }}
-                                            className="w-28 bg-white/10 border border-white/10 rounded-lg p-2 pr-12 text-white text-sm"
+                                            className="w-28 bg-white/10 border border-[#1a1a1a] rounded-lg p-2 pr-12 text-white text-sm"
                                             placeholder="1500"
                                         />
-                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">FCFA</span>
+                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[#888] text-xs">FCFA</span>
                                     </div>
                                     {(Array.isArray(config.deliveryZones) ? config.deliveryZones : []).length > 1 && (
                                         <button
@@ -107,7 +107,7 @@ export default function SettingsLogistics({
                         </button>
 
                         {/* Free Delivery Threshold */}
-                        <div className="pt-4 border-t border-white/5">
+                        <div className="pt-4 border-t border-[#1a1a1a]">
                             <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">
                                 🎁 Seuil Livraison Gratuite
                             </label>
@@ -117,17 +117,17 @@ export default function SettingsLogistics({
                                         type="number"
                                         value={config.freeDeliveryThreshold}
                                         onChange={e => setConfig({ ...config, freeDeliveryThreshold: parseInt(e.target.value) || 0 })}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pr-16 text-white focus:border-orange-500 outline-none"
+                                        className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 pr-16 text-white focus:border-orange-500 outline-none"
                                         placeholder="50000"
                                     />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">FCFA</span>
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888] text-sm">FCFA</span>
                                 </div>
-                                <p className="text-[10px] text-zinc-500">Livraison offerte à partir de ce montant (0 = jamais gratuit)</p>
+                                <p className="text-[10px] text-[#888]">Livraison offerte à partir de ce montant (0 = jamais gratuit)</p>
                             </div>
                         </div>
                     </div>
                 ) : (
-                    <div className="text-center py-8 text-zinc-500">
+                    <div className="text-center py-8 text-[#888]">
                         <Truck className="w-12 h-12 mx-auto mb-3 opacity-30" />
                         <p className="text-sm">La livraison est désactivée</p>
                         <p className="text-xs mt-1">Activez-la si vous gérez vous-même les frais de livraison</p>
@@ -136,7 +136,7 @@ export default function SettingsLogistics({
             </div>
 
             {/* 2. Paiement */}
-            <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
+            <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-8">
                 <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                     <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Paiement
                 </h2>
@@ -153,7 +153,7 @@ export default function SettingsLogistics({
                         return (
                             <label
                                 key={method.id}
-                                className={`flex items-center gap-2 bg-white/5 border rounded-lg px-4 py-3 cursor-pointer select-none transition-all ${isChecked ? 'border-[#00D97E] shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'border-white/5 hover:border-white/10'
+                                className={`flex items-center gap-2 bg-white/5 border rounded-lg px-4 py-3 cursor-pointer select-none transition-all ${isChecked ? 'border-[#00D97E] shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'border-[#1a1a1a] hover:border-[#1a1a1a]'
                                     }`}
                             >
                                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isChecked ? 'border-[#00D97E] bg-[#00D97E]' : 'border-zinc-600'}`}>
@@ -178,7 +178,7 @@ export default function SettingsLogistics({
             </div>
 
             {/* 3. Coordonnées de Réception (Split Payments) */}
-            <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8 relative overflow-hidden">
+            <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-8 relative overflow-hidden">
                 {/* Background Pattern */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
@@ -187,7 +187,7 @@ export default function SettingsLogistics({
                 </h2>
 
                 <div className="relative z-10">
-                    <p className="text-zinc-400 text-sm mb-6 max-w-2xl text-justify">
+                    <p className="text-[#888] text-sm mb-6 max-w-2xl text-justify">
                         Configurez votre compte money pour recevoir automatiquement vos gains.
                         L'argent des ventes sera transféré sur ce compte (moins la commission de la plateforme).
                     </p>
@@ -198,7 +198,7 @@ export default function SettingsLogistics({
                             <select
                                 value={config.settlementBank || ''}
                                 onChange={e => setConfig({ ...config, settlementBank: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-emerald-500 outline-none appearance-none"
+                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-emerald-500 outline-none appearance-none"
                                 disabled={!!paystackSubaccountCode}
                             >
                                 <option value="">Choisir un opérateur</option>
@@ -213,7 +213,7 @@ export default function SettingsLogistics({
                                 type="text"
                                 value={config.settlementAccount || ''}
                                 onChange={e => setConfig({ ...config, settlementAccount: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:border-emerald-500 outline-none font-mono tracking-wide placeholder:text-zinc-600"
+                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-white focus:border-emerald-500 outline-none font-mono tracking-wide placeholder:text-[#555]"
                                 placeholder="Ex: 0504030201"
                                 disabled={!!paystackSubaccountCode}
                             />

@@ -40,11 +40,11 @@ const COMMUNICATION_STYLES = [
 
 export default function SettingsPersonality({ config, setConfig }: SettingsPersonalityProps) {
     return (
-        <div className="bg-[#0D1117] border border-white/5 rounded-xl p-8">
+        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-8">
             <h2 className="text-lg font-bold text-white mb-2 flex items-center gap-2 uppercase tracking-wider text-xs">
                 <span className="w-2 h-2 rounded-full bg-green-500"></span> Style de Communication
             </h2>
-            <p className="text-zinc-500 text-sm mb-6">Choisissez comment votre assistant s'adresse aux clients.</p>
+            <p className="text-[#888] text-sm mb-6">Choisissez comment votre assistant s'adresse aux clients.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {COMMUNICATION_STYLES.map(style => {
@@ -59,7 +59,7 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                             })}
                             className={`relative p-5 rounded-xl border text-left transition-all group ${isActive
                                 ? 'bg-[#00D97E]/10 border-[#00D97E]/50 ring-2 ring-[#00D97E]/30'
-                                : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                                : 'bg-[#111] border-[#1a1a1a] hover:bg-[#1a1a1a] hover:border-[#333]'
                                 }`}
                         >
                             {/* Selection Indicator */}
@@ -80,7 +80,7 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                                 <span className="text-3xl">{style.icon}</span>
                                 <div>
                                     <div className="font-bold text-white text-base">{style.name}</div>
-                                    <div className="text-xs text-zinc-400 mt-1">{style.description}</div>
+                                    <div className="text-xs text-[#888] mt-1">{style.description}</div>
                                 </div>
                             </div>
                         </button>

@@ -67,10 +67,10 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020B18] flex">
+        <div className="min-h-screen bg-black flex">
 
             {/* ========== GAUCHE : BRANDING (desktop only) ========== */}
-            <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden border-r border-white/5">
+            <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative overflow-hidden border-r border-[#1a1a1a]">
                 {/* Orbs de fond */}
                 <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[#00D97E]/8 rounded-full blur-3xl pointer-events-none" />
                 <div className="absolute bottom-1/4 right-0 w-64 h-64 bg-[#0EA5E9]/8 rounded-full blur-3xl pointer-events-none" />

@@ -55,13 +55,13 @@ const PlanCard = ({ title, price, features, planId, recommended = false, current
                 <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
                 <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold text-white">{formatPrice(price)}</span>
-                    <span className="text-zinc-500 text-sm">FCFA/mois</span>
+                    <span className="text-[#888] text-sm">FCFA/mois</span>
                 </div>
             </div>
 
             <div className="flex-1 space-y-3 mb-8">
                 {features.map((feat: string, i: number) => (
-                    <div key={i} className="flex items-start gap-3 text-sm text-zinc-400">
+                    <div key={i} className="flex items-start gap-3 text-sm text-[#888]">
                         <Check size={16} className={`mt-0.5 ${isCurrent ? 'text-emerald-500' : 'text-orange-500'}`} />
                         <span>{feat}</span>
                     </div>
@@ -72,7 +72,7 @@ const PlanCard = ({ title, price, features, planId, recommended = false, current
                 onClick={() => !isCurrent && !loading && onUpgrade(planId)}
                 disabled={isCurrent || loading}
                 className={`w-full py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 ${isCurrent
-                    ? 'bg-zinc-800 text-zinc-500 cursor-default'
+                    ? 'bg-zinc-800 text-[#888] cursor-default'
                     : recommended
                         ? 'bg-orange-500 hover:bg-orange-600 text-black shadow-lg shadow-orange-500/20'
                         : 'bg-white hover:bg-zinc-200 text-black'
@@ -184,7 +184,7 @@ export default function Subscription() {
                 <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
                     Boostez votre <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-600">Croissance</span>
                 </h1>
-                <p className="text-zinc-400 max-w-xl mx-auto">
+                <p className="text-[#888] max-w-xl mx-auto">
                     Choisissez le plan adapté à votre volume de ventes. Payez par Wave, Orange Money ou Carte.
                 </p>
             </div>
@@ -249,21 +249,21 @@ export default function Subscription() {
 
             <div className="mt-12 bg-zinc-900/50 border border-zinc-800 rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-zinc-800 rounded-full text-zinc-400">
+                    <div className="p-3 bg-zinc-800 rounded-full text-[#888]">
                         <Shield size={24} />
                     </div>
                     <div>
                         <h3 className="font-bold text-white">Paiement Sécurisé</h3>
-                        <p className="text-sm text-zinc-500">Wave, Orange Money, MTN, Visa/Mastercard</p>
+                        <p className="text-sm text-[#888]">Wave, Orange Money, MTN, Visa/Mastercard</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-zinc-800 rounded-full text-zinc-400">
+                    <div className="p-3 bg-zinc-800 rounded-full text-[#888]">
                         <Crown size={24} />
                     </div>
                     <div>
                         <h3 className="font-bold text-white">Besoin d'aide ?</h3>
-                        <p className="text-sm text-zinc-500">Contactez-nous sur WhatsApp</p>
+                        <p className="text-sm text-[#888]">Contactez-nous sur WhatsApp</p>
                     </div>
                 </div>
             </div>

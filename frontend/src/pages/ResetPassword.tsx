@@ -72,14 +72,14 @@ const ResetPassword: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020B18] flex items-center justify-center p-4">
-            <div className="bg-[#0D1117] border border-white/5 p-8 rounded-2xl w-full max-w-md shadow-2xl shadow-black/50">
+        <div className="min-h-screen bg-black flex items-center justify-center p-4">
+            <div className="bg-[#111] border border-[#1a1a1a] p-8 rounded-2xl w-full max-w-md shadow-2xl shadow-black/50">
                 <div className="text-center mb-8">
                     <div className="w-14 h-14 rounded-xl bg-[#00D97E] flex items-center justify-center mx-auto mb-4">
                         <Lock className="text-black w-7 h-7" />
                     </div>
                     <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">Nouveau Mot de Passe</h1>
-                    <p className="text-zinc-500 text-sm">Veuillez entrer votre nouveau mot de passe</p>
+                    <p className="text-[#888] text-sm">Veuillez entrer votre nouveau mot de passe</p>
                 </div>
 
                 {error && (
@@ -98,9 +98,9 @@ const ResetPassword: React.FC = () => {
 
                 <form onSubmit={handleResetPassword} className="space-y-6">
                     <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Nouveau mot de passe</label>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Nouveau mot de passe</label>
                         <div className="relative group">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-[#00D97E] transition-colors w-5 h-5" />
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] group-focus-within:text-[#00D97E] transition-colors w-5 h-5" />
                             <input
                                 type="password"
                                 value={password}
@@ -108,16 +108,16 @@ const ResetPassword: React.FC = () => {
                                 placeholder="••••••••"
                                 required
                                 disabled={!token || !!success}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all disabled:opacity-50"
+                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all disabled:opacity-50"
                             />
                         </div>
-                        <p className="text-xs text-zinc-500 mt-2">8 caractères min, 1 majuscule, 1 chiffre</p>
+                        <p className="text-xs text-[#888] mt-2">8 caractères min, 1 majuscule, 1 chiffre</p>
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Confirmer le mot de passe</label>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Confirmer le mot de passe</label>
                         <div className="relative group">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-[#00D97E] transition-colors w-5 h-5" />
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] group-focus-within:text-[#00D97E] transition-colors w-5 h-5" />
                             <input
                                 type="password"
                                 value={confirmPassword}
@@ -125,7 +125,7 @@ const ResetPassword: React.FC = () => {
                                 placeholder="••••••••"
                                 required
                                 disabled={!token || !!success}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-zinc-600 focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all disabled:opacity-50"
+                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all disabled:opacity-50"
                             />
                         </div>
                     </div>
@@ -140,7 +140,7 @@ const ResetPassword: React.FC = () => {
                     </button>
                 </form>
 
-                <p className="mt-8 text-center text-sm text-zinc-500">
+                <p className="mt-8 text-center text-sm text-[#888]">
                     <Link to="/login" className="text-[#00D97E] hover:text-[#00D97E]/80 font-bold tracking-wide hover:underline cursor-pointer transition-colors">
                         ← Retour à la connexion
                     </Link>
