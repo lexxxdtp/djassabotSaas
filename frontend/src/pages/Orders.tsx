@@ -1,14 +1,24 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-    ShoppingBag, Clock, MapPin, X, AlertCircle, Package, Send,
-    CheckCircle2, Truck, Search, Filter, CreditCard
+    ShoppingBag, Clock, MapPin, X, AlertCircle, Send,
+    CheckCircle2, Search, Filter, CreditCard
 } from 'lucide-react';
 import { apiClient } from '../utils/apiClient';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
+// Backend keeps the full enum for compatibility, but the UI only exposes 4 states.
+// Legacy CONFIRMED is shown as NOUVELLE (still awaiting payment), legacy SHIPPING as PAYÉE.
 type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
+type UIStatus = 'NEW' | 'PAID' | 'DELIVERED' | 'CANCELLED';
+
+const toUIStatus = (s: OrderStatus): UIStatus => {
+    if (s === 'PENDING' || s === 'CONFIRMED') return 'NEW';
+    if (s === 'PAID' || s === 'SHIPPING') return 'PAID';
+    if (s === 'DELIVERED') return 'DELIVERED';
+    return 'CANCELLED';
+};
 
 interface Order {
     id: string;
@@ -26,27 +36,25 @@ interface Order {
     createdAt: string;
 }
 
-type FilterKey = 'all' | 'todo' | 'paid' | 'shipping' | 'done' | 'cancelled';
+type FilterKey = 'all' | 'new' | 'paid' | 'done' | 'cancelled';
 
 // --- HELPERS ---
 
-const STATUS_META: Record<OrderStatus, { label: string; color: string; icon: React.ElementType }> = {
-    PENDING: { label: 'Nouvelle', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20', icon: AlertCircle },
-    CONFIRMED: { label: 'Confirmée', color: 'text-blue-500 bg-blue-500/10 border-blue-500/20', icon: CheckCircle2 },
+const UI_META: Record<UIStatus, { label: string; color: string; icon: React.ElementType }> = {
+    NEW: { label: 'Nouvelle', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20', icon: AlertCircle },
     PAID: { label: 'Payée', color: 'text-[#00D97E] bg-[#00D97E]/10 border-[#00D97E]/20', icon: CreditCard },
-    SHIPPING: { label: 'En livraison', color: 'text-purple-500 bg-purple-500/10 border-purple-500/20', icon: Truck },
     DELIVERED: { label: 'Livrée', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2 },
-    CANCELLED: { label: 'Annulée', color: 'text-red-500 bg-red-500/10 border-red-500/20', icon: X },
+    CANCELLED: { label: 'Annulée', color: 'text-[#666] bg-white/5 border-[#1a1a1a]', icon: X },
 };
 
 const matchesFilter = (order: Order, filter: FilterKey): boolean => {
+    const ui = toUIStatus(order.status);
     switch (filter) {
         case 'all': return true;
-        case 'todo': return order.status === 'PENDING' || order.status === 'CONFIRMED';
-        case 'paid': return order.status === 'PAID';
-        case 'shipping': return order.status === 'SHIPPING';
-        case 'done': return order.status === 'DELIVERED';
-        case 'cancelled': return order.status === 'CANCELLED';
+        case 'new': return ui === 'NEW';
+        case 'paid': return ui === 'PAID';
+        case 'done': return ui === 'DELIVERED';
+        case 'cancelled': return ui === 'CANCELLED';
         default: return true;
     }
 };
@@ -80,7 +88,8 @@ interface OrderModalProps {
 }
 
 const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => {
-    const meta = STATUS_META[order.status];
+    const ui = toUIStatus(order.status);
+    const meta = UI_META[ui];
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
@@ -105,9 +114,9 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => {
 
                 {/* Body */}
                 <div className="p-6 space-y-6 overflow-y-auto">
-                    {/* Actions */}
+                    {/* Actions — only 2 transitions: NEW → PAID → DELIVERED */}
                     <div className="flex flex-wrap gap-2 justify-end">
-                        {order.status === 'PENDING' && (
+                        {ui === 'NEW' && (
                             <>
                                 <button
                                     onClick={() => onUpdateStatus(order.id, 'CANCELLED')}
@@ -116,22 +125,14 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => {
                                     Annuler
                                 </button>
                                 <button
-                                    onClick={() => onUpdateStatus(order.id, 'CONFIRMED')}
-                                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-bold uppercase transition-all shadow-lg shadow-blue-500/20"
+                                    onClick={() => onUpdateStatus(order.id, 'PAID')}
+                                    className="px-4 py-2 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black rounded-lg text-xs font-bold uppercase transition-all shadow-lg shadow-[#00D97E]/20"
                                 >
-                                    Confirmer
+                                    Marquer payée
                                 </button>
                             </>
                         )}
-                        {order.status === 'CONFIRMED' && (
-                            <button
-                                onClick={() => onUpdateStatus(order.id, 'PAID')}
-                                className="px-4 py-2 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black rounded-lg text-xs font-bold uppercase transition-all shadow-lg shadow-[#00D97E]/20"
-                            >
-                                Marquer Payée
-                            </button>
-                        )}
-                        {order.status === 'PAID' && (
+                        {ui === 'PAID' && (
                             <>
                                 <button
                                     onClick={() => shareOrder(order)}
@@ -140,22 +141,14 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => {
                                     <Send size={14} /> Envoyer au livreur
                                 </button>
                                 <button
-                                    onClick={() => onUpdateStatus(order.id, 'SHIPPING')}
-                                    className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs font-bold uppercase transition-all shadow-lg shadow-purple-500/20"
+                                    onClick={() => onUpdateStatus(order.id, 'DELIVERED')}
+                                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-black rounded-lg text-xs font-bold uppercase transition-all shadow-lg shadow-emerald-500/20"
                                 >
-                                    Démarrer livraison
+                                    Marquer livrée
                                 </button>
                             </>
                         )}
-                        {order.status === 'SHIPPING' && (
-                            <button
-                                onClick={() => onUpdateStatus(order.id, 'DELIVERED')}
-                                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-black rounded-lg text-xs font-bold uppercase transition-all shadow-lg shadow-emerald-500/20"
-                            >
-                                Marquer Livrée
-                            </button>
-                        )}
-                        {(order.status === 'DELIVERED' || order.status === 'CANCELLED') && (
+                        {(ui === 'DELIVERED' || ui === 'CANCELLED') && (
                             <span className="text-[#888] text-sm italic">Commande clôturée</span>
                         )}
                     </div>
@@ -231,8 +224,9 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => {
 // --- ORDER ROW ---
 
 const OrderRow = ({ order, onClick }: { order: Order; onClick: () => void }) => {
-    const meta = STATUS_META[order.status];
-    const needsAction = order.status === 'PENDING';
+    const ui = toUIStatus(order.status);
+    const meta = UI_META[ui];
+    const needsAction = ui === 'NEW';
 
     return (
         <button
@@ -270,7 +264,7 @@ const OrderRow = ({ order, onClick }: { order: Order; onClick: () => void }) => 
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                    {(order.status === 'PAID' || order.status === 'CONFIRMED') && (
+                    {ui === 'PAID' && (
                         <button
                             onClick={(e) => { e.stopPropagation(); shareOrder(order); }}
                             className="p-2 rounded-lg bg-[#00D97E]/10 text-[#00D97E] border border-[#00D97E]/20 hover:bg-[#00D97E]/20 active:scale-90 transition-all"
@@ -343,21 +337,22 @@ export default function Orders() {
         }
     };
 
-    // Counts per filter
-    const counts = useMemo(() => ({
-        all: orders.length,
-        todo: orders.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED').length,
-        paid: orders.filter(o => o.status === 'PAID').length,
-        shipping: orders.filter(o => o.status === 'SHIPPING').length,
-        done: orders.filter(o => o.status === 'DELIVERED').length,
-        cancelled: orders.filter(o => o.status === 'CANCELLED').length,
-    }), [orders]);
+    // Counts per filter (using UI statuses)
+    const counts = useMemo(() => {
+        const by = (target: UIStatus) => orders.filter(o => toUIStatus(o.status) === target).length;
+        return {
+            all: orders.length,
+            new: by('NEW'),
+            paid: by('PAID'),
+            done: by('DELIVERED'),
+            cancelled: by('CANCELLED'),
+        };
+    }, [orders]);
 
-    const filters: { key: FilterKey; label: string; tone?: string }[] = [
+    const filters: { key: FilterKey; label: string }[] = [
         { key: 'all', label: 'Tout' },
-        { key: 'todo', label: 'À traiter', tone: 'amber' },
-        { key: 'paid', label: 'Payées', tone: 'green' },
-        { key: 'shipping', label: 'Livraison', tone: 'purple' },
+        { key: 'new', label: 'Nouvelles' },
+        { key: 'paid', label: 'Payées' },
         { key: 'done', label: 'Livrées' },
         { key: 'cancelled', label: 'Annulées' },
     ];
@@ -390,9 +385,11 @@ export default function Orders() {
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Commandes</h1>
                     <p className="text-[#888] text-xs md:text-sm mt-1">
-                        {counts.todo > 0
-                            ? <><span className="text-amber-500 font-bold">{counts.todo}</span> à traiter</>
-                            : 'Aucune commande à traiter'}
+                        {counts.new > 0
+                            ? <><span className="text-amber-500 font-bold">{counts.new}</span> à confirmer · <span className="text-[#00D97E] font-bold">{counts.paid}</span> à livrer</>
+                            : counts.paid > 0
+                                ? <><span className="text-[#00D97E] font-bold">{counts.paid}</span> à livrer</>
+                                : 'Tout est à jour 🌴'}
                     </p>
                 </div>
                 <div className="text-[10px] text-[#888] font-mono bg-[#111] border border-[#1a1a1a] px-3 py-1.5 rounded-lg uppercase tracking-wider">

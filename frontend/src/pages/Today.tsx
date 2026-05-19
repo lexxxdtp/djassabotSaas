@@ -10,7 +10,6 @@ import {
     DollarSign,
     CheckCircle2,
     WifiOff,
-    Truck,
     CreditCard,
 } from 'lucide-react';
 import { getApiUrl } from '../utils/apiConfig';
@@ -103,16 +102,16 @@ const Today: React.FC = () => {
         ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100)
         : null;
 
-    const todoOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED');
-    const paidOrders = orders.filter(o => o.status === 'PAID');
-    const shippingOrders = orders.filter(o => o.status === 'SHIPPING');
+    // Simplified workflow: NEW (= PENDING + CONFIRMED) → PAID (= PAID + SHIPPING) → DELIVERED
+    const newOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED');
+    const paidOrders = orders.filter(o => o.status === 'PAID' || o.status === 'SHIPPING');
 
     const lastSaleLog = logs.find(l => l.type === 'sale');
     const lastSaleAgo = lastSaleLog
         ? timeAgo(new Date(lastSaleLog.created_at))
         : null;
 
-    const hasUrgentTasks = todoOrders.length > 0 || paidOrders.length > 0 || shippingOrders.length > 0;
+    const hasUrgentTasks = newOrders.length > 0 || paidOrders.length > 0;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -162,13 +161,13 @@ const Today: React.FC = () => {
                         <p className="text-[#888] text-xs mt-1">Le bot gère tout. Profitez 🌴</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {todoOrders.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {newOrders.length > 0 && (
                             <TaskCard
-                                to="/dashboard/orders?filter=todo"
+                                to="/dashboard/orders?filter=new"
                                 icon={Package}
-                                count={todoOrders.length}
-                                label="Commandes à traiter"
+                                count={newOrders.length}
+                                label={newOrders.length > 1 ? "commandes à confirmer" : "commande à confirmer"}
                                 tone="warning"
                             />
                         )}
@@ -177,17 +176,8 @@ const Today: React.FC = () => {
                                 to="/dashboard/orders?filter=paid"
                                 icon={CreditCard}
                                 count={paidOrders.length}
-                                label="Prêtes à livrer"
+                                label={paidOrders.length > 1 ? "prêtes à livrer" : "prête à livrer"}
                                 tone="primary"
-                            />
-                        )}
-                        {shippingOrders.length > 0 && (
-                            <TaskCard
-                                to="/dashboard/orders?filter=shipping"
-                                icon={Truck}
-                                count={shippingOrders.length}
-                                label="En livraison"
-                                tone="info"
                             />
                         )}
                     </div>
