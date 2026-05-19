@@ -1,1 +1,109 @@
 @import "tailwindcss";
+
+/* ────────────────────────────────────────────────────────────
+   Motion tokens — Emil Kowalski's framework
+   Custom easing curves (default CSS easings are too weak)
+──────────────────────────────────────────────────────────── */
+:root {
+    --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ────────────────────────────────────────────────────────────
+   Landing reveal animations — CSS only (off main thread)
+   Hardware-accelerated (transform + opacity)
+──────────────────────────────────────────────────────────── */
+
+/* Initial mount stagger: fade up from 12px below */
+@keyframes reveal-up {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.reveal-stagger > * {
+    opacity: 0;
+    animation: reveal-up 700ms var(--ease-out-strong) forwards;
+}
+
+/* Stagger delays — 80ms increments */
+.reveal-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.reveal-stagger > *:nth-child(2) { animation-delay: 80ms; }
+.reveal-stagger > *:nth-child(3) { animation-delay: 160ms; }
+.reveal-stagger > *:nth-child(4) { animation-delay: 240ms; }
+.reveal-stagger > *:nth-child(5) { animation-delay: 320ms; }
+.reveal-stagger > *:nth-child(6) { animation-delay: 400ms; }
+
+/* IntersectionObserver scroll reveal — used with data-reveal attribute */
+[data-reveal] {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+        opacity 800ms var(--ease-out-strong),
+        transform 800ms var(--ease-out-strong);
+    will-change: opacity, transform;
+}
+
+[data-reveal="visible"] {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Stagger children inside a revealed container */
+[data-reveal="visible"] .stagger-child {
+    animation: reveal-up 700ms var(--ease-out-strong) forwards;
+    opacity: 0;
+}
+
+[data-reveal="visible"] .stagger-child:nth-child(1) { animation-delay: 80ms; }
+[data-reveal="visible"] .stagger-child:nth-child(2) { animation-delay: 140ms; }
+[data-reveal="visible"] .stagger-child:nth-child(3) { animation-delay: 200ms; }
+[data-reveal="visible"] .stagger-child:nth-child(4) { animation-delay: 260ms; }
+[data-reveal="visible"] .stagger-child:nth-child(5) { animation-delay: 320ms; }
+[data-reveal="visible"] .stagger-child:nth-child(6) { animation-delay: 380ms; }
+
+/* ────────────────────────────────────────────────────────────
+   Ambient hero background — slow radial drift, opacity 0.04
+   Adds subtle depth without breaking minimalism
+──────────────────────────────────────────────────────────── */
+@keyframes ambient-drift {
+    0%   { transform: translate(0, 0)         scale(1); }
+    33%  { transform: translate(40px, -30px)  scale(1.05); }
+    66%  { transform: translate(-30px, 20px)  scale(0.98); }
+    100% { transform: translate(0, 0)         scale(1); }
+}
+
+.ambient-blob {
+    position: absolute;
+    pointer-events: none;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 217, 126, 0.08) 0%, transparent 60%);
+    animation: ambient-drift 24s var(--ease-in-out-strong) infinite;
+    will-change: transform;
+}
+
+/* ────────────────────────────────────────────────────────────
+   Accessibility — reduced motion: keep opacity, kill movement
+──────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .reveal-stagger > *,
+    [data-reveal],
+    [data-reveal="visible"] .stagger-child {
+        animation: none !important;
+        transition: opacity 200ms ease !important;
+        transform: none !important;
+        opacity: 1;
+    }
+
+    .ambient-blob {
+        animation: none !important;
+    }
+}
