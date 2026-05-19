@@ -161,15 +161,28 @@ Cf. `frontend/src/pages/Orders.tsx` fonction `toUIStatus()`.
 - Sur NOUVELLE → bouton *"Marquer payée"* ou *"Annuler"*
 - Sur PAYÉE → *"Envoyer au livreur"* (copie message formaté) + *"Marquer livrée"*
 
-### D. Marketing : caché du menu (vaporware)
+### D. Marketing : UI cachée, mais backend partiellement actif ⚠
 
-La page Marketing existait avec broadcast/coupons/paniers abandonnés mais
-**100% mockée** côté backend (forms qui n'envoient rien, compteurs à 0,
-badge "ACTIF" sur du non-fonctionnel). Danger réel : le vendeur croit que
-ses paniers abandonnés sont relancés, mais non.
+**Important nuance** (corrigée après audit de mai 2026) :
 
-→ Route conservée (`/dashboard/marketing`) mais retirée du menu nav.
-À ressortir le jour où c'est vraiment implémenté en backend.
+La page UI Marketing (`frontend/src/pages/Marketing.tsx`) est mockée — les
+forms broadcast/coupons n'envoient rien et les compteurs sont à 0.
+
+**MAIS** côté backend, le service paniers abandonnés fonctionne réellement :
+- `backend/src/services/abandonedCartService.ts`
+- `backend/src/jobs/abandonedCart.ts` (cron lancé au startup)
+- Détecte les sessions WAITING_FOR_ADDRESS > 30 min
+- Envoie un message de relance automatique via WhatsApp/Baileys
+
+Donc les paniers abandonnés SONT relancés. Le vendeur ne le voit juste pas
+dans son dashboard.
+
+→ Route UI conservée (`/dashboard/marketing`) mais retirée du menu nav.
+→ Pour rétablir, soit :
+  (a) brancher la UI sur le backend existant (afficher relances exécutées + permettre config délai/message)
+  (b) implémenter en plus broadcast + coupons (manquants côté backend)
+
+Broadcast et coupons sont 100% à coder backend si on les veut.
 
 ### E. Screenshot Validator (ARME #1 vision stratégique)
 
@@ -198,11 +211,47 @@ vers `PAID` après validation d'un screenshot Wave/OM.
 
 **Reste backlog connu** :
 - PWA polish (icônes 192/512, splash screen, install prompt UI)
-- Screenshot Validator backend (auto-update vers PAID)
-- Marketing réel (broadcast + paniers abandonnés en backend)
+- Screenshot Validator backend (auto-update vers PAID après validation Gemini Vision)
+- Marketing UI : brancher sur abandoned cart backend + coder broadcast/coupons
 - Notifications push (PWA + service worker, le bot déconnecté devrait notifier)
 - Domaine pour Resend (emails actuellement limités à anadorbreak@gmail.com)
 - Test complet flow signup Firebase Phone OTP
+
+---
+
+## 6bis. Audit technique (mai 2026) — dette identifiée
+
+**Faits avant la PWA** :
+- ✅ Suppression 5 fichiers backend morts (Cloud API Meta abandonnée) :
+  `webhookController.ts`, `webhookRoutes.ts`, `whatsappService.ts` (racine),
+  `notificationService.ts` (racine), `paymentService.ts`
+- ✅ Fix lint Signup.tsx (ternaires en statement → if/else)
+- ✅ Fix warnings hooks Today.tsx (deps useMemo)
+
+**Reste à faire (par priorité)** :
+
+1. **🔴 RLS Supabase désactivée de fait** — toutes les policies sont
+   `using (true) with check (true)` dans `supabase_full_schema.sql`.
+   Fonctionnel car backend filtre `tenantId` à la main, mais zéro
+   defense-in-depth. À refaire avec `auth.uid()` ou JWT claims.
+
+2. **🟡 Incohérence `apiClient`** — seul `Orders.tsx` utilise
+   `utils/apiClient.ts` (qui gère 401 → logout global via custom event
+   `auth:unauthorized`). Les 14 autres pages utilisent `fetch` direct.
+   Migrer toutes les pages vers `apiClient` (~2h).
+
+3. **🟡 Bundle frontend lourd sur 3G CI** — 287 KB gzip total dont 169 KB
+   pour `@supabase/supabase-js` utilisé seulement pour `supabase.storage`
+   (uploads images). Solution : upload via backend (POST /products/upload
+   → backend utilise service role → return URL) → drop le client Supabase
+   du bundle frontend.
+
+4. **🟢 Table `customers` créée dans schéma mais jamais utilisée**.
+   Soit on l'exploite (CRM léger : nb commandes par client, panier moyen,
+   utile pour broadcast ciblé), soit on la drop.
+
+5. **🟢 Console.log à nettoyer** — ProductDetail 8x, Settings 5x, Inbox 5x.
+   Plugin `vite-plugin-strip` pour build prod.
 
 ---
 

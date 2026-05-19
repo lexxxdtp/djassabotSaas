@@ -2,7 +2,6 @@ import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-// import webhookRoutes from './routes/webhookRoutes'; // DISABLED — DEFAULT_TENANT_ID bug, see CLAUDE_ROADMAP.md
 import whatsappRoutes from './routes/whatsappRoutes';
 import { startAllTenantInstances } from './services/baileysManager';
 import authRoutes from './routes/authRoutes';
@@ -74,12 +73,6 @@ app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api', variationTemplateRoutes);
-
-// WhatsApp Cloud API webhook — DISABLED.
-// The webhook controller uses a hardcoded DEFAULT_TENANT_ID which routes all incoming
-// messages to a fictitious tenant. Baileys is the primary WhatsApp integration (per-tenant,
-// proper isolation). Re-enable only after implementing a real phone-number → tenant mapping.
-// app.use('/api/webhooks', webhookRoutes);
 
 // Paystack Payment Routes
 app.use('/api/paystack', paystackRoutes);

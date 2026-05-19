@@ -436,8 +436,13 @@ const Signup: React.FC = () => {
                                 type="button"
                                 disabled={loading}
                                 onClick={() => {
-                                    if (!otpSent) authMethod === 'phone' ? sendPhoneOTP() : sendEmailOTP();
-                                    else authMethod === 'phone' ? verifyPhoneOTP() : verifyEmailOTP();
+                                    if (!otpSent) {
+                                        if (authMethod === 'phone') sendPhoneOTP();
+                                        else sendEmailOTP();
+                                    } else {
+                                        if (authMethod === 'phone') verifyPhoneOTP();
+                                        else verifyEmailOTP();
+                                    }
                                 }}
                                 className="w-full bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                             >

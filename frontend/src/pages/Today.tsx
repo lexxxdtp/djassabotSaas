@@ -75,26 +75,22 @@ const Today: React.FC = () => {
 
     // --- DERIVED DATA ---
     const today = new Date();
-    const isSameDay = (d: Date) =>
-        d.getDate() === today.getDate() &&
-        d.getMonth() === today.getMonth() &&
-        d.getFullYear() === today.getFullYear();
+    // Bucket orders into today/yesterday in a single pass — deps tracked correctly
+    const { todayOrders, yesterdayOrders } = useMemo(() => {
+        const now = new Date();
+        const isSameDate = (a: Date, b: Date) =>
+            a.getDate() === b.getDate() &&
+            a.getMonth() === b.getMonth() &&
+            a.getFullYear() === b.getFullYear();
 
-    const todayOrders = useMemo(
-        () => orders.filter(o => isSameDay(new Date(o.createdAt || o.created_at || 0))),
-        [orders]
-    );
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(now.getDate() - 1);
 
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayOrders = useMemo(
-        () => orders.filter(o => {
-            const d = new Date(o.createdAt || o.created_at || 0);
-            return d.getDate() === yesterday.getDate() &&
-                d.getMonth() === yesterday.getMonth() &&
-                d.getFullYear() === yesterday.getFullYear();
-        }),
-        [orders]
-    );
+        const todayList = orders.filter(o => isSameDate(new Date(o.createdAt || o.created_at || 0), now));
+        const yesterdayList = orders.filter(o => isSameDate(new Date(o.createdAt || o.created_at || 0), yesterdayDate));
+
+        return { todayOrders: todayList, yesterdayOrders: yesterdayList };
+    }, [orders]);
 
     const todayRevenue = todayOrders.reduce((s, o) => s + o.total, 0);
     const yesterdayRevenue = yesterdayOrders.reduce((s, o) => s + o.total, 0);
