@@ -328,14 +328,52 @@ vers `PAID` après validation d'un screenshot Wave/OM.
 
 **Reste à faire (par priorité)** :
 
-0. **🚨 OUVERT — Valider end-to-end le signup SMS réel**
-   - Attendre 15+ min après dernière tentative (rate limit anti-abus)
-   - Tester avec un numéro CI **propre** (pas le `+225 0777225277` qui est
-     suspect côté Firebase)
-   - Vérifier dans Google Cloud Console → Logs Explorer si encore `error -39`
-   - Si toujours `-39` après 15 min → creuser reCAPTCHA Enterprise
-     (configurer une clé site dans Cloud Console, mode "Audit" d'abord)
-   - L'opérateur cible (Orange CI, MTN, Moov) peut aussi mettre du délai
+0. **🚨 BLOQUANT — `auth/error-code:-39` persistant sur signup phone**
+
+   **État** : 2h+ après dernière tentative, l'erreur persiste même en
+   navigation privée avec le bon code (reCAPTCHA invisible déployé,
+   confirmé visuellement par le badge "protection par reCAPTCHA").
+   Donc ce n'est PAS un rate limit transitoire ni un cache. C'est
+   structurel à la config Firebase du projet.
+
+   **Indice clé** : le projet Firebase s'appelle `gen-lang-client-0191931206`
+   — nom auto-généré par Google AI Studio. Ces projets sont créés pour
+   Gemini API et peuvent avoir des configurations Firebase Auth
+   différentes des projets Firebase classiques (App Check obligatoire,
+   reCAPTCHA Enterprise requis, Identity Platform mode activé, etc.).
+
+   **2 pistes à explorer demain** (dans l'ordre) :
+
+   **Piste A — Diagnostic via Google Cloud Logging** (10 min, rapide)
+   1. Google Cloud Console → Logging → Logs Explorer
+   2. Filtre : `resource.type="identitytoolkit_tenant"` ou
+      `protoPayload.serviceName="identitytoolkit.googleapis.com"`
+   3. Time range : dernière heure
+   4. Trouver les logs liés à `sendVerificationCode` ou `verifyPhoneNumber`
+   5. Voir l'erreur EXACTE (le `-39` est juste un code interne, le vrai
+      message est dans le payload Cloud)
+   6. Adapter en fonction
+
+   **Piste B — Configurer reCAPTCHA Enterprise** (15 min, fix probable)
+   1. Firebase Console → Authentication → Settings → reCAPTCHA
+   2. Cliquer "Gérer reCAPTCHA" (redirige vers Google Cloud Console)
+   3. Créer une clé reCAPTCHA Enterprise pour le domaine
+      `djassabot-saas.vercel.app`
+   4. Mode "Audit" d'abord (log mais ne bloque pas) puis "Enforce"
+   5. Revenir dans Firebase Auth Settings → activer la défense reCAPTCHA
+   6. Retester signup
+
+   **Piste C nuclear option — Créer un nouveau projet Firebase propre**
+   Si A et B échouent, c'est probablement que `gen-lang-client-0191931206`
+   est trop bridé. Créer un projet `djassabot-prod` depuis Firebase Console
+   directement (PAS depuis Google AI Studio), refaire le service account,
+   les vars Vercel, le `.env` VPS. ~30 min mais propre.
+
+   **Numéro suspect** : `+225 0777225277` était dans la liste de test
+   précédemment. Tester avec un AUTRE numéro CI au premier essai propre.
+
+   **Note** : tout le code (frontend + backend) est correct et déployé.
+   Le blocage est uniquement côté config Firebase Console.
 
 1. **🔴 RLS Supabase désactivée de fait** — toutes les policies sont
    `using (true) with check (true)` dans `supabase_full_schema.sql`.
