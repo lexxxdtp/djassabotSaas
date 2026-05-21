@@ -126,7 +126,7 @@ export default function AIPlayground() {
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm ${msg.role === 'user'
                             ? 'bg-[#00D97E] text-black rounded-tr-none'
-                            : 'bg-[#111] text-zinc-200 rounded-tl-none border border-[#1a1a1a]'
+                            : 'bg-[#111] text-white rounded-tl-none border border-[#1a1a1a]'
                             }`}>
                             {/* Afficher les images si présentes */}
                             {msg.images && msg.images.length > 0 && (

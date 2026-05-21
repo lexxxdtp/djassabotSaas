@@ -575,13 +575,13 @@ const Signup: React.FC = () => {
                             </div>
                             <div className="grid grid-cols-1 gap-1 text-xs text-[#888] mt-2">
                                 <div className={`flex items-center gap-2 ${password.length >= 8 ? 'text-green-400' : ''}`}>
-                                    <div className={`w-1.5 h-1.5 rounded-full ${password.length >= 8 ? 'bg-green-400' : 'bg-gray-600'}`} /> 8 caractères min
+                                    <div className={`w-1.5 h-1.5 rounded-full ${password.length >= 8 ? 'bg-green-400' : 'bg-[#444]'}`} /> 8 caractères min
                                 </div>
                                 <div className={`flex items-center gap-2 ${/[A-Z]/.test(password) ? 'text-green-400' : ''}`}>
-                                    <div className={`w-1.5 h-1.5 rounded-full ${/[A-Z]/.test(password) ? 'bg-green-400' : 'bg-gray-600'}`} /> 1 majuscule
+                                    <div className={`w-1.5 h-1.5 rounded-full ${/[A-Z]/.test(password) ? 'bg-green-400' : 'bg-[#444]'}`} /> 1 majuscule
                                 </div>
                                 <div className={`flex items-center gap-2 ${/\d/.test(password) ? 'text-green-400' : ''}`}>
-                                    <div className={`w-1.5 h-1.5 rounded-full ${/\d/.test(password) ? 'bg-green-400' : 'bg-gray-600'}`} /> 1 chiffre
+                                    <div className={`w-1.5 h-1.5 rounded-full ${/\d/.test(password) ? 'bg-green-400' : 'bg-[#444]'}`} /> 1 chiffre
                                 </div>
                             </div>
                         </div>
@@ -606,7 +606,7 @@ const Signup: React.FC = () => {
                         </div>
 
                         {/* Preview: what happens next */}
-                        <div className="bg-[#00D97E]/8 border border-[#00D97E]/20 rounded-xl p-4 text-xs text-zinc-300">
+                        <div className="bg-[#00D97E]/8 border border-[#00D97E]/20 rounded-xl p-4 text-xs text-[#888]">
                             <p className="font-bold flex items-center gap-1 mb-2 text-[#00D97E]">
                                 <Sparkles className="w-3.5 h-3.5" /> Après votre inscription :
                             </p>

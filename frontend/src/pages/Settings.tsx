@@ -349,7 +349,7 @@ export default function Settings() {
                                                     </div>
                                                 ) : (
                                                     <div className="max-h-60 overflow-y-auto">
-                                                        <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-line">{aiSummary}</p>
+                                                        <p className="text-xs text-[#888] leading-relaxed whitespace-pre-line">{aiSummary}</p>
                                                     </div>
                                                 )}
                                             </div>

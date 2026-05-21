@@ -160,8 +160,10 @@ export class SessionManager {
 
                     console.log(`[Manager] 🔴 Connexion fermée pour Tenant ${tenantId}. Raison: ${reason}. Reconnect: ${shouldReconnect}`);
 
-                    if (shouldReconnect) {
-                        const session = this.sessions.get(tenantId);
+                    const session = this.sessions.get(tenantId);
+                    const retries = session?.retryCount ?? 0;
+
+                    if (shouldReconnect && retries < this.MAX_RETRIES) {
                         let delay = 2000;
 
                         if (session) {
@@ -169,12 +171,17 @@ export class SessionManager {
                             delay = Math.min(session.retryCount * 2000, 30000);
                         }
 
-                        console.log(`[Manager] 🔄 Tentative de reconnexion dans ${delay / 1000}s...`);
+                        console.log(`[Manager] 🔄 Reconnexion dans ${delay / 1000}s (tentative ${retries + 1}/${this.MAX_RETRIES})...`);
 
                         setTimeout(() => {
                             this.createSession(tenantId, onConnectionUpdate).catch(e => console.error(`[Manager] Retry failed:`, e));
                         }, delay);
 
+                    } else if (shouldReconnect && retries >= this.MAX_RETRIES) {
+                        // Max retries reached — stop looping, mark as disconnected
+                        console.log(`[Manager] ⛔ Tenant ${tenantId} — max retries (${this.MAX_RETRIES}) atteint. Arrêt reconnexion.`);
+                        this.sessions.delete(tenantId);
+                        await db.updateTenantWhatsAppStatus(tenantId, 'disconnected');
                     } else {
                         console.log(`[Manager] ❌ Déconnexion définitive (Logout Manuel). Nettoyage session.`);
                         this.sessions.delete(tenantId);

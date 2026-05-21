@@ -191,7 +191,7 @@ const Inbox: React.FC = () => {
                                 onClick={() => setSelectedChat(chat)}
                                 className={`w-full p-4 flex items-start gap-3 hover:bg-[#111] transition-colors text-left border-b border-[#1a1a1a] ${selectedChat?.id === chat.id ? 'bg-[#00D97E]/10 border-l-2 border-l-[#00D97E]' : 'border-l-2 border-l-transparent'}`}
                             >
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00D97E]/10 to-[#0EA5E9]/10 flex items-center justify-center text-[#00D97E] font-bold shrink-0">
+                                <div className="w-10 h-10 rounded-full bg-[#00D97E]/10 border border-[#00D97E]/20 flex items-center justify-center text-[#00D97E] font-bold shrink-0">
                                     {chat.name.substring(0, 2).toUpperCase()}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -278,7 +278,7 @@ const Inbox: React.FC = () => {
                             messages.map((msg, idx) => (
                                 <div key={idx} className={`flex ${msg.role === 'model' ? 'justify-start' : 'justify-end'}`}>
                                     <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-md ${msg.role === 'model'
-                                        ? 'bg-[#1a1c25] text-zinc-200 rounded-tl-sm border border-[#1a1a1a]'
+                                        ? 'bg-[#111] text-white rounded-tl-sm border border-[#1a1a1a]'
                                         : 'bg-[#00D97E] text-black rounded-tr-sm'
                                         }`}>
                                         {msg.role === 'model' && (

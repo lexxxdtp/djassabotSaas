@@ -282,7 +282,7 @@ const WhatsAppConnect: React.FC = () => {
 
                 {/* Instructions / Info */}
                 <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-[#00D97E]/5 to-[#0D1117] border border-[#1a1a1a] rounded-xl p-6 relative overflow-hidden">
+                    <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
                             <Smartphone size={100} className="text-white" />
                         </div>
@@ -301,7 +301,7 @@ const WhatsAppConnect: React.FC = () => {
 
                     <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6">
                         <h3 className="text-xs font-bold text-[#888] uppercase tracking-widest mb-4 border-b border-[#1a1a1a] pb-2">Procédure de connexion</h3>
-                        <ol className="space-y-4 text-zinc-300 text-sm list-decimal list-inside marker:text-[#00D97E] marker:font-bold">
+                        <ol className="space-y-4 text-[#888] text-sm list-decimal list-inside marker:text-[#00D97E] marker:font-bold">
                             <li className="pl-2">Ouvrez <strong>WhatsApp</strong> sur votre mobile.</li>
                             <li className="pl-2">Menu <strong>⋮</strong> ou <strong>Réglages</strong> &gt; <strong>Appareils connectés</strong>.</li>
                             <li className="pl-2">Appuyez sur <span className="text-[#00D97E] font-bold">Connecter un appareil</span>.</li>

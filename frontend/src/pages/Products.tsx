@@ -183,7 +183,7 @@ export default function Products() {
             {/* Mobile FAB — Add product */}
             <button
                 onClick={handleCreate}
-                className="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-gradient-to-r bg-[#00D97E] rounded-full shadow-lg shadow-[#00D97E]/30 flex items-center justify-center text-white active:scale-90 transition-transform"
+                className="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-[#00D97E] rounded-full shadow-lg shadow-[#00D97E]/30 flex items-center justify-center text-black active:scale-90 transition-transform"
             >
                 <Plus size={24} />
             </button>

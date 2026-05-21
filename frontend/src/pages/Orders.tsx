@@ -162,7 +162,7 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => {
                         </div>
                         <div>
                             <h3 className="text-[10px] uppercase tracking-widest text-[#888] font-bold mb-2">Livraison</h3>
-                            <div className="flex items-start gap-2 text-zinc-300 text-sm">
+                            <div className="flex items-start gap-2 text-[#888] text-sm">
                                 <MapPin className="w-4 h-4 mt-0.5 text-[#00D97E] shrink-0" />
                                 <span>{order.address || 'Non renseignée'}</span>
                             </div>

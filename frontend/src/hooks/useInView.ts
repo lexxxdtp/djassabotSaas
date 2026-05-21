@@ -15,17 +15,15 @@ export function useInView<T extends HTMLElement = HTMLDivElement>(
     once: boolean = true
 ) {
     const ref = useRef<T | null>(null);
-    const [inView, setInView] = useState(false);
+    // SSR/legacy guard — if IntersectionObserver is missing, reveal immediately via lazy init.
+    const [inView, setInView] = useState<boolean>(() => typeof IntersectionObserver === 'undefined');
 
     useEffect(() => {
         const node = ref.current;
         if (!node) return;
 
-        // SSR/legacy guard — IntersectionObserver missing → reveal immediately.
-        if (typeof IntersectionObserver === 'undefined') {
-            setInView(true);
-            return;
-        }
+        // Already visible (SSR/legacy path set by lazy init above)
+        if (typeof IntersectionObserver === 'undefined') return;
 
         const observer = new IntersectionObserver(
             ([entry]) => {

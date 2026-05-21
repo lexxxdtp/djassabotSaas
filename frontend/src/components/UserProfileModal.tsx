@@ -26,7 +26,7 @@ const PlanCard = ({ id, title, price, features, recommended, currentPlan, loadin
             className={`relative border rounded-xl p-4 transition-all cursor-pointer hover:border-[#00D97E]/30 ${isCurrent
                 ? 'bg-[#111] border-emerald-500 ring-1 ring-emerald-500'
                 : recommended
-                    ? 'bg-gradient-to-b from-[#00D97E]/5 to-black border-[#00D97E]/20'
+                    ? 'bg-[#00D97E]/5 border-[#00D97E]/20'
                     : 'bg-black border-[#1a1a1a]'
                 }`}
             onClick={() => !isCurrent && onUpgrade(id)}

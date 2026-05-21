@@ -221,7 +221,7 @@ const Onboarding: React.FC = () => {
                         </button>
                         <button
                             onClick={() => navigate('/dashboard')}
-                            className="w-full mt-3 text-[#888] hover:text-zinc-300 text-sm transition-colors"
+                            className="w-full mt-3 text-[#888] hover:text-white text-sm transition-colors"
                         >
                             Plus tard, accéder au dashboard
                         </button>
@@ -424,7 +424,7 @@ const Onboarding: React.FC = () => {
                                 >
                                     <span className="text-2xl">{p.emoji}</span>
                                     <div className="flex-1">
-                                        <p className={`font-bold text-sm ${persona === p.id ? 'text-[#00D97E]' : 'text-zinc-300'}`}>{p.title}</p>
+                                        <p className={`font-bold text-sm ${persona === p.id ? 'text-[#00D97E]' : 'text-white'}`}>{p.title}</p>
                                         <p className="text-xs text-[#888] mt-0.5">{p.desc}</p>
                                     </div>
                                     {persona === p.id && <Check className="w-4 h-4 text-[#00D97E]" />}

@@ -55,7 +55,7 @@ const ActivityFeed = ({ logs }: { logs: Log[] }) => {
                                     log.type === 'action' ? 'bg-[#00D97E]' : 'bg-[#0EA5E9]'
                                 }`} />
                             <div>
-                                <p className="text-xs text-zinc-300 leading-relaxed group-hover:text-white transition-colors">
+                                <p className="text-xs text-[#888] leading-relaxed group-hover:text-white transition-colors">
                                     {log.message}
                                 </p>
                                 <p className="text-[10px] text-[#555] mt-1 font-mono">

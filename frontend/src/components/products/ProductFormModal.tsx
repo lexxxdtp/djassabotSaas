@@ -242,7 +242,7 @@ export default function ProductFormModal({
                 </button>
 
                 <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    <div className="w-1 h-6 bg-gradient-to-b from-[#00D97E] to-[#0EA5E9] rounded-full"></div>
+                    <div className="w-1 h-6 bg-[#00D97E] rounded-full"></div>
                     {productToEdit ? 'MODIFIER PRODUIT' : 'NOUVEAU PRODUIT'}
                 </h2>
 
