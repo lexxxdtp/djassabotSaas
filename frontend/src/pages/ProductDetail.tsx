@@ -341,7 +341,7 @@ const ProductDetail: React.FC = () => {
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex items-center px-6 py-2 bg-orange-500 text-black font-semibold rounded-lg hover:bg-orange-400 transition-colors shadow-lg shadow-orange-500/20"
+                        className="flex items-center px-6 py-2 bg-[#00D97E] text-black font-bold rounded-lg hover:bg-[#00D97E]/90 transition-all shadow-lg shadow-[#00D97E]/10 active:scale-[0.98]"
                     >
                         <Save size={18} className="mr-2" />
                         {saving ? 'Enregistrement...' : 'Enregistrer'}
@@ -387,7 +387,7 @@ const ProductDetail: React.FC = () => {
                                 </button>
                             </div>
                         ))}
-                        <label className="aspect-square bg-zinc-900/50 border-2 border-dashed border-zinc-700 rounded-lg flex items-center justify-center cursor-pointer hover:border-orange-500 hover:bg-zinc-900 transition-all text-[#888] hover:text-white">
+                        <label className="aspect-square bg-zinc-900/50 border-2 border-dashed border-[#1a1a1a] rounded-lg flex items-center justify-center cursor-pointer hover:border-[#00D97E]/40 hover:bg-zinc-900 transition-all text-[#888] hover:text-white">
                             <Plus size={24} />
                             <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} />
                         </label>
@@ -402,7 +402,7 @@ const ProductDetail: React.FC = () => {
                             type="text"
                             value={product.name}
                             onChange={e => setProduct({ ...product, name: e.target.value })}
-                            className="w-full bg-black border border-zinc-700 rounded-xl p-3 text-white focus:border-orange-500 outline-none text-lg font-bold"
+                            className="w-full bg-black border border-zinc-700 rounded-xl p-3 text-white focus:border-[#00D97E] outline-none text-lg font-bold"
                         />
                     </div>
 
@@ -413,7 +413,7 @@ const ProductDetail: React.FC = () => {
                                 type="number"
                                 value={product.price}
                                 onChange={e => setProduct({ ...product, price: e.target.value })}
-                                className="w-full bg-black border border-zinc-700 rounded-xl p-3 text-white focus:border-orange-500 outline-none font-mono"
+                                className="w-full bg-black border border-zinc-700 rounded-xl p-3 text-white focus:border-[#00D97E] outline-none font-mono"
                             />
                         </div>
                         <div>
@@ -425,7 +425,7 @@ const ProductDetail: React.FC = () => {
                                         v.name && v.name.trim() !== '' && v.options && v.options.length > 0
                                     );
                                     return hasActiveVariations && (
-                                        <span className="ml-2 text-orange-400 text-xs">(Auto-calculé)</span>
+                                        <span className="ml-2 text-[#00D97E] text-xs font-bold">(Auto-calculé)</span>
                                     );
                                 })()}
                             </label>
@@ -471,7 +471,7 @@ const ProductDetail: React.FC = () => {
                                     v.name && v.name.trim() !== '' && v.options && v.options.length > 0
                                 )
                                     ? 'bg-zinc-800 border-zinc-700 text-[#888] cursor-not-allowed'
-                                    : 'bg-black border-zinc-700 text-white focus:border-orange-500'
+                                    : 'bg-black border-zinc-700 text-white focus:border-[#00D97E]'
                                     }`}
                             />
                             {product.variations && product.variations.some((v: ProductVariation) =>
@@ -489,20 +489,20 @@ const ProductDetail: React.FC = () => {
                         <textarea
                             value={product.description}
                             onChange={e => setProduct({ ...product, description: e.target.value })}
-                            className="w-full bg-black border border-zinc-700 rounded-xl p-4 text-white focus:border-orange-500 outline-none min-h-[120px] leading-relaxed"
+                            className="w-full bg-black border border-zinc-700 rounded-xl p-4 text-white focus:border-[#00D97E] outline-none min-h-[120px] leading-relaxed"
                             placeholder="Décrivez votre produit..."
                         />
                     </div>
 
                     {/* === Consignes IA === */}
-                    <div className="border-t border-zinc-800 pt-5">
-                        <label className="block text-sm font-medium text-orange-400 mb-1">
+                    <div className="border-t border-[#1a1a1a] pt-5">
+                        <label className="block text-sm font-medium text-[#00D97E] mb-1">
                             🤖 Consignes IA (instructions spéciales pour ce produit)
                         </label>
                         <textarea
                             value={product.aiInstructions || ''}
                             onChange={e => setProduct({ ...product, aiInstructions: e.target.value })}
-                            className="w-full bg-black border border-zinc-700 rounded-xl p-4 text-white focus:border-orange-500 outline-none min-h-[100px] leading-relaxed text-sm"
+                            className="w-full bg-black border border-zinc-700 rounded-xl p-4 text-white focus:border-[#00D97E] outline-none min-h-[100px] leading-relaxed text-sm"
                             placeholder="Ex: Si le client en prend 3+, proposer -10% sur le total. À partir de 5, offrir la livraison gratuite."
                         />
                         <div className="mt-2 text-[#555] text-xs space-y-1">
@@ -519,9 +519,9 @@ const ProductDetail: React.FC = () => {
                         <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <Tags size={20} className="text-orange-500" />
+                                    <Tags size={20} className="text-[#00D97E]" />
                                     <h3 className="text-white font-semibold">Déclinaisons / Variations</h3>
-
+ 
                                     {/* Toggle Switch */}
                                     <button
                                         type="button"
@@ -533,7 +533,7 @@ const ProductDetail: React.FC = () => {
                                                 setProduct({ ...product, variations: [] });
                                             }
                                         }}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${variationsEnabled ? 'bg-orange-500' : 'bg-zinc-700'
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${variationsEnabled ? 'bg-[#00D97E]' : 'bg-zinc-700'
                                             }`}
                                     >
                                         <span
@@ -541,12 +541,12 @@ const ProductDetail: React.FC = () => {
                                                 }`}
                                         />
                                     </button>
-
-                                    <span className={`text-xs font-medium ${variationsEnabled ? 'text-orange-400' : 'text-[#888]'}`}>
+ 
+                                    <span className={`text-xs font-semibold ${variationsEnabled ? 'text-[#00D97E]' : 'text-[#888]'}`}>
                                         {variationsEnabled ? 'Activé' : 'Désactivé'}
                                     </span>
                                 </div>
-
+ 
                                 {/* Texte explicatif */}
                                 <p className="text-[#888] text-sm leading-relaxed">
                                     {variationsEnabled ? (
@@ -557,7 +557,7 @@ const ProductDetail: React.FC = () => {
                                 </p>
                             </div>
                         </div>
-
+ 
                         {/* Section variations (visible seulement si activé) */}
                         {variationsEnabled && (
                             <>
@@ -568,13 +568,13 @@ const ProductDetail: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={addVariation}
-                                        className="flex items-center gap-1 px-3 py-1.5 bg-orange-500/10 text-orange-500 rounded-lg hover:bg-orange-500/20 transition-colors text-sm"
+                                        className="flex items-center gap-1 px-3 py-1.5 bg-[#00D97E]/10 text-[#00D97E] rounded-lg hover:bg-[#00D97E]/20 transition-colors text-sm font-bold"
                                     >
                                         <Plus size={16} />
                                         Ajouter une déclinaison
                                     </button>
                                 </div>
-
+ 
                                 {product.variations && product.variations.length > 0 ? (
                                     <div className="space-y-4">
                                         {product.variations.map((variation: ProductVariation, varIndex: number) => (
@@ -592,7 +592,7 @@ const ProductDetail: React.FC = () => {
                                                                     }
                                                                     updateVariationName(varIndex, e.target.value);
                                                                 }}
-                                                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-orange-500 outline-none text-sm"
+                                                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-[#00D97E] outline-none text-sm"
                                                             >
                                                                 <option value="">Sélectionner un type...</option>
                                                                 {variationTemplates.map((template, idx) => (
@@ -620,7 +620,7 @@ const ProductDetail: React.FC = () => {
                                                                             updateVariationName(varIndex, e.currentTarget.value.trim());
                                                                         }
                                                                     }}
-                                                                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-orange-500 outline-none text-sm"
+                                                                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-[#00D97E] outline-none text-sm"
                                                                 />
                                                             )}
                                                         </div>
@@ -630,7 +630,7 @@ const ProductDetail: React.FC = () => {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => updateVariationName(varIndex, '')}
-                                                                className="text-xs text-[#888] hover:text-orange-500"
+                                                                className="text-xs text-[#888] hover:text-[#00D97E]"
                                                             >
                                                                 Changer
                                                             </button>
@@ -663,7 +663,7 @@ const ProductDetail: React.FC = () => {
                                                                         type="text"
                                                                         value={option.value}
                                                                         onChange={(e) => updateVariationOption(varIndex, optIndex, 'value', e.target.value)}
-                                                                        className="w-full bg-zinc-800 border-0 border-b border-transparent hover:border-zinc-600 focus:border-orange-500 rounded-none px-0 py-1 text-white text-sm font-medium outline-none transition-colors"
+                                                                        className="w-full bg-zinc-800 border-0 border-b border-transparent hover:border-zinc-600 focus:border-[#00D97E] rounded-none px-0 py-1 text-white text-sm font-medium outline-none transition-colors"
                                                                     />
                                                                 </div>
                                                                 <div className="col-span-2">
@@ -673,7 +673,7 @@ const ProductDetail: React.FC = () => {
                                                                         value={option.stock ?? ''}
                                                                         onChange={(e) => updateVariationOption(varIndex, optIndex, 'stock', e.target.value ? Math.max(0, Number(e.target.value)) : undefined)}
                                                                         placeholder="∞"
-                                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
+                                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-[#00D97E] outline-none"
                                                                     />
                                                                 </div>
                                                                 <div className="col-span-3 flex items-center">
@@ -682,7 +682,7 @@ const ProductDetail: React.FC = () => {
                                                                         type="number"
                                                                         value={option.priceModifier ?? 0}
                                                                         onChange={(e) => updateVariationOption(varIndex, optIndex, 'priceModifier', Number(e.target.value))}
-                                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-orange-500 outline-none"
+                                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-[#00D97E] outline-none"
                                                                     />
                                                                 </div>
 
@@ -705,7 +705,7 @@ const ProductDetail: React.FC = () => {
                                                                     ))}
 
                                                                     {(!option.images || option.images.length < 2) && (
-                                                                        <label className="w-8 h-8 flex items-center justify-center bg-zinc-800 border border-zinc-700 border-dashed rounded cursor-pointer hover:border-orange-500 hover:text-orange-500 text-[#888] transition-colors">
+                                                                        <label className="w-8 h-8 flex items-center justify-center bg-zinc-800 border border-zinc-700 border-dashed rounded cursor-pointer hover:border-[#00D97E] hover:text-[#00D97E] text-[#888] transition-colors">
                                                                             <ImageIcon size={14} />
                                                                             <input
                                                                                 type="file"
@@ -737,7 +737,7 @@ const ProductDetail: React.FC = () => {
                                                     <input
                                                         type="text"
                                                         placeholder="Ajouter une option (ex: XL, Rouge, Nutella)"
-                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-orange-500 outline-none text-sm"
+                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-[#00D97E] outline-none text-sm"
                                                         onKeyDown={(e) => {
                                                             if (e.key === 'Enter') {
                                                                 e.preventDefault();

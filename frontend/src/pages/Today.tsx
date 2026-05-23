@@ -11,6 +11,9 @@ import {
     CheckCircle2,
     WifiOff,
     CreditCard,
+    X,
+    Download,
+    Share
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
@@ -38,6 +41,50 @@ const Today: React.FC = () => {
     const [logs, setLogs] = useState<Log[]>([]);
     const [botStatus, setBotStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
     const [loading, setLoading] = useState(true);
+
+    // PWA Installation states
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [isInstallable, setIsInstallable] = useState(false);
+    const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+    useEffect(() => {
+        // Check if already running in standalone mode (installed)
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+        const dismissed = sessionStorage.getItem('pwa-install-dismissed');
+
+        if (!isStandalone && !dismissed) {
+            setShowInstallBanner(true);
+        }
+
+        const handleBeforeInstallPrompt = (e: Event) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            setIsInstallable(true);
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            setShowInstallBanner(false);
+        }
+        setDeferredPrompt(null);
+    };
+
+    const handleDismissInstall = () => {
+        sessionStorage.setItem('pwa-install-dismissed', 'true');
+        setShowInstallBanner(false);
+    };
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
 
     const hour = new Date().getHours();
     const isEvening = hour >= 18 || hour < 5;
@@ -122,6 +169,49 @@ const Today: React.FC = () => {
                 </div>
                 <BotStatusBadge status={botStatus} />
             </div>
+
+            {/* PWA INSTALL BANNER */}
+            {showInstallBanner && (
+                <div className="relative overflow-hidden bg-gradient-to-r from-[#00D97E]/10 to-transparent border border-[#00D97E]/20 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in slide-in-from-top duration-300">
+                    <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-xl bg-[#00D97E]/10 text-[#00D97E] border border-[#00D97E]/20 mt-1 md:mt-0 shrink-0">
+                            <Download className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-1">
+                            <h3 className="text-white font-bold text-base flex items-center gap-2">
+                                Installer l'application DjassaBot
+                                <span className="text-[10px] bg-[#00D97E]/10 text-[#00D97E] border border-[#00D97E]/20 px-2 py-0.5 rounded font-mono uppercase font-bold tracking-wider">PWA</span>
+                            </h3>
+                            <p className="text-[#888] text-sm leading-relaxed max-w-xl">
+                                Accédez instantanément à votre inventaire, vos ventes et vos conversations en un clic directement depuis votre écran d'accueil.
+                            </p>
+                            {isIOS && (
+                                <p className="text-xs text-[#00D97E] flex items-center gap-1.5 mt-2 bg-[#00D97E]/5 border border-[#00D97E]/10 rounded-lg p-2 w-fit">
+                                    <Share className="w-3.5 h-3.5 text-[#00D97E]" />
+                                    <span>Sur iPhone : cliquez sur <strong>Partager</strong> en bas de Safari puis <strong>Sur l'écran d'accueil</strong>.</span>
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
+                        {isInstallable && !isIOS && (
+                            <button
+                                onClick={handleInstallClick}
+                                className="flex-1 md:flex-none bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold text-sm px-5 py-2.5 rounded-xl transition-all active:scale-[0.97] flex items-center justify-center gap-2"
+                            >
+                                <Download className="w-4 h-4" />
+                                <span>Installer</span>
+                            </button>
+                        )}
+                        <button
+                            onClick={handleDismissInstall}
+                            className="flex-1 md:flex-none bg-[#111] hover:bg-[#1a1a1a] border border-[#1a1a1a] text-[#888] hover:text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all active:scale-[0.97]"
+                        >
+                            Fermer
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* BOT DISCONNECTED ALERT */}
             {botStatus === 'disconnected' && !loading && (
