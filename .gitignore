@@ -39,3 +39,8 @@ backend/database/*.json
 
 # Frontend specific
 frontend/.eslintcache
+
+# Firebase Keys
+*firebase-admin-key.json
+firebase-admin-key.json
+firebase-admin-key*.json

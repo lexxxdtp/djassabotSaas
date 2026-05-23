@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getApiUrl } from '../utils/apiConfig';
+import { apiClient } from '../utils/apiClient';
 import {
     MessageSquare, Send, Bot, MoreVertical,
     Search, ArrowLeft, RefreshCw, Zap, ZapOff
@@ -24,7 +24,6 @@ interface Message {
 
 const Inbox: React.FC = () => {
     const { token } = useAuth();
-    const API_URL = getApiUrl();
     const [chats, setChats] = useState<Chat[]>([]);
     const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -38,9 +37,7 @@ const Inbox: React.FC = () => {
     // Fetch Chats
     const fetchChats = React.useCallback(async () => {
         try {
-            const res = await fetch(`${API_URL}/chats`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await apiClient('/chats');
             if (res.ok) {
                 const data = await res.json();
                 setChats(data);
@@ -50,15 +47,13 @@ const Inbox: React.FC = () => {
         } finally {
             setLoadingChats(false);
         }
-    }, [API_URL, token]);
+    }, []);
 
     // Fetch Messages for Selected Chat
     const fetchMessages = React.useCallback(async (jid: string) => {
         setLoadingMessages(true);
         try {
-            const res = await fetch(`${API_URL}/chats/${encodeURIComponent(jid)}/messages`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await apiClient(`/chats/${encodeURIComponent(jid)}/messages`);
             if (res.ok) {
                 const data = await res.json();
                 setMessages(data);
@@ -68,7 +63,7 @@ const Inbox: React.FC = () => {
         } finally {
             setLoadingMessages(false);
         }
-    }, [API_URL, token]);
+    }, []);
 
     // Initial Load & Polling
     useEffect(() => {
@@ -84,16 +79,14 @@ const Inbox: React.FC = () => {
 
         const interval = setInterval(() => {
             // Background update without loader
-            fetch(`${API_URL}/chats/${encodeURIComponent(selectedChat.id)}/messages`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
+            apiClient(`/chats/${encodeURIComponent(selectedChat.id)}/messages`)
                 .then(res => res.json())
                 .then(data => setMessages(data))
                 .catch(e => console.error(e));
         }, 8000); // Poll messages every 8s (reduced from 3s)
 
         return () => clearInterval(interval);
-    }, [selectedChat, API_URL, token, fetchMessages]);
+    }, [selectedChat, token, fetchMessages]);
 
     // Scroll to bottom
     useEffect(() => {
@@ -106,12 +99,8 @@ const Inbox: React.FC = () => {
 
         setSending(true);
         try {
-            const res = await fetch(`${API_URL}/chats/${encodeURIComponent(selectedChat.id)}/send`, {
+            const res = await apiClient(`/chats/${encodeURIComponent(selectedChat.id)}/send`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ text: newMessage })
             });
 
@@ -136,12 +125,8 @@ const Inbox: React.FC = () => {
         setChats(prev => prev.map(c => c.id === selectedChat.id ? { ...c, autopilotEnabled: newState } : c));
 
         try {
-            await fetch(`${API_URL}/chats/${encodeURIComponent(selectedChat.id)}/toggle-autopilot`, {
+            await apiClient(`/chats/${encodeURIComponent(selectedChat.id)}/toggle-autopilot`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ enabled: newState })
             });
         } catch (error) {

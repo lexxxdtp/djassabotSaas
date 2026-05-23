@@ -10,11 +10,14 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
     const API_URL = getApiUrl();
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
-    const headers = {
-        'Content-Type': 'application/json',
+    const headers: Record<string, string> = {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        ...options.headers,
+        ...(options.headers as Record<string, string>),
     };
+
+    if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+    }
 
     const config: RequestInit = {
         ...options,

@@ -1,8 +1,7 @@
 import { Edit, Trash2 } from 'lucide-react';
 import type { Product, ProductVariation, VariationOption } from '../../types';
-import { getApiUrl } from '../../utils/apiConfig';
-import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../../utils/apiClient';
 
 interface ProductCardProps {
     product: Product;
@@ -13,7 +12,6 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, onEdit, onDelete, onUpdate }: ProductCardProps) {
     const navigate = useNavigate();
-    const { token } = useAuth();
 
     // Check availability logic
     const hasActiveVariations = product.variations && product.variations.some((v: ProductVariation) =>
@@ -32,14 +30,9 @@ export default function ProductCard({ product, onEdit, onDelete, onUpdate }: Pro
         const newStock = Math.max(0, product.stock + delta);
         onUpdate({ ...product, stock: newStock }); // Optimistic update
 
-        const API_URL = getApiUrl();
         try {
-            await fetch(`${API_URL}/products/${product.id}`, {
+            await apiClient(`/products/${product.id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ stock: newStock })
             });
         } catch (error) {

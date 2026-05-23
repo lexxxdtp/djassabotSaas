@@ -469,6 +469,80 @@ export const analyzeImage = async (imageInput: string | Buffer, mimeType: string
     }
 };
 
+export interface ReceiptAnalysis {
+    isReceipt: boolean;
+    amount?: number;
+    transactionId?: string;
+    provider?: 'wave' | 'orange_money' | 'mtn_money' | 'other';
+    confidence?: 'high' | 'medium' | 'low';
+}
+
+export const analyzePaymentReceipt = async (
+    imageInput: string | Buffer,
+    mimeType: string = 'image/jpeg'
+): Promise<ReceiptAnalysis> => {
+    const currentModel = getModel();
+
+    if (!currentModel) {
+        console.warn('[AI] No Valid API Key found. Using Mock Receipt Analysis.');
+        return { isReceipt: false };
+    }
+
+    try {
+        let imageData: string;
+        if (Buffer.isBuffer(imageInput)) {
+            imageData = imageInput.toString('base64');
+        } else {
+            const imageResp = await axios.get(imageInput, { responseType: 'arraybuffer' });
+            imageData = Buffer.from(imageResp.data).toString('base64');
+        }
+
+        const prompt = `
+        ANALYZING IMAGE FOR PAYMENT RECEIPT (Ivory Coast context: Wave, Orange Money (OM), MTN Money, etc.)
+
+        TASK:
+        1. Determine if this image is a mobile money payment receipt or confirmation screenshot.
+        2. If it is NOT a payment receipt/confirmation, return strictly JSON:
+           { "isReceipt": false }
+        3. If it IS a payment receipt, extract the following:
+           - "amount": The exact total transaction amount in FCFA (numeric value only, e.g., 15000).
+           - "transactionId": The transaction ID or reference code (e.g. "Ref: 3829020" or similar transaction ID).
+           - "provider": Identify the mobile money provider. Choose strictly one of: "wave", "orange_money", "mtn_money", "other".
+           - "confidence": "high" if you can clearly read the amount and transaction ID, "medium" if it looks like a receipt but text is partially blurred, "low" if uncertain.
+        
+        Return STRICTLY valid JSON. No markdown backticks, no "json" prefix. Just the raw JSON string.
+        Example receipt match response:
+        { "isReceipt": true, "amount": 5000, "transactionId": "23901920", "provider": "wave", "confidence": "high" }
+        `;
+
+        const result = await currentModel.generateContent([
+            prompt,
+            {
+                inlineData: {
+                    data: imageData,
+                    mimeType: mimeType,
+                },
+            },
+        ]);
+        
+        const rawText = result.response.text();
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        const jsonString = jsonMatch ? jsonMatch[0] : rawText.trim().replace(/```json/g, '').replace(/```/g, '');
+        
+        const data = JSON.parse(jsonString);
+        return {
+            isReceipt: !!data.isReceipt,
+            amount: data.amount ? parseFloat(data.amount) : undefined,
+            transactionId: data.transactionId || undefined,
+            provider: data.provider || undefined,
+            confidence: data.confidence || undefined
+        };
+    } catch (error) {
+        logger.error({ err: error }, 'Payment receipt analysis error');
+        return { isReceipt: false };
+    }
+};
+
 export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "audio/ogg"): Promise<string> => {
     const currentModel = getModel();
     if (!currentModel) {

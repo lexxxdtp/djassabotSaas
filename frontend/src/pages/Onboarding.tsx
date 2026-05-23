@@ -6,7 +6,7 @@ import {
     Package, MessageCircle, RefreshCw, PartyPopper, LogOut
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getApiUrl } from '../utils/apiConfig';
+import { apiClient } from '../utils/apiClient';
 
 type Step = 'welcome' | 'whatsapp' | 'product' | 'personality' | 'done';
 
@@ -34,8 +34,6 @@ const PERSONALITIES = [
 const Onboarding: React.FC = () => {
     const navigate = useNavigate();
     const { token, isAuthenticated, isLoading } = useAuth();
-    const API_URL = getApiUrl();
-
     const [step, setStep] = useState<Step>('welcome');
     const [error, setError] = useState('');
 
@@ -56,9 +54,7 @@ const Onboarding: React.FC = () => {
         let active = true;
         const poll = async () => {
             try {
-                const res = await fetch(`${API_URL}/whatsapp/status`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await apiClient('/whatsapp/status');
                 if (!active || !res.ok) return;
                 const data = await res.json();
                 if (data.status === 'connected') {
@@ -71,7 +67,7 @@ const Onboarding: React.FC = () => {
         poll();
         const interval = setInterval(poll, 3000);
         return () => { active = false; clearInterval(interval); };
-    }, [step, token, waMethod, API_URL]);
+    }, [step, token, waMethod]);
 
     const requestPairingCode = async () => {
         if (waPhone.replace(/\D/g, '').length < 10) {
@@ -84,9 +80,8 @@ const Onboarding: React.FC = () => {
         try {
             const cleaned = waPhone.replace(/\D/g, '').replace(/^0/, '');
             const fullNumber = `225${cleaned}`;
-            const res = await fetch(`${API_URL}/whatsapp/pair-code`, {
+            const res = await apiClient('/whatsapp/pair-code', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ phoneNumber: fullNumber }),
             });
             const data = await res.json();
@@ -114,9 +109,8 @@ const Onboarding: React.FC = () => {
         setError('');
         setProductSaving(true);
         try {
-            const res = await fetch(`${API_URL}/products`, {
+            const res = await apiClient('/products', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ name: productName.trim(), price, stock }),
             });
             if (!res.ok) throw new Error('Erreur lors de la création');
@@ -136,15 +130,12 @@ const Onboarding: React.FC = () => {
         setPersonaSaving(true);
         setError('');
         try {
-            const getRes = await fetch(`${API_URL}/settings`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const getRes = await apiClient('/settings');
             const current = await getRes.json();
             const slangLevel = persona === 'ivoirien' ? 'high' : persona === 'commercial' ? 'low' : 'medium';
             const next = { ...current, persona, slangLevel };
-            await fetch(`${API_URL}/settings`, {
+            await apiClient('/settings', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(next),
             });
             setStep('done');

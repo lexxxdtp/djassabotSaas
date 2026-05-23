@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, ArrowRight } from 'lucide-react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { getApiUrl } from '../utils/apiConfig';
+import { apiClient } from '../utils/apiClient';
 
 const ResetPassword: React.FC = () => {
     const [password, setPassword] = useState('');
@@ -13,7 +13,6 @@ const ResetPassword: React.FC = () => {
     const [searchParams] = useSearchParams();
     const token = searchParams.get('token');
     const navigate = useNavigate();
-    const API_URL = getApiUrl();
 
     useEffect(() => {
         if (!token) {
@@ -40,9 +39,8 @@ const ResetPassword: React.FC = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_URL}/auth/reset-password`, {
+            const response = await apiClient('/auth/reset-password', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     token,
                     password

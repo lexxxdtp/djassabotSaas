@@ -58,3 +58,51 @@ Contacter le client ou transférer au livreur.`;
         console.error('Error sending order notification', error);
     }
 }
+
+export async function sendPaymentNotification(
+    sock: WASocket,
+    tenantId: string,
+    customerJid: string,
+    orderId: string,
+    amount: number,
+    transactionId: string,
+    provider: string
+) {
+    try {
+        const settings = await db.getSettings(tenantId);
+
+        // Target Number
+        let notificationPhone = (settings.notificationPhone || settings.phone)?.replace(/[^0-9]/g, '');
+
+        if (!notificationPhone || notificationPhone.length < 8) return;
+
+        let targetJid = notificationPhone;
+        if (!targetJid.includes('@s.whatsapp.net')) {
+            // Simple heuristic for CI numbers (starts with 01/05/07 and length 10)
+            if (targetJid.length === 10 && (targetJid.startsWith('01') || targetJid.startsWith('05') || targetJid.startsWith('07'))) {
+                targetJid = '225' + targetJid;
+            }
+            targetJid = targetJid + '@s.whatsapp.net';
+        }
+
+        const dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+
+        const msg =
+            `💰 *PAIEMENT AUTOMATIQUE REÇU*
+📅 *Date:* ${dateStr}
+
+👤 *Client:* ${customerJid.split('@')[0]}
+📦 *Commande:* ${orderId}
+💵 *Montant:* ${amount.toLocaleString('fr-FR')} FCFA
+🧾 *ID Transaction:* ${transactionId}
+🏦 *Moyen de Paiement:* ${provider.toUpperCase()}
+
+✅ Le statut de la commande a été mis à jour à *PAYÉE* automatiquement.`;
+
+        await sock.sendMessage(targetJid, { text: msg });
+        console.log(`[Notification] Sent payment notification to vendor ${targetJid}`);
+
+    } catch (error) {
+        console.error('Error sending payment notification', error);
+    }
+}

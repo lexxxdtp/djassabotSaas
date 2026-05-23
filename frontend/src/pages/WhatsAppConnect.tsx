@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import { RefreshCw, CheckCircle, LogOut, Smartphone, Keyboard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getApiUrl } from '../utils/apiConfig';
+import { apiClient } from '../utils/apiClient';
 
 const WhatsAppConnect: React.FC = () => {
     const { token } = useAuth();
@@ -14,16 +14,12 @@ const WhatsAppConnect: React.FC = () => {
     const [pairingCode, setPairingCode] = useState<string | null>(null);
     const [requestingCode, setRequestingCode] = useState(false);
 
-    const API_URL = getApiUrl();
-
     useEffect(() => {
         if (!token) return;
 
         const fetchStatus = async () => {
             try {
-                const res = await fetch(`${API_URL}/whatsapp/status`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await apiClient('/whatsapp/status');
 
                 if (res.status === 401) return;
 
@@ -43,15 +39,14 @@ const WhatsAppConnect: React.FC = () => {
         fetchStatus();
         const interval = setInterval(fetchStatus, 3000);
         return () => clearInterval(interval);
-    }, [token, API_URL, usePairingCode, pairingCode]);
+    }, [token, usePairingCode, pairingCode]);
 
     const handleLogout = async () => {
         if (!confirm('Voulez-vous vraiment déconnecter votre WhatsApp ?')) return;
         setLoading(true);
         try {
-            await fetch(`${API_URL}/whatsapp/logout`, {
+            await apiClient('/whatsapp/logout', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
             });
             setStatus('disconnected');
             setQr(null);
@@ -82,12 +77,8 @@ const WhatsAppConnect: React.FC = () => {
         console.log('Requesting pairing for:', fullNumber);
 
         try {
-            const res = await fetch(`${API_URL}/whatsapp/pair-code`, {
+            const res = await apiClient('/whatsapp/pair-code', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ phoneNumber: fullNumber })
             });
             const data = await res.json();

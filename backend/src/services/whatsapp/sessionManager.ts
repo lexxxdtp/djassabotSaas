@@ -113,10 +113,13 @@ export class SessionManager {
         });
 
         // Stocker la session temporairement
+        const existingSession = this.sessions.get(tenantId);
+        const currentRetryCount = existingSession ? existingSession.retryCount : 0;
+
         this.sessions.set(tenantId, {
             sock,
             status: 'connecting',
-            retryCount: 0
+            retryCount: currentRetryCount
         });
 
         // Gestion des événements

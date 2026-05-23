@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Check, Shield, Crown, Loader2 } from 'lucide-react';
-import { getApiUrl } from '../utils/apiConfig';
+import { apiClient } from '../utils/apiClient';
 import { useAuth } from '../context/AuthContext';
 
 interface Plan {
@@ -95,7 +95,7 @@ const PlanCard = ({ title, price, features, planId, recommended = false, current
 
 export default function Subscription() {
     // currentPlan will be fetched from API after Paystack callback
-    const { tenant, token, user } = useAuth();
+    const { tenant, user } = useAuth();
     // Use actual tenant plan, defaulting to 'starter' only if verified or checking specific statuses
     // For visual correctness, if status is 'trial', we might want to show that.
     // However, sticking to the implementation request: use real data.
@@ -109,7 +109,7 @@ export default function Subscription() {
     useEffect(() => {
         const fetchPlans = async () => {
             try {
-                const res = await fetch(`${getApiUrl()}/paystack/plans`);
+                const res = await apiClient('/paystack/plans');
                 const data = await res.json();
                 if (data.plans) {
                     setPlans(data.plans);
@@ -136,12 +136,8 @@ export default function Subscription() {
         try {
             const userEmail = user?.email || 'user@example.com';
 
-            const res = await fetch(`${getApiUrl()}/paystack/subscribe`, {
+            const res = await apiClient('/paystack/subscribe', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ plan, email: userEmail })
             });
 

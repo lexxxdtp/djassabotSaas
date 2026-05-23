@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'T-Djaasa App',
-        short_name: 'T-Djaasa',
+        name: 'DjassaBot Business',
+        short_name: 'DjassaBot',
         description: 'Votre Vendeur IA Automatisé',
         theme_color: '#0a0c10',
         background_color: '#0a0c10',
@@ -51,8 +51,6 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-charts': ['recharts'],
           'vendor-ui': ['lucide-react'],
-          // Separate Supabase client
-          'vendor-supabase': ['@supabase/supabase-js'],
         },
       },
     },

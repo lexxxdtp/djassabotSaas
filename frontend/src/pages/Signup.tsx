@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getApiUrl } from '../utils/apiConfig';
+import { apiClient } from '../utils/apiClient';
 import { auth } from '../firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import type { ConfirmationResult } from 'firebase/auth';
@@ -38,9 +38,6 @@ const BIRTH_YEARS = Array.from({ length: MAX_AGE - MIN_AGE + 1 }, (_, i) => CURR
 const Signup: React.FC = () => {
     const navigate = useNavigate();
     const { login, isAuthenticated } = useAuth();
-    const API_URL = getApiUrl();
-
-    // === Wizard state ===
     const [step, setStep] = useState<1 | 2 | 3>(1);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -114,9 +111,8 @@ const Signup: React.FC = () => {
             setLoading(true);
             setError('');
             try {
-                const res = await fetch(`${API_URL}/auth/check-phone`, {
+                const res = await apiClient('/auth/check-phone', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone: `+225${phone}` }),
                 });
                 const data = await res.json();
@@ -184,11 +180,10 @@ const Signup: React.FC = () => {
         setError('');
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/auth/send-email-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email.toLowerCase().trim() }),
-            });
+            const res = await apiClient('/auth/send-email-otp', {
+                    method: 'POST',
+                    body: JSON.stringify({ email: email.toLowerCase().trim() }),
+                });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erreur envoi email.');
             setOtpSent(true);
@@ -208,9 +203,8 @@ const Signup: React.FC = () => {
         setError('');
         setLoading(true);
         try {
-            const res = await fetch(`${API_URL}/auth/verify-email-otp`, {
+            const res = await apiClient('/auth/verify-email-otp', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: email.toLowerCase().trim(), code: otpCode }),
             });
             const data = await res.json();
@@ -255,9 +249,8 @@ const Signup: React.FC = () => {
                 body.phone = null;
                 body.emailVerified = true;
             }
-            const res = await fetch(`${API_URL}/auth/signup`, {
+            const res = await apiClient('/auth/signup', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
             const data = await res.json();

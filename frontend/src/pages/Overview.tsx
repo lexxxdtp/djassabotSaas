@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, DollarSign, ShoppingCart, Activity, Globe, Package } from 'lucide-react';
-import { getApiUrl } from '../utils/apiConfig';
 import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../utils/apiClient';
 
 // --- COMPONENTS ---
 
@@ -209,16 +209,14 @@ export default function Overview() {
 
         const fetchData = async () => {
             try {
-                const API_URL = getApiUrl();
-
                 // 1. Fetch Orders for Stats & Chart
-                const resOrders = await fetch(`${API_URL}/orders`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const resOrders = await apiClient('/orders');
 
                 // 2. Fetch Logs
-                const resLogs = await fetch(`${API_URL}/dashboard/pulse`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const resLogs = await apiClient('/dashboard/pulse');
 
                 // 3. Fetch Recent Orders
-                const resRecent = await fetch(`${API_URL}/dashboard/recent-orders`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const resRecent = await apiClient('/dashboard/recent-orders');
 
                 if (resOrders.ok) {
                     const orders: DashboardOrder[] = await resOrders.json();

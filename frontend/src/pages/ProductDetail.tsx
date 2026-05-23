@@ -2,9 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Trash2, Image as ImageIcon, X, Plus, Tags } from 'lucide-react';
-import { supabase } from '../supabaseClient';
-import { getApiUrl } from '../utils/apiConfig';
 import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../utils/apiClient';
 
 // Option within a variation (with stock and price modifier)
 interface VariationOption {
@@ -63,10 +62,7 @@ const ProductDetail: React.FC = () => {
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const API_URL = getApiUrl();
-                const res = await fetch(`${API_URL}/variation-templates`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await apiClient('/variation-templates');
                 if (res.ok) {
                     const data: VariationTemplate[] = await res.json();
                     setVariationTemplates(data);
@@ -86,12 +82,7 @@ const ProductDetail: React.FC = () => {
                     return;
                 }
 
-                const API_URL = getApiUrl();
-                const res = await fetch(`${API_URL}/products`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+                const res = await apiClient('/products');
 
                 if (!res.ok) {
                     console.error('Failed to fetch products');
@@ -132,13 +123,8 @@ const ProductDetail: React.FC = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const API_URL = getApiUrl();
-            const res = await fetch(`${API_URL}/products/${id}`, {
+            const res = await apiClient(`/products/${id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({
                     ...product,
                     price: Number(product.price),
@@ -161,12 +147,8 @@ const ProductDetail: React.FC = () => {
     const handleDelete = async () => {
         if (!confirm('Voulez-vous vraiment supprimer ce produit ?')) return;
         try {
-            const API_URL = getApiUrl();
-            await fetch(`${API_URL}/products/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            await apiClient(`/products/${id}`, {
+                method: 'DELETE'
             });
             navigate('/dashboard/products');
         } catch (error) {
@@ -182,19 +164,21 @@ const ProductDetail: React.FC = () => {
 
         try {
             for (const file of files) {
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${Math.random()}.${fileExt}`;
-                const { error } = await supabase.storage
-                    .from('product-images')
-                    .upload(fileName, file);
+                const formData = new FormData();
+                formData.append('file', file);
 
-                if (error) throw error;
+                const response = await apiClient('/products/upload', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                const { data: { publicUrl } } = supabase.storage
-                    .from('product-images')
-                    .getPublicUrl(fileName);
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || 'Erreur lors du téléversement');
+                }
 
-                newImages.push(publicUrl);
+                const data = await response.json();
+                newImages.push(data.url);
             }
 
             setProduct({
@@ -244,13 +228,8 @@ const ProductDetail: React.FC = () => {
     // Save a new custom variation template
     const saveVariationTemplate = async (name: string, options: VariationOption[]) => {
         try {
-            const API_URL = getApiUrl();
-            await fetch(`${API_URL}/variation-templates`, {
+            await apiClient('/variation-templates', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({
                     name,
                     default_options: options
@@ -297,19 +276,21 @@ const ProductDetail: React.FC = () => {
         try {
             const newImages: string[] = [];
             for (const file of files) {
-                const fileExt = file.name.split('.').pop();
-                const fileName = `var-${Date.now()}-${Math.random()}.${fileExt}`;
-                const { error } = await supabase.storage
-                    .from('product-images')
-                    .upload(fileName, file);
+                const formData = new FormData();
+                formData.append('file', file);
 
-                if (error) throw error;
+                const response = await apiClient('/products/upload', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                const { data: { publicUrl } } = supabase.storage
-                    .from('product-images')
-                    .getPublicUrl(fileName);
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || 'Erreur lors du téléversement');
+                }
 
-                newImages.push(publicUrl);
+                const data = await response.json();
+                newImages.push(data.url);
             }
 
             // Update variation images

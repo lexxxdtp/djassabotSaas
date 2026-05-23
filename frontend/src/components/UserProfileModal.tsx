@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, User, Crown, Shield, Check, Mail, Building } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getApiUrl } from '../utils/apiConfig';
+import { apiClient } from '../utils/apiClient';
 
 interface UserProfileModalProps {
     isOpen: boolean;
@@ -67,7 +67,7 @@ const PlanCard = ({ id, title, price, features, recommended, currentPlan, loadin
 };
 
 export default function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
-    const { user, tenant, token } = useAuth();
+    const { user, tenant } = useAuth();
     const [activeTab, setActiveTab] = useState<'profile' | 'subscription'>('subscription');
     const [currentPlan] = useState(tenant?.subscription_tier || 'starter');
     const [loading, setLoading] = useState(false);
@@ -81,12 +81,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
         try {
             const userEmail = user?.email || 'user@example.com';
 
-            const res = await fetch(`${getApiUrl()}/paystack/subscribe`, {
+            const res = await apiClient('/paystack/subscribe', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ plan: planId, email: userEmail })
             });
 

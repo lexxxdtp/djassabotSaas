@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Mail, Lock, TrendingUp, Users, Zap } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getApiUrl } from '../utils/apiConfig';
+import { apiClient } from '../utils/apiClient';
 
 const Login: React.FC = () => {
     const [identifier, setIdentifier] = useState('');
@@ -13,7 +13,6 @@ const Login: React.FC = () => {
 
     const navigate = useNavigate();
     const { login, isAuthenticated } = useAuth();
-    const API_URL = getApiUrl();
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -35,9 +34,8 @@ const Login: React.FC = () => {
                 formattedIdentifier = identifier.toLowerCase().trim();
             }
 
-            const response = await fetch(`${API_URL}/auth/login`, {
+            const response = await apiClient('/auth/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     identifier: formattedIdentifier,
                     password,

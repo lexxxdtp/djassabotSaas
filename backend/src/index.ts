@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import multer from 'multer';
 import whatsappRoutes from './routes/whatsappRoutes';
 import { startAllTenantInstances } from './services/baileysManager';
 import authRoutes from './routes/authRoutes';
@@ -13,6 +14,7 @@ import './jobs/abandonedCart';
 import { db } from './services/dbService';
 import { authenticateTenant } from './middleware/auth';
 import { logger } from './utils/logger';
+import { supabase } from './config/supabase';
 
 dotenv.config();
 
@@ -59,6 +61,11 @@ const otpLimiter = rateLimit({
     message: { error: 'Trop de demandes de code. Réessayez dans 10 minutes.' },
     standardHeaders: true,
     legacyHeaders: false,
+});
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
 // Public Routes
@@ -124,6 +131,43 @@ app.get('/api/dashboard/recent-orders', authenticateTenant, async (req, res) => 
         res.json(orders);
     } catch {
         res.status(500).json({ error: 'Failed to fetch recent orders' });
+    }
+});
+
+app.post('/api/products/upload', authenticateTenant, upload.single('file'), async (req: any, res: any) => {
+    try {
+        if (!supabase) {
+            return res.status(500).json({ error: 'Supabase n\'est pas configuré sur le serveur' });
+        }
+        if (!req.file) {
+            return res.status(400).json({ error: 'Aucun fichier fourni' });
+        }
+
+        const file = req.file;
+        const fileExt = file.originalname.split('.').pop();
+        const fileName = `product-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+
+        // Televersement vers Supabase Storage dans le bucket 'product-images'
+        const { data, error } = await supabase.storage
+            .from('product-images')
+            .upload(fileName, file.buffer, {
+                contentType: file.mimetype,
+                upsert: true
+            });
+
+        if (error) {
+            logger.error({ err: error, tenantId: req.tenantId }, 'Error uploading to Supabase Storage');
+            return res.status(500).json({ error: 'Échec du téléversement de l\'image' });
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(fileName);
+
+        res.json({ url: publicUrl });
+    } catch (e: any) {
+        logger.error({ err: e, tenantId: req.tenantId }, 'Upload error');
+        res.status(500).json({ error: 'Erreur interne du serveur lors de l\'upload' });
     }
 });
 

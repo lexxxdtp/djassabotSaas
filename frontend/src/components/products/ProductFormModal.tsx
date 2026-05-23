@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { X, ImageIcon } from 'lucide-react';
-import { supabase } from '../../supabaseClient';
-import { getApiUrl } from '../../utils/apiConfig';
+import { apiClient } from '../../utils/apiClient';
 import type { Product, ProductVariation, VariationTemplate } from '../../types';
 import ProductVariations from './ProductVariations';
 import { toast } from 'react-hot-toast';
-import { useAuth } from '../../context/AuthContext';
+
 
 interface ProductFormModalProps {
     isOpen: boolean;
@@ -48,7 +47,7 @@ export default function ProductFormModal({
     const [uploading, setUploading] = useState(false);
     const [variationsEnabled, setVariationsEnabled] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { token } = useAuth();
+
 
     useEffect(() => {
         if (isOpen) {
@@ -103,23 +102,15 @@ export default function ProductFormModal({
                 manageStock: form.manageStock
             };
 
-            const API_URL = getApiUrl();
-            const headers = {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            };
-
             let response;
             if (productToEdit) {
-                response = await fetch(`${API_URL}/products/${productToEdit.id}`, {
+                response = await apiClient(`/products/${productToEdit.id}`, {
                     method: 'PUT',
-                    headers,
                     body: JSON.stringify(payload)
                 });
             } else {
-                response = await fetch(`${API_URL}/products`, {
+                response = await apiClient('/products', {
                     method: 'POST',
-                    headers,
                     body: JSON.stringify(payload)
                 });
             }
@@ -136,9 +127,8 @@ export default function ProductFormModal({
                             name: newVar.name,
                             default_options: newVar.options.map(o => ({ value: o.value, priceModifier: 0 }))
                         };
-                        await fetch(`${API_URL}/variation-templates`, {
+                        await apiClient('/variation-templates', {
                             method: 'POST',
-                            headers,
                             body: JSON.stringify(templatePayload)
                         });
                     } catch (e) {
@@ -187,18 +177,21 @@ export default function ProductFormModal({
             const newUrls: string[] = [];
 
             for (const file of files) {
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${target}-${Date.now()}-${Math.random()}.${fileExt}`;
-                const { error } = await supabase.storage
-                    .from('product-images')
-                    .upload(fileName, file);
+                const formData = new FormData();
+                formData.append('file', file);
 
-                if (error) throw error;
+                const response = await apiClient('/products/upload', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                const { data: { publicUrl } } = supabase.storage
-                    .from('product-images')
-                    .getPublicUrl(fileName);
-                newUrls.push(publicUrl);
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || 'Erreur lors du téléversement');
+                }
+
+                const data = await response.json();
+                newUrls.push(data.url);
             }
 
             if (target === 'main') {

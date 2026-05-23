@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { getApiUrl } from '../utils/apiConfig';
+import { apiClient } from '../utils/apiClient';
 
 interface User {
     id: string;
@@ -90,9 +90,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // Actually, always fetch on mount (page refresh) to sync status
             setIsLoadingData(true);
             try {
-                const res = await fetch(`${getApiUrl()}/auth/me`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await apiClient('/auth/me');
 
                 if (res.ok) {
                     const data = await res.json();

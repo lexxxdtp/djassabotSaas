@@ -3,8 +3,9 @@ import { db } from '../dbService';
 import { handleFlow } from './flowHandler';
 
 // Import AI services lazily to avoid circular deps if needed, but standard import is fine usually
-import { transcribeAudio, analyzeImage } from '../aiService';
+import { transcribeAudio, analyzeImage, analyzePaymentReceipt } from '../aiService';
 import { addToHistory } from '../sessionService';
+import { processReceiptValidation } from '../paymentValidationService';
 
 export async function handleMessage(tenantId: string, sock: WASocket, msg: proto.IWebMessageInfo, isHistory: boolean = false) {
     try {
@@ -46,6 +47,16 @@ export async function handleMessage(tenantId: string, sock: WASocket, msg: proto
                 const buffer = await downloadMediaMessage(msg as any, 'buffer', {});
                 const mimeType = msg.message?.imageMessage?.mimetype || 'image/jpeg';
                 const caption = msg.message?.imageMessage?.caption || "";
+
+                // Try to validate as a payment receipt first
+                const receiptAnalysis = await analyzePaymentReceipt(buffer as Buffer, mimeType);
+                if (receiptAnalysis.isReceipt && receiptAnalysis.confidence !== 'low') {
+                    const validated = await processReceiptValidation(tenantId, remoteJid, receiptAnalysis, sock);
+                    if (validated) {
+                        await addToHistory(tenantId, remoteJid, 'user', `[Reçu de paiement envoyé] Montant: ${receiptAnalysis.amount} FCFA, Réf: ${receiptAnalysis.transactionId}, Opérateur: ${receiptAnalysis.provider}`);
+                        return;
+                    }
+                }
 
                 // Get inventory context for image analysis
                 const products = await db.getProducts(tenantId);

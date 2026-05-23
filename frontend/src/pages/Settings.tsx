@@ -5,8 +5,8 @@ import { toast } from 'react-hot-toast';
 import WhatsAppConnect from './WhatsAppConnect';
 import Subscription from './Subscription';
 import AIPlayground from '../components/AIPlayground';
-import { getApiUrl } from '../utils/apiConfig';
 import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../utils/apiClient';
 import type { SettingsConfig } from '../types';
 
 // Components
@@ -42,7 +42,7 @@ export default function Settings() {
     const [aiSummary, setAiSummary] = useState('');
     const [summarizing, setSummarizing] = useState(false);
 
-    const API_URL = getApiUrl();
+
 
     const [config, setConfig] = useState<SettingsConfig>({
         botName: 'Awa',
@@ -102,9 +102,7 @@ export default function Settings() {
 
         const fetchSettings = async () => {
             try {
-                const res = await fetch(`${API_URL}/settings`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await apiClient('/settings');
                 if (res.ok) {
                     const data = await res.json();
                     setConfig(prev => ({
@@ -126,9 +124,7 @@ export default function Settings() {
 
         const fetchProfile = async () => {
             try {
-                const res = await fetch(`${API_URL}/auth/me`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await apiClient('/auth/me');
                 if (res.ok) {
                     const data = await res.json();
                     if (data.user) {
@@ -150,7 +146,7 @@ export default function Settings() {
 
         fetchSettings();
         fetchProfile();
-    }, [token, API_URL]);
+    }, [token]);
 
     useEffect(() => {
         const saved = localStorage.getItem('aiSummary');
@@ -165,9 +161,8 @@ export default function Settings() {
         setLoading(true);
         try {
             if (activeTab === 'account') {
-                const res = await fetch(`${API_URL}/auth/me`, {
+                const res = await apiClient('/auth/me', {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
                         full_name: userProfile.fullName,
                         email: userProfile.email,
@@ -181,9 +176,8 @@ export default function Settings() {
                     toast.error(err.error || 'Erreur lors de la mise à jour.');
                 }
             } else {
-                const res = await fetch(`${API_URL}/settings`, {
+                const res = await apiClient('/settings', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(config)
                 });
                 if (res.ok) {
@@ -204,9 +198,8 @@ export default function Settings() {
         if (!token) return;
         setSummarizing(true);
         try {
-            const res = await fetch(`${API_URL}/ai/summarize-identity`, {
+            const res = await apiClient('/ai/summarize-identity', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(config)
             });
             const data = await res.json();
@@ -229,9 +222,8 @@ export default function Settings() {
         setLoadingVendor(true);
         try {
             await handleSave();
-            const res = await fetch(`${API_URL}/paystack/create-subaccount`, {
+            const res = await apiClient('/paystack/create-subaccount', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
                     settlement_bank: config.settlementBank,
                     account_number: config.settlementAccount,

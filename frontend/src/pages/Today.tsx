@@ -12,8 +12,8 @@ import {
     WifiOff,
     CreditCard,
 } from 'lucide-react';
-import { getApiUrl } from '../utils/apiConfig';
 import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../utils/apiClient';
 
 interface Order {
     id: string;
@@ -46,14 +46,13 @@ const Today: React.FC = () => {
 
     useEffect(() => {
         if (!token) return;
-        const API_URL = getApiUrl();
 
         const fetchAll = async () => {
             try {
                 const [resOrders, resLogs, resWa] = await Promise.all([
-                    fetch(`${API_URL}/orders`, { headers: { Authorization: `Bearer ${token}` } }),
-                    fetch(`${API_URL}/dashboard/pulse`, { headers: { Authorization: `Bearer ${token}` } }),
-                    fetch(`${API_URL}/whatsapp/status`, { headers: { Authorization: `Bearer ${token}` } }),
+                    apiClient('/orders'),
+                    apiClient('/dashboard/pulse'),
+                    apiClient('/whatsapp/status'),
                 ]);
                 if (resOrders.ok) setOrders(await resOrders.json());
                 if (resLogs.ok) setLogs(await resLogs.json());

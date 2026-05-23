@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, ImageIcon } from 'lucide-react';
-import { getApiUrl } from '../utils/apiConfig';
 import type { Product, VariationTemplate } from '../types';
 import ProductCard from '../components/products/ProductCard';
 import ProductFormModal from '../components/products/ProductFormModal';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../utils/apiClient';
 
 export default function Products() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -18,14 +18,11 @@ export default function Products() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
 
-    const API_URL = getApiUrl();
     const { token } = useAuth();
 
     const fetchProducts = useCallback(async () => {
         try {
-            const res = await fetch(`${API_URL}/products`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await apiClient('/products');
             if (res.ok) {
                 const data = await res.json();
                 setProducts(Array.isArray(data) ? data : []);
@@ -35,13 +32,11 @@ export default function Products() {
         } finally {
             setLoading(false);
         }
-    }, [API_URL, token]);
+    }, []);
 
     const fetchVariationTemplates = useCallback(async () => {
         try {
-            const res = await fetch(`${API_URL}/variation-templates`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await apiClient('/variation-templates');
             if (res.ok) {
                 const data = await res.json();
                 setVariationTemplates(data);
@@ -49,7 +44,7 @@ export default function Products() {
         } catch (error) {
             console.error('Failed to fetch variation templates', error);
         }
-    }, [API_URL, token]);
+    }, []);
 
     useEffect(() => {
         if (token) {
@@ -76,9 +71,8 @@ export default function Products() {
     const confirmDelete = async () => {
         if (!deleteProductId) return;
         try {
-            await fetch(`${API_URL}/products/${deleteProductId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+            await apiClient(`/products/${deleteProductId}`, {
+                method: 'DELETE'
             });
             toast.success('Produit supprimé');
             fetchProducts();

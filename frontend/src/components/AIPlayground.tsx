@@ -1,8 +1,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, Trash2, Smartphone, Bot } from 'lucide-react';
-import { getApiUrl } from '../utils/apiConfig';
 import { useAuth } from '../context/AuthContext';
+import { apiClient } from '../utils/apiClient';
 
 interface Message {
     role: 'user' | 'model';
@@ -15,7 +15,6 @@ export default function AIPlayground() {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const API_URL = getApiUrl();
     const { token } = useAuth();
 
     // Auto-scroll to bottom
@@ -41,12 +40,8 @@ export default function AIPlayground() {
         }
 
         try {
-            const res = await fetch(`${API_URL}/ai/simulate`, {
+            const res = await apiClient('/ai/simulate', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ message: userMsg, sessionId: 'playground-session' })
             });
 
@@ -72,12 +67,8 @@ export default function AIPlayground() {
         if (!token) return;
 
         try {
-            await fetch(`${API_URL}/ai/reset`, {
+            await apiClient('/ai/reset', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ sessionId: 'playground-session' })
             });
             setMessages([]);

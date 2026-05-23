@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.89.0",
     "@tailwindcss/postcss": "^4.1.18",
     "firebase": "^12.9.0",
     "lucide-react": "^0.562.0",
@@ -40,4 +39,3 @@
     "vite-plugin-pwa": "^1.2.0"
   }
 }
-

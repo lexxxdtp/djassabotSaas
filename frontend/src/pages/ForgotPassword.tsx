@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, ArrowRight, Mail, Phone, Lock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getApiUrl } from '../utils/apiConfig';
+import { apiClient } from '../utils/apiClient';
 import { auth } from '../firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 
@@ -19,7 +19,6 @@ const ForgotPassword: React.FC = () => {
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const [countdown, setCountdown] = useState(0);
 
-    const API_URL = getApiUrl();
     const navigate = useNavigate();
 
     // Timer for OTP
@@ -63,9 +62,8 @@ const ForgotPassword: React.FC = () => {
 
                 if (!auth) {
                     const finalPhone = `+225${phone}`;
-                    const response = await fetch(`${API_URL}/auth/forgot-password-phone`, {
+                    const response = await apiClient('/auth/forgot-password-phone', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ phone: finalPhone }),
                     });
                     const data = await response.json();
@@ -95,9 +93,8 @@ const ForgotPassword: React.FC = () => {
                     const phoneIdToken = await credential.user.getIdToken();
 
                     const finalPhone = `+225${phone}`;
-                    const response = await fetch(`${API_URL}/auth/forgot-password-phone`, {
+                    const response = await apiClient('/auth/forgot-password-phone', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ phone: finalPhone, phoneIdToken }),
                     });
                     const data = await response.json();
@@ -116,9 +113,8 @@ const ForgotPassword: React.FC = () => {
                     setLoading(false);
                     return;
                 }
-                const response = await fetch(`${API_URL}/auth/forgot-password`, {
+                const response = await apiClient('/auth/forgot-password', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         email: email.toLowerCase().trim()
                     }),
