@@ -40,7 +40,7 @@ const COMMUNICATION_STYLES = [
 
 export default function SettingsPersonality({ config, setConfig }: SettingsPersonalityProps) {
     return (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-8">
+        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 md:p-8">
             <h2 className="text-lg font-bold text-white mb-2 flex items-center gap-2 uppercase tracking-wider text-xs">
                 <span className="w-2 h-2 rounded-full bg-green-500"></span> Style de Communication
             </h2>

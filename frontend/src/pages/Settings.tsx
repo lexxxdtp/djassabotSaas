@@ -258,9 +258,21 @@ export default function Settings() {
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
             {/* HEADER */}
-            <div className="border-b border-[#1a1a1a] pb-4">
-                <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Réglages</h1>
-                <p className="text-[#888] text-xs md:text-sm mt-1">{activeTabConfig?.desc}</p>
+            <div className="flex justify-between items-center border-b border-[#1a1a1a] pb-4">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Réglages</h1>
+                    <p className="text-[#888] text-xs md:text-sm mt-1">{activeTabConfig?.desc}</p>
+                </div>
+                {showSaveButton && (
+                    <button
+                        onClick={handleSave}
+                        disabled={loading}
+                        className="bg-[#00D97E] hover:bg-[#00D97E]/90 disabled:opacity-50 text-black px-4 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shrink-0 shadow-lg shadow-[#00D97E]/10"
+                    >
+                        {loading ? <span className="animate-spin text-xs">⏳</span> : <Save size={14} />}
+                        <span>{loading ? 'Sauvegarde…' : 'Enregistrer'}</span>
+                    </button>
+                )}
             </div>
 
             {/* TABS — segmented control */}
@@ -458,20 +470,6 @@ export default function Settings() {
                     </div>
                 )}
             </div>
-
-            {/* SAVE BUTTON — fixed mobile, inline desktop */}
-            {showSaveButton && (
-                <div className="fixed bottom-20 md:bottom-6 right-4 md:right-8 z-40">
-                    <button
-                        onClick={handleSave}
-                        disabled={loading}
-                        className="bg-[#00D97E] hover:bg-[#00D97E]/90 disabled:opacity-50 disabled:cursor-not-allowed text-black px-5 md:px-6 py-3 rounded-xl font-bold shadow-2xl shadow-[#00D97E]/20 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
-                    >
-                        {loading ? <span className="animate-spin">⏳</span> : <Save size={18} />}
-                        <span className="text-sm">{loading ? 'Sauvegarde…' : 'Sauvegarder'}</span>
-                    </button>
-                </div>
-            )}
         </div>
     );
 }

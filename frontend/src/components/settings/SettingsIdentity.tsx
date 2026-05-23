@@ -7,19 +7,19 @@ interface SettingsIdentityProps {
 
 export default function SettingsIdentity({ config, setConfig }: SettingsIdentityProps) {
     return (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-8">
+        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-5 md:p-8">
             <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
                 <span className="w-2 h-2 rounded-full bg-[#00D97E]"></span> Identité de l'Assistant
             </h2>
 
-            <div className="flex items-start gap-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6">
                 {/* Avatar Preview */}
-                <div className="w-20 h-20 rounded-2xl bg-[#00D97E] flex items-center justify-center text-black font-bold text-3xl shrink-0">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#00D97E] flex items-center justify-center text-black font-bold text-2xl sm:text-3xl shrink-0">
                     {config.botName?.substring(0, 1) || 'A'}
                 </div>
 
                 {/* Name & Greeting */}
-                <div className="flex-1 space-y-4">
+                <div className="w-full flex-1 space-y-4">
                     <div>
                         <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Nom de l'Assistant</label>
                         <input
