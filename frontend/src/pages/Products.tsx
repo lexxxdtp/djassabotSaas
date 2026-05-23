@@ -90,7 +90,7 @@ export default function Products() {
     };
 
     return (
-        <div className="space-y-6 relative animate-in fade-in duration-500 p-8">
+        <div className="space-y-6 relative animate-in fade-in duration-500">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 border-b border-[#1a1a1a] pb-6">
                 <div>
@@ -113,7 +113,7 @@ export default function Products() {
                     Chargement de l'inventaire...
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
                     {products.map((product) => (
                         <ProductCard
                             key={product.id}
