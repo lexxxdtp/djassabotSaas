@@ -38,8 +38,24 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').
 app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (mobile apps, Postman, server-to-server)
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-        callback(new Error('Not allowed by CORS'));
+        if (!origin) return callback(null, true);
+
+        // Clean up origin (remove trailing slash if any)
+        const cleanOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+
+        const isAllowed =
+            allowedOrigins.includes(cleanOrigin) ||
+            allowedOrigins.includes(origin) ||
+            cleanOrigin.endsWith('.vercel.app') ||
+            cleanOrigin.startsWith('http://localhost:') ||
+            cleanOrigin.startsWith('http://127.0.0.1:');
+
+        if (isAllowed) {
+            return callback(null, true);
+        }
+
+        logger.warn({ origin, allowedOrigins }, 'Origin not allowed by CORS');
+        callback(new Error(`Not allowed by CORS: ${origin}`));
     },
     credentials: true,
 }));
