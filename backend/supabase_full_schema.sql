@@ -167,16 +167,8 @@ alter table variation_templates enable row level security;
 alter table settings enable row level security;
 alter table subscriptions enable row level security;
 
--- 10. OPEN ACCESS POLICIES (FOR MVP ONLY - REMOVE IN PROD V2)
--- Allow anyone with the API Key/Service Role to do anything
-create policy "Allow All Tenants" on tenants for all using (true) with check (true);
-create policy "Allow All Users" on users for all using (true) with check (true);
-create policy "Allow All Products" on products for all using (true) with check (true);
-create policy "Allow All Orders" on orders for all using (true) with check (true);
-create policy "Allow All Activity Logs" on activity_logs for all using (true) with check (true);
-create policy "Allow All Variation Templates" on variation_templates for all using (true) with check (true);
-create policy "Allow All Settings" on settings for all using (true) with check (true);
-create policy "Allow All Subs" on subscriptions for all using (true) with check (true);
+-- 10. OPEN ACCESS POLICIES REMOVED FOR SECURITY (SEC-01)
+-- Database is secured by default. Access is allowed only via service_role.
 
 -- 11. Customers Table (CRM for Tenants)
 create table if not exists customers (
@@ -209,10 +201,6 @@ create table if not exists sessions (
 -- Enable RLS for new tables
 alter table customers enable row level security;
 alter table sessions enable row level security;
-
--- Open Access Policies for new tables (match existing pattern)
-create policy "Allow All Customers" on customers for all using (true) with check (true);
-create policy "Allow All Sessions" on sessions for all using (true) with check (true);
 
 -- MIGRATION: 2026-01-28 - Add Dynamic Settings Fields
 -- Execute this block to update existing 'settings' table

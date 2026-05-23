@@ -192,7 +192,8 @@ app.post('/api/products', authenticateTenant, async (req, res) => {
             return res.status(400).json({ error: 'Stock invalide' });
         }
         const product = await db.createProduct(req.tenantId!, req.body);
-        res.json(product);
+        const { minPrice: _mp, ...sanitized } = product as any;
+        res.json(sanitized);
     } catch (e: any) {
         logger.error({ err: e, tenantId: req.tenantId }, 'Create product error');
         res.status(500).json({ error: 'Failed to create product' });
@@ -210,7 +211,10 @@ app.put('/api/products/:id', authenticateTenant, async (req, res) => {
             return res.status(400).json({ error: 'Stock invalide' });
         }
         const product = await db.updateProduct(req.tenantId!, productId, req.body);
-        if (product) res.json(product);
+        if (product) {
+            const { minPrice: _mp, ...sanitized } = product as any;
+            res.json(sanitized);
+        }
         else res.status(404).json({ error: 'Product not found' });
     } catch (e: any) {
         logger.error({ err: e, tenantId: req.tenantId }, 'Update product error');
