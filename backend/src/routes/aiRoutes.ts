@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateTenant } from '../middleware/auth';
 import { db } from '../services/dbService';
-import { generateAIResponse, detectPurchaseIntent, generateIdentitySummary } from '../services/aiService';
+import { generateAIResponse, detectPurchaseIntent, generateIdentitySummary, parsePersonalityFromDescription } from '../services/aiService';
 // Import session service directly to avoid circular dependency issues if any
 import { getSession, updateSession, addToHistory, clearHistory } from '../services/sessionService';
 
@@ -214,6 +214,25 @@ router.post('/summarize-identity', async (req: Request, res: Response) => {
         res.json({ summary });
     } catch (e: any) {
         res.status(500).json({ error: e.message });
+    }
+});
+
+/**
+ * Analyser une description libre pour configurer la personnalité
+ * POST /api/ai/parse-personality
+ */
+router.post('/parse-personality', async (req: Request, res: Response) => {
+    try {
+        const { description } = req.body;
+        if (!description) {
+            res.status(400).json({ error: 'Description requise' });
+            return;
+        }
+
+        const config = await parsePersonalityFromDescription(description);
+        res.json(config);
+    } catch (e: any) {
+        res.status(500).json({ error: e.message || 'Erreur lors de l\'analyse de la description' });
     }
 });
 

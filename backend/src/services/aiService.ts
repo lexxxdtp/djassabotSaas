@@ -643,3 +643,56 @@ export const generateIdentitySummary = async (settings: Settings) => {
         return "Erreur génération résumé.";
     }
 };
+
+export const parsePersonalityFromDescription = async (description: string) => {
+    const currentModel = getModel();
+    if (!currentModel) {
+        throw new Error("Clé API Gemini manquante ou invalide");
+    }
+
+    const prompt = `
+    Agis comme un expert en conception de chatbots de vente WhatsApp pour l'Afrique de l'Ouest (surtout Abidjan, Côte d'Ivoire).
+    
+    On te fournit une description en français faite par un marchand décrivant le comportement, le ton et l'humeur qu'il souhaite pour sa réceptionniste virtuelle / bot.
+    
+    DESCRIPTION DU MARCHAND: "${description}"
+    
+    Tâche : Analyse cette description et déduit les paramètres de configuration idéaux du bot.
+    
+    Voici les valeurs autorisées pour chaque paramètre :
+    1. persona : 'professional' (vouvoiement, formel), 'friendly' (amical, chaleureux), 'commercial' (direct, focus vente), 'local' (ivoirien, nouchi), ou 'auto' (s'adapte).
+    2. politeness : 'formal' (vouvoiement), 'informal' (tutoiement), ou 'auto' (s'adapte au client).
+    3. emojiLevel : 'none' (pas d'emojis), 'medium' (modéré), 'high' (beaucoup d'emojis), ou 'auto'.
+    4. slangLevel : 'none' (pas d'argot), 'low' (très léger), 'medium' (quelques expressions locales), ou 'high' (argot prononcé/nouchi ivoirien).
+    5. humorLevel : 'low' (sérieux/professionnel), 'medium' (chaleureux et légèrement amusant), ou 'high' (très enjoué/humoristique).
+    6. responseLength : 'short' (court et direct), 'medium' (équilibré), 'long' (détaillé/bavard), ou 'auto'.
+    7. greeting : Rédige une phrase d'accueil très chaleureuse et naturelle correspondant STRICTEMENT au ton de la description (ex: "Salut ! 😊 Bienvenue chez [Boutique]..."). Utilise au besoin des expressions locales si le ton est local/nouchi.
+    8. systemInstructions : Suggère des consignes ou règles comportementales additionnelles (max 250 caractères) basées sur sa description (ex: "Sois très polie.", "Ne pousse pas à la vente.", "Appelle le client 'patron'").
+    
+    Renvoie STRICTEMENT un objet JSON valide avec ces clés. Pas de markdown (n'inclus pas de balises \`\`\`json ou \`\`\`), pas d'explication. Juste le JSON brut.
+    
+    Format attendu :
+    {
+      "persona": "friendly" | "professional" | "commercial" | "local" | "auto",
+      "politeness": "formal" | "informal" | "auto",
+      "emojiLevel": "none" | "medium" | "high" | "auto",
+      "slangLevel": "none" | "low" | "medium" | "high",
+      "humorLevel": "low" | "medium" | "high",
+      "responseLength": "short" | "medium" | "long" | "auto",
+      "greeting": "le message rédigé",
+      "systemInstructions": "les consignes tirées de sa description"
+    }
+    `;
+
+    try {
+        const result = await currentModel.generateContent(prompt);
+        const rawText = result.response.text();
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        const jsonString = jsonMatch ? jsonMatch[0] : rawText.trim().replace(/```json/g, '').replace(/```/g, '');
+        return JSON.parse(jsonString);
+    } catch (e: any) {
+        logger.error({ err: e }, 'Error parsing personality from description');
+        throw e;
+    }
+};
+
