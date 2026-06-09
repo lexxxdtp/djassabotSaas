@@ -47,6 +47,7 @@ app.use(cors({
             allowedOrigins.includes(cleanOrigin) ||
             allowedOrigins.includes(origin) ||
             cleanOrigin.endsWith('.vercel.app') ||
+            cleanOrigin.endsWith('.nip.io') ||
             cleanOrigin.startsWith('http://localhost:') ||
             cleanOrigin.startsWith('http://127.0.0.1:');
 
