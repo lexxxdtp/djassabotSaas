@@ -390,7 +390,7 @@ export const sendEmailOtp = async (req: Request, res: Response) => {
         const normalizedEmail = email.toLowerCase().trim();
         const existingUser = await db.getUserByEmail(normalizedEmail);
 
-        if (existingUser) {
+        if (existingUser && existingUser.emailVerified) {
             res.status(409).json({ error: 'Cet email est déjà utilisé' });
             return;
         }
