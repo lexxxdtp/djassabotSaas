@@ -11,7 +11,6 @@ import {
     CheckCircle2,
     WifiOff,
     CreditCard,
-    X,
     Download,
     Share
 } from 'lucide-react';

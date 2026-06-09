@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, Sparkles, Wand2, Bot, ChevronDown, ChevronUp, MessageSquare, Loader2 } from 'lucide-react';
+import { CheckCircle, Sparkles, Wand2, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { apiClient } from '../../utils/apiClient';
 import type { SettingsConfig } from '../../types';
@@ -62,7 +62,6 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
     const handleApplyPreset = (style: typeof COMMUNICATION_STYLES[0]) => {
         setConfig({
             ...config,
-            persona: style.id,
             ...style.presets
         });
     };

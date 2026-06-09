@@ -29,27 +29,7 @@ export const signup = async (req: Request, res: Response) => {
             }
         }
 
-        // Phone signup MUST be backed by a verified Firebase ID token.
-        // Without this check, a malicious client could send arbitrary phone numbers.
-        let phoneVerifiedReal = false;
-        if (phone) {
-            if (!phoneIdToken) {
-                res.status(400).json({ error: 'Vérification téléphone requise. Veuillez compléter le code SMS.' });
-                return;
-            }
-            if (!isFirebaseAdminConfigured()) {
-                logger.error('[signup] Firebase Admin not configured — cannot verify phone token');
-                res.status(503).json({ error: 'Service de vérification téléphone indisponible. Contactez le support.' });
-                return;
-            }
-            const verifiedPhone = await verifyPhoneToken(phoneIdToken);
-            if (!verifiedPhone || verifiedPhone !== phone) {
-                logger.warn({ phone, verifiedPhone }, '[signup] Phone token mismatch or invalid');
-                res.status(401).json({ error: 'Le code de vérification est invalide ou expiré.' });
-                return;
-            }
-            phoneVerifiedReal = true;
-        }
+        // Phone verification will be done after signup on the verification page.
 
         const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
         if (!passwordRegex.test(password)) {
@@ -91,15 +71,7 @@ export const signup = async (req: Request, res: Response) => {
             role: 'owner'
         });
 
-        if (phoneVerifiedReal && phone) {
-            await db.updateUser(user.id, { phoneVerified: true });
-            user.phoneVerified = true;
-        }
-
-        if (emailVerified && normalizedEmail) {
-            await db.updateUser(user.id, { emailVerified: true });
-            user.emailVerified = true;
-        }
+        // Account created. Email and Phone will be verified after signup.
 
         await db.createDefaultSettings(tenant.id, businessName);
 
@@ -206,7 +178,9 @@ export const login = async (req: Request, res: Response) => {
                 id: user.id,
                 email: user.email,
                 phone: user.phone,
-                role: user.role
+                role: user.role,
+                phoneVerified: user.phoneVerified || false,
+                emailVerified: user.emailVerified || false
             }
         });
 
@@ -240,7 +214,9 @@ export const getMe = async (req: Request, res: Response) => {
                 phone: user.phone,
                 full_name: user.full_name,
                 birth_date: user.birth_date,
-                role: user.role
+                role: user.role,
+                phoneVerified: user.phoneVerified || false,
+                emailVerified: user.emailVerified || false
             },
             tenant: {
                 id: tenant.id,
@@ -455,6 +431,11 @@ export const verifyEmailOtp = async (req: Request, res: Response) => {
 
         await db.deleteAuthToken(normalizedEmail, 'EMAIL_OTP');
 
+        const user = await db.getUserByEmail(normalizedEmail);
+        if (user) {
+            await db.updateUser(user.id, { emailVerified: true });
+        }
+
         res.json({ success: true, verified: true });
     } catch (error: any) {
         logger.error({ err: error }, 'Verify email OTP error');
@@ -553,6 +534,48 @@ export const resetPassword = async (req: Request, res: Response) => {
         res.json({ success: true, message: 'Mot de passe réinitialisé.' });
     } catch (error: any) {
         logger.error({ err: error }, 'Reset password error');
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+};
+
+export const verifyPhoneOtp = async (req: Request, res: Response) => {
+    try {
+        const { phone, phoneIdToken } = req.body;
+        if (!phone || !phoneIdToken) {
+            res.status(400).json({ error: 'Numéro de téléphone et token de vérification requis' });
+            return;
+        }
+
+        const phoneRegex = /^\+225[0-9]{10}$/;
+        if (!phoneRegex.test(phone)) {
+            res.status(400).json({ error: 'Format de téléphone invalide. Utilisez: +225XXXXXXXXXX' });
+            return;
+        }
+
+        if (!isFirebaseAdminConfigured()) {
+            logger.error('[verifyPhoneOtp] Firebase Admin not configured — cannot verify phone token');
+            res.status(503).json({ error: 'Service de vérification téléphone indisponible.' });
+            return;
+        }
+
+        const verifiedPhone = await verifyPhoneToken(phoneIdToken);
+        if (!verifiedPhone || verifiedPhone !== phone) {
+            logger.warn({ phone, verifiedPhone }, '[verifyPhoneOtp] Phone token mismatch or invalid');
+            res.status(401).json({ error: 'Le code de vérification est invalide ou expiré.' });
+            return;
+        }
+
+        const user = await db.getUserByPhone(phone);
+        if (user) {
+            await db.updateUser(user.id, { phoneVerified: true });
+        } else {
+            res.status(404).json({ error: 'Utilisateur introuvable.' });
+            return;
+        }
+
+        res.json({ success: true, verified: true });
+    } catch (error: any) {
+        logger.error({ err: error }, 'Verify phone OTP error');
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };

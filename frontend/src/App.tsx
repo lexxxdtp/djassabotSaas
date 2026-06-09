@@ -21,6 +21,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
+const VerifyAccount = lazy(() => import('./pages/VerifyAccount'));
 
 // Loading fallback — matches landing page design (pure black, #00D97E accent)
 const PageLoader = () => (
@@ -68,6 +69,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route element={<ProtectedRoute />}>
+              <Route path="/verify-account" element={<VerifyAccount />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<DashboardLayout />}>
                 {/* New home: operational dashboard */}

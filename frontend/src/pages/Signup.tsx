@@ -1,21 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
     ShoppingBag, ArrowRight, ArrowLeft, Mail, Lock, Store, Phone, User,
-    Eye, EyeOff, ShieldCheck, Sparkles, Check
+    Eye, EyeOff, Sparkles
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
-import { auth } from '../firebase';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import type { ConfirmationResult } from 'firebase/auth';
-
-declare global {
-    interface Window {
-        recaptchaVerifier: RecaptchaVerifier;
-        grecaptcha: { reset: (widgetId?: number) => void };
-    }
-}
 
 // Visual business categories tailored for African commerce
 const BUSINESS_TYPES = [
@@ -42,24 +32,17 @@ const Signup: React.FC = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // === Step 1: identifier ===
-    const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone'); // PHONE par défaut
-    const [phone, setPhone] = useState('');
+    // === Step 1: Personal Info ===
+    const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
-    const [otpSent, setOtpSent] = useState(false);
-    const [otpCode, setOtpCode] = useState('');
-    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-    const [phoneIdToken, setPhoneIdToken] = useState<string | null>(null);
-    const [identifierVerified, setIdentifierVerified] = useState(false);
-    const [countdown, setCountdown] = useState(0);
+    const [phone, setPhone] = useState('');
 
-    // === Step 2: business info ===
+    // === Step 2: Business Info ===
     const [businessName, setBusinessName] = useState('');
     const [businessType, setBusinessType] = useState('');
-    const [fullName, setFullName] = useState('');
     const [birthYear, setBirthYear] = useState<string>('');
 
-    // === Step 3: password ===
+    // === Step 3: Password ===
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -69,153 +52,6 @@ const Signup: React.FC = () => {
     useEffect(() => {
         if (isAuthenticated) navigate('/dashboard', { replace: true });
     }, [isAuthenticated, navigate]);
-
-    // Countdown timer for OTP resend
-    useEffect(() => {
-        if (countdown <= 0) return;
-        const t = setTimeout(() => setCountdown(c => c - 1), 1000);
-        return () => clearTimeout(t);
-    }, [countdown]);
-
-    // Setup Firebase recaptcha — invisible mode, Google validates in the background
-    // and only surfaces a challenge popup if it detects suspicious activity.
-    useEffect(() => {
-        if (step !== 1 || authMethod !== 'phone' || !auth) return;
-        if (!window.recaptchaVerifier) {
-            try {
-                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
-            } catch (e) {
-                console.error('Recaptcha init failed', e);
-            }
-        }
-        return () => {
-            if (window.recaptchaVerifier) {
-                try {
-                    window.recaptchaVerifier.clear();
-                } catch {/* noop */ }
-                window.recaptchaVerifier = undefined as unknown as RecaptchaVerifier;
-            }
-        };
-    }, [step, authMethod]);
-
-    // ===================================================================
-    // Step 1 actions: send + verify OTP
-    // ===================================================================
-    const sendPhoneOTP = async () => {
-        if (phone.length !== 10) {
-            setError('Le numéro doit contenir 10 chiffres.');
-            return;
-        }
-        if (!auth) {
-            // Firebase pas configuré — vérifier quand même si le numéro existe déjà
-            setLoading(true);
-            setError('');
-            try {
-                const res = await apiClient('/auth/check-phone', {
-                    method: 'POST',
-                    body: JSON.stringify({ phone: `+225${phone}` }),
-                });
-                const data = await res.json();
-                if (data.exists) {
-                    setError('Ce numéro est déjà inscrit. Connectez-vous ou réinitialisez votre mot de passe.');
-                    return;
-                }
-                setIdentifierVerified(true);
-                setOtpSent(false);
-            } catch {
-                // Si l'endpoint n'existe pas encore, on accepte quand même (fallback)
-                setIdentifierVerified(true);
-            } finally {
-                setLoading(false);
-            }
-            return;
-        }
-        setError('');
-        setLoading(true);
-        try {
-            const fullPhone = `+225${phone}`;
-            const appVerifier = window.recaptchaVerifier;
-            if (!appVerifier) throw new Error('Recaptcha non initialisé, rechargez la page.');
-            const confirmation = await signInWithPhoneNumber(auth, fullPhone, appVerifier);
-            setConfirmationResult(confirmation);
-            setOtpSent(true);
-            setCountdown(30);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Erreur envoi du code');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const verifyPhoneOTP = async () => {
-        if (otpCode.length !== 6) {
-            setError('Code à 6 chiffres requis.');
-            return;
-        }
-        if (!confirmationResult) {
-            setError('Session OTP expirée.');
-            return;
-        }
-        setError('');
-        setLoading(true);
-        try {
-            const credential = await confirmationResult.confirm(otpCode);
-            // Capture the Firebase ID token so the backend can verify the OTP server-side.
-            const idToken = await credential.user.getIdToken();
-            setPhoneIdToken(idToken);
-            setIdentifierVerified(true);
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : '';
-            setError(msg.includes('invalid-verification-code') ? 'Code incorrect.' : 'Erreur de vérification.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const sendEmailOTP = async () => {
-        if (!email.includes('@')) {
-            setError('Email invalide.');
-            return;
-        }
-        setError('');
-        setLoading(true);
-        try {
-            const res = await apiClient('/auth/send-email-otp', {
-                    method: 'POST',
-                    body: JSON.stringify({ email: email.toLowerCase().trim() }),
-                });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Erreur envoi email.');
-            setOtpSent(true);
-            setCountdown(30);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Erreur envoi du code');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const verifyEmailOTP = async () => {
-        if (otpCode.length !== 6) {
-            setError('Code à 6 chiffres requis.');
-            return;
-        }
-        setError('');
-        setLoading(true);
-        try {
-            const res = await apiClient('/auth/verify-email-otp', {
-                method: 'POST',
-                body: JSON.stringify({ email: email.toLowerCase().trim(), code: otpCode }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Code incorrect.');
-            setIdentifierVerified(true);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Erreur de vérification.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     // ===================================================================
     // Final submit (step 3)
@@ -233,30 +69,26 @@ const Signup: React.FC = () => {
         setError('');
         setLoading(true);
         try {
-            const body: Record<string, unknown> = {
+            const body = {
                 businessName,
                 businessType,
                 fullName,
                 birthDate: birthYear ? `${birthYear}-01-01` : null,
                 password,
+                email: email.toLowerCase().trim(),
+                phone: `+225${phone}`
             };
-            if (authMethod === 'phone') {
-                body.phone = `+225${phone}`;
-                body.email = null;
-                body.phoneIdToken = phoneIdToken;
-            } else {
-                body.email = email.toLowerCase().trim();
-                body.phone = null;
-                body.emailVerified = true;
-            }
+
             const res = await apiClient('/auth/signup', {
                 method: 'POST',
                 body: JSON.stringify(body),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erreur inscription.');
+            
+            // Log in the user (they will be redirected to /verify-account by ProtectedRoute)
             login(data.token, data.user, data.tenant);
-            navigate('/onboarding');
+            navigate('/verify-account');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erreur inconnue.');
         } finally {
@@ -270,15 +102,13 @@ const Signup: React.FC = () => {
     const goNext = () => {
         setError('');
         if (step === 1) {
-            if (!identifierVerified) {
-                setError('Veuillez vérifier votre identifiant avant de continuer.');
-                return;
-            }
+            if (!fullName.trim()) return setError('Votre nom complet est requis.');
+            if (!email.trim() || !email.includes('@')) return setError('Adresse e-mail valide requise.');
+            if (phone.length !== 10) return setError('Le numéro WhatsApp doit contenir 10 chiffres.');
             setStep(2);
         } else if (step === 2) {
             if (!businessName.trim()) return setError('Nom du commerce requis.');
             if (!businessType) return setError('Sélectionnez votre type d\'activité.');
-            if (!fullName.trim()) return setError('Votre nom complet est requis.');
             if (!birthYear) return setError('Sélectionnez votre année de naissance.');
             setStep(3);
         }
@@ -307,7 +137,7 @@ const Signup: React.FC = () => {
                 {/* Progress bar */}
                 <div className="flex gap-2 mb-6">
                     {[1, 2, 3].map(n => (
-                        <div key={n} className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${step >= n ? 'bg-[#00D97E]' : 'bg-[#111]'}`} />
+                        <div key={n} className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${step >= n ? 'bg-[#00D97E]' : 'bg-white/10'}`} />
                     ))}
                 </div>
 
@@ -330,133 +160,64 @@ const Signup: React.FC = () => {
                     </div>
                 )}
 
-                {/* =================== STEP 1: IDENTIFIER =================== */}
+                {/* =================== STEP 1: PERSONAL INFO =================== */}
                 {step === 1 && (
                     <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h2 className="text-white font-bold text-lg">Comment voulez-vous vous identifier ?</h2>
+                        <h2 className="text-white font-bold text-lg">Vos informations personnelles</h2>
 
-                        {/* Tabs Phone / Email — Phone par défaut */}
-                        <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-[#1a1a1a]">
-                            <button
-                                type="button"
-                                onClick={() => { setAuthMethod('phone'); setOtpSent(false); setIdentifierVerified(false); setOtpCode(''); }}
-                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${authMethod === 'phone' ? 'bg-[#00D97E] text-white shadow-lg shadow-[#00D97E]/20' : 'text-[#888] hover:text-white'}`}
-                            >📱 Téléphone</button>
-                            <button
-                                type="button"
-                                onClick={() => { setAuthMethod('email'); setOtpSent(false); setIdentifierVerified(false); setOtpCode(''); }}
-                                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${authMethod === 'email' ? 'bg-[#00D97E] text-white shadow-lg shadow-[#00D97E]/20' : 'text-[#888] hover:text-white'}`}
-                            >📧 Email</button>
-                        </div>
-
-                        {/* Phone input or Email input */}
-                        {authMethod === 'phone' ? (
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre numéro WhatsApp</label>
-                                <div className="relative group">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none z-10">
-                                        <Phone className="text-[#888] w-5 h-5" />
-                                        <span className="text-[#888] font-bold font-mono text-sm border-r border-gray-600 pr-2">+225</span>
-                                    </div>
-                                    <input
-                                        type="tel"
-                                        value={phone}
-                                        onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                                        placeholder="0709483812"
-                                        disabled={otpSent || identifierVerified}
-                                        className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-[90px] pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all font-mono text-lg disabled:opacity-50"
-                                    />
-                                </div>
-                                <p className="mt-1 text-xs text-[#555]">10 chiffres — c'est le numéro qui sera lié à votre bot</p>
-                            </div>
-                        ) : (
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre email</label>
-                                <div className="relative group">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={e => setEmail(e.target.value)}
-                                        placeholder="votre@email.com"
-                                        disabled={otpSent || identifierVerified}
-                                        className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all disabled:opacity-50"
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* OTP code field */}
-                        {otpSent && !identifierVerified && (
-                            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                                <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Code de validation</label>
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Nom complet</label>
+                            <div className="relative">
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
                                 <input
                                     type="text"
-                                    inputMode="numeric"
-                                    value={otpCode}
-                                    onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                    placeholder="123456"
-                                    maxLength={6}
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-4 px-4 text-center text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 transition-all font-mono text-2xl tracking-[0.5em]"
+                                    value={fullName}
+                                    onChange={e => setFullName(e.target.value)}
+                                    placeholder="Jean Kouassi"
+                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
-                                <div className="flex items-center justify-between mt-2">
-                                    <p className="text-xs text-green-400 flex items-center gap-1">
-                                        <ShieldCheck className="w-3 h-3" /> Code envoyé !
-                                    </p>
-                                    <button
-                                        type="button"
-                                        onClick={authMethod === 'phone' ? sendPhoneOTP : sendEmailOTP}
-                                        disabled={countdown > 0 || loading}
-                                        className="text-xs text-[#00D97E] hover:text-[#00D97E]/80 disabled:opacity-50"
-                                    >
-                                        {countdown > 0 ? `Renvoyer (${countdown}s)` : 'Renvoyer le code'}
-                                    </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre adresse e-mail</label>
+                            <div className="relative group">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    placeholder="votre@email.com"
+                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre numéro WhatsApp</label>
+                            <div className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none z-10">
+                                    <Phone className="text-[#888] w-5 h-5" />
+                                    <span className="text-[#888] font-bold font-mono text-sm border-r border-gray-600 pr-2">+225</span>
                                 </div>
+                                <input
+                                    type="tel"
+                                    value={phone}
+                                    onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                    placeholder="0709483812"
+                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-[90px] pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all font-mono text-lg"
+                                />
                             </div>
-                        )}
+                            <p className="mt-1 text-xs text-[#555]">10 chiffres — c'est le numéro qui sera lié à votre bot</p>
+                        </div>
 
-                        {/* Verified state */}
-                        {identifierVerified && (
-                            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 flex items-center gap-2 text-green-400 text-sm animate-in fade-in zoom-in duration-300">
-                                <Check className="w-4 h-4" /> Identifiant vérifié !
-                            </div>
-                        )}
-
-                        {/* Recaptcha container (only for phone+Firebase) */}
-                        {authMethod === 'phone' && auth && !identifierVerified && (
-                            <div id="recaptcha-container" className="flex justify-center" />
-                        )}
-
-                        {/* Action buttons */}
-                        {!identifierVerified ? (
-                            <button
-                                type="button"
-                                disabled={loading}
-                                onClick={() => {
-                                    if (!otpSent) {
-                                        if (authMethod === 'phone') sendPhoneOTP();
-                                        else sendEmailOTP();
-                                    } else {
-                                        if (authMethod === 'phone') verifyPhoneOTP();
-                                        else verifyEmailOTP();
-                                    }
-                                }}
-                                className="w-full bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                                {loading ? 'Traitement...' : (
-                                    !otpSent ? 'Recevoir le code' : 'Vérifier le code'
-                                )}
-                                {!loading && <ArrowRight className="w-5 h-5" />}
-                            </button>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={goNext}
-                                className="w-full bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
-                            >
-                                Continuer <ArrowRight className="w-5 h-5" />
-                            </button>
-                        )}
+                        <button
+                            type="button"
+                            onClick={goNext}
+                            className="w-full mt-2 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
+                        >
+                            Continuer <ArrowRight className="w-5 h-5" />
+                        </button>
                     </div>
                 )}
 
@@ -493,20 +254,6 @@ const Signup: React.FC = () => {
                                         <span className={`text-[10px] leading-tight text-center ${businessType === bt.id ? 'text-white' : 'text-[#888]'}`}>{bt.label}</span>
                                     </button>
                                 ))}
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre nom complet</label>
-                            <div className="relative">
-                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
-                                <input
-                                    type="text"
-                                    value={fullName}
-                                    onChange={e => setFullName(e.target.value)}
-                                    placeholder="Jean Kouassi"
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
-                                />
                             </div>
                         </div>
 

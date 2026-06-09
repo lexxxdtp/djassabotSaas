@@ -8,6 +8,8 @@ interface User {
     full_name?: string;
     birth_date?: Date;
     role: string;
+    emailVerified?: boolean;
+    phoneVerified?: boolean;
 }
 
 interface Tenant {
@@ -26,6 +28,7 @@ interface AuthContextType {
     login: (token: string, user: User, tenant: Tenant, rememberMe?: boolean) => void;
     logout: () => void;
     isLoading: boolean;
+    refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -81,44 +84,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         sessionStorage.removeItem('tenant');
     }, []);
 
-    useEffect(() => {
-        const fetchMe = async () => {
-            if (!token) return;
+    const refreshUser = useCallback(async () => {
+        if (!token) return;
+        setIsLoadingData(true);
+        try {
+            const res = await apiClient('/auth/me');
 
-            // Avoid loop if we just logged in (state is already set), but logic usually requires refresh on page reload
-            // Simplest check: if we have token but maybe stale data?
-            // Actually, always fetch on mount (page refresh) to sync status
-            setIsLoadingData(true);
-            try {
-                const res = await apiClient('/auth/me');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.user && data.tenant) {
+                    setUser(data.user);
+                    setTenant(data.tenant);
 
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.user && data.tenant) {
-                        setUser(data.user);
-                        setTenant(data.tenant);
-
-                        // Update storage
-                        const isLocal = !!localStorage.getItem('token');
-                        const storage = isLocal ? localStorage : sessionStorage;
-                        storage.setItem('user', JSON.stringify(data.user));
-                        storage.setItem('tenant', JSON.stringify(data.tenant));
-
-
-                    }
-                } else if (res.status === 401) {
-                    // Token invalid/expired
-                    logout();
+                    // Update storage
+                    const isLocal = !!localStorage.getItem('token');
+                    const storage = isLocal ? localStorage : sessionStorage;
+                    storage.setItem('user', JSON.stringify(data.user));
+                    storage.setItem('tenant', JSON.stringify(data.tenant));
                 }
-            } catch (err) {
-                console.error('[AuthContext] Failed to refresh user data', err);
-            } finally {
-                setIsLoadingData(false);
+            } else if (res.status === 401) {
+                logout();
             }
-        };
-
-        fetchMe();
+        } catch (err) {
+            console.error('[AuthContext] Failed to refresh user data', err);
+        } finally {
+            setIsLoadingData(false);
+        }
     }, [token, logout]);
+
+    useEffect(() => {
+        refreshUser();
+    }, [refreshUser]);
 
 
 
@@ -165,7 +161,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             isAuthenticated: !!token,
             login,
             logout,
-            isLoading: isLoadingData
+            isLoading: isLoadingData,
+            refreshUser
         }}>
             {children}
         </AuthContext.Provider>

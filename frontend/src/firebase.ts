@@ -2,7 +2,14 @@
 // Initialization is lazy and safe: if Firebase env vars are missing, `auth` is null and
 // phone OTP features are simply disabled. Email-based signup/login works without Firebase.
 import { initializeApp, type FirebaseApp } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
+import { getAuth, type Auth, type RecaptchaVerifier } from "firebase/auth";
+
+declare global {
+    interface Window {
+        recaptchaVerifier: RecaptchaVerifier;
+        grecaptcha: { reset: (widgetId?: number) => void };
+    }
+}
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
