@@ -360,3 +360,12 @@ git add -A && git commit -m "message" && git push origin main
 - **Diffusion (feature)** : `POST /api/marketing/broadcast` + `GET /api/marketing/audience` (`backend/src/routes/marketingRoutes.ts`). Envoi séquentiel avec délai anti-ban 2-5s, audiences all/vip/recent, log dans activity_logs. Formulaire `Marketing.tsx` branché (compteurs réels, feedback succès/erreur).
 - **Firebase frontend** : vérifié — utilisé pour OTP SMS, déjà code-splitté (chunk lazy ~68kb chargé uniquement sur VerifyAccount/ForgotPassword). Ne PAS supprimer.
 - **App iOS** : Capacitor 8 ajouté (`frontend/ios/`, `capacitor.config.ts`, scripts `ios:sync`/`ios:open`). `apiConfig.ts` détecte Capacitor → API prod. Guide : `IOS_SETUP.md`.
+
+### Session 3 — 11 juin 2026 (Cowork, 30 min autonomie)
+- **Anti-fraude reçus** : `db.isTransactionIdUsed()` — un reçu Wave/OM ne valide qu'UN paiement. Réutilisation → bloquée + warning loggé + client informé.
+- **Pause bot étanche** : la validation de reçus ne répond plus quand le bot est en pause. Settings lus 1 fois par message.
+- **Découverte** : le Screenshot Validator était DÉJÀ implémenté (paymentValidationService.ts) — le CLAUDE.md §E2 est périmé. Match par montant exact → auto-PAID + notif marchand.
+- **Photo d'abord** : POST /api/ai/analyze-product-photo (Gemini Vision) + pré-remplissage auto nom/description dans ProductFormModal. Le vendeur photographie, l'IA rédige, il met le prix.
+- **Android** : plateforme Capacitor ajoutée (frontend/android/), scripts android:sync/android:open.
+- **UX vérifiée** : onboarding déjà en 3 étapes + skip (welcome→whatsapp→produit→personnalité), login auto-formate les numéros 10 chiffres en +225, presets personnalité déjà en place.
+- **Reste connu** : domaine Resend (emails limités à l'email d'Alex), fix SMS Firebase (-39), RLS Supabase, notifications push, brancher la page Marketing sur les stats réelles de campagnes.
