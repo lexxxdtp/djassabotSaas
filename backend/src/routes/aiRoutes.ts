@@ -1,14 +1,39 @@
 import { Router, Request, Response } from 'express';
+import multer from 'multer';
 import { authenticateTenant } from '../middleware/auth';
 import { db } from '../services/dbService';
-import { generateAIResponse, detectPurchaseIntent, generateIdentitySummary, parsePersonalityFromDescription } from '../services/aiService';
+import { generateAIResponse, detectPurchaseIntent, generateIdentitySummary, parsePersonalityFromDescription, analyzeProductPhoto } from '../services/aiService';
 // Import session service directly to avoid circular dependency issues if any
 import { getSession, updateSession, addToHistory, clearHistory } from '../services/sessionService';
 
 const router = Router();
 
+const photoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
 // Toutes les routes IA nécessitent une auth
 router.use(authenticateTenant);
+
+/**
+ * "Photo d'abord" : le vendeur envoie la photo de son produit,
+ * l'IA propose nom + description pour pré-remplir le formulaire.
+ * POST /api/ai/analyze-product-photo (multipart, champ 'file')
+ */
+router.post('/analyze-product-photo', photoUpload.single('file'), async (req: any, res: Response): Promise<void> => {
+    try {
+        if (!req.file || !req.file.buffer) {
+            res.status(400).json({ error: 'Photo requise' });
+            return;
+        }
+        const suggestion = await analyzeProductPhoto(req.file.buffer, req.file.mimetype || 'image/jpeg');
+        res.json(suggestion);
+    } catch (e) {
+        console.error('[AI] analyze-product-photo error:', e);
+        res.status(500).json({ error: "Impossible d'analyser la photo" });
+    }
+});
 
 /**
  * Endpoint de simulation de chat pour le Playground

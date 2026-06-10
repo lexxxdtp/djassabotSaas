@@ -45,6 +45,7 @@ export default function ProductFormModal({
 }: ProductFormModalProps) {
     const [form, setForm] = useState<ProductFormState>(INITIAL_STATE);
     const [uploading, setUploading] = useState(false);
+    const [aiAnalyzing, setAiAnalyzing] = useState(false);
     const [variationsEnabled, setVariationsEnabled] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -153,6 +154,33 @@ export default function ProductFormModal({
         }
     };
 
+    // Analyse IA de la photo → pré-remplit nom + description (non bloquant)
+    const analyzePhotoAndPrefill = async (file: File) => {
+        setAiAnalyzing(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await apiClient('/ai/analyze-product-photo', {
+                method: 'POST',
+                body: formData
+            });
+            if (!res.ok) return;
+            const suggestion = await res.json();
+            if (suggestion.name || suggestion.description) {
+                setForm(prev => ({
+                    ...prev,
+                    name: prev.name.trim() ? prev.name : (suggestion.name || prev.name),
+                    description: prev.description.trim() ? prev.description : (suggestion.description || prev.description),
+                }));
+                toast.success('✨ Nom et description proposés par l\'IA — vérifiez et ajustez !');
+            }
+        } catch {
+            // Silencieux : la suggestion IA est un bonus, jamais bloquante
+        } finally {
+            setAiAnalyzing(false);
+        }
+    };
+
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'main' | 'variation', varIdx?: number, optIdx?: number) => {
         if (!e.target.files?.length) return;
 
@@ -192,6 +220,12 @@ export default function ProductFormModal({
 
                 const data = await response.json();
                 newUrls.push(data.url);
+            }
+
+            // PHOTO D'ABORD : si le nom est vide, l'IA propose nom + description
+            // à partir de la première photo (le vendeur n'a plus qu'à mettre le prix)
+            if (target === 'main' && !form.name.trim() && files[0]) {
+                analyzePhotoAndPrefill(files[0]);
             }
 
             if (target === 'main') {
@@ -240,6 +274,16 @@ export default function ProductFormModal({
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
+                    {!productToEdit && (
+                        <p className="text-xs text-[#888] bg-[#00D97E]/5 border border-[#00D97E]/10 rounded-lg p-3">
+                            💡 <strong className="text-white">Astuce :</strong> ajoutez d'abord la photo — l'IA remplit le nom et la description pour vous. Il ne reste que le prix.
+                        </p>
+                    )}
+                    {aiAnalyzing && (
+                        <p className="text-xs text-[#00D97E] flex items-center gap-2 animate-pulse">
+                            ✨ L'IA analyse votre photo…
+                        </p>
+                    )}
                     {/* Name */}
                     <div>
                         <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Nom du Produit</label>

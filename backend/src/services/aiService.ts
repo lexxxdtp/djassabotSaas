@@ -549,6 +549,66 @@ export const analyzePaymentReceipt = async (
     }
 };
 
+export interface ProductPhotoAnalysis {
+    name?: string;
+    description?: string;
+}
+
+/**
+ * "Photo d'abord" : analyse la photo d'un produit et propose un nom + une
+ * description prête à vendre, pour pré-remplir le formulaire d'ajout produit.
+ */
+export const analyzeProductPhoto = async (
+    imageBuffer: Buffer,
+    mimeType: string = 'image/jpeg'
+): Promise<ProductPhotoAnalysis> => {
+    const currentModel = getModel();
+    if (!currentModel) {
+        logger.warn('[AI] No Valid API Key — analyzeProductPhoto unavailable');
+        return {};
+    }
+
+    try {
+        const prompt = `
+        Tu aides un commerçant ivoirien à remplir sa fiche produit à partir d'une photo.
+
+        TÂCHE : analyse cette photo de produit et renvoie STRICTEMENT ce JSON :
+        {
+          "name": "Nom court et vendeur du produit (max 50 caractères, en français)",
+          "description": "Description commerciale de 1 à 2 phrases, simple et attrayante, adaptée à la vente sur WhatsApp en Côte d'Ivoire (matière, couleur, usage). Max 200 caractères."
+        }
+
+        RÈGLES :
+        - Sois CONCRET : "Bazin riche brodé bleu roi" plutôt que "Tissu".
+        - Pas de prix, pas d'hashtags, pas d'emojis dans le nom.
+        - 1 emoji max autorisé dans la description.
+        - Si l'image n'est clairement pas un produit (selfie, paysage, document), renvoie {}.
+        `;
+
+        const result = await currentModel.generateContent([
+            prompt,
+            {
+                inlineData: {
+                    data: imageBuffer.toString('base64'),
+                    mimeType,
+                },
+            },
+        ]);
+
+        const rawText = result.response.text();
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) return {};
+        const data = JSON.parse(jsonMatch[0]);
+        return {
+            name: typeof data.name === 'string' ? data.name.slice(0, 60) : undefined,
+            description: typeof data.description === 'string' ? data.description.slice(0, 250) : undefined,
+        };
+    } catch (error) {
+        logger.error({ err: error }, 'Product photo analysis error');
+        return {};
+    }
+};
+
 export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "audio/ogg"): Promise<string> => {
     const currentModel = getModel();
     if (!currentModel) {
