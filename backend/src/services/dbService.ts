@@ -690,6 +690,28 @@ export const db = {
         }
     },
 
+    /** Anti-fraude : vérifie si une référence de transaction a déjà servi à valider un paiement */
+    isTransactionIdUsed: async (tenantId: string, transactionId: string): Promise<boolean> => {
+        if (isSupabaseEnabled && supabase) {
+            try {
+                const { data, error } = await supabase
+                    .from('activity_logs')
+                    .select('id')
+                    .eq('tenant_id', tenantId)
+                    .eq('type', 'sale')
+                    .eq('metadata->>transactionId', transactionId)
+                    .limit(1);
+                if (error) throw error;
+                return (data || []).length > 0;
+            } catch (e) {
+                console.error('[DB] isTransactionIdUsed Error:', e);
+                // En cas de doute, on considère la réf inconnue (validation manuelle restera possible)
+                return false;
+            }
+        }
+        return false;
+    },
+
     getRecentActivity: async (tenantId: string, limit: number = 20) => {
         if (isSupabaseEnabled && supabase) {
             const { data } = await supabase

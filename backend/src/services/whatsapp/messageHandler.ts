@@ -39,6 +39,10 @@ export async function handleMessage(tenantId: string, sock: WASocket, msg: proto
             }
         }
 
+        // INTERRUPTEUR GLOBAL — lu une seule fois, utilisé partout dans ce handler
+        const settings = await db.getSettings(tenantId);
+        const botPaused = settings.botActive === false;
+
         // --- IMAGE ---
         if (msg.message?.imageMessage) {
             if (isHistory) {
@@ -48,13 +52,16 @@ export async function handleMessage(tenantId: string, sock: WASocket, msg: proto
                 const mimeType = msg.message?.imageMessage?.mimetype || 'image/jpeg';
                 const caption = msg.message?.imageMessage?.caption || "";
 
-                // Try to validate as a payment receipt first
-                const receiptAnalysis = await analyzePaymentReceipt(buffer as Buffer, mimeType);
-                if (receiptAnalysis.isReceipt && receiptAnalysis.confidence !== 'low') {
-                    const validated = await processReceiptValidation(tenantId, remoteJid, receiptAnalysis, sock);
-                    if (validated) {
-                        await addToHistory(tenantId, remoteJid, 'user', `[Reçu de paiement envoyé] Montant: ${receiptAnalysis.amount} FCFA, Réf: ${receiptAnalysis.transactionId}, Opérateur: ${receiptAnalysis.provider}`);
-                        return;
+                // Try to validate as a payment receipt first (jamais quand le bot est en pause :
+                // processReceiptValidation envoie des messages au client)
+                if (!botPaused) {
+                    const receiptAnalysis = await analyzePaymentReceipt(buffer as Buffer, mimeType);
+                    if (receiptAnalysis.isReceipt && receiptAnalysis.confidence !== 'low') {
+                        const validated = await processReceiptValidation(tenantId, remoteJid, receiptAnalysis, sock);
+                        if (validated) {
+                            await addToHistory(tenantId, remoteJid, 'user', `[Reçu de paiement envoyé] Montant: ${receiptAnalysis.amount} FCFA, Réf: ${receiptAnalysis.transactionId}, Opérateur: ${receiptAnalysis.provider}`);
+                            return;
+                        }
                     }
                 }
 
@@ -76,8 +83,7 @@ export async function handleMessage(tenantId: string, sock: WASocket, msg: proto
 
         // INTERRUPTEUR GLOBAL : si le bot est en pause, on enregistre le message
         // (visible dans l'Inbox) mais on ne répond JAMAIS.
-        const settings = await db.getSettings(tenantId);
-        if (settings.botActive === false) return;
+        if (botPaused) return;
 
         // Mark Read & Typing
         await sock.readMessages([msg.key]);

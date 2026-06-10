@@ -24,6 +24,22 @@ export const processReceiptValidation = async (
 
         logger.info({ tenantId, remoteJid, amount, transactionId, provider, confidence }, '[PaymentValidation] Validating receipt');
 
+        // ANTI-FRAUDE : un même reçu (référence de transaction) ne peut servir qu'une fois
+        const alreadyUsed = await db.isTransactionIdUsed(tenantId, transactionId);
+        if (alreadyUsed) {
+            logger.warn({ tenantId, remoteJid, transactionId }, '[PaymentValidation] Receipt reuse attempt blocked');
+            await db.logActivity(
+                tenantId,
+                'warning',
+                `⚠️ Tentative de réutilisation d'un reçu déjà validé (Réf: ${transactionId})`,
+                { transactionId, amount, remoteJid }
+            );
+            await sock.sendMessage(remoteJid, {
+                text: `🧾 Ce reçu (Réf: ${transactionId}) a déjà été utilisé pour valider un paiement. Si vous pensez qu'il s'agit d'une erreur, un conseiller va vérifier.`
+            });
+            return false;
+        }
+
         // Fetch all orders for this tenant
         const orders = await db.getOrders(tenantId);
 
