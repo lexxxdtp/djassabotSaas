@@ -193,49 +193,6 @@ const Today: React.FC = () => {
                 <BotStatusBadge status={botStatus} paused={botActive === false} />
             </div>
 
-            {/* PWA INSTALL BANNER */}
-            {showInstallBanner && (
-                <div className="relative overflow-hidden bg-gradient-to-r from-[#00D97E]/10 to-transparent border border-[#00D97E]/20 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in slide-in-from-top duration-300">
-                    <div className="flex items-start gap-4">
-                        <div className="p-3 rounded-xl bg-[#00D97E]/10 text-[#00D97E] border border-[#00D97E]/20 mt-1 md:mt-0 shrink-0">
-                            <Download className="w-6 h-6" />
-                        </div>
-                        <div className="space-y-1">
-                            <h3 className="text-white font-bold text-base flex items-center gap-2">
-                                Installer l'application DjassaBot
-                                <span className="text-[10px] bg-[#00D97E]/10 text-[#00D97E] border border-[#00D97E]/20 px-2 py-0.5 rounded font-mono uppercase font-bold tracking-wider">PWA</span>
-                            </h3>
-                            <p className="text-[#888] text-sm leading-relaxed max-w-xl">
-                                Accédez instantanément à votre inventaire, vos ventes et vos conversations en un clic directement depuis votre écran d'accueil.
-                            </p>
-                            {isIOS && (
-                                <p className="text-xs text-[#00D97E] flex items-center gap-1.5 mt-2 bg-[#00D97E]/5 border border-[#00D97E]/10 rounded-lg p-2 w-fit">
-                                    <Share className="w-3.5 h-3.5 text-[#00D97E]" />
-                                    <span>Sur iPhone : cliquez sur <strong>Partager</strong> en bas de Safari puis <strong>Sur l'écran d'accueil</strong>.</span>
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
-                        {isInstallable && !isIOS && (
-                            <button
-                                onClick={handleInstallClick}
-                                className="flex-1 md:flex-none bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold text-sm px-5 py-2.5 rounded-xl transition-all active:scale-[0.97] flex items-center justify-center gap-2"
-                            >
-                                <Download className="w-4 h-4" />
-                                <span>Installer</span>
-                            </button>
-                        )}
-                        <button
-                            onClick={handleDismissInstall}
-                            className="flex-1 md:flex-none bg-[#111] hover:bg-[#1a1a1a] border border-[#1a1a1a] text-[#888] hover:text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all active:scale-[0.97]"
-                        >
-                            Fermer
-                        </button>
-                    </div>
-                </div>
-            )}
-
             {/* BOT DISCONNECTED ALERT */}
             {botStatus === 'disconnected' && !loading && (
                 <Link
@@ -289,7 +246,7 @@ const Today: React.FC = () => {
 
             {/* SECTION 1 — À FAIRE MAINTENANT */}
             <section>
-                <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#888] mb-3 flex items-center gap-2">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-[#aaa] mb-3 flex items-center gap-2">
                     <span className="w-1 h-3 bg-[#00D97E] rounded-full" />
                     À faire maintenant
                 </h2>
@@ -326,7 +283,7 @@ const Today: React.FC = () => {
 
             {/* SECTION 2 — LE BOT TRAVAILLE */}
             <section>
-                <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#888] mb-3 flex items-center gap-2">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-[#aaa] mb-3 flex items-center gap-2">
                     <span className="w-1 h-3 bg-[#0EA5E9] rounded-full" />
                     Le bot travaille
                 </h2>
@@ -338,7 +295,7 @@ const Today: React.FC = () => {
                             </div>
                             <p className="text-2xl font-bold text-white">
                                 {logs.length}
-                                <span className="text-sm text-[#888] font-normal ml-2">événements</span>
+                                <span className="text-sm text-[#888] font-normal ml-2">actions du bot</span>
                             </p>
                         </div>
                         <div>
@@ -377,7 +334,7 @@ const Today: React.FC = () => {
 
             {/* SECTION 3 — AUJOURD'HUI EN CHIFFRES */}
             <section>
-                <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#888] mb-3 flex items-center gap-2">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-[#aaa] mb-3 flex items-center gap-2">
                     <span className="w-1 h-3 bg-white/40 rounded-full" />
                     Aujourd'hui en chiffres
                 </h2>
@@ -402,7 +359,7 @@ const Today: React.FC = () => {
                             label="Conversations"
                             value={String(logs.length)}
                             delta={null}
-                            subtitle="événements bot"
+                            subtitle="gérées par le bot"
                         />
                     </div>
                 </div>
@@ -411,10 +368,48 @@ const Today: React.FC = () => {
                     to="/dashboard/analytics"
                     className="mt-4 inline-flex items-center gap-1 text-xs text-[#888] hover:text-white transition-colors"
                 >
-                    Voir l'analyse détaillée
+                    Voir mes chiffres en détail
                     <ArrowRight className="w-3 h-3" />
                 </Link>
             </section>
+
+            {/* INSTALLER L'APPLI — bannière compacte, en bas, jamais prioritaire */}
+            {showInstallBanner && (
+                <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-[#111] border border-[#1a1a1a]">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="p-2 rounded-lg bg-[#00D97E]/10 text-[#00D97E] shrink-0">
+                            <Download className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-white text-sm font-bold">Installer l'appli sur votre écran d'accueil</p>
+                            {isIOS ? (
+                                <p className="text-xs text-[#888] flex items-center gap-1 flex-wrap">
+                                    <Share className="w-3 h-3 shrink-0" />
+                                    <span>Bouton <strong className="text-white">Partager</strong> de Safari → <strong className="text-white">Sur l'écran d'accueil</strong></span>
+                                </p>
+                            ) : (
+                                <p className="text-xs text-[#888]">Plus rapide qu'un site, comme une vraie application.</p>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                        {isInstallable && !isIOS && (
+                            <button
+                                onClick={handleInstallClick}
+                                className="bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold text-xs px-4 py-2 rounded-lg transition-all active:scale-[0.97]"
+                            >
+                                Installer
+                            </button>
+                        )}
+                        <button
+                            onClick={handleDismissInstall}
+                            className="text-[#888] hover:text-white text-xs font-bold px-2 py-2 transition-colors"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
