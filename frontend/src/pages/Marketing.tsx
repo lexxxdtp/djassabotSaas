@@ -1,9 +1,18 @@
 
-import { useState } from 'react';
-import { Megaphone, Users, Calendar, Send, Sparkles, Tag, MessageCircle, ShoppingCart, TimerReset, Clock } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Megaphone, Users, Send, Sparkles, Tag, MessageCircle, ShoppingCart, TimerReset, Clock, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { apiClient } from '../utils/apiClient';
 
 export default function MarketingTools() {
     const [activeTab, setActiveTab] = useState<'broadcast' | 'coupons' | 'abandoned'>('broadcast');
+    const [totalAudience, setTotalAudience] = useState<number | null>(null);
+
+    useEffect(() => {
+        apiClient('/marketing/audience')
+            .then(r => (r.ok ? r.json() : null))
+            .then(data => data && setTotalAudience(data.all))
+            .catch(() => { /* compteur facultatif */ });
+    }, []);
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in zoom-in duration-300">
@@ -21,8 +30,8 @@ export default function MarketingTools() {
                     </div>
                     <div>
                         <p className="text-[#888] text-xs font-bold uppercase tracking-wider">Audience Totale</p>
-                        <h3 className="text-2xl font-bold text-white font-mono">0</h3>
-                        <p className="text-xs text-[#888] font-bold">-- cette semaine</p>
+                        <h3 className="text-2xl font-bold text-white font-mono">{totalAudience ?? '—'}</h3>
+                        <p className="text-xs text-[#888] font-bold">clients ayant écrit au bot</p>
                     </div>
                 </div>
                 <div className="bg-[#111] border border-[#1a1a1a] p-6 rounded-2xl flex items-center space-x-4 hover:border-[#00D97E]/20 transition-colors">
@@ -121,6 +130,44 @@ export default function MarketingTools() {
 }
 
 function BroadcastForm() {
+    const [message, setMessage] = useState('');
+    const [audience, setAudience] = useState<'all' | 'vip' | 'recent'>('all');
+    const [counts, setCounts] = useState<{ all: number; vip: number; recent: number } | null>(null);
+    const [sending, setSending] = useState(false);
+    const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+    useEffect(() => {
+        apiClient('/marketing/audience')
+            .then(r => (r.ok ? r.json() : null))
+            .then(data => data && setCounts(data))
+            .catch(() => { /* silencieux : compteurs facultatifs */ });
+    }, []);
+
+    const audienceCount = counts ? counts[audience] : null;
+
+    const handleSend = async () => {
+        if (!message.trim() || sending) return;
+        setSending(true);
+        setFeedback(null);
+        try {
+            const res = await apiClient('/marketing/broadcast', {
+                method: 'POST',
+                body: JSON.stringify({ message: message.trim(), audience }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setFeedback({ type: 'success', text: `Campagne lancée ! Envoi en cours à ${data.queued} client(s).` });
+                setMessage('');
+            } else {
+                setFeedback({ type: 'error', text: data.error || "Erreur lors de l'envoi." });
+            }
+        } catch {
+            setFeedback({ type: 'error', text: 'Erreur réseau. Vérifiez votre connexion.' });
+        } finally {
+            setSending(false);
+        }
+    };
+
     return (
         <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-6 space-y-6">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -132,40 +179,47 @@ function BroadcastForm() {
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Message</label>
                 <textarea
                     rows={4}
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    maxLength={4000}
                     placeholder="Salut 👋 ! Nouvelle collection disponible. Profitez de -10% ce weekend !"
                     className="w-full bg-black border border-[#1a1a1a] rounded-xl p-4 text-white focus:border-[#00D97E] outline-none resize-none placeholder:text-[#555] transition-colors"
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Envoyer à</label>
-                    <select className="w-full bg-black border border-[#1a1a1a] rounded-xl p-3 text-white focus:border-[#00D97E] outline-none">
-                        <option>Tous les clients (0)</option>
-                        <option>Clients VIP (&gt; 100k FCFA)</option>
-                        <option>Nouveaux clients (30 jours)</option>
-                    </select>
-                </div>
-                <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Planifier pour</label>
-                    <div className="relative group">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] group-focus-within:text-[#00D97E] transition-colors" size={18} />
-                        <input
-                            type="datetime-local"
-                            className="w-full bg-black border border-[#1a1a1a] rounded-xl p-3 pl-10 text-white focus:border-[#00D97E] outline-none"
-                        />
-                    </div>
-                </div>
+            <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Envoyer à</label>
+                <select
+                    value={audience}
+                    onChange={e => setAudience(e.target.value as 'all' | 'vip' | 'recent')}
+                    className="w-full bg-black border border-[#1a1a1a] rounded-xl p-3 text-white focus:border-[#00D97E] outline-none"
+                >
+                    <option value="all">Tous les clients{counts ? ` (${counts.all})` : ''}</option>
+                    <option value="vip">Clients VIP &gt; 100k FCFA{counts ? ` (${counts.vip})` : ''}</option>
+                    <option value="recent">Clients actifs (30 jours){counts ? ` (${counts.recent})` : ''}</option>
+                </select>
             </div>
 
-            <div className="p-8 bg-black/50 rounded-xl border border-dashed border-[#1a1a1a] flex items-center justify-center text-[#888] cursor-pointer hover:border-[#00D97E] hover:text-[#00D97E] transition-all group">
-                <span className="group-hover:scale-105 transition-transform font-medium">+ Ajouter une image ou vidéo</span>
-            </div>
+            {feedback && (
+                <div className={`flex items-center gap-3 p-4 rounded-xl border text-sm font-medium ${feedback.type === 'success'
+                    ? 'bg-[#00D97E]/10 border-[#00D97E]/30 text-[#00D97E]'
+                    : 'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
+                    {feedback.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+                    <span>{feedback.text}</span>
+                </div>
+            )}
 
-            <div className="flex justify-end pt-2">
-                <button className="flex items-center space-x-2 bg-white hover:bg-zinc-200 text-black px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-white/5 transition-all uppercase tracking-wide">
-                    <Send size={18} />
-                    <span>Envoyer la campagne</span>
+            <div className="flex items-center justify-between pt-2">
+                <p className="text-xs text-[#555]">
+                    Les messages partent un par un (2-5s d'écart) pour protéger votre numéro WhatsApp.
+                </p>
+                <button
+                    onClick={handleSend}
+                    disabled={sending || !message.trim() || audienceCount === 0}
+                    className="flex items-center space-x-2 bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-[#666] disabled:cursor-not-allowed text-black px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-white/5 transition-all uppercase tracking-wide"
+                >
+                    {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    <span>{sending ? 'Envoi…' : 'Envoyer la campagne'}</span>
                 </button>
             </div>
         </div>

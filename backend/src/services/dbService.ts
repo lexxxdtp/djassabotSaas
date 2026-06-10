@@ -147,6 +147,38 @@ export const db = {
         return localData.orders.filter((o: any) => o.tenantId === tenantId);
     },
 
+    /** Pagination des commandes — renvoie { items, total } */
+    getOrdersPaged: async (tenantId: string, page: number, limit: number): Promise<{ items: Order[]; total: number }> => {
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+        if (isSupabaseEnabled && supabase) {
+            try {
+                const { data, error, count } = await supabase
+                    .from('orders')
+                    .select('*', { count: 'exact' })
+                    .eq('tenant_id', tenantId)
+                    .order('created_at', { ascending: false })
+                    .range(from, to);
+                if (error) throw error;
+                const items = (data || []).map(o => ({
+                    id: o.id,
+                    tenantId: o.tenant_id,
+                    userId: o.user_id,
+                    items: o.items,
+                    total: o.total,
+                    status: o.status,
+                    address: o.address,
+                    createdAt: new Date(o.created_at)
+                }));
+                return { items, total: count ?? items.length };
+            } catch (e) {
+                console.warn('[DB] Supabase getOrdersPaged failed, fallback to local');
+            }
+        }
+        const all = localData.orders.filter((o: any) => o.tenantId === tenantId);
+        return { items: all.slice(from, from + limit), total: all.length };
+    },
+
 
     createOrder: async (tenantId: string, userId: string, items: CartItem[], total: number, address: string, createdAt: Date = new Date()): Promise<Order> => {
         const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
@@ -259,6 +291,37 @@ export const db = {
             })) as Product[];
         } catch (e: any) {
             console.error('[DB] Supabase getProducts failed:', e);
+            throw new Error(e.message || 'Failed to fetch products');
+        }
+    },
+
+    /** Pagination des produits — renvoie { items, total } */
+    getProductsPaged: async (tenantId: string, page: number, limit: number): Promise<{ items: Product[]; total: number }> => {
+        if (!isSupabaseEnabled || !supabase) {
+            throw new Error('Supabase is not enabled');
+        }
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+        try {
+            const { data, error, count } = await supabase
+                .from('products')
+                .select('*', { count: 'exact' })
+                .eq('tenant_id', tenantId)
+                .order('created_at', { ascending: false })
+                .range(from, to);
+
+            if (error) throw error;
+            const items = (data || []).map((p: any) => ({
+                ...p,
+                minPrice: p.min_price,
+                tenantId: p.tenant_id,
+                variations: p.variations || [],
+                aiInstructions: p.ai_instructions,
+                manageStock: p.manage_stock ?? true
+            })) as Product[];
+            return { items, total: count ?? items.length };
+        } catch (e: any) {
+            console.error('[DB] Supabase getProductsPaged failed:', e);
             throw new Error(e.message || 'Failed to fetch products');
         }
     },

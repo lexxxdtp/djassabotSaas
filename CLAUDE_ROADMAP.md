@@ -352,3 +352,11 @@ git add -A && git commit -m "message" && git push origin main
   - Étape 2 : Nom commerce + sélecteur visuel type d'activité (8 catégories) + nom + année de naissance (dropdown, validation 18+)
   - Étape 3 : Mot de passe + preview "après inscription"
 - Progress bar animée, transitions, bouton Retour, validation par étape
+
+### Session 2 — 10 juin 2026 (Cowork)
+- **Audit auth** : `updateMe` corrigé — unicité email/téléphone vérifiée + reset des flags `emailVerified`/`phoneVerified` quand l'identifiant change.
+- **CORS** : origines Capacitor ajoutées (`capacitor://localhost`, `ionic://localhost`, `http(s)://localhost`) pour l'app mobile.
+- **Pagination** : `GET /api/orders` et `GET /api/products` supportent `?page=&limit=` → `{ items, total, page, limit, totalPages }`. Sans params : comportement legacy (tableau complet), rétro-compatible.
+- **Diffusion (feature)** : `POST /api/marketing/broadcast` + `GET /api/marketing/audience` (`backend/src/routes/marketingRoutes.ts`). Envoi séquentiel avec délai anti-ban 2-5s, audiences all/vip/recent, log dans activity_logs. Formulaire `Marketing.tsx` branché (compteurs réels, feedback succès/erreur).
+- **Firebase frontend** : vérifié — utilisé pour OTP SMS, déjà code-splitté (chunk lazy ~68kb chargé uniquement sur VerifyAccount/ForgotPassword). Ne PAS supprimer.
+- **App iOS** : Capacitor 8 ajouté (`frontend/ios/`, `capacitor.config.ts`, scripts `ios:sync`/`ios:open`). `apiConfig.ts` détecte Capacitor → API prod. Guide : `IOS_SETUP.md`.

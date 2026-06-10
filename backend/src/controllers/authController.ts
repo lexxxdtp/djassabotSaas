@@ -243,7 +243,13 @@ export const updateMe = async (req: Request, res: Response) => {
             return;
         }
 
-        const updates: Record<string, string> = {};
+        const currentUser = await db.getUserById(userId);
+        if (!currentUser) {
+            res.status(404).json({ error: 'Utilisateur introuvable' });
+            return;
+        }
+
+        const updates: Record<string, string | boolean> = {};
 
         if (full_name !== undefined) {
             if (typeof full_name !== 'string' || full_name.trim().length === 0 || full_name.length > 100) {
@@ -259,7 +265,17 @@ export const updateMe = async (req: Request, res: Response) => {
                 res.status(400).json({ error: 'Format email invalide' });
                 return;
             }
-            updates.email = email.toLowerCase().trim();
+            const normalizedEmail = email.toLowerCase().trim();
+            if (normalizedEmail !== (currentUser.email || '').toLowerCase()) {
+                const existing = await db.getUserByEmail(normalizedEmail);
+                if (existing && existing.id !== userId) {
+                    res.status(409).json({ error: 'Cet email est déjà utilisé' });
+                    return;
+                }
+                updates.email = normalizedEmail;
+                // L'email change → il doit être re-vérifié
+                updates.emailVerified = false;
+            }
         }
 
         if (phone !== undefined) {
@@ -268,7 +284,16 @@ export const updateMe = async (req: Request, res: Response) => {
                 res.status(400).json({ error: 'Format de téléphone invalide. Utilisez: +225XXXXXXXXXX' });
                 return;
             }
-            updates.phone = phone;
+            if (phone !== currentUser.phone) {
+                const existing = await db.getUserByPhone(phone);
+                if (existing && existing.id !== userId) {
+                    res.status(409).json({ error: 'Ce numéro de téléphone est déjà utilisé' });
+                    return;
+                }
+                updates.phone = phone;
+                // Le numéro change → il doit être re-vérifié
+                updates.phoneVerified = false;
+            }
         }
 
         if (birth_date !== undefined) {
