@@ -1,5 +1,6 @@
 import { getActiveSessions } from './sessionService';
 import { whatsappManager } from './baileysManager';
+import { db } from './dbService';
 
 /**
  * Service de détection et relance des paniers abandonnés
@@ -67,6 +68,13 @@ export const checkAbandonedCarts = async () => {
  */
 const sendAbandonedCartReminder = async (tenantId: string, userId: string, tempOrder: any): Promise<boolean> => {
     try {
+        // INTERRUPTEUR GLOBAL : bot en pause → pas de relance automatique
+        const settings = await db.getSettings(tenantId);
+        if (settings.botActive === false) {
+            console.log(`[AbandonedCart] ⏸️ Bot en pause pour tenant ${tenantId}, relance ignorée`);
+            return false;
+        }
+
         // Récupérer la session WhatsApp du tenant
         const sessionData = await whatsappManager.getSession(tenantId);
 

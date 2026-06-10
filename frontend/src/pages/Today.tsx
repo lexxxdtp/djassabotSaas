@@ -39,6 +39,8 @@ const Today: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [logs, setLogs] = useState<Log[]>([]);
     const [botStatus, setBotStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+    const [botActive, setBotActive] = useState<boolean | null>(null);
+    const [togglingBot, setTogglingBot] = useState(false);
     const [loading, setLoading] = useState(true);
 
     // PWA Installation states
@@ -95,16 +97,21 @@ const Today: React.FC = () => {
 
         const fetchAll = async () => {
             try {
-                const [resOrders, resLogs, resWa] = await Promise.all([
+                const [resOrders, resLogs, resWa, resSettings] = await Promise.all([
                     apiClient('/orders'),
                     apiClient('/dashboard/pulse'),
                     apiClient('/whatsapp/status'),
+                    apiClient('/settings'),
                 ]);
                 if (resOrders.ok) setOrders(await resOrders.json());
                 if (resLogs.ok) setLogs(await resLogs.json());
                 if (resWa.ok) {
                     const data = await resWa.json();
                     setBotStatus(data.status || 'disconnected');
+                }
+                if (resSettings.ok) {
+                    const s = await resSettings.json();
+                    setBotActive(s.botActive ?? false);
                 }
             } catch (e) {
                 console.error('Today fetch error', e);
@@ -154,6 +161,23 @@ const Today: React.FC = () => {
 
     const hasUrgentTasks = newOrders.length > 0 || paidOrders.length > 0;
 
+    const handleToggleBot = async () => {
+        if (togglingBot || botActive === null) return;
+        setTogglingBot(true);
+        const next = !botActive;
+        try {
+            const res = await apiClient('/settings', {
+                method: 'POST',
+                body: JSON.stringify({ botActive: next }),
+            });
+            if (res.ok) setBotActive(next);
+        } catch (e) {
+            console.error('Toggle bot error', e);
+        } finally {
+            setTogglingBot(false);
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* HEADER */}
@@ -166,7 +190,7 @@ const Today: React.FC = () => {
                         {today.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                     </p>
                 </div>
-                <BotStatusBadge status={botStatus} />
+                <BotStatusBadge status={botStatus} paused={botActive === false} />
             </div>
 
             {/* PWA INSTALL BANNER */}
@@ -229,6 +253,38 @@ const Today: React.FC = () => {
                     </div>
                     <ArrowRight className="w-4 h-4 text-red-400 group-hover:translate-x-1 transition-transform" />
                 </Link>
+            )}
+
+            {/* INTERRUPTEUR GLOBAL DU BOT */}
+            {botActive !== null && botStatus !== 'disconnected' && (
+                <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border transition-colors ${botActive
+                    ? 'bg-[#00D97E]/5 border-[#00D97E]/20'
+                    : 'bg-amber-500/10 border-amber-500/20'}`}>
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${botActive ? 'bg-[#00D97E]/10 text-[#00D97E]' : 'bg-amber-500/20 text-amber-500'}`}>
+                            <Activity className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-white text-sm font-bold">
+                                {botActive ? 'Le bot répond à vos clients' : 'Le bot est en pause'}
+                            </p>
+                            <p className="text-xs text-[#888]">
+                                {botActive
+                                    ? 'Il vend, négocie et prend les commandes automatiquement.'
+                                    : 'Il lit les messages (visibles dans Conversations) mais ne répond à personne tant que vous ne l\'activez pas.'}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleToggleBot}
+                        disabled={togglingBot}
+                        className={`shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.97] disabled:opacity-50 ${botActive
+                            ? 'bg-[#111] border border-[#1a1a1a] text-[#888] hover:text-white hover:bg-[#1a1a1a]'
+                            : 'bg-[#00D97E] text-black hover:bg-[#00D97E]/90'}`}
+                    >
+                        {togglingBot ? '…' : botActive ? 'Mettre en pause' : 'Activer le bot'}
+                    </button>
+                </div>
             )}
 
             {/* SECTION 1 — À FAIRE MAINTENANT */}
@@ -365,7 +421,15 @@ const Today: React.FC = () => {
 
 // ---------- SUB COMPONENTS ----------
 
-const BotStatusBadge = ({ status }: { status: 'disconnected' | 'connecting' | 'connected' }) => {
+const BotStatusBadge = ({ status, paused }: { status: 'disconnected' | 'connecting' | 'connected'; paused?: boolean }) => {
+    if (status === 'connected' && paused) {
+        return (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span className="text-[10px] uppercase font-bold text-amber-500 tracking-wider">En pause</span>
+            </div>
+        );
+    }
     if (status === 'connected') {
         return (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00D97E]/10 border border-[#00D97E]/20">

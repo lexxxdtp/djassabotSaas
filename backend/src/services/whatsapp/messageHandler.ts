@@ -74,6 +74,11 @@ export async function handleMessage(tenantId: string, sock: WASocket, msg: proto
 
         if (isHistory) return;
 
+        // INTERRUPTEUR GLOBAL : si le bot est en pause, on enregistre le message
+        // (visible dans l'Inbox) mais on ne répond JAMAIS.
+        const settings = await db.getSettings(tenantId);
+        if (settings.botActive === false) return;
+
         // Mark Read & Typing
         await sock.readMessages([msg.key]);
         await sock.sendPresenceUpdate('composing', remoteJid);

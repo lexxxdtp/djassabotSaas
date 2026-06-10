@@ -22,6 +22,7 @@ interface LocalData {
 }
 
 const DEFAULT_SETTINGS: Settings = {
+    botActive: false, // Sécurité : le bot ne répond jamais sans activation explicite
     botName: 'Awa',
     language: 'fr',
     persona: 'friendly',
@@ -568,6 +569,7 @@ export const db = {
 
                 if (data) {
                     return {
+                        botActive: data.bot_active ?? false,
                         botName: data.bot_name || DEFAULT_SETTINGS.botName,
                         language: data.language || DEFAULT_SETTINGS.language,
                         persona: data.persona || DEFAULT_SETTINGS.persona,
@@ -615,6 +617,7 @@ export const db = {
         if (isSupabaseEnabled && supabase) {
             try {
                 const dbSettings: any = { tenant_id: tenantId };
+                if (settings.botActive !== undefined) dbSettings.bot_active = settings.botActive;
                 if (settings.botName !== undefined) dbSettings.bot_name = settings.botName;
                 if (settings.language !== undefined) dbSettings.language = settings.language;
                 if (settings.persona !== undefined) dbSettings.persona = settings.persona;

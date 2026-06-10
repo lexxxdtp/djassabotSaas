@@ -81,6 +81,8 @@ export interface DeliveryZone {
 }
 
 export interface Settings {
+    // Interrupteur global : false = le bot lit les messages mais ne répond jamais
+    botActive?: boolean;
     // Identity
     botName: string;
     language: string;
