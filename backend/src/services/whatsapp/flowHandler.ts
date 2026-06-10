@@ -127,8 +127,21 @@ export async function handleFlow(tenantId: string, remoteJid: string, text: stri
     const settings = await db.getSettings(tenantId);
     const products = await db.getProducts(tenantId);
 
-    // Build context
-    const productContext = products.map((p: any) => `${p.name} - ${p.price} FCFA`).join('\n');
+    // Build rich inventory context — le prompt système attend ces infos :
+    // prix plancher (négociation), stock, images [IMAGES_AVAILABLE], consignes spéciales.
+    const productContext = products.map((p: any) => {
+        const parts: string[] = [`${p.name} - ${p.price} FCFA`];
+        if (p.minPrice) parts.push(`(minPrice CACHÉ: ${p.minPrice} FCFA)`);
+        if (p.manageStock !== false) {
+            parts.push(p.stock > 0 ? `[Stock: ${p.stock}]` : '[RUPTURE DE STOCK]');
+        }
+        if (p.description) parts.push(`— ${String(p.description).slice(0, 200)}`);
+        if (Array.isArray(p.images) && p.images.length > 0) {
+            parts.push(`[IMAGES_AVAILABLE: ${p.images.slice(0, 2).join(', ')}]`);
+        }
+        if (p.aiInstructions) parts.push(`📋 CONSIGNES SPÉCIALES: ${p.aiInstructions}`);
+        return parts.join(' ');
+    }).join('\n');
 
     // Intent Detection
     const intentData = await detectPurchaseIntent(text, productContext);
@@ -181,6 +194,30 @@ export async function handleFlow(tenantId: string, remoteJid: string, text: stri
     const history = session.history.flatMap(h => h.parts.map(p => ({ role: h.role, parts: [{ text: p.text }] })));
     const response = await generateAIResponse(text, { inventoryContext: productContext, settings, history });
 
-    await sock.sendMessage(remoteJid, { text: response });
-    await addToHistory(tenantId, remoteJid, 'model', response);
+    // Extraire les tags [IMAGE: url] émis par l'IA et envoyer les vraies photos.
+    // Sécurité : on n'envoie QUE des URLs présentes dans l'inventaire du tenant
+    // (empêche un client malin de faire envoyer une URL arbitraire au bot).
+    const allowedImageUrls = new Set<string>(
+        products.flatMap((p: any) => (Array.isArray(p.images) ? p.images : []))
+    );
+    const imageUrls: string[] = [];
+    const cleanedResponse = response.replace(/\[IMAGE:\s*([^\]]+?)\s*\]/g, (_match: string, url: string) => {
+        if (allowedImageUrls.has(url) && imageUrls.length < 4 && !imageUrls.includes(url)) {
+            imageUrls.push(url);
+        }
+        return '';
+    }).replace(/\n{3,}/g, '\n\n').trim();
+
+    if (cleanedResponse) {
+        await sock.sendMessage(remoteJid, { text: cleanedResponse });
+    }
+    for (const url of imageUrls) {
+        try {
+            await sock.sendMessage(remoteJid, { image: { url } });
+        } catch (e) {
+            console.error('[FlowHandler] Échec envoi image produit:', url, e);
+        }
+    }
+
+    await addToHistory(tenantId, remoteJid, 'model', cleanedResponse || response);
 }
