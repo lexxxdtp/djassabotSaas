@@ -235,6 +235,19 @@ app.post('/api/products', authenticateTenant, async (req, res) => {
         if (stock !== undefined && (typeof stock !== 'number' || stock < 0)) {
             return res.status(400).json({ error: 'Stock invalide' });
         }
+
+        // Limite du plan Starter : 50 produits (raison d'upgrader vers Pro)
+        const tenant = await db.getTenantById(req.tenantId!);
+        if ((tenant?.subscriptionTier || 'starter') === 'starter') {
+            const { total } = await db.getProductsPaged(req.tenantId!, 1, 1);
+            if (total >= 50) {
+                return res.status(403).json({
+                    error: 'Limite de 50 produits atteinte sur le plan Starter. Passez au plan Pro (10 000 F/mois) pour des produits illimités.',
+                    code: 'PLAN_LIMIT_REACHED'
+                });
+            }
+        }
+
         const product = await db.createProduct(req.tenantId!, req.body);
         const { minPrice: _mp, ...sanitized } = product as any;
         res.json(sanitized);

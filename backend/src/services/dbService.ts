@@ -41,10 +41,11 @@ const DEFAULT_SETTINGS: Settings = {
     systemInstructions: '',
     storeName: 'Ma Boutique Mode',
     businessType: 'Mode & Vêtements',
-    address: 'Cocody Riviera 2, Abidjan',
+    // Jamais de fausses valeurs par défaut : le bot les donnerait aux clients.
+    address: '',
     locationUrl: '',
     gpsCoordinates: '',
-    phone: '+225 07 00 00 00 00',
+    phone: '',
     socialMedia: {
         facebook: '',
         instagram: '',
