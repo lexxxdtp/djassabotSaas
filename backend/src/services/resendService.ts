@@ -111,3 +111,41 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
         return { success: false, error };
     }
 };
+
+/**
+ * Alerte : le bot WhatsApp du vendeur est déconnecté et la reconnexion
+ * automatique n'a pas (encore) abouti. Envoyé au propriétaire du compte.
+ */
+export const sendBotDownAlert = async (email: string) => {
+    try {
+        const baseUrl = process.env.FRONTEND_URL || 'https://djassabot-saas.vercel.app';
+        const data = await resend.emails.send({
+            from: 'DjassaBot <onboarding@resend.dev>',
+            to: [email],
+            subject: '⚠️ Votre bot WhatsApp est déconnecté',
+            html: `
+                <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #DC2626;">⚠️ Votre bot ne répond plus à vos clients</h2>
+                    <p>Bonjour,</p>
+                    <p>La connexion WhatsApp de votre boutique a été interrompue et nos tentatives
+                    de reconnexion automatique n'ont pas encore abouti. Nous continuons d'essayer
+                    toutes les 5 minutes.</p>
+                    <p><strong>Pendant ce temps, vos clients n'obtiennent pas de réponse.</strong></p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${baseUrl}/dashboard/whatsapp" style="background-color: #00D97E; color: black; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                            Vérifier ma connexion
+                        </a>
+                    </div>
+                    <p style="color: #666; font-size: 14px;">Causes fréquentes : téléphone éteint trop longtemps,
+                    déconnexion depuis WhatsApp (Appareils connectés), ou coupure réseau prolongée.
+                    Si le problème persiste, reconnectez simplement votre numéro depuis le tableau de bord.</p>
+                </div>
+            `,
+        });
+        console.log(`[Resend] Alerte bot déconnecté envoyée à ${email}`, data);
+        return { success: true, data };
+    } catch (error) {
+        console.error(`[Resend] Erreur alerte bot déconnecté à ${email}:`, error);
+        return { success: false, error };
+    }
+};

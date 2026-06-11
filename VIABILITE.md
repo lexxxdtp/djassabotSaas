@@ -14,7 +14,7 @@
 - [x] ✅ **Le bot survit-il à un redémarrage du serveur ?** Oui — sessions Baileys persistées sur disque + relance auto de tous les tenants au boot.
 - [x] ✅ **Le bot se reconnecte-t-il après une coupure ?** Oui — 5 tentatives rapides + watchdog toutes les 5 min (commit `1ace67c`).
 - [ ] ⚠️ **PM2 redémarre-t-il après un reboot du VPS ?** NON CONFIRMÉ. À faire une fois sur le VPS : `pm2 startup` puis suivre l'instruction affichée, puis `pm2 save`. **5 min, critique.**
-- [ ] ❌ **Le vendeur est-il PRÉVENU quand son bot tombe ?** Non — il y a un warning dans le dashboard, mais pas de notification push/SMS/email. Un bot mort 2 jours sans que le vendeur le sache = client perdu + churn. → Notifications push (PWA) ou email Resend.
+- [x] ✅ **Le vendeur est-il PRÉVENU quand son bot tombe ?** Oui — alerte EMAIL automatique au propriétaire quand le watchdog échoue (1 max/heure), avec lien direct vers la reconnexion. ⚠️ Effectif pour tous les vendeurs seulement après config du domaine Resend.
 - [ ] 🔍 **Que se passe-t-il si le téléphone du vendeur est éteint 14 jours ?** WhatsApp délie les appareils → il faut rescanner. Documenter ça dans l'onboarding ("garde ton téléphone connecté au moins une fois par semaine").
 - [ ] ⚠️ **Le VPS tient-il combien de tenants ?** KVM 2 / 8 GB RAM. Chaque session Baileys ≈ 60-120 MB. Estimation : ~40-60 bots simultanés confortables. À monitorer (`pm2 monit`) à partir de 20 vendeurs. Prévoir upgrade VPS à 50+.
 - [ ] ❌ **Y a-t-il un monitoring/alerting du serveur ?** Non. Si le VPS tombe à 3h du matin, personne ne le sait. → Minimum : UptimeRobot (gratuit) sur `https://187-77-171-44.nip.io/` qui t'envoie un email/SMS si down. **10 min.**
@@ -26,7 +26,7 @@
 - [x] ✅ **Un client peut-il faire envoyer n'importe quelle image par le bot ?** Non — seules les URLs de l'inventaire du tenant sont autorisées.
 - [x] ✅ **OTP téléphone vérifié côté serveur ?** Oui — Firebase Admin SDK, le backend vérifie le token.
 - [x] ✅ **Rate limiting sur l'auth ?** Oui — 20 req/15min auth, 5 req/10min OTP.
-- [ ] ❌ **RLS Supabase** : toutes les policies sont `using (true)` — si la clé anon fuite, toute la base est lisible. Le backend filtre par tenantId mais zéro défense en profondeur. → Réécrire les policies. **~2h, important avant 50+ vendeurs.**
+- [ ] ⚠️ **RLS Supabase** : migration PRÊTE (`database/migrations/enable_rls_defense_in_depth.sql`) avec prérequis de vérification et rollback. À appliquer ENSEMBLE demain : vérifier que le .env VPS utilise la clé service_role, appliquer, tester le dashboard immédiatement.
 - [ ] ⚠️ **JWT_SECRET fort en prod ?** Un secret fort a été généré (session mai) — VÉRIFIER que le `.env` du VPS l'utilise bien et pas le défaut `tdjaasa-super-secret...`.
 - [ ] ⚠️ **CORS `.vercel.app` wildcard** : n'importe quel site hébergé sur vercel.app peut appeler l'API. Risque limité (le token est en localStorage, pas en cookie) mais à restreindre au domaine exact quand tu auras un domaine.
 - [ ] 🔍 **Un vendeur peut-il accéder aux données d'un autre ?** Le code filtre par tenantId partout (vérifié sur orders/products/chats/settings) — mais un test manuel à deux comptes serait sain.
@@ -51,10 +51,10 @@
 
 ## 5. ⚖️ Légal & conformité — "Est-ce que je peux me faire attaquer ?"
 
-- [ ] ❌ **CGU / CGV** : aucune page conditions d'utilisation. Tu encaisses des abonnements → il en faut (responsabilité en cas de ban WhatsApp du vendeur, de perte de données, remboursements...).
-- [ ] ❌ **Politique de confidentialité** : tu stockes les conversations WhatsApp des CLIENTS des vendeurs (qui n'ont rien signé). Minimum : page de confidentialité + mention dans les CGU vendeur.
-- [ ] ⚠️ **Risque WhatsApp ToS** : Baileys viole les CGU WhatsApp. Risque réel = ban du numéro du vendeur (pas de poursuite). À assumer en connaissance de cause + le dire honnêtement dans les CGU ("nous utilisons WhatsApp Web, risque de suspension du numéro en cas d'usage abusif").
-- [ ] ⚠️ **Mention reCAPTCHA** : badge masquable mais mention textuelle obligatoire dans le footer (CG Google). Petit fix CSS + une ligne de texte.
+- [x] ✅ **CGU** : page `/conditions` en ligne (abonnement, responsabilités, résiliation). ⚠️ À faire relire par un avocat ivoirien avant la croissance.
+- [x] ✅ **Politique de confidentialité** : page `/confidentialite` (couvre les commerçants ET leurs clients finaux, IA, prestataires, droits).
+- [x] ✅ **Risque WhatsApp ToS** : assumé et écrit noir sur blanc dans les CGU (§3) avec les bonnes pratiques anti-ban.
+- [x] ✅ **Mention reCAPTCHA** : ajoutée dans le footer de la landing avec liens vers les politiques Google.
 - [ ] 🔍 **Facturation** : un commerçant qui paie 10 000 F voudra un reçu. Paystack envoie-t-il un reçu email automatique ? Sinon, prévoir.
 
 ## 6. 🚀 Activation — "Un vendeur lambda y arrive-t-il SEUL ?"
@@ -79,15 +79,15 @@
 
 ## 8. 🛟 Support — "Que se passe-t-il quand un vendeur a un problème ?"
 
-- [ ] ❌ **Canal de support** : aucun. Minimum viable : un numéro WhatsApp support affiché dans Réglages → Compte (ironique mais parfait : tu utilises ton propre produit).
-- [ ] ❌ **FAQ / aide** : rien. 5 questions suffisent pour commencer (Comment connecter ? Pourquoi le bot ne répond pas ? Comment marquer payé ? C'est quoi la pause ? Comment changer mes prix ?).
+- [x] ✅ **FAQ / aide** : section Aide & support dans Réglages → Compte avec les 5 questions clés + email de contact.
+- [ ] ⚠️ **Canal de support réel** : l'email support@djassabot.com affiché n'existe pas encore — à créer avec le domaine, ou remplacer par ton numéro WhatsApp support.
 - [ ] ⚠️ **Toi, tu vois quoi ?** Pas de vue admin multi-tenants. Pour 10 testeurs, Supabase Table Editor suffit. À 50+, il faudra un mini-admin.
 
 ## 9. 💾 Données — "Et si tout brûle ?"
 
 - [ ] 🔍 **Backups Supabase** : le plan gratuit garde 7 jours. Vérifier que c'est actif. Au plan Pro : backups quotidiens + PITR.
-- [ ] ⚠️ **Sessions WhatsApp (auth Baileys)** : stockées UNIQUEMENT sur le disque du VPS (`/home/alex/djassabotSaas/backend/auth_info_baileys/`). Si le VPS meurt, TOUS les vendeurs doivent rescanner leur QR. Acceptable au début, mais prévoir un backup périodique de ce dossier (cron + rclone vers un storage).
-- [ ] ❌ **`wipe_db.ts` traîne sur ta machine** : script de suppression totale non commité — le supprimer ou le déplacer hors du repo pour éviter un drame.
+- [ ] ⚠️ **Sessions WhatsApp (auth Baileys)** : script de backup PRÊT (`scripts/backup_wa_auth.sh`, rotation 7 jours). Reste à l'installer sur le VPS : `chmod +x` + la ligne crontab indiquée dans le script. **5 min.**
+- [x] ✅ **`wipe_db.ts` sécurisé** : garde-fou ajouté — le script refuse de s'exécuter sans `WIPE_CONFIRM=OUI_TOUT_EFFACER`. Plus de drame possible par accident.
 
 ## 10. 🎯 Produit — ce qui reste pour la vision complète
 
@@ -96,7 +96,7 @@
 - [x] ✅ Diffusion de campagnes WhatsApp avec audiences réelles + anti-ban.
 - [x] ✅ Relance paniers abandonnés (cron 30 min).
 - [ ] ❌ Codes promo (retirés de l'UI car non fonctionnels — à coder backend si demandé par les testeurs).
-- [ ] ❌ Statistiques de campagnes (envoyées/échecs) dans la page Marketing — les données existent dans activity_logs, il manque juste l'affichage.
+- [x] ✅ Statistiques de campagnes réelles dans Marketing (`GET /api/marketing/stats` depuis activity_logs : nombre de campagnes + messages envoyés).
 - [ ] ❌ Notifications push (commande reçue, bot déconnecté).
 - [ ] ⚠️ Table `customers` créée mais inutilisée — l'exploiter (CRM léger) ou la supprimer.
 
@@ -107,12 +107,13 @@
 | # | Action | Durée | Impact |
 |---|--------|-------|--------|
 | 1 | `pm2 startup` + `pm2 save` sur le VPS | 5 min | Survit aux reboots |
-| 2 | UptimeRobot sur l'API | 10 min | Tu sais quand c'est down |
-| 3 | Acheter un domaine + config Resend | 30 min | Les testeurs peuvent s'inscrire |
-| 4 | Vérifier JWT_SECRET prod + backup auth_info cron | 20 min | Sécurité/données |
-| 5 | Paystack clés live + plans réels + test paiement | 45 min | L'argent peut rentrer |
-| 6 | Test end-to-end avec ta 2e puce (vente complète) | 30 min | Validation du cœur du produit |
-| 7 | CGU + confidentialité (je peux les rédiger) | 1 h | Protection légale |
-| 8 | Numéro WhatsApp support + mini-FAQ | 30 min | Les testeurs ne sont pas perdus |
+| 2 | Installer le cron de backup (`scripts/backup_wa_auth.sh`) | 5 min | Sessions WhatsApp sauvegardées |
+| 3 | UptimeRobot sur l'API | 10 min | Tu sais quand c'est down |
+| 4 | Acheter un domaine + config Resend + créer support@ | 30 min | Les testeurs peuvent s'inscrire |
+| 5 | Vérifier JWT_SECRET prod + appliquer la migration RLS ensemble | 30 min | Sécurité en profondeur |
+| 6 | Paystack clés live + plans réels + test paiement | 45 min | L'argent peut rentrer |
+| 7 | Test end-to-end avec ta 2e puce (vente complète) | 30 min | Validation du cœur du produit |
+
+~~CGU + confidentialité~~ ✅ fait · ~~FAQ/support in-app~~ ✅ fait · ~~alerte bot down~~ ✅ fait · ~~stats campagnes~~ ✅ fait · ~~garde-fou wipe_db~~ ✅ fait
 
 *Après ça : recruter les 10 testeurs. Le produit est prêt.*

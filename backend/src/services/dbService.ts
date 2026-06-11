@@ -691,6 +691,27 @@ export const db = {
         }
     },
 
+    /** Email du propriétaire d'un tenant (pour les alertes : bot déconnecté, etc.) */
+    getOwnerEmail: async (tenantId: string): Promise<string | null> => {
+        if (isSupabaseEnabled && supabase) {
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('email')
+                    .eq('tenant_id', tenantId)
+                    .eq('role', 'owner')
+                    .limit(1)
+                    .maybeSingle();
+                if (error) throw error;
+                return data?.email || null;
+            } catch (e) {
+                console.error('[DB] getOwnerEmail Error:', e);
+                return null;
+            }
+        }
+        return null;
+    },
+
     /** Anti-fraude : vérifie si une référence de transaction a déjà servi à valider un paiement */
     isTransactionIdUsed: async (tenantId: string, transactionId: string): Promise<boolean> => {
         if (isSupabaseEnabled && supabase) {

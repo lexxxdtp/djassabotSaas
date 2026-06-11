@@ -6,11 +6,16 @@ import { apiClient } from '../utils/apiClient';
 export default function MarketingTools() {
     const [activeTab, setActiveTab] = useState<'broadcast' | 'abandoned'>('broadcast');
     const [totalAudience, setTotalAudience] = useState<number | null>(null);
+    const [stats, setStats] = useState<{ campaigns: number; sent: number } | null>(null);
 
     useEffect(() => {
         apiClient('/marketing/audience')
             .then(r => (r.ok ? r.json() : null))
             .then(data => data && setTotalAudience(data.all))
+            .catch(() => { /* compteur facultatif */ });
+        apiClient('/marketing/stats')
+            .then(r => (r.ok ? r.json() : null))
+            .then(data => data && setStats(data))
             .catch(() => { /* compteur facultatif */ });
     }, []);
 
@@ -23,7 +28,7 @@ export default function MarketingTools() {
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-[#111] border border-[#1a1a1a] p-6 rounded-2xl flex items-center space-x-4 hover:border-[#00D97E]/20 transition-colors">
                     <div className="p-3 bg-[#00D97E]/10 rounded-xl text-[#00D97E] border border-[#00D97E]/20">
                         <Users size={24} />
@@ -32,6 +37,16 @@ export default function MarketingTools() {
                         <p className="text-[#888] text-xs font-bold uppercase tracking-wider">Audience Totale</p>
                         <h3 className="text-2xl font-bold text-white font-mono">{totalAudience ?? '—'}</h3>
                         <p className="text-xs text-[#888] font-bold">clients ayant écrit au bot</p>
+                    </div>
+                </div>
+                <div className="bg-[#111] border border-[#1a1a1a] p-6 rounded-2xl flex items-center space-x-4 hover:border-[#00D97E]/20 transition-colors">
+                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500 border border-blue-500/20">
+                        <Megaphone size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[#888] text-xs font-bold uppercase tracking-wider">Campagnes</p>
+                        <h3 className="text-2xl font-bold text-white font-mono">{stats?.campaigns ?? '—'}</h3>
+                        <p className="text-xs text-[#888] font-bold">{stats ? `${stats.sent} message(s) envoyé(s)` : 'chargement…'}</p>
                     </div>
                 </div>
                 <div className="bg-[#111] border border-[#1a1a1a] p-6 rounded-2xl flex items-center space-x-4 hover:border-[#00D97E]/20 transition-colors">

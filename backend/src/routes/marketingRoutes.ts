@@ -66,6 +66,37 @@ router.get('/audience', async (req: any, res) => {
 });
 
 /**
+ * GET /api/marketing/stats
+ * Statistiques réelles des campagnes (depuis activity_logs type 'campaign').
+ */
+router.get('/stats', async (req: any, res) => {
+    try {
+        const tenantId = req.tenantId;
+        if (!isSupabaseEnabled || !supabase) {
+            return res.json({ campaigns: 0, sent: 0, lastCampaignAt: null });
+        }
+        const { data, error } = await supabase
+            .from('activity_logs')
+            .select('metadata, created_at')
+            .eq('tenant_id', tenantId)
+            .eq('type', 'campaign')
+            .order('created_at', { ascending: false })
+            .limit(100);
+        if (error) throw error;
+        const rows = data || [];
+        const sent = rows.reduce((s, r: any) => s + (r.metadata?.sent || 0), 0);
+        res.json({
+            campaigns: rows.length,
+            sent,
+            lastCampaignAt: rows[0]?.created_at || null,
+        });
+    } catch (error) {
+        logger.error({ err: error }, '[Marketing] stats error');
+        res.status(500).json({ error: 'Impossible de charger les statistiques' });
+    }
+});
+
+/**
  * POST /api/marketing/broadcast
  * body: { message: string, audience: 'all' | 'vip' | 'recent' }
  * Envoie le message à tous les clients de l'audience, avec un délai

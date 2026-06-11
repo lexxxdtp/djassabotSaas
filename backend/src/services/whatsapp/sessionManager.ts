@@ -11,6 +11,7 @@ import path from 'path';
 import pino from 'pino';
 import { db } from '../dbService';
 import { handleMessage } from './messageHandler';
+import { sendBotDownAlert } from '../resendService';
 
 // Logger clean
 const logger = pino({ level: 'error' });
@@ -25,6 +26,8 @@ export interface SessionData {
 export class SessionManager {
     private sessions: Map<string, SessionData> = new Map();
     private MAX_RETRIES = 5;
+    // Anti-spam : 1 alerte email max par tenant par heure
+    private lastDownAlert: Map<string, number> = new Map();
 
     constructor() { }
 
@@ -188,6 +191,15 @@ export class SessionManager {
                         this.sessions.delete(tenantId);
                         await db.updateTenantWhatsAppStatus(tenantId, 'disconnected');
                         await db.logActivity(tenantId, 'warning', '⚠️ Bot WhatsApp déconnecté — reconnexion automatique en cours', {});
+
+                        // Alerte email au propriétaire (1 max/heure)
+                        const lastAlert = this.lastDownAlert.get(tenantId) || 0;
+                        if (Date.now() - lastAlert > 60 * 60 * 1000) {
+                            this.lastDownAlert.set(tenantId, Date.now());
+                            db.getOwnerEmail(tenantId).then(email => {
+                                if (email) sendBotDownAlert(email).catch(() => { });
+                            }).catch(() => { });
+                        }
 
                         setTimeout(() => {
                             // Ne relancer que si les credentials existent toujours (pas de logout manuel entre-temps)
