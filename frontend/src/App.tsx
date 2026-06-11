@@ -22,6 +22,8 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const VerifyAccount = lazy(() => import('./pages/VerifyAccount'));
+const Terms = lazy(() => import('./pages/Legal').then(m => ({ default: m.Terms })));
+const Privacy = lazy(() => import('./pages/Legal').then(m => ({ default: m.Privacy })));
 
 // Loading fallback — matches landing page design (pure black, #00D97E accent)
 const PageLoader = () => (
@@ -67,6 +69,8 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/conditions" element={<Terms />} />
+            <Route path="/confidentialite" element={<Privacy />} />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/verify-account" element={<VerifyAccount />} />

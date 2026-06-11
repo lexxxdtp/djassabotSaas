@@ -347,15 +347,21 @@ const LandingPage = () => {
                         <span className="font-bold text-[14px]">DjassaBot</span>
                     </div>
                     <p className="text-[#333] text-[12px]">© 2026 DjassaBot — Abidjan, Côte d'Ivoire 🇨🇮</p>
-                    <div className="flex gap-5">
+                    <div className="flex gap-5 flex-wrap justify-center">
                         {['Connexion', 'Créer un compte'].map((label, i) => (
                             <button key={i} onClick={() => go(i === 0 ? '/login' : '/signup')}
                                 className="text-[#444] hover:text-white text-[12px] transition-colors duration-200">
                                 {label}
                             </button>
                         ))}
+                        <button onClick={() => go('/conditions')} className="text-[#444] hover:text-white text-[12px] transition-colors duration-200">Conditions</button>
+                        <button onClick={() => go('/confidentialite')} className="text-[#444] hover:text-white text-[12px] transition-colors duration-200">Confidentialité</button>
                     </div>
                 </div>
+                <p className="max-w-6xl mx-auto mt-6 text-[#333] text-[11px] text-center md:text-left">
+                    Ce site est protégé par reCAPTCHA ; la <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline hover:text-[#555]">politique de confidentialité</a> et
+                    les <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline hover:text-[#555]">conditions d'utilisation</a> de Google s'appliquent.
+                </p>
             </footer>
         </div>
     );

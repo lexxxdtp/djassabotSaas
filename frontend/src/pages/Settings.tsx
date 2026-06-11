@@ -467,6 +467,49 @@ export default function Settings() {
                             {/* Plans embed */}
                             <Subscription />
                         </div>
+
+                        {/* Aide & support */}
+                        <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-6 md:p-8">
+                            <h2 className="text-sm font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider">
+                                <span className="w-1 h-4 rounded-full bg-[#0EA5E9]" />
+                                Aide & support
+                            </h2>
+                            <div className="space-y-4 text-sm">
+                                {[
+                                    {
+                                        q: 'Le bot ne répond pas à mes clients ?',
+                                        a: 'Vérifiez 3 choses sur la page Aujourd\'hui : WhatsApp connecté (badge vert), au moins un produit ajouté, et le bot ACTIVÉ (pas en pause).'
+                                    },
+                                    {
+                                        q: 'C\'est quoi la pause du bot ?',
+                                        a: 'En pause, le bot lit les messages (vous les voyez dans Conversations) mais ne répond à personne. Pratique pour reprendre la main ou faire une pause. Activez/désactivez depuis la page Aujourd\'hui.'
+                                    },
+                                    {
+                                        q: 'Comment marquer une commande payée ?',
+                                        a: 'Si le client envoie son reçu Wave/OM dans WhatsApp, le bot valide tout seul. Sinon : Commandes → bouton "Marquer payée".'
+                                    },
+                                    {
+                                        q: 'Comment changer mes prix ?',
+                                        a: 'Produits → touchez le produit → modifiez le prix → Enregistrer. Le bot utilise le nouveau prix immédiatement. Le "prix plancher" est le minimum secret en dessous duquel le bot ne négociera jamais.'
+                                    },
+                                    {
+                                        q: 'Mon WhatsApp risque-t-il quelque chose ?',
+                                        a: 'Le bot se connecte comme WhatsApp Web. Règle d\'or : n\'envoyez jamais de campagnes à des numéros qui ne vous ont jamais écrit. Le bot espace automatiquement les envois pour protéger votre numéro.'
+                                    },
+                                ].map(item => (
+                                    <details key={item.q} className="group bg-black/30 border border-[#1a1a1a] rounded-xl">
+                                        <summary className="cursor-pointer list-none p-4 text-white font-medium flex items-center justify-between">
+                                            {item.q}
+                                            <span className="text-[#555] group-open:rotate-45 transition-transform text-lg leading-none">+</span>
+                                        </summary>
+                                        <p className="px-4 pb-4 text-[#888] leading-relaxed">{item.a}</p>
+                                    </details>
+                                ))}
+                                <p className="text-[#888] pt-2">
+                                    Besoin d'aide ? Écrivez-nous : <a href="mailto:support@djassabot.com" className="text-[#00D97E] hover:underline">support@djassabot.com</a>
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
