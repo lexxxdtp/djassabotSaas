@@ -269,7 +269,7 @@ const LandingPage = () => {
                                 },
                                 {
                                     name: 'Business',
-                                    price: '20 000',
+                                    price: '15 000',
                                     desc: 'Pour les équipes et multi-boutiques.',
                                     features: ['Tout du Pro', 'Multi-comptes', 'Accès API', 'Account manager dédié'],
                                     cta: 'Nous contacter',

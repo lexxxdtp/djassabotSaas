@@ -1,10 +1,10 @@
 
 import { useEffect, useState } from 'react';
-import { Megaphone, Users, Send, Sparkles, Tag, MessageCircle, ShoppingCart, TimerReset, Clock, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { Megaphone, Users, Send, Sparkles, ShoppingCart, TimerReset, Clock, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { apiClient } from '../utils/apiClient';
 
 export default function MarketingTools() {
-    const [activeTab, setActiveTab] = useState<'broadcast' | 'coupons' | 'abandoned'>('broadcast');
+    const [activeTab, setActiveTab] = useState<'broadcast' | 'abandoned'>('broadcast');
     const [totalAudience, setTotalAudience] = useState<number | null>(null);
 
     useEffect(() => {
@@ -23,7 +23,7 @@ export default function MarketingTools() {
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-[#111] border border-[#1a1a1a] p-6 rounded-2xl flex items-center space-x-4 hover:border-[#00D97E]/20 transition-colors">
                     <div className="p-3 bg-[#00D97E]/10 rounded-xl text-[#00D97E] border border-[#00D97E]/20">
                         <Users size={24} />
@@ -35,23 +35,13 @@ export default function MarketingTools() {
                     </div>
                 </div>
                 <div className="bg-[#111] border border-[#1a1a1a] p-6 rounded-2xl flex items-center space-x-4 hover:border-[#00D97E]/20 transition-colors">
-                    <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500 border border-blue-500/20">
-                        <MessageCircle size={24} />
-                    </div>
-                    <div>
-                        <p className="text-[#888] text-xs font-bold uppercase tracking-wider">Campagnes Envoyées</p>
-                        <h3 className="text-2xl font-bold text-white font-mono">0</h3>
-                        <p className="text-xs text-[#888]">Aucune campagne</p>
-                    </div>
-                </div>
-                <div className="bg-[#111] border border-[#1a1a1a] p-6 rounded-2xl flex items-center space-x-4 hover:border-[#00D97E]/20 transition-colors">
                     <div className="p-3 bg-rose-500/10 rounded-xl text-rose-500 border border-rose-500/20">
                         <ShoppingCart size={24} />
                     </div>
                     <div>
-                        <p className="text-[#888] text-xs font-bold uppercase tracking-wider">Paniers Sauvés</p>
-                        <h3 className="text-2xl font-bold text-white font-mono">0</h3>
-                        <p className="text-xs text-[#555] font-bold">0 FCFA</p>
+                        <p className="text-[#888] text-xs font-bold uppercase tracking-wider">Relance Paniers</p>
+                        <h3 className="text-2xl font-bold text-emerald-500 font-mono">Active</h3>
+                        <p className="text-xs text-[#888] font-bold">automatique, 24h/24</p>
                     </div>
                 </div>
             </div>
@@ -67,18 +57,6 @@ export default function MarketingTools() {
                         <span>Diffusion</span>
                     </div>
                     {activeTab === 'broadcast' && (
-                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#00D97E]" />
-                    )}
-                </button>
-                <button
-                    onClick={() => setActiveTab('coupons')}
-                    className={`pb-3 px-2 text-sm font-bold uppercase tracking-wide transition-all relative whitespace-nowrap ${activeTab === 'coupons' ? 'text-[#00D97E]' : 'text-[#888] hover:text-white'}`}
-                >
-                    <div className="flex items-center space-x-2">
-                        <Tag size={18} />
-                        <span>Codes Promo</span>
-                    </div>
-                    {activeTab === 'coupons' && (
                         <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#00D97E]" />
                     )}
                 </button>
@@ -102,26 +80,24 @@ export default function MarketingTools() {
                 <div className="lg:col-span-2 space-y-6">
                     {activeTab === 'broadcast' ? (
                         <BroadcastForm />
-                    ) : activeTab === 'coupons' ? (
-                        <CouponForm />
                     ) : (
                         <AbandonedCartsView />
                     )}
                 </div>
 
-                {/* Right Column: Preview / Helper */}
+                {/* Right Column: conseils concrets */}
                 <div className="space-y-6">
                     <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-6">
                         <h3 className="text-lg font-bold text-white mb-4 flex items-center space-x-2">
                             <Sparkles className="text-amber-400" size={18} />
-                            <span>Conseil IA du Jour</span>
+                            <span>Conseils pour vos campagnes</span>
                         </h3>
-                        <p className="text-[#888] text-sm leading-relaxed mb-6">
-                            L'IA analysera vos données de vente pour vous proposer des conseils personnalisés une fois que vous aurez plus d'activité.
-                        </p>
-                        <button className="w-full py-3 bg-zinc-800 text-[#888] rounded-lg text-sm font-bold uppercase tracking-wide cursor-not-allowed border border-zinc-800">
-                            En Attente de Données
-                        </button>
+                        <ul className="text-[#888] text-sm leading-relaxed space-y-3">
+                            <li>🎯 Une seule offre par message : « Bazin à -10% ce weekend » marche mieux qu'une liste.</li>
+                            <li>⏰ Envoyez entre 18h et 21h, quand vos clients regardent leur téléphone.</li>
+                            <li>📸 Mentionnez un produit précis — le bot enverra sa photo si le client demande à voir.</li>
+                            <li>🔁 Pas plus d'une campagne par semaine pour ne pas lasser vos clients.</li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -226,57 +202,6 @@ function BroadcastForm() {
     );
 }
 
-function CouponForm() {
-    return (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-6 space-y-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <div className="w-1 h-6 bg-[#00D97E] rounded-full"></div>
-                GÉNÉRER UN CODE PROMO
-            </h2>
-
-            <div className="grid grid-cols-2 gap-6">
-                <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Code (ex: PROMO10)</label>
-                    <input
-                        type="text"
-                        placeholder="SUMMER2024"
-                        className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-white focus:border-[#00D97E] outline-none uppercase font-mono placeholder:text-[#444]"
-                    />
-                </div>
-                <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Réduction</label>
-                    <div className="flex">
-                        <input
-                            type="number"
-                            placeholder="10"
-                            className="w-full bg-black border border-[#1a1a1a] rounded-l-xl p-3 text-white focus:border-[#00D97E] outline-none placeholder:text-[#555]"
-                        />
-                        <select className="bg-[#111] border border-[#1a1a1a] rounded-r-xl px-3 text-white outline-none font-bold">
-                            <option>%</option>
-                            <option>FCFA</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Limite d'utilisation</label>
-                <select className="w-full bg-black border border-[#1a1a1a] rounded-xl p-3 text-white focus:border-[#00D97E] outline-none">
-                    <option>Illimité</option>
-                    <option>1 fois par client</option>
-                    <option>100 premiers clients</option>
-                </select>
-            </div>
-
-            <div className="flex justify-end pt-2">
-                <button className="flex items-center space-x-2 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-[#00D97E]/20 transition-all uppercase tracking-wide">
-                    <Tag size={18} />
-                    <span>Créer le coupon</span>
-                </button>
-            </div>
-        </div>
-    );
-}
 
 function AbandonedCartsView() {
     return (

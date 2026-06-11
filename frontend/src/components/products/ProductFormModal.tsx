@@ -284,6 +284,44 @@ export default function ProductFormModal({
                             ✨ L'IA analyse votre photo…
                         </p>
                     )}
+                    {/* Photos — EN PREMIER : c'est le geste le plus naturel pour le vendeur,
+                        et ça déclenche le pré-remplissage IA du nom et de la description */}
+                    <div>
+                        <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">
+                            Photos du produit {!productToEdit && <span className="text-[#00D97E] normal-case font-normal">— commencez ici</span>}
+                        </label>
+                        <div className="grid grid-cols-3 gap-2 mb-2">
+                            {form.images.map((img, idx) => (
+                                <div key={idx} className="relative h-24 rounded-lg overflow-hidden group border border-[#1a1a1a]">
+                                    <img src={img} alt="Product" className="w-full h-full object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => setForm({
+                                            ...form,
+                                            images: form.images.filter((_, i) => i !== idx)
+                                        })}
+                                        className="absolute top-1 right-1 bg-red-500 text-white rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                </div>
+                            ))}
+                            <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-all group ${form.images.length === 0
+                                ? 'border-[#00D97E]/40 text-[#00D97E] bg-[#00D97E]/5 hover:bg-[#00D97E]/10'
+                                : 'border-[#1a1a1a] hover:border-[#00D97E] text-[#888] hover:text-[#00D97E] bg-black/20 hover:bg-[#00D97E]/5'}`}>
+                                {uploading ? <span className="animate-spin text-lg">⏳</span> : <ImageIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />}
+                                {form.images.length === 0 && !uploading && <span className="text-[10px] font-bold mt-1">Ajouter</span>}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                    onChange={(e) => handleUpload(e, 'main')}
+                                />
+                            </label>
+                        </div>
+                    </div>
+
                     {/* Name */}
                     <div>
                         <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Nom du Produit</label>
@@ -366,38 +404,6 @@ export default function ProductFormModal({
                             value={form.aiInstructions}
                             onChange={e => setForm({ ...form, aiInstructions: e.target.value })}
                         />
-                    </div>
-
-                    {/* Images */}
-                    <div>
-                        <label className="block text-xs font-semibold text-[#888] mb-2 uppercase tracking-wide">Galerie</label>
-                        <div className="grid grid-cols-3 gap-2 mb-2">
-                            {form.images.map((img, idx) => (
-                                <div key={idx} className="relative h-20 rounded-lg overflow-hidden group border border-[#1a1a1a]">
-                                    <img src={img} alt="Product" className="w-full h-full object-cover" />
-                                    <button
-                                        type="button"
-                                        onClick={() => setForm({
-                                            ...form,
-                                            images: form.images.filter((_, i) => i !== idx)
-                                        })}
-                                        className="absolute top-1 right-1 bg-red-500 text-white rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <X size={12} />
-                                    </button>
-                                </div>
-                            ))}
-                            <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-[#1a1a1a] hover:border-[#00D97E] rounded-lg cursor-pointer transition-all text-[#888] hover:text-[#00D97E] bg-black/20 hover:bg-[#00D97E]/5 group">
-                                {uploading ? <span className="animate-spin text-lg">⏳</span> : <ImageIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />}
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    className="hidden"
-                                    onChange={(e) => handleUpload(e, 'main')}
-                                />
-                            </label>
-                        </div>
                     </div>
 
                     {/* Variations */}

@@ -39,6 +39,7 @@ const Today: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [logs, setLogs] = useState<Log[]>([]);
     const [botStatus, setBotStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+    const [productCount, setProductCount] = useState<number | null>(null);
     const [botActive, setBotActive] = useState<boolean | null>(null);
     const [togglingBot, setTogglingBot] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -97,11 +98,12 @@ const Today: React.FC = () => {
 
         const fetchAll = async () => {
             try {
-                const [resOrders, resLogs, resWa, resSettings] = await Promise.all([
+                const [resOrders, resLogs, resWa, resSettings, resProducts] = await Promise.all([
                     apiClient('/orders'),
                     apiClient('/dashboard/pulse'),
                     apiClient('/whatsapp/status'),
                     apiClient('/settings'),
+                    apiClient('/products?limit=1'),
                 ]);
                 if (resOrders.ok) setOrders(await resOrders.json());
                 if (resLogs.ok) setLogs(await resLogs.json());
@@ -112,6 +114,10 @@ const Today: React.FC = () => {
                 if (resSettings.ok) {
                     const s = await resSettings.json();
                     setBotActive(s.botActive ?? false);
+                }
+                if (resProducts.ok) {
+                    const p = await resProducts.json();
+                    setProductCount(typeof p.total === 'number' ? p.total : (Array.isArray(p) ? p.length : 0));
                 }
             } catch (e) {
                 console.error('Today fetch error', e);
@@ -251,7 +257,45 @@ const Today: React.FC = () => {
                     À faire maintenant
                 </h2>
 
-                {!hasUrgentTasks ? (
+                {!hasUrgentTasks && !loading && (botStatus !== 'connected' || productCount === 0 || botActive === false) ? (
+                    /* CHECKLIST DE DÉMARRAGE — tant que la boutique n'est pas opérationnelle */
+                    <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-5 space-y-1">
+                        <p className="text-white font-bold text-sm mb-3">3 étapes pour que votre boutique vende toute seule :</p>
+                        {[
+                            {
+                                done: botStatus === 'connected',
+                                label: 'Connecter votre WhatsApp',
+                                to: '/dashboard/whatsapp',
+                            },
+                            {
+                                done: (productCount ?? 0) > 0,
+                                label: 'Ajouter votre premier produit (une photo suffit)',
+                                to: '/dashboard/products',
+                            },
+                            {
+                                done: botActive === true,
+                                label: 'Activer le bot',
+                                to: '/dashboard',
+                            },
+                        ].map((item) => (
+                            <Link
+                                key={item.label}
+                                to={item.to}
+                                className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${item.done ? 'opacity-60' : 'hover:bg-[#1a1a1a]'}`}
+                            >
+                                <span className={`flex items-center justify-center w-6 h-6 rounded-full border shrink-0 ${item.done
+                                    ? 'bg-[#00D97E] border-[#00D97E] text-black'
+                                    : 'border-[#333] text-transparent'}`}>
+                                    <CheckCircle2 className="w-4 h-4" />
+                                </span>
+                                <span className={`text-sm ${item.done ? 'text-[#888] line-through' : 'text-white font-medium'}`}>
+                                    {item.label}
+                                </span>
+                                {!item.done && <ArrowRight className="w-4 h-4 text-[#00D97E] ml-auto shrink-0" />}
+                            </Link>
+                        ))}
+                    </div>
+                ) : !hasUrgentTasks ? (
                     <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-8 text-center">
                         <CheckCircle2 className="w-10 h-10 text-[#00D97E] mx-auto mb-3" />
                         <p className="text-white font-medium">Rien à faire de votre côté.</p>
