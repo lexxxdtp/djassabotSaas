@@ -88,9 +88,9 @@ const Login: React.FC = () => {
                     {/* Stats */}
                     <div className="grid grid-cols-3 gap-3 pt-4 max-w-md">
                         {[
-                            { icon: TrendingUp, value: '+340%', label: 'Ventes' },
-                            { icon: Users, value: '2 min', label: 'Setup' },
-                            { icon: Zap, value: '24/7', label: 'Actif' },
+                            { icon: TrendingUp, value: 'Wave · OM', label: 'Paiements' },
+                            { icon: Users, value: '2 min', label: 'Installation' },
+                            { icon: Zap, value: '24/7', label: 'Bot actif' },
                         ].map((stat) => (
                             <div key={stat.label} className="rounded-xl border border-[#1a1a1a] bg-[#111] p-4">
                                 <stat.icon className="w-4 h-4 text-[#00D97E] mb-3" />

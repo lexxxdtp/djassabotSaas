@@ -7,11 +7,13 @@ import { useEffect, useRef, useState } from 'react';
  * true once the element enters the viewport. Triggers once by default (won't
  * re-hide on scroll-up).
  *
- * @param margin - rootMargin string (e.g. "-100px" to fire 100px before entry)
+ * @param margin - rootMargin string. POSITIF = déclenche AVANT l'entrée à l'écran
+ *                 (ex: "150px" = 150px avant), négatif = après. Un margin négatif
+ *                 fait apparaître les sections en retard quand on scrolle vite.
  * @param once   - if true, stops observing after first reveal (default true)
  */
 export function useInView<T extends HTMLElement = HTMLDivElement>(
-    margin: string = '-80px',
+    margin: string = '150px 0px',
     once: boolean = true
 ) {
     const ref = useRef<T | null>(null);
