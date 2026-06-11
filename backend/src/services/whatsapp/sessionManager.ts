@@ -181,10 +181,22 @@ export class SessionManager {
                         }, delay);
 
                     } else if (shouldReconnect && retries >= this.MAX_RETRIES) {
-                        // Max retries reached — stop looping, mark as disconnected
-                        console.log(`[Manager] ⛔ Tenant ${tenantId} — max retries (${this.MAX_RETRIES}) atteint. Arrêt reconnexion.`);
+                        // Salve de tentatives rapides épuisée (~30s). On ne reste PAS mort :
+                        // un chien de garde retente une nouvelle salve toutes les 5 minutes
+                        // tant que le vendeur ne s'est pas déconnecté volontairement.
+                        console.log(`[Manager] ⛔ Tenant ${tenantId} — ${this.MAX_RETRIES} tentatives rapides échouées. Nouvelle salve dans 5 min (watchdog).`);
                         this.sessions.delete(tenantId);
                         await db.updateTenantWhatsAppStatus(tenantId, 'disconnected');
+                        await db.logActivity(tenantId, 'warning', '⚠️ Bot WhatsApp déconnecté — reconnexion automatique en cours', {});
+
+                        setTimeout(() => {
+                            // Ne relancer que si les credentials existent toujours (pas de logout manuel entre-temps)
+                            const authPath = path.join(__dirname, `../../../auth_info_baileys/tenant_${tenantId}`);
+                            if (fs.existsSync(path.join(authPath, 'creds.json'))) {
+                                console.log(`[Manager] 🐕 Watchdog : nouvelle tentative de reconnexion pour ${tenantId}`);
+                                this.createSession(tenantId, onConnectionUpdate).catch(e => console.error(`[Manager] Watchdog retry failed:`, e));
+                            }
+                        }, 5 * 60 * 1000);
                     } else {
                         console.log(`[Manager] ❌ Déconnexion définitive (Logout Manuel). Nettoyage session.`);
                         this.sessions.delete(tenantId);
