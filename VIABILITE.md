@@ -13,7 +13,7 @@
 
 - [x] ✅ **Le bot survit-il à un redémarrage du serveur ?** Oui — sessions Baileys persistées sur disque + relance auto de tous les tenants au boot.
 - [x] ✅ **Le bot se reconnecte-t-il après une coupure ?** Oui — 5 tentatives rapides + watchdog toutes les 5 min (commit `1ace67c`).
-- [ ] ⚠️ **PM2 redémarre-t-il après un reboot du VPS ?** NON CONFIRMÉ. À faire une fois sur le VPS : `pm2 startup` puis suivre l'instruction affichée, puis `pm2 save`. **5 min, critique.**
+- [x] ✅ **PM2 redémarre-t-il après un reboot du VPS ?** OUI — `pm2-alex.service` créé et activé (systemd), liste de process sauvegardée (`pm2 save`). Fait le 11/06/2026.
 - [x] ✅ **Le vendeur est-il PRÉVENU quand son bot tombe ?** Oui — alerte EMAIL automatique au propriétaire quand le watchdog échoue (1 max/heure), avec lien direct vers la reconnexion. ⚠️ Effectif pour tous les vendeurs seulement après config du domaine Resend.
 - [ ] 🔍 **Que se passe-t-il si le téléphone du vendeur est éteint 14 jours ?** WhatsApp délie les appareils → il faut rescanner. Documenter ça dans l'onboarding ("garde ton téléphone connecté au moins une fois par semaine").
 - [ ] ⚠️ **Le VPS tient-il combien de tenants ?** KVM 2 / 8 GB RAM. Chaque session Baileys ≈ 60-120 MB. Estimation : ~40-60 bots simultanés confortables. À monitorer (`pm2 monit`) à partir de 20 vendeurs. Prévoir upgrade VPS à 50+.
@@ -86,7 +86,7 @@
 ## 9. 💾 Données — "Et si tout brûle ?"
 
 - [ ] 🔍 **Backups Supabase** : le plan gratuit garde 7 jours. Vérifier que c'est actif. Au plan Pro : backups quotidiens + PITR.
-- [ ] ⚠️ **Sessions WhatsApp (auth Baileys)** : script de backup PRÊT (`scripts/backup_wa_auth.sh`, rotation 7 jours). Reste à l'installer sur le VPS : `chmod +x` + la ligne crontab indiquée dans le script. **5 min.**
+- [x] ✅ **Sessions WhatsApp (auth Baileys)** : backup nocturne installé (cron 3h, rotation 7 jours, `/home/alex/backups/`). Fait le 11/06/2026.
 - [x] ✅ **`wipe_db.ts` sécurisé** : garde-fou ajouté — le script refuse de s'exécuter sans `WIPE_CONFIRM=OUI_TOUT_EFFACER`. Plus de drame possible par accident.
 
 ## 10. 🎯 Produit — ce qui reste pour la vision complète
