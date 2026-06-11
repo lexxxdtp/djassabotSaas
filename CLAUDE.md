@@ -1,10 +1,48 @@
-# DjassaBot — Briefing Claude
+# DjassaBot — Briefing IA (Claude, Gemini/Antigravity, Cursor…)
 
-> Document de mise au courant rapide pour toute session Claude future.
+> Document de mise au courant rapide pour toute session IA future.
 > Donne le contexte produit, technique et l'historique des décisions clés
 > sans qu'il soit nécessaire de relire tout le code ou les anciens docs.
 
-**Dernière mise à jour :** mai 2026 — fin session sécurisation Firebase Auth + animations landing
+**Dernière mise à jour :** 11 juin 2026 — grosse session Cowork (voir §0 ci-dessous)
+
+---
+
+## 0. ⚡ MISE À JOUR 11 JUIN 2026 — LIRE EN PREMIER (remplace les infos périmées plus bas)
+
+**Les 3 documents de référence, dans l'ordre :**
+1. CE fichier (contexte général + conventions)
+2. **`VIABILITE.md`** ← l'état réel du produit, case par case, et le plan d'action. C'EST LE TODO OFFICIEL.
+3. `CLAUDE_ROADMAP.md` (journal détaillé des sessions)
+
+**Corrections aux sections plus bas (devenues fausses) :**
+- §5.E2 "Screenshot Validator pas implémenté" → **FAUX, il est implémenté ET durci** : `paymentValidationService.ts` (auto-PAID sur reçu Wave/OM + anti-réutilisation de reçu par transactionId).
+- §6bis.7 "tenant orphelin en boucle" → max-retries + watchdog implémentés dans `sessionManager.ts`.
+- §6bis.4 "PM2 startup pas confirmé" → **FAIT** le 11/06 (`pm2-alex.service` systemd actif + `pm2 save`).
+- "Marketing UI mockée" → **la Diffusion est RÉELLE** (`marketingRoutes.ts` : broadcast Baileys avec délai anti-ban 2-5s, audiences all/vip/recent, stats). Codes promo retirés de l'UI (toujours pas codés backend).
+- Pricing Business = **15 000 FCFA** (tranché par Alex, landing corrigée).
+- La base Supabase a été **vidée puis recréée** : le tenant actuel d'Alex est `ad3339d0-882d-4fe2-924d-4c6b90648f2f` (boutique "oubinshop", compte anadorbreak@gmail.com). L'ancien tenant du §roadmap n'existe plus.
+
+**Nouveautés majeures du 11/06 (toutes en prod) :**
+- **Interrupteur global du bot** : `settings.bot_active` (défaut FALSE — un nouveau compte doit activer son bot). En pause : messages enregistrés (Inbox) mais AUCUNE réponse, ni relance panier, ni validation de reçu. Toggle sur la page Aujourd'hui.
+- **Le bot envoie les photos produits** : contexte inventaire enrichi (minPrice/stock/images/consignes) + parsing des tags `[IMAGE: url]` dans `flowHandler.ts`. Sécurité : URLs limitées à l'inventaire du tenant.
+- **"Photo d'abord"** : POST `/api/ai/analyze-product-photo` (Gemini Vision) pré-remplit nom+description dans ProductFormModal. Galerie placée EN PREMIER dans le formulaire.
+- **Pagination** `?page=&limit=` sur /api/orders et /api/products (sans params = legacy).
+- **Limite plan Starter : 50 produits** (403 PLAN_LIMIT_REACHED au-delà) — la raison d'upgrader.
+- **Watchdog reconnexion WhatsApp** : après 5 échecs rapides, retente toutes les 5 min + **alerte email au owner** (`sendBotDownAlert`, max 1/h).
+- **Pages légales** : `/conditions` + `/confidentialite` (`pages/Legal.tsx`) + mention reCAPTCHA footer.
+- **FAQ in-app** : Réglages → Compte → Aide & support.
+- **Checklist nouveau vendeur** sur Aujourd'hui (WhatsApp → produit → activer le bot).
+- **Capacitor iOS + Android** : `frontend/ios/`, `frontend/android/`, scripts `ios:sync`/`ios:open`/`android:sync`/`android:open`, guide `IOS_SETUP.md`. apiConfig détecte Capacitor → API prod. CORS autorise `capacitor://localhost`.
+- **Backup nocturne des sessions WhatsApp** : cron 3h sur le VPS (`scripts/backup_wa_auth.sh`, rotation 7j, vers `/home/alex/backups/`).
+- **`wipe_db.ts`** exige `WIPE_CONFIRM=OUI_TOUT_EFFACER` (il a déjà vidé la prod une fois).
+- **Migration RLS prête mais PAS appliquée** : `database/migrations/enable_rls_defense_in_depth.sql` — lire ses prérequis AVANT d'appliquer (vérifier que le .env VPS utilise la clé service_role), tester le dashboard immédiatement après.
+
+**Bloquants connus (voir VIABILITE.md pour le détail) :**
+- Resend sans domaine → les emails de vérification ne partent QUE vers anadorbreak@gmail.com. Bloquant n°1 pour les testeurs.
+- Paystack en clés TEST → personne ne peut payer d'abonnement.
+- SMS Firebase cassé (`auth/error-code:-39`, config projet AI Studio) — pistes en §6bis.0.
+- `support@djassabot.com` affiché dans la FAQ/CGU n'existe pas encore (à créer avec le domaine).
 
 ---
 
