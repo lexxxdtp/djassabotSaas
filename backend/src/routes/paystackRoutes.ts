@@ -260,14 +260,14 @@ router.post('/create-payment-link', authenticateTenant, async (req, res) => {
  * POST /api/paystack/webhook
  * Handle Paystack webhook events
  */
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+router.post('/webhook', async (req: any, res) => {
     try {
         const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
+        const payload = req.rawBody || Buffer.from(JSON.stringify(req.body));
 
-        // req.body is a Buffer when using express.raw() — use it directly for HMAC
         const hash = crypto
             .createHmac('sha512', PAYSTACK_SECRET)
-            .update(req.body)
+            .update(payload)
             .digest('hex');
 
         if (hash !== req.headers['x-paystack-signature']) {
@@ -275,8 +275,8 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             return res.status(401).json({ error: 'Invalid signature' });
         }
 
-        const event = JSON.parse(req.body.toString());
-        logger.info({ event: event.event }, 'Paystack webhook received');
+        const event = req.body;
+        logger.info({ event: event?.event }, 'Paystack webhook received');
 
         await paystackService.handlePaystackWebhook(event.event, event.data);
 

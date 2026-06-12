@@ -120,6 +120,44 @@ const saveData = () => {
 loadData();
 
 
+// Helper to map snake_case DB settings to camelCase Settings type
+const mapDbSettingsToSettings = (data: any): Settings => {
+    return {
+        botActive: data.bot_active ?? false,
+        botName: data.bot_name || DEFAULT_SETTINGS.botName,
+        language: data.language || DEFAULT_SETTINGS.language,
+        persona: data.persona || DEFAULT_SETTINGS.persona,
+        greeting: data.greeting || DEFAULT_SETTINGS.greeting,
+        politeness: data.politeness || DEFAULT_SETTINGS.politeness,
+        emojiLevel: data.emoji_level || DEFAULT_SETTINGS.emojiLevel,
+        humorLevel: data.humor_level || 'medium',
+        slangLevel: data.slang_level || 'low',
+        responseLength: data.response_length || DEFAULT_SETTINGS.responseLength,
+        trainingExamples: data.training_examples || [],
+        negotiationEnabled: data.negotiation_enabled ?? DEFAULT_SETTINGS.negotiationEnabled,
+        negotiationFlexibility: data.negotiation_flexibility ?? DEFAULT_SETTINGS.negotiationFlexibility,
+        voiceEnabled: data.voice_enabled ?? DEFAULT_SETTINGS.voiceEnabled,
+        systemInstructions: data.system_instructions || '',
+        storeName: data.store_name || DEFAULT_SETTINGS.storeName,
+        businessType: data.business_type || '',
+        address: data.address || DEFAULT_SETTINGS.address,
+        locationUrl: data.location_url || '',
+        gpsCoordinates: data.gps_coordinates || '',
+        phone: data.phone || DEFAULT_SETTINGS.phone,
+        socialMedia: data.social_media || {},
+        openingHours: data.opening_hours || DEFAULT_SETTINGS.openingHours,
+        policyDescription: data.policy_description || '',
+        notificationPhone: data.notification_phone || '',
+        deliveryEnabled: data.delivery_enabled ?? DEFAULT_SETTINGS.deliveryEnabled,
+        deliveryZones: (typeof data.delivery_zones === 'string' ? JSON.parse(data.delivery_zones) : data.delivery_zones) || DEFAULT_SETTINGS.deliveryZones,
+        freeDeliveryThreshold: data.free_delivery_threshold ?? DEFAULT_SETTINGS.freeDeliveryThreshold,
+        acceptedPayments: (typeof data.accepted_payments === 'string' ? JSON.parse(data.accepted_payments) : data.accepted_payments) || DEFAULT_SETTINGS.acceptedPayments,
+        settlementBank: data.settlement_bank,
+        settlementAccount: data.settlement_account,
+        negotiationMargin: data.negotiation_margin ?? 10,
+    } as Settings;
+};
+
 // Database Methods
 export const db = {
     getOrders: async (tenantId: string): Promise<Order[]> => {
@@ -569,40 +607,7 @@ export const db = {
                 }
 
                 if (data) {
-                    return {
-                        botActive: data.bot_active ?? false,
-                        botName: data.bot_name || DEFAULT_SETTINGS.botName,
-                        language: data.language || DEFAULT_SETTINGS.language,
-                        persona: data.persona || DEFAULT_SETTINGS.persona,
-                        greeting: data.greeting || DEFAULT_SETTINGS.greeting,
-                        politeness: data.politeness || DEFAULT_SETTINGS.politeness,
-                        emojiLevel: data.emoji_level || DEFAULT_SETTINGS.emojiLevel,
-                        humorLevel: data.humor_level || 'medium',
-                        slangLevel: data.slang_level || 'low',
-                        responseLength: data.response_length || DEFAULT_SETTINGS.responseLength,
-                        trainingExamples: data.training_examples || [],
-                        negotiationEnabled: data.negotiation_enabled ?? DEFAULT_SETTINGS.negotiationEnabled,
-                        negotiationFlexibility: data.negotiation_flexibility ?? DEFAULT_SETTINGS.negotiationFlexibility,
-                        voiceEnabled: data.voice_enabled ?? DEFAULT_SETTINGS.voiceEnabled,
-                        systemInstructions: data.system_instructions || '',
-                        storeName: data.store_name || DEFAULT_SETTINGS.storeName,
-                        businessType: data.business_type || '',
-                        address: data.address || DEFAULT_SETTINGS.address,
-                        locationUrl: data.location_url || '',
-                        gpsCoordinates: data.gps_coordinates || '',
-                        phone: data.phone || DEFAULT_SETTINGS.phone,
-                        socialMedia: data.social_media || {},
-                        openingHours: data.opening_hours || DEFAULT_SETTINGS.openingHours,
-                        policyDescription: data.policy_description || '',
-                        notificationPhone: data.notification_phone || '',
-                        deliveryEnabled: data.delivery_enabled ?? DEFAULT_SETTINGS.deliveryEnabled,
-                        deliveryZones: (typeof data.delivery_zones === 'string' ? JSON.parse(data.delivery_zones) : data.delivery_zones) || DEFAULT_SETTINGS.deliveryZones,
-                        freeDeliveryThreshold: data.free_delivery_threshold ?? DEFAULT_SETTINGS.freeDeliveryThreshold,
-                        acceptedPayments: (typeof data.accepted_payments === 'string' ? JSON.parse(data.accepted_payments) : data.accepted_payments) || DEFAULT_SETTINGS.acceptedPayments,
-                        settlementBank: data.settlement_bank,
-                        settlementAccount: data.settlement_account,
-                        negotiationMargin: data.negotiation_margin ?? 10,
-                    } as Settings;
+                    return mapDbSettingsToSettings(data);
                 } else {
                     return { ...DEFAULT_SETTINGS };
                 }
@@ -663,13 +668,7 @@ export const db = {
                 if (error) throw error;
 
                 if (data) {
-                    return {
-                        ...DEFAULT_SETTINGS, // Ensure defaults for missing fields
-                        ...settings,         // Apply new settings locally
-                        // In a real app we would map back 'data' fully, but to save space we assume success implies value.
-                        // However, let's map at least the critical ones to be safe
-                        botName: data.bot_name,
-                    } as Settings;
+                    return mapDbSettingsToSettings(data);
                 }
             } catch (e) {
                 console.error('[DB] Update Settings Exception:', e);

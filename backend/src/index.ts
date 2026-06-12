@@ -67,7 +67,13 @@ app.use(cors({
     credentials: true,
 }));
 
-app.use(express.json());
+app.use(express.json({
+    verify: (req: any, res, buf) => {
+        if (req.originalUrl && req.originalUrl.startsWith('/api/paystack/webhook')) {
+            req.rawBody = buf;
+        }
+    }
+}));
 
 // Rate limiters
 const authLimiter = rateLimit({
