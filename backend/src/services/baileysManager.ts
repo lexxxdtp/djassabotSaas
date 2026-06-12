@@ -8,31 +8,7 @@ export const whatsappManager = {
     // Session Management
     getSessionStatus: (tenantId: string) => manager.getSessionStatus(tenantId),
     requestPairingCode: (tenantId: string, phone: string) => manager.requestPairingCode(tenantId, phone),
-    createSession: (tenantId: string) => manager.createSession(tenantId,
-        // Bind the message handler to the socket events
-        async (update, sock) => {
-            const { messages, type } = update;
-            if (messages) {
-                for (const msg of messages) {
-                    try {
-                        const msgTimestamp = (typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : (msg.messageTimestamp as any)?.toNumber?.() || Math.floor(Date.now() / 1000));
-                        const secondsAgo = Math.floor(Date.now() / 1000) - msgTimestamp;
-
-                        // We check history here or inside handleMessage? 
-                        // logic was: if (secondsAgo > 60) continue; 
-                        // Let's rely on handleMessage logic or pass flags?
-                        // For simplicity in this facade binding:
-                        if (secondsAgo > 60) continue;
-
-                        const isHistory = type === 'append' || secondsAgo > 10;
-                        await handleMessage(tenantId, sock, msg, isHistory);
-                    } catch (e) {
-                        console.error('Error handling message via facade binding', e);
-                    }
-                }
-            }
-        }
-    ),
+    createSession: (tenantId: string) => manager.createSession(tenantId),
     cleanupSession: (tenantId: string) => manager.cleanupSession(tenantId),
 
     // Get Session (Expose internal session data for routes)

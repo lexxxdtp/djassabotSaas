@@ -92,6 +92,7 @@ create table if not exists settings (
   tenant_id uuid references tenants(id) on delete cascade not null unique,
   
   -- Identity
+  bot_active boolean default false,
   bot_name text default 'Awa',
   language text default 'fr',
   persona text default 'friendly',
