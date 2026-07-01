@@ -2,17 +2,15 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Package,
-    MessageSquare,
-    TrendingUp,
     ArrowRight,
     Activity,
     Clock,
-    DollarSign,
     CheckCircle2,
     WifiOff,
     CreditCard,
     Download,
-    Share
+    Share,
+    TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
@@ -27,7 +25,7 @@ interface Order {
     created_at?: string;
 }
 
-interface Log {
+export interface Log {
     id: string;
     type: string;
     message: string;
@@ -139,7 +137,6 @@ const Today: React.FC = () => {
 
     // --- DERIVED DATA ---
     const today = new Date();
-    // Bucket orders into today/yesterday in a single pass — deps tracked correctly
     const { todayOrders, yesterdayOrders } = useMemo(() => {
         const now = new Date();
         const isSameDate = (a: Date, b: Date) =>
@@ -162,141 +159,185 @@ const Today: React.FC = () => {
         ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100)
         : null;
 
-    // Simplified workflow: NEW (= PENDING + CONFIRMED) → PAID (= PAID + SHIPPING) → DELIVERED
     const newOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED');
     const paidOrders = orders.filter(o => o.status === 'PAID' || o.status === 'SHIPPING');
 
     const lastSaleLog = logs.find(l => l.type === 'sale');
-    const lastSaleAgo = lastSaleLog
-        ? timeAgo(new Date(lastSaleLog.created_at))
-        : null;
-
-    const hasUrgentTasks = newOrders.length > 0 || paidOrders.length > 0;
-
-    const handleToggleBot = async () => {
-        if (togglingBot || botActive === null) return;
-        setTogglingBot(true);
-        const next = !botActive;
-        try {
-            const res = await apiClient('/settings', {
-                method: 'POST',
-                body: JSON.stringify({ botActive: next }),
-            });
-            if (res.ok) setBotActive(next);
-        } catch (e) {
-            console.error('Toggle bot error', e);
-        } finally {
-            setTogglingBot(false);
-        }
-    };
+    const lastSaleAgo = lastSaleLog ? timeAgo(new Date(lastSaleLog.created_at)) : null;
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <TodayView
+            greeting={greeting}
+            displayName={displayName}
+            dateStr={today.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            botStatus={botStatus}
+            botActive={botActive}
+            togglingBot={togglingBot}
+            loading={loading}
+            newOrdersCount={newOrders.length}
+            paidOrdersCount={paidOrders.length}
+            productCount={productCount}
+            logs={logs}
+            lastSaleAgo={lastSaleAgo}
+            todayRevenue={todayRevenue}
+            todayOrdersCount={todayOrders.length}
+            yesterdayOrdersCount={yesterdayOrders.length}
+            revenueDelta={revenueDelta}
+            showInstallBanner={showInstallBanner}
+            isInstallable={isInstallable}
+            isIOS={isIOS}
+            onToggleBot={async () => {
+                if (togglingBot || botActive === null) return;
+                setTogglingBot(true);
+                const next = !botActive;
+                try {
+                    const res = await apiClient('/settings', {
+                        method: 'POST',
+                        body: JSON.stringify({ botActive: next }),
+                    });
+                    if (res.ok) setBotActive(next);
+                } catch (e) {
+                    console.error('Toggle bot error', e);
+                } finally {
+                    setTogglingBot(false);
+                }
+            }}
+            onInstall={handleInstallClick}
+            onDismissInstall={handleDismissInstall}
+        />
+    );
+};
+
+// ---------- PRESENTATIONAL VIEW (réutilisée par la preview) ----------
+
+export interface TodayViewProps {
+    greeting: string;
+    displayName: string;
+    dateStr: string;
+    botStatus: 'disconnected' | 'connecting' | 'connected';
+    botActive: boolean | null;
+    togglingBot: boolean;
+    loading: boolean;
+    newOrdersCount: number;
+    paidOrdersCount: number;
+    productCount: number | null;
+    logs: Log[];
+    lastSaleAgo: string | null;
+    todayRevenue: number;
+    todayOrdersCount: number;
+    yesterdayOrdersCount: number;
+    revenueDelta: number | null;
+    showInstallBanner: boolean;
+    isInstallable: boolean;
+    isIOS: boolean;
+    onToggleBot: () => void;
+    onInstall: () => void;
+    onDismissInstall: () => void;
+}
+
+export const TodayView: React.FC<TodayViewProps> = ({
+    greeting, displayName, dateStr, botStatus, botActive, togglingBot, loading,
+    newOrdersCount, paidOrdersCount, productCount, logs, lastSaleAgo,
+    todayRevenue, todayOrdersCount, yesterdayOrdersCount, revenueDelta,
+    showInstallBanner, isInstallable, isIOS, onToggleBot, onInstall, onDismissInstall,
+}) => {
+    const hasUrgentTasks = newOrdersCount > 0 || paidOrdersCount > 0;
+    const notOperational = botStatus !== 'connected' || productCount === 0 || botActive === false;
+
+    const anim = 'animate-in fade-in slide-in-from-bottom-2 fill-mode-both';
+    const delay = (i: number): React.CSSProperties => ({ animationDuration: '450ms', animationDelay: `${i * 60}ms` });
+
+    return (
+        <div className="space-y-5 pb-4">
             {/* HEADER */}
-            <div className="flex items-end justify-between border-b border-[#1a1a1a] pb-4">
+            <div className={`flex items-start justify-between gap-3 ${anim}`} style={delay(0)}>
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-                        {greeting}, {displayName}
-                    </h1>
-                    <p className="text-[#888] text-xs md:text-sm mt-1">
-                        {today.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                    </p>
+                    <h1 className="text-2xl font-bold text-white tracking-tight">{greeting}, {displayName}</h1>
+                    <p className="text-[#888] text-sm mt-0.5 capitalize">{dateStr}</p>
                 </div>
                 <BotStatusBadge status={botStatus} paused={botActive === false} />
             </div>
 
-            {/* BOT DISCONNECTED ALERT */}
+            {/* HERO — VENTES DU JOUR (money forward, façon Wave) */}
+            <div className={`relative overflow-hidden bg-[#111] border border-[#1a1a1a] rounded-3xl p-5 ${anim}`} style={delay(1)}>
+                <p className="text-[#888] text-sm">Ventes aujourd'hui</p>
+                <p className="text-[38px] leading-none font-bold text-white tracking-tight tabular-nums mt-2">
+                    {todayRevenue.toLocaleString('fr-FR')}
+                    <span className="text-lg text-[#888] font-semibold ml-1.5">FCFA</span>
+                </p>
+                <div className="flex items-center gap-3 mt-3 text-sm flex-wrap">
+                    {revenueDelta !== null && (
+                        <span className={`inline-flex items-center gap-1 font-semibold ${revenueDelta >= 0 ? 'text-[#00D97E]' : 'text-red-400'}`}>
+                            <TrendingUp className={`w-4 h-4 ${revenueDelta < 0 ? 'rotate-180' : ''}`} />
+                            {revenueDelta >= 0 ? '+' : ''}{revenueDelta}% <span className="text-[#888] font-normal">vs hier</span>
+                        </span>
+                    )}
+                    <span className="text-[#888]">
+                        {todayOrdersCount} commande{todayOrdersCount > 1 ? 's' : ''}
+                        <span className="text-[#555]"> · {yesterdayOrdersCount} hier</span>
+                    </span>
+                </div>
+            </div>
+
+            {/* ALERTE BOT DÉCONNECTÉ */}
             {botStatus === 'disconnected' && !loading && (
                 <Link
                     to="/dashboard/whatsapp"
-                    className="flex items-center justify-between gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 transition-colors group"
+                    className={`flex items-center justify-between gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 active:scale-[0.99] transition-transform ${anim}`}
+                    style={delay(2)}
                 >
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-red-500/20 text-red-400">
-                            <WifiOff className="w-5 h-5" />
-                        </div>
+                        <div className="p-2.5 rounded-xl bg-red-500/20 text-red-400"><WifiOff className="w-5 h-5" /></div>
                         <div>
                             <p className="text-white text-sm font-bold">Le bot est déconnecté</p>
-                            <p className="text-red-300/80 text-xs">Reconnectez WhatsApp pour qu'il reprenne les ventes.</p>
+                            <p className="text-red-300/80 text-xs">Reconnectez WhatsApp pour reprendre les ventes.</p>
                         </div>
                     </div>
-                    <ArrowRight className="w-4 h-4 text-red-400 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-4 h-4 text-red-400 shrink-0" />
                 </Link>
             )}
 
-            {/* INTERRUPTEUR GLOBAL DU BOT */}
+            {/* INTERRUPTEUR DU BOT */}
             {botActive !== null && botStatus !== 'disconnected' && (
-                <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border transition-colors ${botActive
-                    ? 'bg-[#00D97E]/5 border-[#00D97E]/20'
-                    : 'bg-amber-500/10 border-amber-500/20'}`}>
-                    <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${botActive ? 'bg-[#00D97E]/10 text-[#00D97E]' : 'bg-amber-500/20 text-amber-500'}`}>
+                <div className={`flex items-center justify-between gap-4 p-4 rounded-2xl border ${botActive ? 'bg-[#00D97E]/5 border-[#00D97E]/20' : 'bg-amber-500/10 border-amber-500/20'} ${anim}`} style={delay(2)}>
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className={`p-2.5 rounded-xl shrink-0 ${botActive ? 'bg-[#00D97E]/10 text-[#00D97E]' : 'bg-amber-500/20 text-amber-500'}`}>
                             <Activity className="w-5 h-5" />
                         </div>
-                        <div>
-                            <p className="text-white text-sm font-bold">
-                                {botActive ? 'Le bot répond à vos clients' : 'Le bot est en pause'}
-                            </p>
-                            <p className="text-xs text-[#888]">
-                                {botActive
-                                    ? 'Il vend, négocie et prend les commandes automatiquement.'
-                                    : 'Il lit les messages (visibles dans Conversations) mais ne répond à personne tant que vous ne l\'activez pas.'}
+                        <div className="min-w-0">
+                            <p className="text-white text-sm font-bold">{botActive ? 'Le bot répond à vos clients' : 'Le bot est en pause'}</p>
+                            <p className="text-xs text-[#888] leading-snug">
+                                {botActive ? 'Il vend, négocie et prend les commandes tout seul.' : 'Il lit les messages mais ne répond pas tant que vous ne l\'activez pas.'}
                             </p>
                         </div>
                     </div>
                     <button
-                        onClick={handleToggleBot}
+                        onClick={onToggleBot}
                         disabled={togglingBot}
-                        className={`shrink-0 px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.97] disabled:opacity-50 ${botActive
-                            ? 'bg-[#111] border border-[#1a1a1a] text-[#888] hover:text-white hover:bg-[#1a1a1a]'
-                            : 'bg-[#00D97E] text-black hover:bg-[#00D97E]/90'}`}
+                        className={`shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold transition-transform active:scale-95 disabled:opacity-50 ${botActive ? 'bg-[#1a1a1a] text-[#888] hover:text-white' : 'bg-[#00D97E] text-black'}`}
                     >
-                        {togglingBot ? '…' : botActive ? 'Mettre en pause' : 'Activer le bot'}
+                        {togglingBot ? '…' : botActive ? 'Pause' : 'Activer'}
                     </button>
                 </div>
             )}
 
-            {/* SECTION 1 — À FAIRE MAINTENANT */}
-            <section>
-                <h2 className="text-xs font-bold uppercase tracking-widest text-[#aaa] mb-3 flex items-center gap-2">
-                    <span className="w-1 h-3 bg-[#00D97E] rounded-full" />
-                    À faire maintenant
-                </h2>
+            {/* À FAIRE MAINTENANT */}
+            <section className={anim} style={delay(3)}>
+                <h2 className="text-[15px] font-semibold text-white mb-3">À faire maintenant</h2>
 
-                {!hasUrgentTasks && !loading && (botStatus !== 'connected' || productCount === 0 || botActive === false) ? (
-                    /* CHECKLIST DE DÉMARRAGE — tant que la boutique n'est pas opérationnelle */
-                    <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-5 space-y-1">
-                        <p className="text-white font-bold text-sm mb-3">3 étapes pour que votre boutique vende toute seule :</p>
+                {!hasUrgentTasks && !loading && notOperational ? (
+                    <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 space-y-1">
+                        <p className="text-white font-medium text-sm mb-2">3 étapes pour que la boutique vende toute seule :</p>
                         {[
-                            {
-                                done: botStatus === 'connected',
-                                label: 'Connecter votre WhatsApp',
-                                to: '/dashboard/whatsapp',
-                            },
-                            {
-                                done: (productCount ?? 0) > 0,
-                                label: 'Ajouter votre premier produit (une photo suffit)',
-                                to: '/dashboard/products',
-                            },
-                            {
-                                done: botActive === true,
-                                label: 'Activer le bot',
-                                to: '/dashboard',
-                            },
+                            { done: botStatus === 'connected', label: 'Connecter votre WhatsApp', to: '/dashboard/whatsapp' },
+                            { done: (productCount ?? 0) > 0, label: 'Ajouter un produit (une photo suffit)', to: '/dashboard/products' },
+                            { done: botActive === true, label: 'Activer le bot', to: '/dashboard' },
                         ].map((item) => (
-                            <Link
-                                key={item.label}
-                                to={item.to}
-                                className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${item.done ? 'opacity-60' : 'hover:bg-[#1a1a1a]'}`}
-                            >
-                                <span className={`flex items-center justify-center w-6 h-6 rounded-full border shrink-0 ${item.done
-                                    ? 'bg-[#00D97E] border-[#00D97E] text-black'
-                                    : 'border-[#333] text-transparent'}`}>
+                            <Link key={item.label} to={item.to} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${item.done ? 'opacity-60' : 'active:bg-[#1a1a1a]'}`}>
+                                <span className={`flex items-center justify-center w-6 h-6 rounded-full border shrink-0 ${item.done ? 'bg-[#00D97E] border-[#00D97E] text-black' : 'border-[#333] text-transparent'}`}>
                                     <CheckCircle2 className="w-4 h-4" />
                                 </span>
-                                <span className={`text-sm ${item.done ? 'text-[#888] line-through' : 'text-white font-medium'}`}>
-                                    {item.label}
-                                </span>
+                                <span className={`text-sm ${item.done ? 'text-[#888] line-through' : 'text-white font-medium'}`}>{item.label}</span>
                                 {!item.done && <ArrowRight className="w-4 h-4 text-[#00D97E] ml-auto shrink-0" />}
                             </Link>
                         ))}
@@ -308,155 +349,74 @@ const Today: React.FC = () => {
                         <p className="text-[#888] text-xs mt-1">Le bot gère tout. Profitez 🌴</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {newOrders.length > 0 && (
-                            <TaskCard
-                                to="/dashboard/orders?filter=new"
-                                icon={Package}
-                                count={newOrders.length}
-                                label={newOrders.length > 1 ? "commandes à confirmer" : "commande à confirmer"}
-                                tone="warning"
-                            />
+                    <div className="grid grid-cols-1 gap-3">
+                        {newOrdersCount > 0 && (
+                            <TaskCard to="/dashboard/orders?filter=new" icon={Package} count={newOrdersCount} label={newOrdersCount > 1 ? 'commandes à confirmer' : 'commande à confirmer'} tone="warning" />
                         )}
-                        {paidOrders.length > 0 && (
-                            <TaskCard
-                                to="/dashboard/orders?filter=paid"
-                                icon={CreditCard}
-                                count={paidOrders.length}
-                                label={paidOrders.length > 1 ? "prêtes à livrer" : "prête à livrer"}
-                                tone="primary"
-                            />
+                        {paidOrdersCount > 0 && (
+                            <TaskCard to="/dashboard/orders?filter=paid" icon={CreditCard} count={paidOrdersCount} label={paidOrdersCount > 1 ? 'prêtes à livrer' : 'prête à livrer'} tone="primary" />
                         )}
                     </div>
                 )}
             </section>
 
-            {/* SECTION 2 — LE BOT TRAVAILLE */}
-            <section>
-                <h2 className="text-xs font-bold uppercase tracking-widest text-[#aaa] mb-3 flex items-center gap-2">
-                    <span className="w-1 h-3 bg-[#0EA5E9] rounded-full" />
-                    Le bot travaille
-                </h2>
-                <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-6">
+            {/* LE BOT TRAVAILLE */}
+            <section className={anim} style={delay(4)}>
+                <h2 className="text-[15px] font-semibold text-white mb-3">Le bot travaille</h2>
+                <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-5">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <div className="flex items-center gap-2 text-[#888] text-[10px] uppercase tracking-wider mb-2">
-                                <Activity className="w-3 h-3" /> Activité récente
-                            </div>
-                            <p className="text-2xl font-bold text-white">
-                                {logs.length}
-                                <span className="text-sm text-[#888] font-normal ml-2">actions du bot</span>
-                            </p>
+                            <div className="flex items-center gap-1.5 text-[#888] text-xs mb-1.5"><Activity className="w-3.5 h-3.5" /> Activité</div>
+                            <p className="text-2xl font-bold text-white">{logs.length}<span className="text-sm text-[#888] font-normal ml-2">actions</span></p>
                         </div>
                         <div>
-                            <div className="flex items-center gap-2 text-[#888] text-[10px] uppercase tracking-wider mb-2">
-                                <Clock className="w-3 h-3" /> Dernière vente
-                            </div>
-                            <p className="text-2xl font-bold text-white">
-                                {lastSaleAgo || <span className="text-[#555]">—</span>}
-                            </p>
+                            <div className="flex items-center gap-1.5 text-[#888] text-xs mb-1.5"><Clock className="w-3.5 h-3.5" /> Dernière vente</div>
+                            <p className="text-2xl font-bold text-white">{lastSaleAgo || <span className="text-[#555]">—</span>}</p>
                         </div>
                     </div>
 
                     {logs.length > 0 && (
-                        <div className="mt-6 pt-4 border-t border-[#1a1a1a] space-y-2">
+                        <div className="mt-5 pt-4 border-t border-[#1a1a1a] space-y-2.5">
                             {logs.slice(0, 3).map(log => (
                                 <div key={log.id} className="flex items-start gap-3 text-xs">
-                                    <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${log.type === 'sale' ? 'bg-emerald-500' :
-                                        log.type === 'warning' ? 'bg-amber-500' :
-                                            log.type === 'action' ? 'bg-[#00D97E]' : 'bg-[#0EA5E9]'
-                                        }`} />
+                                    <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${log.type === 'sale' ? 'bg-emerald-500' : log.type === 'warning' ? 'bg-amber-500' : log.type === 'action' ? 'bg-[#00D97E]' : 'bg-[#0EA5E9]'}`} />
                                     <p className="text-[#888] leading-relaxed">{log.message}</p>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    <Link
-                        to="/dashboard/inbox"
-                        className="mt-4 inline-flex items-center gap-1 text-xs text-[#00D97E] hover:underline"
-                    >
-                        Voir les conversations
-                        <ArrowRight className="w-3 h-3" />
+                    <Link to="/dashboard/inbox" className="mt-4 inline-flex items-center gap-1 text-xs text-[#00D97E]">
+                        Voir les conversations <ArrowRight className="w-3 h-3" />
                     </Link>
                 </div>
-            </section>
-
-            {/* SECTION 3 — AUJOURD'HUI EN CHIFFRES */}
-            <section>
-                <h2 className="text-xs font-bold uppercase tracking-widest text-[#aaa] mb-3 flex items-center gap-2">
-                    <span className="w-1 h-3 bg-white/40 rounded-full" />
-                    Aujourd'hui en chiffres
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    <StatBox
-                        icon={DollarSign}
-                        label="Chiffre d'affaires"
-                        value={`${todayRevenue.toLocaleString('fr-FR')} F`}
-                        delta={revenueDelta}
-                        subtitle="vs. hier"
-                    />
-                    <StatBox
-                        icon={Package}
-                        label="Commandes"
-                        value={String(todayOrders.length)}
-                        delta={null}
-                        subtitle={`${yesterdayOrders.length} hier`}
-                    />
-                    <div className="col-span-2 md:col-span-1">
-                        <StatBox
-                            icon={MessageSquare}
-                            label="Conversations"
-                            value={String(logs.length)}
-                            delta={null}
-                            subtitle="gérées par le bot"
-                        />
-                    </div>
-                </div>
-
-                <Link
-                    to="/dashboard/analytics"
-                    className="mt-4 inline-flex items-center gap-1 text-xs text-[#888] hover:text-white transition-colors"
-                >
-                    Voir mes chiffres en détail
-                    <ArrowRight className="w-3 h-3" />
+                <Link to="/dashboard/analytics" className="mt-3 inline-flex items-center gap-1 text-xs text-[#888] hover:text-white transition-colors">
+                    Voir mes chiffres en détail <ArrowRight className="w-3 h-3" />
                 </Link>
             </section>
 
-            {/* INSTALLER L'APPLI — bannière compacte, en bas, jamais prioritaire */}
+            {/* INSTALLER L'APPLI */}
             {showInstallBanner && (
-                <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-[#111] border border-[#1a1a1a]">
+                <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-[#111] border border-[#1a1a1a]">
                     <div className="flex items-center gap-3 min-w-0">
-                        <div className="p-2 rounded-lg bg-[#00D97E]/10 text-[#00D97E] shrink-0">
-                            <Download className="w-4 h-4" />
-                        </div>
+                        <div className="p-2.5 rounded-xl bg-[#00D97E]/10 text-[#00D97E] shrink-0"><Download className="w-4 h-4" /></div>
                         <div className="min-w-0">
-                            <p className="text-white text-sm font-bold">Installer l'appli sur votre écran d'accueil</p>
+                            <p className="text-white text-sm font-bold">Installer l'appli sur l'écran d'accueil</p>
                             {isIOS ? (
                                 <p className="text-xs text-[#888] flex items-center gap-1 flex-wrap">
                                     <Share className="w-3 h-3 shrink-0" />
-                                    <span>Bouton <strong className="text-white">Partager</strong> de Safari → <strong className="text-white">Sur l'écran d'accueil</strong></span>
+                                    <span>Bouton <strong className="text-white">Partager</strong> → <strong className="text-white">Sur l'écran d'accueil</strong></span>
                                 </p>
                             ) : (
-                                <p className="text-xs text-[#888]">Plus rapide qu'un site, comme une vraie application.</p>
+                                <p className="text-xs text-[#888]">Plus rapide qu'un site, comme une vraie app.</p>
                             )}
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                         {isInstallable && !isIOS && (
-                            <button
-                                onClick={handleInstallClick}
-                                className="bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold text-xs px-4 py-2 rounded-lg transition-all active:scale-[0.97]"
-                            >
-                                Installer
-                            </button>
+                            <button onClick={onInstall} className="bg-[#00D97E] text-black font-bold text-xs px-4 py-2 rounded-lg transition-transform active:scale-95">Installer</button>
                         )}
-                        <button
-                            onClick={handleDismissInstall}
-                            className="text-[#888] hover:text-white text-xs font-bold px-2 py-2 transition-colors"
-                        >
-                            ✕
-                        </button>
+                        <button onClick={onDismissInstall} aria-label="Fermer" className="text-[#888] hover:text-white text-sm px-2 py-2">✕</button>
                     </div>
                 </div>
             )}
@@ -467,34 +427,17 @@ const Today: React.FC = () => {
 // ---------- SUB COMPONENTS ----------
 
 const BotStatusBadge = ({ status, paused }: { status: 'disconnected' | 'connecting' | 'connected'; paused?: boolean }) => {
-    if (status === 'connected' && paused) {
-        return (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                <span className="text-[10px] uppercase font-bold text-amber-500 tracking-wider">En pause</span>
-            </div>
-        );
-    }
-    if (status === 'connected') {
-        return (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00D97E]/10 border border-[#00D97E]/20">
-                <span className="w-2 h-2 rounded-full bg-[#00D97E] animate-pulse" />
-                <span className="text-[10px] uppercase font-bold text-[#00D97E] tracking-wider">Bot actif</span>
-            </div>
-        );
-    }
-    if (status === 'connecting') {
-        return (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-[10px] uppercase font-bold text-amber-500 tracking-wider">Connexion…</span>
-            </div>
-        );
-    }
+    const map = {
+        pausedState: { show: status === 'connected' && paused, dot: 'bg-amber-500', text: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20', label: 'En pause', pulse: false },
+        connected: { show: status === 'connected' && !paused, dot: 'bg-[#00D97E]', text: 'text-[#00D97E]', bg: 'bg-[#00D97E]/10 border-[#00D97E]/20', label: 'Bot actif', pulse: true },
+        connecting: { show: status === 'connecting', dot: 'bg-amber-500', text: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20', label: 'Connexion…', pulse: true },
+        off: { show: status === 'disconnected', dot: 'bg-red-500', text: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', label: 'Bot off', pulse: false },
+    };
+    const s = Object.values(map).find(x => x.show) || map.off;
     return (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
-            <span className="w-2 h-2 rounded-full bg-red-500" />
-            <span className="text-[10px] uppercase font-bold text-red-400 tracking-wider">Bot off</span>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border shrink-0 ${s.bg}`}>
+            <span className={`w-2 h-2 rounded-full ${s.dot} ${s.pulse ? 'animate-pulse' : ''}`} />
+            <span className={`text-[11px] font-bold ${s.text}`}>{s.label}</span>
         </div>
     );
 };
@@ -509,56 +452,23 @@ interface TaskCardProps {
 
 const TaskCard = ({ to, icon: Icon, count, label, tone }: TaskCardProps) => {
     const tones = {
-        primary: 'bg-[#00D97E]/10 border-[#00D97E]/20 text-[#00D97E] hover:border-[#00D97E]/40',
-        warning: 'bg-amber-500/10 border-amber-500/20 text-amber-500 hover:border-amber-500/40',
-        info: 'bg-[#0EA5E9]/10 border-[#0EA5E9]/20 text-[#0EA5E9] hover:border-[#0EA5E9]/40',
+        primary: 'bg-[#00D97E]/10 border-[#00D97E]/20 text-[#00D97E]',
+        warning: 'bg-amber-500/10 border-amber-500/20 text-amber-500',
+        info: 'bg-[#0EA5E9]/10 border-[#0EA5E9]/20 text-[#0EA5E9]',
     } as const;
     return (
-        <Link
-            to={to}
-            className={`flex items-center justify-between gap-3 p-4 rounded-xl border transition-all group ${tones[tone]}`}
-        >
+        <Link to={to} className={`flex items-center justify-between gap-3 p-4 rounded-2xl border transition-transform active:scale-[0.99] ${tones[tone]}`}>
             <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 rounded-lg bg-black/30 shrink-0">
-                    <Icon className="w-5 h-5" />
-                </div>
+                <div className="p-2.5 rounded-xl bg-black/30 shrink-0"><Icon className="w-5 h-5" /></div>
                 <div className="min-w-0">
                     <p className="text-2xl font-bold leading-none">{count}</p>
                     <p className="text-xs text-white/80 mt-1 truncate">{label}</p>
                 </div>
             </div>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform shrink-0" />
+            <ArrowRight className="w-4 h-4 shrink-0" />
         </Link>
     );
 };
-
-interface StatBoxProps {
-    icon: React.ElementType;
-    label: string;
-    value: string;
-    delta: number | null;
-    subtitle: string;
-}
-
-const StatBox = ({ icon: Icon, label, value, delta, subtitle }: StatBoxProps) => (
-    <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 md:p-5 hover:border-[#00D97E]/20 transition-colors">
-        <div className="flex items-start justify-between mb-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#888]">{label}</p>
-            <Icon className="w-4 h-4 text-[#555]" />
-        </div>
-        <p className="text-xl md:text-2xl font-bold text-white tracking-tight">{value}</p>
-        <div className="flex items-center gap-2 mt-2">
-            {delta !== null && (
-                <span className={`text-[10px] font-bold flex items-center gap-1 ${delta >= 0 ? 'text-emerald-400' : 'text-red-400'
-                    }`}>
-                    <TrendingUp className={`w-3 h-3 ${delta < 0 ? 'rotate-180' : ''}`} />
-                    {delta >= 0 ? '+' : ''}{delta}%
-                </span>
-            )}
-            <span className="text-[10px] text-[#555] uppercase tracking-wider">{subtitle}</span>
-        </div>
-    </div>
-);
 
 // ---------- HELPERS ----------
 

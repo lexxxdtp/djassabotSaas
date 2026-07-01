@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, ImageIcon } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Plus, Search, PackageOpen } from 'lucide-react';
 import type { Product, VariationTemplate } from '../types';
 import ProductCard from '../components/products/ProductCard';
 import ProductFormModal from '../components/products/ProductFormModal';
@@ -7,12 +7,26 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
 
+function CardSkeleton() {
+    return (
+        <div className="bg-[#111] rounded-2xl border border-[#1a1a1a] overflow-hidden">
+            <div className="aspect-square bg-[#161616] animate-pulse" />
+            <div className="p-3 space-y-2">
+                <div className="h-4 w-3/4 rounded bg-[#1a1a1a] animate-pulse" />
+                <div className="h-3 w-1/2 rounded bg-[#1a1a1a] animate-pulse" />
+                <div className="h-11 rounded-xl bg-[#161616] animate-pulse mt-3" />
+            </div>
+        </div>
+    );
+}
+
 export default function Products() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
     const [variationTemplates, setVariationTemplates] = useState<VariationTemplate[]>([]);
+    const [query, setQuery] = useState('');
 
     // Delete Modal State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -89,55 +103,85 @@ export default function Products() {
         setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
     };
 
+    const filtered = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (!q) return products;
+        return products.filter(p => p.name.toLowerCase().includes(q));
+    }, [products, query]);
+
     return (
-        <div className="space-y-6 relative animate-in fade-in duration-500">
+        <div className="relative">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 border-b border-[#1a1a1a] pb-6">
+            <div className="flex items-end justify-between gap-4 mb-5">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Inventaire</h1>
-                    <p className="text-[#888] text-sm">Gérez vos produits en vente sur WhatsApp</p>
+                    <h1 className="text-2xl font-bold text-white tracking-tight">Inventaire</h1>
+                    <p className="text-[#888] text-sm mt-0.5">
+                        {loading ? 'Chargement…' : `${products.length} produit${products.length > 1 ? 's' : ''} en vente`}
+                    </p>
                 </div>
                 <button
                     onClick={handleCreate}
-                    className="hidden md:flex bg-[#00D97E] hover:bg-[#00D97E]/90 text-black px-6 py-3 rounded-lg font-bold items-center space-x-2 transition-all hover:scale-[1.02]"
+                    className="hidden md:inline-flex bg-[#00D97E] hover:bg-[#00D97E]/90 text-black px-5 py-3 rounded-xl font-bold items-center gap-2 transition-transform active:scale-95"
                 >
                     <Plus size={20} />
-                    <span>Ajouter Produit</span>
+                    <span>Ajouter</span>
                 </button>
             </div>
 
+            {/* Search — appears once there's something to search */}
+            {!loading && products.length > 0 && (
+                <div className="relative mb-5">
+                    <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#555] pointer-events-none" />
+                    <input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Rechercher un produit…"
+                        className="w-full bg-[#111] border border-[#1a1a1a] rounded-xl h-12 pl-11 pr-4 text-white placeholder:text-[#555] outline-none focus:border-[#00D97E]/40 transition-colors"
+                    />
+                </div>
+            )}
+
             {/* Grid */}
             {loading ? (
-                <div className="text-[#888] text-center py-20 flex flex-col items-center">
-                    <div className="animate-spin text-[#00D97E] mb-4">⌛️</div>
-                    Chargement de l'inventaire...
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+                </div>
+            ) : products.length === 0 ? (
+                <div className="py-16 px-6 text-center border border-dashed border-[#1a1a1a] rounded-2xl bg-[#0d0d0d]">
+                    <div className="mx-auto w-14 h-14 grid place-items-center rounded-2xl bg-[#00D97E]/10 text-[#00D97E] mb-4">
+                        <PackageOpen size={26} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">Votre boutique est vide</h3>
+                    <p className="text-[#888] mt-1 mb-6 text-sm max-w-xs mx-auto">
+                        Ajoutez votre premier produit — prenez juste une photo, l'IA remplit le reste.
+                    </p>
+                    <button
+                        onClick={handleCreate}
+                        className="inline-flex items-center gap-2 bg-[#00D97E] text-black px-5 py-3 rounded-xl font-bold transition-transform active:scale-95"
+                    >
+                        <Plus size={18} /> Ajouter un produit
+                    </button>
+                </div>
+            ) : filtered.length === 0 ? (
+                <div className="py-16 text-center text-[#888] text-sm">
+                    Aucun produit ne correspond à « <span className="text-white">{query}</span> ».
                 </div>
             ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
-                    {products.map((product) => (
-                        <ProductCard
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+                    {filtered.map((product, i) => (
+                        <div
                             key={product.id}
-                            product={product}
-                            onEdit={handleEdit}
-                            onDelete={handleDeleteClick}
-                            onUpdate={handleProductUpdate}
-                        />
-                    ))}
-
-                    {/* Empty State */}
-                    {products.length === 0 && (
-                        <div className="col-span-full py-20 text-center border-2 border-dashed border-[#1a1a1a] rounded-2xl bg-white/5">
-                            <ImageIcon className="mx-auto h-12 w-12 text-[#555] mb-4" />
-                            <h3 className="text-lg font-medium text-white">Votre boutique est vide</h3>
-                            <p className="text-[#888] mt-1 mb-6 text-sm">Commencez par ajouter votre premier produit.</p>
-                            <button
-                                onClick={handleCreate}
-                                className="text-[#00D97E] hover:text-[#00D97E]/80 font-bold text-sm uppercase tracking-wide border-b border-[#00D97E]/30 hover:border-[#00D97E]"
-                            >
-                                + Ajouter maintenant
-                            </button>
+                            className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both"
+                            style={{ animationDuration: '400ms', animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                        >
+                            <ProductCard
+                                product={product}
+                                onEdit={handleEdit}
+                                onDelete={handleDeleteClick}
+                                onUpdate={handleProductUpdate}
+                            />
                         </div>
-                    )}
+                    ))}
                 </div>
             )}
 
@@ -153,19 +197,19 @@ export default function Products() {
             {/* Delete Confirmation Modal */}
             {isDeleteModalOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-6 max-w-sm w-full shadow-2xl">
+                    <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
                         <h3 className="text-lg font-bold text-white mb-2">Supprimer ce produit ?</h3>
                         <p className="text-[#888] text-sm mb-6">Cette action est irréversible. Le produit ne sera plus disponible.</p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setIsDeleteModalOpen(false)}
-                                className="flex-1 py-2 rounded-lg bg-white/5 text-zinc-300 hover:bg-[#1a1a1a] font-bold text-sm"
+                                className="flex-1 py-3 rounded-xl bg-[#1a1a1a] text-[#888] hover:text-white font-bold text-sm transition-colors"
                             >
                                 Annuler
                             </button>
                             <button
                                 onClick={confirmDelete}
-                                className="flex-1 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-bold text-sm"
+                                className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm transition-colors"
                             >
                                 Supprimer
                             </button>
@@ -177,9 +221,10 @@ export default function Products() {
             {/* Mobile FAB — Add product */}
             <button
                 onClick={handleCreate}
-                className="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-[#00D97E] rounded-full shadow-lg shadow-[#00D97E]/30 flex items-center justify-center text-black active:scale-90 transition-transform"
+                aria-label="Ajouter un produit"
+                className="md:hidden fixed bottom-24 right-4 z-40 w-14 h-14 bg-[#00D97E] rounded-full shadow-lg shadow-[#00D97E]/30 flex items-center justify-center text-black active:scale-90 transition-transform"
             >
-                <Plus size={24} />
+                <Plus size={26} />
             </button>
         </div>
     );

@@ -22,6 +22,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const VerifyAccount = lazy(() => import('./pages/VerifyAccount'));
+const DevPreview = lazy(() => import('./pages/DevPreview')); // TEMP — à retirer
 const Terms = lazy(() => import('./pages/Legal').then(m => ({ default: m.Terms })));
 const Privacy = lazy(() => import('./pages/Legal').then(m => ({ default: m.Privacy })));
 
@@ -93,6 +94,7 @@ function App() {
               </Route>
             </Route>
 
+            <Route path="/dev-preview" element={<DevPreview />} /> {/* TEMP — à retirer */}
             <Route path="/" element={<LandingPage />} />
           </Routes>
         </Suspense>

@@ -1,4 +1,4 @@
-import { Edit, Trash2 } from 'lucide-react';
+import { Trash2, Minus, Plus, Layers, Infinity as InfinityIcon } from 'lucide-react';
 import type { Product, ProductVariation, VariationOption } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../utils/apiClient';
@@ -10,13 +10,17 @@ interface ProductCardProps {
     onUpdate: (product: Product) => void; // To update local state after quick stock change
 }
 
-export default function ProductCard({ product, onEdit, onDelete, onUpdate }: ProductCardProps) {
+export default function ProductCard({ product, onDelete, onUpdate }: ProductCardProps) {
     const navigate = useNavigate();
 
     // Check availability logic
     const hasActiveVariations = product.variations && product.variations.some((v: ProductVariation) =>
         v.name && v.name.trim() !== '' && v.options && v.options.length > 0
     );
+
+    const activeVariationsCount = hasActiveVariations
+        ? product.variations!.filter((v: ProductVariation) => v.name && v.name.trim() !== '' && v.options && v.options.length > 0).length
+        : 0;
 
     const displayStock = hasActiveVariations
         ? product.variations!
@@ -25,6 +29,10 @@ export default function ProductCard({ product, onEdit, onDelete, onUpdate }: Pro
                 return total + variation.options.reduce((sum: number, opt: VariationOption) => sum + (opt.stock || 0), 0);
             }, 0)
         : product.stock || 0;
+
+    const unlimited = product.manageStock === false;
+    const out = !unlimited && displayStock <= 0;
+    const low = !unlimited && displayStock > 0 && displayStock <= 5;
 
     const handleStockChange = async (delta: number) => {
         const newStock = Math.max(0, product.stock + delta);
@@ -41,73 +49,83 @@ export default function ProductCard({ product, onEdit, onDelete, onUpdate }: Pro
         }
     };
 
+    const stopTap = (e: React.MouseEvent) => e.stopPropagation();
+
     return (
         <div
             onClick={() => navigate(`/dashboard/products/${product.id}`)}
-            className="bg-[#111] rounded-xl border border-[#1a1a1a] overflow-hidden group hover:border-[#00D97E]/20 transition-all shadow-sm hover:shadow-[#00D97E]/5 cursor-pointer"
+            className="relative bg-[#111] rounded-2xl border border-[#1a1a1a] overflow-hidden cursor-pointer transition-[transform,border-color] duration-200 ease-out active:scale-[0.98] hover:border-[#00D97E]/25"
         >
-            <div className="h-32 sm:h-48 overflow-hidden relative bg-black/50">
-                <img
-                    src={product.images?.[0] || 'https://via.placeholder.com/150/18181b/71717a?text=No+Image'}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-                />
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1.5">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(product);
-                        }}
-                        className="bg-black/60 hover:bg-[#00D97E] hover:text-white p-1.5 rounded-lg text-white backdrop-blur-md transition-colors border border-[#1a1a1a]"
-                    >
-                        <Edit size={14} />
-                    </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(product.id);
-                        }}
-                        className="bg-black/60 hover:bg-red-500 p-1.5 rounded-lg text-white backdrop-blur-md transition-colors border border-[#1a1a1a]"
-                    >
-                        <Trash2 size={14} />
-                    </button>
+            {/* Photo */}
+            <div className="relative aspect-square bg-black overflow-hidden">
+                {product.images?.[0] ? (
+                    <img
+                        src={product.images[0]}
+                        alt={product.name}
+                        loading="lazy"
+                        className={`w-full h-full object-cover transition-opacity duration-300 ${out ? 'opacity-30' : 'opacity-100'}`}
+                    />
+                ) : (
+                    <div className="w-full h-full grid place-items-center text-[#333]">
+                        <Layers size={28} strokeWidth={1.5} />
+                    </div>
+                )}
+
+                {/* Stock status pill */}
+                <div className="absolute top-2 left-2">
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold leading-none backdrop-blur-md ${
+                        out ? 'bg-red-500/25 text-red-300'
+                        : low ? 'bg-amber-500/25 text-amber-300'
+                        : unlimited ? 'bg-black/50 text-white'
+                        : 'bg-black/50 text-white'
+                    }`}>
+                        {unlimited ? <><InfinityIcon size={12} /> Illimité</> : out ? 'Épuisé' : `${displayStock} en stock`}
+                    </span>
                 </div>
+
+                {/* Delete — always visible (touch has no hover) */}
+                <button
+                    onClick={(e) => { stopTap(e); onDelete(product.id); }}
+                    aria-label="Supprimer"
+                    className="absolute top-2 right-2 w-8 h-8 grid place-items-center rounded-full bg-black/50 backdrop-blur-md text-white/90 active:scale-90 hover:bg-red-500 hover:text-white transition-[transform,background-color,color] duration-150"
+                >
+                    <Trash2 size={14} />
+                </button>
             </div>
 
-            <div className="p-3 sm:p-5">
-                <h3 className="text-sm sm:text-lg font-bold mb-0.5 text-white truncate">{product.name}</h3>
-                <p className="text-[#00D97E] font-bold mb-2 sm:mb-4 font-mono text-xs sm:text-sm">{Number(product.price).toLocaleString()} FCFA</p>
+            {/* Body */}
+            <div className="p-3">
+                <h3 className="text-[15px] font-semibold text-white truncate leading-tight">{product.name}</h3>
+                <p className="text-[#00D97E] font-bold text-sm mt-0.5 tabular-nums">{Number(product.price).toLocaleString('fr-FR')} FCFA</p>
 
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
-                        <span className={`px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] uppercase font-bold tracking-wider flex items-center ${displayStock > 10 ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
-                            {displayStock > 0 ? `${displayStock} U` : 'ÉPUISÉ'}
-                            {hasActiveVariations && <span className="ml-0.5 opacity-60 text-[7px] sm:text-[9px] lowercase">(var.)</span>}
-                        </span>
-
-                        {/* Badge Mode Stock */}
-                        <span className={`px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] uppercase font-bold tracking-wider flex items-center border cursor-pointer hover:opacity-80 transition-opacity ${!product.manageStock ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-[#111] text-[#888] border-[#1a1a1a]'}`}
-                            title={!product.manageStock ? "Vente illimitée autorisée" : "Vente bloquée si épuisé"}
-                        >
-                            {!product.manageStock ? 'FLX' : 'STRCT'}
-                        </span>
-                    </div>
-
-                    {/* Quick Stock Actions */}
-                    {!hasActiveVariations && product.manageStock !== false && (
-                        <div className="flex items-center bg-black rounded border border-zinc-800 w-fit" onClick={(e) => e.stopPropagation()}>
+                {/* Quick action row */}
+                <div className="mt-3" onClick={stopTap}>
+                    {hasActiveVariations ? (
+                        <div className="flex items-center gap-1.5 text-[#888] text-xs h-11">
+                            <Layers size={14} className="text-[#00D97E]" />
+                            {activeVariationsCount} déclinaison{activeVariationsCount > 1 ? 's' : ''}
+                        </div>
+                    ) : unlimited ? (
+                        <div className="flex items-center gap-1.5 text-[#888] text-xs h-11">
+                            <InfinityIcon size={14} /> Vente illimitée
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-between rounded-xl bg-black border border-[#1a1a1a] p-1">
                             <button
                                 onClick={() => handleStockChange(-1)}
-                                className="px-1.5 py-0.5 text-[#888] hover:text-white hover:bg-[#1a1a1a] transition-colors text-[10px]"
+                                aria-label="Retirer une unité"
+                                className="w-11 h-9 grid place-items-center rounded-lg text-[#888] active:bg-[#1a1a1a] active:text-white hover:text-white transition-colors disabled:opacity-30"
+                                disabled={displayStock <= 0}
                             >
-                                -
+                                <Minus size={16} />
                             </button>
-                            <span className="text-[10px] font-mono font-bold w-5 text-center text-white">{product.stock}</span>
+                            <span className="font-mono font-semibold text-white text-sm tabular-nums min-w-[2ch] text-center">{product.stock}</span>
                             <button
                                 onClick={() => handleStockChange(1)}
-                                className="px-1.5 py-0.5 text-[#888] hover:text-white hover:bg-[#1a1a1a] transition-colors text-[10px]"
+                                aria-label="Ajouter une unité"
+                                className="w-11 h-9 grid place-items-center rounded-lg text-[#888] active:bg-[#1a1a1a] active:text-white hover:text-white transition-colors"
                             >
-                                +
+                                <Plus size={16} />
                             </button>
                         </div>
                     )}

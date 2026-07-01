@@ -13,9 +13,12 @@ export default defineConfig({
         name: 'DjassaBot Business',
         short_name: 'DjassaBot',
         description: 'Votre Vendeur IA Automatisé',
-        theme_color: '#0a0c10',
-        background_color: '#0a0c10',
+        theme_color: '#000000',
+        background_color: '#000000',
         display: 'standalone',
+        // App installée : ouvre directement l'espace vendeur (login si déconnecté,
+        // dashboard si connecté) — PAS la page marketing "/".
+        start_url: '/dashboard',
         icons: [
           {
             src: 'pwa-192x192.png',
