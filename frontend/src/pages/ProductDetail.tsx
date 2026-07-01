@@ -1,40 +1,21 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Trash2, Image as ImageIcon, X, Plus, Tags } from 'lucide-react';
+import { ArrowLeft, Trash2, Image as ImageIcon, X, Plus, Tags, Bot, Check } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
+import {
+    hasActiveVariations,
+    computeTotalStock,
+    type Product,
+    type ProductVariation,
+    type VariationOption,
+    type VariationTemplate,
+} from '../utils/productHelpers';
 
-// Option within a variation (with stock and price modifier)
-interface VariationOption {
-    value: string;          // e.g., "M", "XL", "Rouge"
-    stock?: number;         // Stock for this option
-    priceModifier?: number; // Price adjustment: +500, -200, 0
-    images?: string[];      // Specific images for this option (max 2)
-}
+export type { Product, ProductVariation, VariationOption, VariationTemplate };
 
-// Interface for product variations/déclinaisons
-interface ProductVariation {
-    name: string;               // e.g., "Taille", "Couleur", "Saveur"
-    options: VariationOption[]; // Array of options with stock/price
-}
-
-interface Product {
-    id?: string;
-    name: string;
-    price: number | string;
-    stock: number | string;
-    description: string;
-    images: string[];
-    variations: ProductVariation[];
-    aiInstructions: string;
-}
-
-interface VariationTemplate {
-    name: string;
-    default_options: { value: string; priceModifier: number }[];
-    isSystem: boolean;
-}
+// ---------- CONTAINER (data) ----------
 
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -43,30 +24,16 @@ const ProductDetail: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [product, setProduct] = useState<Product>({
-        name: '',
-        price: '',
-        stock: '',
-        description: '',
-        images: [],
-        variations: [] as ProductVariation[],
-        aiInstructions: ''
+        name: '', price: '', stock: '', description: '', images: [], variations: [], aiInstructions: '',
     });
-
-    // Variations Toggle State
     const [variationsEnabled, setVariationsEnabled] = useState(false);
-
-    // Variation Templates State
     const [variationTemplates, setVariationTemplates] = useState<VariationTemplate[]>([]);
 
-    // Load variation templates
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
                 const res = await apiClient('/variation-templates');
-                if (res.ok) {
-                    const data: VariationTemplate[] = await res.json();
-                    setVariationTemplates(data);
-                }
+                if (res.ok) setVariationTemplates(await res.json());
             } catch (error) {
                 console.error('Failed to fetch variation templates', error);
             }
@@ -77,19 +44,9 @@ const ProductDetail: React.FC = () => {
     useEffect(() => {
         const fetchProduct = async () => {
             try {
-                if (!token) {
-                    navigate('/login');
-                    return;
-                }
-
+                if (!token) { navigate('/login'); return; }
                 const res = await apiClient('/products');
-
-                if (!res.ok) {
-                    console.error('Failed to fetch products');
-                    navigate('/dashboard/products');
-                    return;
-                }
-
+                if (!res.ok) { navigate('/dashboard/products'); return; }
                 const data = await res.json();
                 const found = data.find((p: Product) => p.id === id);
                 if (found) {
@@ -97,15 +54,10 @@ const ProductDetail: React.FC = () => {
                         ...found,
                         images: found.images || [],
                         variations: found.variations || [],
-                        aiInstructions: found.aiInstructions || found.ai_instructions || ''
+                        aiInstructions: found.aiInstructions || found.ai_instructions || '',
                     };
                     setProduct(productData);
-
-                    // Auto-enable variations toggle if product has active variations
-                    const hasActiveVariations = productData.variations && productData.variations.some((v: ProductVariation) =>
-                        v.name && v.name.trim() !== '' && v.options && v.options.length > 0
-                    );
-                    setVariationsEnabled(hasActiveVariations);
+                    setVariationsEnabled(hasActiveVariations(productData.variations));
                 } else {
                     navigate('/dashboard/products');
                 }
@@ -116,7 +68,6 @@ const ProductDetail: React.FC = () => {
                 setLoading(false);
             }
         };
-
         if (id) fetchProduct();
     }, [id, navigate, token]);
 
@@ -125,116 +76,77 @@ const ProductDetail: React.FC = () => {
         try {
             const res = await apiClient(`/products/${id}`, {
                 method: 'PUT',
-                body: JSON.stringify({
-                    ...product,
-                    price: Number(product.price),
-                    stock: Number(product.stock)
-                })
+                body: JSON.stringify({ ...product, price: Number(product.price), stock: Number(product.stock) }),
             });
-            if (res.ok) {
-                alert('Produit mis à jour !');
-            } else {
-                alert('Erreur lors de la mise à jour');
-            }
+            if (res.ok) toast.success('Produit enregistré');
+            else toast.error('Erreur lors de la mise à jour');
         } catch (error) {
             console.error('Error updating product', error);
-            alert('Erreur lors de la mise à jour');
+            toast.error('Erreur lors de la mise à jour');
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async () => {
-        if (!confirm('Voulez-vous vraiment supprimer ce produit ?')) return;
         try {
-            await apiClient(`/products/${id}`, {
-                method: 'DELETE'
-            });
+            await apiClient(`/products/${id}`, { method: 'DELETE' });
+            toast.success('Produit supprimé');
             navigate('/dashboard/products');
         } catch (error) {
             console.error('Error deleting product', error);
+            toast.error('Erreur lors de la suppression');
         }
+    };
+
+    const uploadFiles = async (files: File[]): Promise<string[]> => {
+        const urls: string[] = [];
+        for (const file of files) {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await apiClient('/products/upload', { method: 'POST', body: formData });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Erreur lors du téléversement');
+            }
+            urls.push((await response.json()).url);
+        }
+        return urls;
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.length) return;
-
-        const files = Array.from(e.target.files);
-        const newImages = [];
-
         try {
-            for (const file of files) {
-                const formData = new FormData();
-                formData.append('file', file);
-
-                const response = await apiClient('/products/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.error || 'Erreur lors du téléversement');
-                }
-
-                const data = await response.json();
-                newImages.push(data.url);
-            }
-
-            setProduct({
-                ...product,
-                images: [...product.images, ...newImages]
-            });
+            const urls = await uploadFiles(Array.from(e.target.files));
+            setProduct(prev => ({ ...prev, images: [...prev.images, ...urls] }));
         } catch (error) {
             console.error('Upload failed', error);
-            alert('Erreur upload');
+            toast.error('Erreur lors de l\'envoi de la photo');
         }
     };
 
-    // === Variation Management Functions ===
-    const addVariation = () => {
-        setProduct({
-            ...product,
-            variations: [...(product.variations || []), { name: '', options: [] }]
-        });
+    const removeImage = (absoluteIndex: number) => {
+        setProduct(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== absoluteIndex) }));
     };
 
-    const removeVariation = (index: number) => {
-        setProduct({
-            ...product,
-            variations: product.variations.filter((_: ProductVariation, i: number) => i !== index)
-        });
-    };
+    // === Variations ===
+    const addVariation = () => setProduct(prev => ({ ...prev, variations: [...(prev.variations || []), { name: '', options: [] }] }));
+    const removeVariation = (index: number) => setProduct(prev => ({ ...prev, variations: prev.variations.filter((_, i) => i !== index) }));
 
-    const updateVariationName = async (index: number, name: string) => {
+    const updateVariationName = (index: number, name: string) => {
         const newVariations = [...product.variations];
-
-        // Check if this is a template selection
         const selectedTemplate = variationTemplates.find(t => t.name === name);
-
         if (selectedTemplate && selectedTemplate.default_options) {
-            // Pre-fill with template options
-            newVariations[index] = {
-                name,
-                options: [...selectedTemplate.default_options]
-            };
+            newVariations[index] = { name, options: [...selectedTemplate.default_options] };
         } else {
             newVariations[index] = { ...newVariations[index], name };
         }
-
         setProduct({ ...product, variations: newVariations });
     };
 
-    // Save a new custom variation template
     const saveVariationTemplate = async (name: string, options: VariationOption[]) => {
         try {
-            await apiClient('/variation-templates', {
-                method: 'POST',
-                body: JSON.stringify({
-                    name,
-                    default_options: options
-                })
-            });
+            await apiClient('/variation-templates', { method: 'POST', body: JSON.stringify({ name, default_options: options }) });
         } catch (error) {
             console.error('Failed to save variation template', error);
         }
@@ -243,11 +155,11 @@ const ProductDetail: React.FC = () => {
     const addVariationOption = (varIndex: number, value: string) => {
         if (!value.trim()) return;
         const newVariations = [...product.variations];
-        const existingValues = newVariations[varIndex].options.map((o: VariationOption) => o.value);
+        const existingValues = newVariations[varIndex].options.map(o => o.value);
         if (!existingValues.includes(value.trim())) {
             newVariations[varIndex] = {
                 ...newVariations[varIndex],
-                options: [...newVariations[varIndex].options, { value: value.trim(), stock: undefined, priceModifier: 0 }]
+                options: [...newVariations[varIndex].options, { value: value.trim(), stock: undefined, priceModifier: 0 }],
             };
             setProduct({ ...product, variations: newVariations });
         }
@@ -257,526 +169,534 @@ const ProductDetail: React.FC = () => {
         const newVariations = [...product.variations];
         newVariations[varIndex] = {
             ...newVariations[varIndex],
-            options: newVariations[varIndex].options.filter((_: VariationOption, i: number) => i !== optionIndex)
+            options: newVariations[varIndex].options.filter((_, i) => i !== optionIndex),
         };
+        setProduct({ ...product, variations: newVariations });
+    };
+
+    const updateVariationOption = (varIndex: number, optionIndex: number, field: 'stock' | 'priceModifier' | 'value' | 'images', value: number | string | string[] | undefined) => {
+        const newVariations = [...product.variations];
+        newVariations[varIndex].options[optionIndex] = { ...newVariations[varIndex].options[optionIndex], [field]: value };
         setProduct({ ...product, variations: newVariations });
     };
 
     const handleVariationImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, varIndex: number, optIndex: number) => {
         if (!e.target.files?.length) return;
-
-        const files = Array.from(e.target.files);
-        // Only allow up to 2 images total
         const currentImages = product.variations[varIndex].options[optIndex].images || [];
-        if (currentImages.length + files.length > 2) {
-            alert('Maximum 2 images par déclinaison');
+        if (currentImages.length + e.target.files.length > 2) {
+            toast.error('Maximum 2 photos par déclinaison');
             return;
         }
-
         try {
-            const newImages: string[] = [];
-            for (const file of files) {
-                const formData = new FormData();
-                formData.append('file', file);
-
-                const response = await apiClient('/products/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.error || 'Erreur lors du téléversement');
-                }
-
-                const data = await response.json();
-                newImages.push(data.url);
-            }
-
-            // Update variation images
-            updateVariationOption(varIndex, optIndex, 'images', [...currentImages, ...newImages]);
-
-            // Also add to main gallery so they appear at the top
-            setProduct((prev: Product) => ({
-                ...prev,
-                images: [...prev.images, ...newImages]
-            }));
-
+            const urls = await uploadFiles(Array.from(e.target.files));
+            updateVariationOption(varIndex, optIndex, 'images', [...currentImages, ...urls]);
+            setProduct(prev => ({ ...prev, images: [...prev.images, ...urls] }));
         } catch (error) {
             console.error('Upload failed', error);
-            alert('Erreur upload');
+            toast.error('Erreur lors de l\'envoi de la photo');
         }
     };
 
-    const updateVariationOption = (varIndex: number, optionIndex: number, field: 'stock' | 'priceModifier' | 'value' | 'images', value: number | string | string[] | undefined) => {
-        const newVariations = [...product.variations];
-        newVariations[varIndex].options[optionIndex] = {
-            ...newVariations[varIndex].options[optionIndex],
-            [field]: value
-        };
-        setProduct({ ...product, variations: newVariations });
+    const toggleVariations = () => {
+        const newState = !variationsEnabled;
+        setVariationsEnabled(newState);
+        if (!newState) setProduct(prev => ({ ...prev, variations: [] }));
     };
 
-    if (loading) return <div className="text-white p-8">Chargement...</div>;
+    if (loading) return <ProductDetailSkeleton />;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+        <ProductDetailView
+            product={product}
+            variationTemplates={variationTemplates}
+            variationsEnabled={variationsEnabled}
+            saving={saving}
+            onBack={() => navigate('/dashboard/products')}
+            onSave={handleSave}
+            onDelete={handleDelete}
+            onChange={patch => setProduct(prev => ({ ...prev, ...patch }))}
+            onImageUpload={handleImageUpload}
+            onRemoveImage={removeImage}
+            onToggleVariations={toggleVariations}
+            onAddVariation={addVariation}
+            onRemoveVariation={removeVariation}
+            onUpdateVariationName={updateVariationName}
+            onSaveTemplate={saveVariationTemplate}
+            onAddOption={addVariationOption}
+            onRemoveOption={removeVariationOption}
+            onUpdateOption={updateVariationOption}
+            onVariationImageUpload={handleVariationImageUpload}
+        />
+    );
+};
+
+// ---------- PRESENTATIONAL VIEW (réutilisée par la preview) ----------
+
+export interface ProductDetailViewProps {
+    product: Product;
+    variationTemplates: VariationTemplate[];
+    variationsEnabled: boolean;
+    saving: boolean;
+    onBack: () => void;
+    onSave: () => void;
+    onDelete: () => void;
+    onChange: (patch: Partial<Product>) => void;
+    onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onRemoveImage: (absoluteIndex: number) => void;
+    onToggleVariations: () => void;
+    onAddVariation: () => void;
+    onRemoveVariation: (index: number) => void;
+    onUpdateVariationName: (index: number, name: string) => void;
+    onSaveTemplate: (name: string, options: VariationOption[]) => void;
+    onAddOption: (varIndex: number, value: string) => void;
+    onRemoveOption: (varIndex: number, optionIndex: number) => void;
+    onUpdateOption: (varIndex: number, optionIndex: number, field: 'stock' | 'priceModifier' | 'value' | 'images', value: number | string | string[] | undefined) => void;
+    onVariationImageUpload: (e: React.ChangeEvent<HTMLInputElement>, varIndex: number, optIndex: number) => void;
+}
+
+export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
+    const {
+        product, variationTemplates, variationsEnabled, saving,
+        onBack, onSave, onDelete, onChange, onImageUpload, onRemoveImage, onToggleVariations,
+    } = props;
+    const [confirmDelete, setConfirmDelete] = useState(false);
+
+    const active = hasActiveVariations(product.variations);
+    const stockValue = computeTotalStock(product);
+
+    const anim = 'animate-in fade-in slide-in-from-bottom-2 fill-mode-both';
+    const delay = (i: number): React.CSSProperties => ({ animationDuration: '450ms', animationDelay: `${i * 60}ms` });
+
+    return (
+        <div className="space-y-5 pb-4">
+            {/* TOP BAR */}
+            <div className={`flex items-center justify-between gap-3 ${anim}`} style={delay(0)}>
                 <button
-                    onClick={() => navigate('/dashboard/products')}
-                    className="flex items-center text-[#888] hover:text-white transition-colors"
+                    onClick={onBack}
+                    aria-label="Retour aux produits"
+                    className="flex items-center gap-2 text-[#888] hover:text-white transition-colors cursor-pointer"
                 >
-                    <ArrowLeft className="mr-2" size={20} />
-                    Retour aux produits
+                    <ArrowLeft className="w-5 h-5" aria-hidden="true" />
+                    <span className="text-sm font-medium">Produits</span>
                 </button>
-                <div className="flex space-x-3">
-                    <button
-                        onClick={handleDelete}
-                        className="flex items-center px-4 py-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors"
-                    >
-                        <Trash2 size={18} className="mr-2" />
-                        Supprimer
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="flex items-center px-6 py-2 bg-[#00D97E] text-black font-bold rounded-lg hover:bg-[#00D97E]/90 transition-all shadow-lg shadow-[#00D97E]/10 active:scale-[0.98]"
-                    >
-                        <Save size={18} className="mr-2" />
-                        {saving ? 'Enregistrement...' : 'Enregistrer'}
-                    </button>
-                </div>
+                <button
+                    onClick={onSave}
+                    disabled={saving}
+                    className="flex items-center gap-2 bg-[#00D97E] text-black disabled:opacity-60 px-5 py-2.5 rounded-xl text-sm font-bold transition-[transform,background-color] active:scale-95 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none"
+                >
+                    {saving ? <span>Enregistrement…</span> : <><Check className="w-4 h-4" aria-hidden="true" /><span>Enregistrer</span></>}
+                </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Left Column - Images */}
-                <div className="md:col-span-1 space-y-4">
-                    <div className="aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 relative group">
-                        {product.images?.[0] ? (
-                            <img
-                                src={product.images[0]}
-                                alt={product.name}
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <div className="flex items-center justify-center h-full text-[#555]">
-                                <ImageIcon size={48} />
-                            </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <label className="cursor-pointer bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg hover:bg-white/20 transition-colors">
-                                Changer la couverture
-                                <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                            </label>
+            {/* PHOTOS */}
+            <section className={anim} style={delay(1)}>
+                <div className="relative aspect-square bg-[#111] rounded-2xl overflow-hidden border border-[#1a1a1a]">
+                    {product.images?.[0] ? (
+                        <img src={product.images[0]} alt={product.name || 'Photo du produit'} className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-[#555] gap-2">
+                            <ImageIcon className="w-12 h-12" aria-hidden="true" />
+                            <span className="text-xs">Aucune photo</span>
+                        </div>
+                    )}
+                    <label className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-md text-white text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer active:scale-95 transition-transform border border-white/10">
+                        <ImageIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                        {product.images?.[0] ? 'Changer la photo' : 'Ajouter une photo'}
+                        <input type="file" className="hidden" accept="image/*" onChange={onImageUpload} />
+                    </label>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                    {product.images?.slice(1).map((img, idx) => (
+                        <div key={idx} className="relative aspect-square bg-[#111] rounded-xl overflow-hidden border border-[#1a1a1a]">
+                            <img src={img} alt="" className="w-full h-full object-cover" />
+                            <button
+                                onClick={() => onRemoveImage(idx + 1)}
+                                aria-label="Retirer cette photo"
+                                className="absolute top-1 right-1 bg-black/70 text-white p-1 rounded-full active:scale-90 transition-transform"
+                            >
+                                <X className="w-3 h-3" aria-hidden="true" />
+                            </button>
+                        </div>
+                    ))}
+                    <label className="aspect-square bg-[#111] border border-dashed border-[#1a1a1a] rounded-xl flex items-center justify-center cursor-pointer active:scale-95 hover:border-[#00D97E]/40 transition-all text-[#888] hover:text-white">
+                        <Plus className="w-5 h-5" aria-hidden="true" />
+                        <input type="file" className="hidden" multiple accept="image/*" onChange={onImageUpload} />
+                    </label>
+                </div>
+            </section>
+
+            {/* INFOS PRINCIPALES */}
+            <section className={`bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 space-y-4 ${anim}`} style={delay(2)}>
+                <div>
+                    <label htmlFor="pd-name" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Nom du produit</label>
+                    <input
+                        id="pd-name"
+                        type="text"
+                        value={product.name}
+                        onChange={e => onChange({ name: e.target.value })}
+                        className="w-full bg-black border border-[#1a1a1a] rounded-xl p-3.5 text-white text-base font-semibold focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none transition-colors"
+                    />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <label htmlFor="pd-price" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Prix (FCFA)</label>
+                        <input
+                            id="pd-price"
+                            type="number"
+                            inputMode="numeric"
+                            value={product.price}
+                            onChange={e => onChange({ price: e.target.value })}
+                            className="w-full bg-black border border-[#1a1a1a] rounded-xl p-3.5 text-white tabular-nums focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none transition-colors"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="pd-stock" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">
+                            Stock {active && <span className="text-[#00D97E] normal-case">· auto</span>}
+                        </label>
+                        <input
+                            id="pd-stock"
+                            type="number"
+                            inputMode="numeric"
+                            min="0"
+                            value={stockValue}
+                            disabled={active}
+                            onChange={e => { if (!active) onChange({ stock: Math.max(0, Number(e.target.value) || 0) }); }}
+                            className={`w-full border rounded-xl p-3.5 tabular-nums outline-none transition-colors ${active
+                                ? 'bg-[#0a0a0a] border-[#1a1a1a] text-[#666] cursor-not-allowed'
+                                : 'bg-black border-[#1a1a1a] text-white focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10'}`}
+                        />
+                        {active && <p className="text-[11px] text-[#555] mt-1.5">Calculé depuis vos déclinaisons.</p>}
+                    </div>
+                </div>
+
+                <div>
+                    <label htmlFor="pd-desc" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Description</label>
+                    <textarea
+                        id="pd-desc"
+                        value={product.description}
+                        onChange={e => onChange({ description: e.target.value })}
+                        placeholder="Décrivez votre produit en quelques mots…"
+                        className="w-full bg-black border border-[#1a1a1a] rounded-xl p-3.5 text-white text-sm leading-relaxed min-h-[110px] resize-none focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none placeholder:text-[#555] transition-colors"
+                    />
+                </div>
+            </section>
+
+            {/* CONSIGNES POUR LE BOT */}
+            <section className={`bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 ${anim}`} style={delay(3)}>
+                <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1.5 rounded-lg bg-[#00D97E]/10 text-[#00D97E]"><Bot className="w-4 h-4" aria-hidden="true" /></div>
+                    <label htmlFor="pd-ai" className="text-sm font-semibold text-white">Consignes pour le bot</label>
+                </div>
+                <p className="text-xs text-[#888] mb-3 leading-relaxed">
+                    Des règles spéciales que le bot appliquera pour ce produit lors des ventes.
+                </p>
+                <textarea
+                    id="pd-ai"
+                    value={product.aiInstructions || ''}
+                    onChange={e => onChange({ aiInstructions: e.target.value })}
+                    placeholder="Ex : à partir de 3 articles, proposer -10%. À partir de 5, offrir la livraison."
+                    className="w-full bg-black border border-[#1a1a1a] rounded-xl p-3.5 text-white text-sm leading-relaxed min-h-[90px] resize-none focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none placeholder:text-[#555] transition-colors"
+                />
+                <div className="mt-3 space-y-1.5 text-xs text-[#555]">
+                    <p className="text-[#888] font-medium">Quelques exemples :</p>
+                    <p>— « Si le client en prend 3 ou plus, proposer une remise de 10 % »</p>
+                    <p>— « Suggérer l'accessoire assorti à chaque achat »</p>
+                    <p>— « Pour une commande avant midi, proposer la livraison le jour même »</p>
+                </div>
+            </section>
+
+            {/* DÉCLINAISONS */}
+            <section className={`bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 ${anim}`} style={delay(4)}>
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="p-1.5 rounded-lg bg-[#00D97E]/10 text-[#00D97E] shrink-0 mt-0.5"><Tags className="w-4 h-4" aria-hidden="true" /></div>
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold text-white">Déclinaisons</p>
+                            <p className="text-xs text-[#888] leading-relaxed mt-0.5">
+                                {variationsEnabled
+                                    ? 'Plusieurs versions (taille, couleur…). Le stock total est calculé tout seul.'
+                                    : 'Activez si votre produit existe en plusieurs versions (tailles, couleurs, saveurs…).'}
+                            </p>
                         </div>
                     </div>
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={variationsEnabled}
+                        aria-label="Activer les déclinaisons"
+                        onClick={onToggleVariations}
+                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none ${variationsEnabled ? 'bg-[#00D97E]' : 'bg-[#1a1a1a]'}`}
+                    >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${variationsEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                </div>
 
-                    <div className="grid grid-cols-3 gap-2">
-                        {product.images?.slice(1).map((img: string, idx: number) => (
-                            <div key={idx} className="aspect-square bg-zinc-900 rounded-lg overflow-hidden relative group">
-                                <img src={img} alt="" className="w-full h-full object-cover" />
+                {variationsEnabled && (
+                    <div className="mt-4 pt-4 border-t border-[#1a1a1a] space-y-3">
+                        {product.variations && product.variations.length > 0 ? (
+                            product.variations.map((variation, varIndex) => (
+                                <VariationCard key={varIndex} variation={variation} varIndex={varIndex} templates={variationTemplates} {...props} />
+                            ))
+                        ) : (
+                            <div className="text-center py-8 bg-black border border-dashed border-[#1a1a1a] rounded-xl">
+                                <Tags className="w-8 h-8 mx-auto text-[#444] mb-2" aria-hidden="true" />
+                                <p className="text-[#888] text-sm">Aucune déclinaison pour l'instant.</p>
+                            </div>
+                        )}
+                        <button
+                            type="button"
+                            onClick={props.onAddVariation}
+                            className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl border border-dashed border-[#1a1a1a] text-[#00D97E] text-sm font-semibold active:scale-[0.99] hover:border-[#00D97E]/40 transition-all cursor-pointer"
+                        >
+                            <Plus className="w-4 h-4" aria-hidden="true" />
+                            Ajouter une déclinaison
+                        </button>
+                    </div>
+                )}
+            </section>
+
+            {/* ACTIONS BAS */}
+            <div className={`space-y-3 pt-2 ${anim}`} style={delay(5)}>
+                <button
+                    onClick={onSave}
+                    disabled={saving}
+                    className="w-full flex items-center justify-center gap-2 bg-[#00D97E] text-black disabled:opacity-60 px-6 py-3.5 rounded-xl font-bold text-sm transition-[transform,background-color] active:scale-[0.98] cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none"
+                >
+                    {saving ? <span>Enregistrement…</span> : <><Check className="w-4 h-4" aria-hidden="true" /><span>Enregistrer les modifications</span></>}
+                </button>
+                <button
+                    onClick={() => setConfirmDelete(true)}
+                    className="w-full flex items-center justify-center gap-2 text-red-400 hover:text-red-300 px-6 py-3 rounded-xl text-sm font-semibold transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-red-500/30 outline-none"
+                >
+                    <Trash2 className="w-4 h-4" aria-hidden="true" />
+                    Supprimer ce produit
+                </button>
+            </div>
+
+            {/* CONFIRMATION SUPPRESSION */}
+            {confirmDelete && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
+                    onClick={() => setConfirmDelete(false)}
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Confirmer la suppression"
+                        onClick={e => e.stopPropagation()}
+                        className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300"
+                    >
+                        <div className="p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-xl bg-red-500/10 text-red-400 shrink-0"><Trash2 className="w-5 h-5" aria-hidden="true" /></div>
+                                <div>
+                                    <p className="text-white font-bold">Supprimer ce produit ?</p>
+                                    <p className="text-[#888] text-sm mt-0.5">Cette action est définitive.</p>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
                                 <button
-                                    onClick={() => setProduct({
-                                        ...product,
-                                        images: product.images.filter((_: string, i: number) => i !== idx + 1)
-                                    })}
-                                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => { setConfirmDelete(false); onDelete(); }}
+                                    className="w-full bg-red-500 text-white px-6 py-3.5 rounded-xl font-bold text-sm transition-transform active:scale-[0.98] cursor-pointer focus-visible:ring-2 focus-visible:ring-red-500/40 outline-none"
                                 >
-                                    <X size={12} />
+                                    Oui, supprimer
+                                </button>
+                                <button
+                                    onClick={() => setConfirmDelete(false)}
+                                    className="w-full px-6 py-3 rounded-xl font-semibold text-sm text-[#888] hover:text-white transition-colors cursor-pointer"
+                                >
+                                    Annuler
                                 </button>
                             </div>
-                        ))}
-                        <label className="aspect-square bg-zinc-900/50 border-2 border-dashed border-[#1a1a1a] rounded-lg flex items-center justify-center cursor-pointer hover:border-[#00D97E]/40 hover:bg-zinc-900 transition-all text-[#888] hover:text-white">
-                            <Plus size={24} />
-                            <input type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} />
-                        </label>
+                        </div>
                     </div>
                 </div>
+            )}
+        </div>
+    );
+};
 
-                {/* Right Column - Details Form */}
-                <div className="md:col-span-2 bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-[#888] mb-1">Nom du produit</label>
-                        <input
-                            type="text"
-                            value={product.name}
-                            onChange={e => setProduct({ ...product, name: e.target.value })}
-                            className="w-full bg-black border border-zinc-700 rounded-xl p-3 text-white focus:border-[#00D97E] outline-none text-lg font-bold"
-                        />
-                    </div>
+// ---------- VARIATION CARD ----------
 
-                    <div className="grid grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-[#888] mb-1">Prix (FCFA)</label>
+interface VariationCardProps extends ProductDetailViewProps {
+    variation: ProductVariation;
+    varIndex: number;
+    templates: VariationTemplate[];
+}
+
+const VariationCard: React.FC<VariationCardProps> = ({
+    variation, varIndex, templates,
+    onRemoveVariation, onUpdateVariationName, onSaveTemplate,
+    onAddOption, onRemoveOption, onUpdateOption, onVariationImageUpload,
+}) => {
+    const [newOption, setNewOption] = useState('');
+    const isKnownTemplate = !!templates.find(t => t.name === variation.name);
+    const showSelector = variation.name === '' || !isKnownTemplate;
+
+    const commitOption = () => {
+        if (newOption.trim()) { onAddOption(varIndex, newOption.trim()); setNewOption(''); }
+    };
+
+    return (
+        <div className="bg-black border border-[#1a1a1a] rounded-xl p-3.5 space-y-3">
+            {/* Nom de la déclinaison */}
+            <div className="flex items-center gap-2">
+                {showSelector ? (
+                    <div className="flex-1 flex flex-col gap-2">
+                        <select
+                            value={variation.name}
+                            onChange={e => { if (e.target.value !== '__custom__') onUpdateVariationName(varIndex, e.target.value); }}
+                            className="flex-1 bg-[#111] border border-[#1a1a1a] rounded-lg px-3 py-2.5 text-white text-sm focus:border-[#00D97E] outline-none"
+                        >
+                            <option value="">Choisir un type…</option>
+                            {templates.map((template, idx) => (
+                                <option key={idx} value={template.name}>
+                                    {template.name}{template.isSystem ? '' : ' (personnalisé)'}
+                                </option>
+                            ))}
+                            <option value="__custom__">Autre (personnalisé)</option>
+                        </select>
+                        {variation.name === '' && (
                             <input
-                                type="number"
-                                value={product.price}
-                                onChange={e => setProduct({ ...product, price: e.target.value })}
-                                className="w-full bg-black border border-zinc-700 rounded-xl p-3 text-white focus:border-[#00D97E] outline-none font-mono"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-[#888] mb-1">
-                                Stock disponible
-                                {(() => {
-                                    // Helper: Vérifier si le produit a des variations ACTIVES
-                                    const hasActiveVariations = product.variations && product.variations.some((v: ProductVariation) =>
-                                        v.name && v.name.trim() !== '' && v.options && v.options.length > 0
-                                    );
-                                    return hasActiveVariations && (
-                                        <span className="ml-2 text-[#00D97E] text-xs font-bold">(Auto-calculé)</span>
-                                    );
-                                })()}
-                            </label>
-                            <input
-                                type="number"
-                                min="0"
-                                value={
-                                    // Si le produit a des variations ACTIVES, calculer le stock total automatiquement
-                                    (() => {
-                                        const hasActiveVariations = product.variations && product.variations.some((v: ProductVariation) =>
-                                            v.name && v.name.trim() !== '' && v.options && v.options.length > 0
-                                        );
-
-                                        if (hasActiveVariations) {
-                                            return product.variations
-                                                .filter((v: ProductVariation) => v.name && v.name.trim() !== '' && v.options && v.options.length > 0)
-                                                .reduce((total: number, variation: ProductVariation) => {
-                                                    const variationStock = variation.options.reduce((sum, opt) => sum + (opt.stock || 0), 0);
-                                                    return total + variationStock;
-                                                }, 0);
-                                        }
-
-                                        return product.stock;
-                                    })()
-                                }
-                                onChange={e => {
-                                    // N'autoriser la modification que si PAS de variations ACTIVES
-                                    const hasActiveVariations = product.variations && product.variations.some((v: ProductVariation) =>
-                                        v.name && v.name.trim() !== '' && v.options && v.options.length > 0
-                                    );
-
-                                    if (!hasActiveVariations) {
-                                        const value = Math.max(0, Number(e.target.value) || 0);
-                                        setProduct({ ...product, stock: value });
+                                type="text"
+                                placeholder="Nom personnalisé (ex : Pointure)"
+                                onBlur={async e => {
+                                    const v = e.target.value.trim();
+                                    if (v) {
+                                        onUpdateVariationName(varIndex, v);
+                                        if (variation.options && variation.options.length > 0) onSaveTemplate(v, variation.options);
                                     }
                                 }}
-                                disabled={(() => {
-                                    return product.variations && product.variations.some((v: ProductVariation) =>
-                                        v.name && v.name.trim() !== '' && v.options && v.options.length > 0
-                                    );
-                                })()}
-                                className={`w-full border rounded-xl p-3 font-mono outline-none ${product.variations && product.variations.some((v: ProductVariation) =>
-                                    v.name && v.name.trim() !== '' && v.options && v.options.length > 0
-                                )
-                                    ? 'bg-zinc-800 border-zinc-700 text-[#888] cursor-not-allowed'
-                                    : 'bg-black border-zinc-700 text-white focus:border-[#00D97E]'
-                                    }`}
+                                onKeyDown={e => { if (e.key === 'Enter' && e.currentTarget.value.trim()) onUpdateVariationName(varIndex, e.currentTarget.value.trim()); }}
+                                className="flex-1 bg-[#111] border border-[#1a1a1a] rounded-lg px-3 py-2.5 text-white text-sm focus:border-[#00D97E] outline-none"
                             />
-                            {product.variations && product.variations.some((v: ProductVariation) =>
-                                v.name && v.name.trim() !== '' && v.options && v.options.length > 0
-                            ) && (
-                                    <p className="text-xs text-[#555] mt-1">
-                                        ℹ️ Le stock total est calculé depuis vos variations
-                                    </p>
-                                )}
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-[#888] mb-1">Description détaillée</label>
-                        <textarea
-                            value={product.description}
-                            onChange={e => setProduct({ ...product, description: e.target.value })}
-                            className="w-full bg-black border border-zinc-700 rounded-xl p-4 text-white focus:border-[#00D97E] outline-none min-h-[120px] leading-relaxed"
-                            placeholder="Décrivez votre produit..."
-                        />
-                    </div>
-
-                    {/* === Consignes IA === */}
-                    <div className="border-t border-[#1a1a1a] pt-5">
-                        <label className="block text-sm font-medium text-[#00D97E] mb-1">
-                            🤖 Consignes IA (instructions spéciales pour ce produit)
-                        </label>
-                        <textarea
-                            value={product.aiInstructions || ''}
-                            onChange={e => setProduct({ ...product, aiInstructions: e.target.value })}
-                            className="w-full bg-black border border-zinc-700 rounded-xl p-4 text-white focus:border-[#00D97E] outline-none min-h-[100px] leading-relaxed text-sm"
-                            placeholder="Ex: Si le client en prend 3+, proposer -10% sur le total. À partir de 5, offrir la livraison gratuite."
-                        />
-                        <div className="mt-2 text-[#555] text-xs space-y-1">
-                            <p>💡 <strong>Exemples de consignes :</strong></p>
-                            <p>• "Si le client veut 3+, proposer une réduction de 10%"</p>
-                            <p>• "À partir de 10 articles, offrir la livraison gratuite"</p>
-                            <p>• "Suggérer l'accessoire assorti à chaque achat"</p>
-                            <p>• "Pour les commandes avant 12h, proposer livraison le jour même"</p>
-                        </div>
-                    </div>
-
-                    {/* === Section Déclinaisons avec Toggle === */}
-                    <div className="border-t border-zinc-800 pt-6">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <Tags size={20} className="text-[#00D97E]" />
-                                    <h3 className="text-white font-semibold">Déclinaisons / Variations</h3>
- 
-                                    {/* Toggle Switch */}
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const newState = !variationsEnabled;
-                                            setVariationsEnabled(newState);
-                                            // Si on désactive, vider les variations
-                                            if (!newState) {
-                                                setProduct({ ...product, variations: [] });
-                                            }
-                                        }}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${variationsEnabled ? 'bg-[#00D97E]' : 'bg-zinc-700'
-                                            }`}
-                                    >
-                                        <span
-                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${variationsEnabled ? 'translate-x-6' : 'translate-x-1'
-                                                }`}
-                                        />
-                                    </button>
- 
-                                    <span className={`text-xs font-semibold ${variationsEnabled ? 'text-[#00D97E]' : 'text-[#888]'}`}>
-                                        {variationsEnabled ? 'Activé' : 'Désactivé'}
-                                    </span>
-                                </div>
- 
-                                {/* Texte explicatif */}
-                                <p className="text-[#888] text-sm leading-relaxed">
-                                    {variationsEnabled ? (
-                                        <>Votre produit est décliné en plusieurs versions (ex: Taille, Couleur). Le stock total est calculé automatiquement.</>
-                                    ) : (
-                                        <>Activez cette option si votre produit existe en plusieurs versions (tailles, couleurs, saveurs, etc.).</>
-                                    )}
-                                </p>
-                            </div>
-                        </div>
- 
-                        {/* Section variations (visible seulement si activé) */}
-                        {variationsEnabled && (
-                            <>
-                                <div className="flex items-center justify-between mb-4 pt-4 border-t border-zinc-800">
-                                    <p className="text-[#888] text-sm">
-                                        Définissez des options comme Taille, Couleur, Saveur, etc.
-                                    </p>
-                                    <button
-                                        type="button"
-                                        onClick={addVariation}
-                                        className="flex items-center gap-1 px-3 py-1.5 bg-[#00D97E]/10 text-[#00D97E] rounded-lg hover:bg-[#00D97E]/20 transition-colors text-sm font-bold"
-                                    >
-                                        <Plus size={16} />
-                                        Ajouter une déclinaison
-                                    </button>
-                                </div>
- 
-                                {product.variations && product.variations.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {product.variations.map((variation: ProductVariation, varIndex: number) => (
-                                            <div key={varIndex} className="bg-black border border-zinc-800 rounded-xl p-4">
-                                                <div className="flex items-center gap-3 mb-3">
-                                                    {/* Dropdown de Sélection de Template */}
-                                                    {variation.name === '' || !variationTemplates.find(t => t.name === variation.name) ? (
-                                                        <div className="flex-1 flex gap-2">
-                                                            <select
-                                                                value={variation.name}
-                                                                onChange={(e) => {
-                                                                    if (e.target.value === '__custom__') {
-                                                                        // Keep empty to allow custom input
-                                                                        return;
-                                                                    }
-                                                                    updateVariationName(varIndex, e.target.value);
-                                                                }}
-                                                                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-[#00D97E] outline-none text-sm"
-                                                            >
-                                                                <option value="">Sélectionner un type...</option>
-                                                                {variationTemplates.map((template, idx) => (
-                                                                    <option key={idx} value={template.name}>
-                                                                        {template.name} {template.isSystem ? '' : '(Personnalisé)'}
-                                                                    </option>
-                                                                ))}
-                                                                <option value="__custom__">➕ Autre (Personnalisé)</option>
-                                                            </select>
-                                                            {variation.name === '' && (
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Nom personnalisé..."
-                                                                    onBlur={async (e) => {
-                                                                        if (e.target.value.trim()) {
-                                                                            updateVariationName(varIndex, e.target.value.trim());
-                                                                            // Sauvegarder le template si des options existent
-                                                                            if (variation.options && variation.options.length > 0) {
-                                                                                await saveVariationTemplate(e.target.value.trim(), variation.options);
-                                                                            }
-                                                                        }
-                                                                    }}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                                                                            updateVariationName(varIndex, e.currentTarget.value.trim());
-                                                                        }
-                                                                    }}
-                                                                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-[#00D97E] outline-none text-sm"
-                                                                />
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex-1 px-3 py-2 bg-zinc-900/50 border border-zinc-700 rounded-lg text-white text-sm flex items-center justify-between">
-                                                            <span>{variation.name}</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => updateVariationName(varIndex, '')}
-                                                                className="text-xs text-[#888] hover:text-[#00D97E]"
-                                                            >
-                                                                Changer
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeVariation(varIndex)}
-                                                        className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                                        title="Supprimer cette déclinaison"
-                                                    >
-                                                        <X size={18} />
-                                                    </button>
-                                                </div>
-
-                                                {/* Options with stock and price */}
-                                                {variation.options && variation.options.length > 0 && (
-                                                    <div className="space-y-2 mb-3">
-                                                        <div className="grid grid-cols-12 gap-2 text-xs text-[#888] px-2">
-                                                            <div className="col-span-3">Valeur</div>
-                                                            <div className="col-span-2">Stock</div>
-                                                            <div className="col-span-3">Prix (+/-)</div>
-                                                            <div className="col-span-3">Photos (max 2)</div>
-                                                            <div className="col-span-1"></div>
-                                                        </div>
-                                                        {variation.options.map((option: VariationOption, optIndex: number) => (
-                                                            <div key={optIndex} className="grid grid-cols-12 gap-2 items-center bg-zinc-900/50 rounded-lg p-2">
-                                                                <div className="col-span-3">
-                                                                    <input
-                                                                        type="text"
-                                                                        value={option.value}
-                                                                        onChange={(e) => updateVariationOption(varIndex, optIndex, 'value', e.target.value)}
-                                                                        className="w-full bg-zinc-800 border-0 border-b border-transparent hover:border-zinc-600 focus:border-[#00D97E] rounded-none px-0 py-1 text-white text-sm font-medium outline-none transition-colors"
-                                                                    />
-                                                                </div>
-                                                                <div className="col-span-2">
-                                                                    <input
-                                                                        type="number"
-                                                                        min="0"
-                                                                        value={option.stock ?? ''}
-                                                                        onChange={(e) => updateVariationOption(varIndex, optIndex, 'stock', e.target.value ? Math.max(0, Number(e.target.value)) : undefined)}
-                                                                        placeholder="∞"
-                                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-[#00D97E] outline-none"
-                                                                    />
-                                                                </div>
-                                                                <div className="col-span-3 flex items-center">
-                                                                    <span className="text-[#888] text-xs mr-1">FCFA</span>
-                                                                    <input
-                                                                        type="number"
-                                                                        value={option.priceModifier ?? 0}
-                                                                        onChange={(e) => updateVariationOption(varIndex, optIndex, 'priceModifier', Number(e.target.value))}
-                                                                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-white text-sm focus:border-[#00D97E] outline-none"
-                                                                    />
-                                                                </div>
-
-                                                                {/* Photo Upload Area */}
-                                                                <div className="col-span-3 flex items-center gap-2">
-                                                                    {option.images && option.images.map((img, imgIdx) => (
-                                                                        <div key={imgIdx} className="relative w-8 h-8 rounded border border-zinc-700 overflow-hidden group">
-                                                                            <img src={img} alt="" className="w-full h-full object-cover" />
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    // Remove image
-                                                                                    const newImages = option.images?.filter((_, i) => i !== imgIdx);
-                                                                                    updateVariationOption(varIndex, optIndex, 'images', newImages);
-                                                                                }}
-                                                                                className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                            >
-                                                                                <X size={10} className="text-white" />
-                                                                            </button>
-                                                                        </div>
-                                                                    ))}
-
-                                                                    {(!option.images || option.images.length < 2) && (
-                                                                        <label className="w-8 h-8 flex items-center justify-center bg-zinc-800 border border-zinc-700 border-dashed rounded cursor-pointer hover:border-[#00D97E] hover:text-[#00D97E] text-[#888] transition-colors">
-                                                                            <ImageIcon size={14} />
-                                                                            <input
-                                                                                type="file"
-                                                                                accept="image/*"
-                                                                                multiple
-                                                                                className="hidden"
-                                                                                onChange={(e) => handleVariationImageUpload(e, varIndex, optIndex)}
-                                                                            />
-                                                                        </label>
-                                                                    )}
-                                                                </div>
-
-                                                                <div className="col-span-1 flex justify-end">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => removeVariationOption(varIndex, optIndex)}
-                                                                        className="text-[#888] hover:text-red-500 transition-colors p-1"
-                                                                    >
-                                                                        <X size={14} />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-
-                                                {/* Add new option input */}
-                                                <div className="flex gap-2">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Ajouter une option (ex: XL, Rouge, Nutella)"
-                                                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-[#00D97E] outline-none text-sm"
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                e.preventDefault();
-                                                                addVariationOption(varIndex, (e.target as HTMLInputElement).value);
-                                                                (e.target as HTMLInputElement).value = '';
-                                                            }
-                                                        }}
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            const input = (e.target as HTMLElement).closest('div')?.querySelector('input') as HTMLInputElement;
-                                                            if (input) {
-                                                                addVariationOption(varIndex, input.value);
-                                                                input.value = '';
-                                                            }
-                                                        }}
-                                                        className="px-3 py-2 bg-zinc-800 text-[#888] rounded-lg hover:bg-zinc-700 hover:text-white transition-colors text-sm"
-                                                    >
-                                                        <Plus size={16} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-8 bg-black border border-dashed border-zinc-800 rounded-xl">
-                                        <Tags size={32} className="mx-auto text-[#444] mb-2" />
-                                        <p className="text-[#888] text-sm">Aucune déclinaison définie</p>
-                                        <p className="text-[#555] text-xs mt-1">Cliquez sur "Ajouter une déclinaison" pour commencer</p>
-                                    </div>
-                                )}
-                            </>
                         )}
                     </div>
+                ) : (
+                    <div className="flex-1 flex items-center justify-between px-3 py-2.5 bg-[#111] border border-[#1a1a1a] rounded-lg text-white text-sm">
+                        <span className="font-medium">{variation.name}</span>
+                        <button type="button" onClick={() => onUpdateVariationName(varIndex, '')} className="text-xs text-[#888] hover:text-[#00D97E] cursor-pointer">Changer</button>
+                    </div>
+                )}
+                <button
+                    type="button"
+                    onClick={() => onRemoveVariation(varIndex)}
+                    aria-label="Supprimer cette déclinaison"
+                    className="p-2.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors shrink-0 cursor-pointer"
+                >
+                    <Trash2 className="w-4 h-4" aria-hidden="true" />
+                </button>
+            </div>
+
+            {/* Options (stacked cards, mobile-friendly) */}
+            {variation.options && variation.options.length > 0 && (
+                <div className="space-y-2">
+                    {variation.options.map((option, optIndex) => (
+                        <div key={optIndex} className="bg-[#111] border border-[#1a1a1a] rounded-lg p-3 space-y-2.5">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={option.value}
+                                    onChange={e => onUpdateOption(varIndex, optIndex, 'value', e.target.value)}
+                                    placeholder="Valeur (ex : XL)"
+                                    className="flex-1 bg-black border border-[#1a1a1a] rounded-lg px-3 py-2 text-white text-sm font-medium focus:border-[#00D97E] outline-none"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => onRemoveOption(varIndex, optIndex)}
+                                    aria-label="Retirer cette option"
+                                    className="p-2 text-[#888] hover:text-red-400 transition-colors shrink-0 cursor-pointer"
+                                >
+                                    <X className="w-4 h-4" aria-hidden="true" />
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="block text-[10px] uppercase tracking-wider text-[#555] font-bold mb-1">Stock</label>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        min="0"
+                                        value={option.stock ?? ''}
+                                        placeholder="∞"
+                                        onChange={e => onUpdateOption(varIndex, optIndex, 'stock', e.target.value ? Math.max(0, Number(e.target.value)) : undefined)}
+                                        className="w-full bg-black border border-[#1a1a1a] rounded-lg px-3 py-2 text-white text-sm tabular-nums focus:border-[#00D97E] outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] uppercase tracking-wider text-[#555] font-bold mb-1">Prix +/− (F)</label>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        value={option.priceModifier ?? 0}
+                                        onChange={e => onUpdateOption(varIndex, optIndex, 'priceModifier', Number(e.target.value))}
+                                        className="w-full bg-black border border-[#1a1a1a] rounded-lg px-3 py-2 text-white text-sm tabular-nums focus:border-[#00D97E] outline-none"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {option.images && option.images.map((img, imgIdx) => (
+                                    <div key={imgIdx} className="relative w-10 h-10 rounded-lg border border-[#1a1a1a] overflow-hidden">
+                                        <img src={img} alt="" className="w-full h-full object-cover" />
+                                        <button
+                                            onClick={() => onUpdateOption(varIndex, optIndex, 'images', option.images?.filter((_, i) => i !== imgIdx))}
+                                            aria-label="Retirer la photo"
+                                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity"
+                                        >
+                                            <X className="w-3.5 h-3.5 text-white" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                ))}
+                                {(!option.images || option.images.length < 2) && (
+                                    <label className="w-10 h-10 flex items-center justify-center bg-black border border-dashed border-[#1a1a1a] rounded-lg cursor-pointer hover:border-[#00D97E] hover:text-[#00D97E] text-[#888] transition-colors">
+                                        <ImageIcon className="w-4 h-4" aria-hidden="true" />
+                                        <input type="file" accept="image/*" multiple className="hidden" onChange={e => onVariationImageUpload(e, varIndex, optIndex)} />
+                                    </label>
+                                )}
+                                <span className="text-[11px] text-[#555] ml-1">Photos (2 max)</span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
+            )}
+
+            {/* Ajouter une option */}
+            <div className="flex gap-2">
+                <input
+                    type="text"
+                    value={newOption}
+                    onChange={e => setNewOption(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitOption(); } }}
+                    placeholder="Ajouter une option (ex : XL, Rouge…)"
+                    className="flex-1 bg-[#111] border border-[#1a1a1a] rounded-lg px-3 py-2.5 text-white text-sm focus:border-[#00D97E] outline-none placeholder:text-[#555]"
+                />
+                <button
+                    type="button"
+                    onClick={commitOption}
+                    aria-label="Ajouter l'option"
+                    className="px-3 py-2.5 bg-[#00D97E]/10 text-[#00D97E] rounded-lg hover:bg-[#00D97E]/20 transition-colors shrink-0 cursor-pointer"
+                >
+                    <Plus className="w-4 h-4" aria-hidden="true" />
+                </button>
             </div>
         </div>
     );
 };
+
+// ---------- SKELETON ----------
+
+const ProductDetailSkeleton = () => (
+    <div className="space-y-5 pb-4">
+        <div className="flex items-center justify-between">
+            <div className="h-5 w-24 bg-[#111] rounded animate-pulse" />
+            <div className="h-10 w-32 bg-[#111] rounded-xl animate-pulse" />
+        </div>
+        <div className="aspect-square bg-[#111] border border-[#1a1a1a] rounded-2xl animate-pulse" />
+        <div className="h-52 bg-[#111] border border-[#1a1a1a] rounded-2xl animate-pulse" />
+        <div className="h-40 bg-[#111] border border-[#1a1a1a] rounded-2xl animate-pulse" />
+    </div>
+);
 
 export default ProductDetail;

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Check, Shield, Crown, Loader2 } from 'lucide-react';
+import { Check, ShieldCheck, Loader2, Sparkles } from 'lucide-react';
 import { apiClient } from '../utils/apiClient';
 import { useAuth } from '../context/AuthContext';
 
-interface Plan {
+// ---------- TYPES ----------
+
+export interface Plan {
     id: string;
     name: string;
     price: number;
@@ -11,80 +13,222 @@ interface Plan {
     features: string[];
 }
 
-interface PlanCardProps {
-    title: string;
-    price: number;
-    features: string[];
-    planId: string;
-    recommended?: boolean;
-    currentPlan: string;
-    onUpgrade: (plan: string) => void;
-    loading: boolean;
-    loadingPlan: string | null;
-}
+const FALLBACK_PLANS: Record<string, Plan> = {
+    starter: { id: 'starter', name: 'Starter', price: 5000, currency: 'XOF', features: ['Bot IA sur WhatsApp', 'Gestion des produits', "Jusqu'à 50 produits", 'Support par email'] },
+    pro: { id: 'pro', name: 'Pro', price: 10000, currency: 'XOF', features: ['Tout le Starter, et en plus :', 'Produits illimités', 'IA négociatrice avancée', 'Statistiques détaillées', 'Support prioritaire'] },
+    business: { id: 'business', name: 'Business', price: 15000, currency: 'XOF', features: ['Tout le Pro, et en plus :', 'Support VIP', 'Formation personnalisée', 'Configuration sur mesure'] },
+};
 
-const PlanCard = ({ title, price, features, planId, recommended = false, currentPlan, onUpgrade, loading, loadingPlan }: PlanCardProps) => {
-    const isCurrent = currentPlan === planId;
-    const isLoading = loading && loadingPlan === planId;
+const PLAN_ORDER: { id: string; recommended?: boolean }[] = [
+    { id: 'starter' },
+    { id: 'pro', recommended: true },
+    { id: 'business' },
+];
 
-    const formatPrice = (p: number) => {
-        return p.toLocaleString('fr-FR');
+// ---------- CONTAINER (data) ----------
+
+export default function Subscription() {
+    const { tenant, user } = useAuth();
+    const currentPlan = tenant?.subscription_tier || 'starter';
+    const [loading, setLoading] = useState(false);
+    const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+    const [plans, setPlans] = useState<Plan[]>([]);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchPlans = async () => {
+            try {
+                const res = await apiClient('/paystack/plans');
+                const data = await res.json();
+                if (data.plans) setPlans(data.plans);
+            } catch (e) {
+                console.error('Failed to fetch plans:', e);
+                setPlans(Object.values(FALLBACK_PLANS));
+            }
+        };
+        fetchPlans();
+    }, []);
+
+    const handleUpgrade = async (planId: string) => {
+        setLoading(true);
+        setLoadingPlan(planId);
+        setError(null);
+        try {
+            const userEmail = user?.email || 'user@example.com';
+            const res = await apiClient('/paystack/subscribe', {
+                method: 'POST',
+                body: JSON.stringify({ plan: planId, email: userEmail }),
+            });
+            const data = await res.json();
+            if (data.success && data.paymentUrl) {
+                window.location.href = data.paymentUrl;
+            } else {
+                setError(data.error || 'Une erreur est survenue');
+                setLoading(false);
+                setLoadingPlan(null);
+            }
+        } catch (e) {
+            console.error('Subscription error:', e);
+            setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
+            setLoading(false);
+            setLoadingPlan(null);
+        }
     };
 
+    const resolve = (id: string): Plan =>
+        plans.find(p => p.id === id) || FALLBACK_PLANS[id] || { id, name: id, price: 0, currency: 'XOF', features: [] };
+
+    const plansToShow = PLAN_ORDER.map(({ id, recommended }) => ({ plan: resolve(id), recommended: !!recommended }));
+
     return (
-        <div className={`relative flex flex-col p-6 rounded-2xl border ${isCurrent
-            ? 'bg-zinc-900 border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.1)]'
-            : recommended
-                ? 'bg-gradient-to-b from-orange-950/20 to-black border-orange-500/50'
-                : 'bg-black border-zinc-800'
-            } transition-all duration-300 hover:-translate-y-1`}>
+        <SubscriptionView
+            plansToShow={plansToShow}
+            currentPlan={currentPlan}
+            loading={loading}
+            loadingPlan={loadingPlan}
+            error={error}
+            onUpgrade={handleUpgrade}
+        />
+    );
+}
 
-            {isCurrent && (
-                <div className="absolute top-0 right-0 bg-emerald-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-xl">
-                    ACTUEL
-                </div>
-            )}
+// ---------- PRESENTATIONAL VIEW (réutilisée par la preview) ----------
 
-            {recommended && !isCurrent && (
-                <div className="absolute top-0 right-0 bg-orange-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-xl">
-                    POPULAIRE
-                </div>
-            )}
+export interface SubscriptionViewProps {
+    plansToShow: { plan: Plan; recommended: boolean }[];
+    currentPlan: string;
+    loading: boolean;
+    loadingPlan: string | null;
+    error: string | null;
+    onUpgrade: (planId: string) => void;
+}
 
-            <div className="mb-4">
-                <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
-                <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-white">{formatPrice(price)}</span>
-                    <span className="text-[#888] text-sm">FCFA/mois</span>
-                </div>
+export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
+    plansToShow, currentPlan, loading, loadingPlan, error, onUpgrade,
+}) => {
+    const anim = 'animate-in fade-in slide-in-from-bottom-2 fill-mode-both';
+    const delay = (i: number): React.CSSProperties => ({ animationDuration: '450ms', animationDelay: `${i * 60}ms` });
+
+    const activePlan = plansToShow.find(p => p.plan.id === currentPlan)?.plan;
+
+    return (
+        <div className="space-y-5 pb-4">
+            {/* HEADER */}
+            <div className={anim} style={delay(0)}>
+                <h1 className="text-2xl font-bold text-white tracking-tight">Abonnement</h1>
+                <p className="text-[#888] text-sm mt-0.5">Choisissez le plan adapté à votre volume de ventes.</p>
             </div>
 
-            <div className="flex-1 space-y-3 mb-8">
-                {features.map((feat: string, i: number) => (
-                    <div key={i} className="flex items-start gap-3 text-sm text-[#888]">
-                        <Check size={16} className={`mt-0.5 ${isCurrent ? 'text-emerald-500' : 'text-orange-500'}`} />
+            {/* PLAN ACTUEL */}
+            {activePlan && (
+                <div className={`flex items-center justify-between gap-3 bg-[#111] border border-[#00D97E]/30 rounded-2xl p-4 ${anim}`} style={delay(1)}>
+                    <div className="min-w-0">
+                        <p className="text-xs text-[#888]">Votre plan actuel</p>
+                        <p className="text-lg font-bold text-white mt-0.5">{activePlan.name}</p>
+                    </div>
+                    <p className="text-sm text-[#888] shrink-0">
+                        <span className="text-white font-bold tabular-nums">{activePlan.price.toLocaleString('fr-FR')}</span> F/mois
+                    </p>
+                </div>
+            )}
+
+            {error && (
+                <div className={`flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm ${anim}`} style={delay(1)}>
+                    {error}
+                </div>
+            )}
+
+            {/* PLANS */}
+            <div className="space-y-3">
+                {plansToShow.map(({ plan, recommended }, i) => (
+                    <div key={plan.id} className={anim} style={delay(2 + i)}>
+                        <PlanCard
+                            plan={plan}
+                            recommended={recommended}
+                            isCurrent={currentPlan === plan.id}
+                            loading={loading}
+                            isLoading={loading && loadingPlan === plan.id}
+                            onUpgrade={onUpgrade}
+                        />
+                    </div>
+                ))}
+            </div>
+
+            {/* PAIEMENT SÉCURISÉ */}
+            <div className={`bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 ${anim}`} style={delay(5)}>
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-[#00D97E]/10 text-[#00D97E] shrink-0">
+                        <ShieldCheck className="w-5 h-5" aria-hidden="true" />
+                    </div>
+                    <div>
+                        <p className="text-white text-sm font-bold">Paiement sécurisé</p>
+                        <p className="text-xs text-[#888] mt-0.5">Wave, Orange Money, MTN, Visa et Mastercard.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ---------- PLAN CARD ----------
+
+interface PlanCardProps {
+    plan: Plan;
+    recommended: boolean;
+    isCurrent: boolean;
+    loading: boolean;
+    isLoading: boolean;
+    onUpgrade: (planId: string) => void;
+}
+
+const PlanCard: React.FC<PlanCardProps> = ({ plan, recommended, isCurrent, loading, isLoading, onUpgrade }) => {
+    const border = isCurrent
+        ? 'border-[#00D97E]'
+        : recommended
+            ? 'border-[#00D97E]/40'
+            : 'border-[#1a1a1a]';
+
+    return (
+        <div className={`relative bg-[#111] border ${border} rounded-2xl p-5`}>
+            {/* Badge */}
+            {isCurrent ? (
+                <span className="absolute top-4 right-4 flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#00D97E] text-black text-[10px] font-bold">
+                    <Check className="w-3 h-3" aria-hidden="true" /> Votre plan
+                </span>
+            ) : recommended ? (
+                <span className="absolute top-4 right-4 flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#00D97E]/10 text-[#00D97E] border border-[#00D97E]/20 text-[10px] font-bold">
+                    <Sparkles className="w-3 h-3" aria-hidden="true" /> Recommandé
+                </span>
+            ) : null}
+
+            <h3 className="text-base font-bold text-white">{plan.name}</h3>
+            <div className="flex items-baseline gap-1.5 mt-1.5">
+                <span className="text-3xl font-bold text-white tracking-tight tabular-nums">{plan.price.toLocaleString('fr-FR')}</span>
+                <span className="text-[#888] text-sm">FCFA/mois</span>
+            </div>
+
+            <div className="space-y-2.5 mt-4 mb-5">
+                {plan.features.map((feat, i) => (
+                    <div key={i} className="flex items-start gap-2.5 text-sm text-[#888]">
+                        <Check className="w-4 h-4 mt-0.5 text-[#00D97E] shrink-0" aria-hidden="true" />
                         <span>{feat}</span>
                     </div>
                 ))}
             </div>
 
             <button
-                onClick={() => !isCurrent && !loading && onUpgrade(planId)}
+                onClick={() => !isCurrent && !loading && onUpgrade(plan.id)}
                 disabled={isCurrent || loading}
-                className={`w-full py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 ${isCurrent
-                    ? 'bg-zinc-800 text-[#888] cursor-default'
+                className={`w-full py-3 rounded-xl font-bold text-sm transition-[transform,background-color] flex items-center justify-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 ${isCurrent
+                    ? 'bg-[#1a1a1a] text-[#888] cursor-default'
                     : recommended
-                        ? 'bg-orange-500 hover:bg-orange-600 text-black shadow-lg shadow-orange-500/20'
-                        : 'bg-white hover:bg-zinc-200 text-black'
-                    }`}
+                        ? 'bg-[#00D97E] text-black active:scale-[0.98] cursor-pointer'
+                        : 'bg-[#1a1a1a] text-white hover:bg-[#222] active:scale-[0.98] cursor-pointer'} ${loading && !isCurrent ? 'opacity-60' : ''}`}
             >
                 {isLoading ? (
-                    <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Redirection...
-                    </>
+                    <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Redirection…</>
                 ) : isCurrent ? (
-                    'Plan Actif'
+                    'Plan actuel'
                 ) : (
                     'Choisir ce plan'
                 )}
@@ -92,177 +236,3 @@ const PlanCard = ({ title, price, features, planId, recommended = false, current
         </div>
     );
 };
-
-export default function Subscription() {
-    // currentPlan will be fetched from API after Paystack callback
-    const { tenant, user } = useAuth();
-    // Use actual tenant plan, defaulting to 'starter' only if verified or checking specific statuses
-    // For visual correctness, if status is 'trial', we might want to show that.
-    // However, sticking to the implementation request: use real data.
-    const currentPlan = tenant?.subscription_tier || 'starter';
-    const [loading, setLoading] = useState(false);
-    const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-    const [plans, setPlans] = useState<Plan[]>([]);
-    const [error, setError] = useState<string | null>(null);
-
-    // Fetch plans from API
-    useEffect(() => {
-        const fetchPlans = async () => {
-            try {
-                const res = await apiClient('/paystack/plans');
-                const data = await res.json();
-                if (data.plans) {
-                    setPlans(data.plans);
-                }
-            } catch (e) {
-                console.error('Failed to fetch plans:', e);
-                // Fallback to default plans
-                setPlans([
-                    { id: 'starter', name: 'Starter', price: 5000, currency: 'XOF', features: ['Bot IA WhatsApp', 'Gestion produits', '50 produits max', 'Support email'] },
-                    { id: 'pro', name: 'Pro', price: 10000, currency: 'XOF', features: ['Tout du Starter +', 'Produits illimités', 'Statistiques détaillées', 'IA Négociatrice', 'Support prioritaire'] },
-                    { id: 'business', name: 'Business', price: 15000, currency: 'XOF', features: ['Tout du Pro +', 'Support VIP', 'Formation personnalisée', 'Configuration sur mesure'] }
-                ]);
-            }
-        };
-        fetchPlans();
-    }, []);
-
-    // Handle upgrade - redirect to Paystack
-    const handleUpgrade = async (plan: string) => {
-        setLoading(true);
-        setLoadingPlan(plan);
-        setError(null);
-
-        try {
-            const userEmail = user?.email || 'user@example.com';
-
-            const res = await apiClient('/paystack/subscribe', {
-                method: 'POST',
-                body: JSON.stringify({ plan, email: userEmail })
-            });
-
-            const data = await res.json();
-
-            if (data.success && data.paymentUrl) {
-                // Redirect to Paystack payment page
-                window.location.href = data.paymentUrl;
-            } else {
-                setError(data.error || 'Une erreur est survenue');
-                setLoading(false);
-                setLoadingPlan(null);
-            }
-        } catch (e: unknown) {
-            console.error('Subscription error:', e);
-            setError('Erreur de connexion au serveur');
-            setLoading(false);
-            setLoadingPlan(null);
-        }
-    };
-
-    // Get plan details with fallback
-    const getPlan = (planId: string) => {
-        return plans.find(p => p.id === planId) || {
-            id: planId,
-            name: planId.charAt(0).toUpperCase() + planId.slice(1),
-            price: 0,
-            currency: 'XOF',
-            features: []
-        };
-    };
-
-    const starterPlan = getPlan('starter');
-    const proPlan = getPlan('pro');
-    const businessPlan = getPlan('business');
-
-    return (
-        <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in zoom-in duration-500 pb-20">
-            <div className="text-center space-y-4 py-8">
-                <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
-                    Boostez votre <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-600">Croissance</span>
-                </h1>
-                <p className="text-[#888] max-w-xl mx-auto">
-                    Choisissez le plan adapté à votre volume de ventes. Payez par Wave, Orange Money ou Carte.
-                </p>
-            </div>
-
-            {error && (
-                <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-center">
-                    {error}
-                </div>
-            )}
-
-            <div className="grid md:grid-cols-3 gap-6">
-                <PlanCard
-                    title={starterPlan.name}
-                    price={starterPlan.price}
-                    planId="starter"
-                    features={starterPlan.features.length > 0 ? starterPlan.features : [
-                        "Bot IA WhatsApp",
-                        "Gestion des produits",
-                        "50 Produits max",
-                        "Support Email"
-                    ]}
-                    currentPlan={currentPlan}
-                    onUpgrade={handleUpgrade}
-                    loading={loading}
-                    loadingPlan={loadingPlan}
-                />
-
-                <PlanCard
-                    title={proPlan.name}
-                    price={proPlan.price}
-                    planId="pro"
-                    recommended={true}
-                    features={proPlan.features.length > 0 ? proPlan.features : [
-                        "Tout du Starter +",
-                        "Produits illimités",
-                        "IA Négociatrice Avancée",
-                        "Statistiques détaillées",
-                        "Support Prioritaire"
-                    ]}
-                    currentPlan={currentPlan}
-                    onUpgrade={handleUpgrade}
-                    loading={loading}
-                    loadingPlan={loadingPlan}
-                />
-
-                <PlanCard
-                    title={businessPlan.name}
-                    price={businessPlan.price}
-                    planId="business"
-                    features={businessPlan.features.length > 0 ? businessPlan.features : [
-                        "Tout du Pro +",
-                        "Support VIP",
-                        "Formation personnalisée",
-                        "Configuration sur mesure"
-                    ]}
-                    currentPlan={currentPlan}
-                    onUpgrade={handleUpgrade}
-                    loading={loading}
-                    loadingPlan={loadingPlan}
-                />
-            </div>
-
-            <div className="mt-12 bg-zinc-900/50 border border-zinc-800 rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-zinc-800 rounded-full text-[#888]">
-                        <Shield size={24} />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-white">Paiement Sécurisé</h3>
-                        <p className="text-sm text-[#888]">Wave, Orange Money, MTN, Visa/Mastercard</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-zinc-800 rounded-full text-[#888]">
-                        <Crown size={24} />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-white">Besoin d'aide ?</h3>
-                        <p className="text-sm text-[#888]">Contactez-nous sur WhatsApp</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}

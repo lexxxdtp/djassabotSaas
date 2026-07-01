@@ -346,7 +346,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                     <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-8 text-center">
                         <CheckCircle2 className="w-10 h-10 text-[#00D97E] mx-auto mb-3" aria-hidden="true" />
                         <p className="text-white font-medium">Rien à faire de votre côté.</p>
-                        <p className="text-[#888] text-xs mt-1">Le bot gère tout. Profitez 🌴</p>
+                        <p className="text-[#888] text-xs mt-1">Le bot gère tout. Profitez de votre journée.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-3">
