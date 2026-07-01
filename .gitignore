@@ -47,3 +47,7 @@ firebase-admin-key*.json
 
 # Local fallback store (demo data, ne pas versionner)
 database/store.json
+
+# Agent Config & Skills
+.agents/
+skills-lock.json

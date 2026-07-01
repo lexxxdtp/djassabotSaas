@@ -259,7 +259,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
             </div>
 
             {/* HERO — VENTES DU JOUR (money forward, façon Wave) */}
-            <div className={`relative overflow-hidden bg-[#111] border border-[#1a1a1a] rounded-3xl p-5 ${anim}`} style={delay(1)}>
+            <div className={`relative overflow-hidden bg-[#111] border border-[#1a1a1a] rounded-2xl p-5 ${anim}`} style={delay(1)}>
                 <p className="text-[#888] text-sm">Ventes aujourd'hui</p>
                 <p className="text-[38px] leading-none font-bold text-white tracking-tight tabular-nums mt-2">
                     {todayRevenue.toLocaleString('fr-FR')}
@@ -268,7 +268,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                 <div className="flex items-center gap-3 mt-3 text-sm flex-wrap">
                     {revenueDelta !== null && (
                         <span className={`inline-flex items-center gap-1 font-semibold ${revenueDelta >= 0 ? 'text-[#00D97E]' : 'text-red-400'}`}>
-                            <TrendingUp className={`w-4 h-4 ${revenueDelta < 0 ? 'rotate-180' : ''}`} />
+                            <TrendingUp className={`w-4 h-4 ${revenueDelta < 0 ? 'rotate-180' : ''}`} aria-hidden="true" />
                             {revenueDelta >= 0 ? '+' : ''}{revenueDelta}% <span className="text-[#888] font-normal">vs hier</span>
                         </span>
                     )}
@@ -283,17 +283,17 @@ export const TodayView: React.FC<TodayViewProps> = ({
             {botStatus === 'disconnected' && !loading && (
                 <Link
                     to="/dashboard/whatsapp"
-                    className={`flex items-center justify-between gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 active:scale-[0.99] transition-transform ${anim}`}
+                    className={`flex items-center justify-between gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 active:scale-[0.99] transition-transform focus-visible:ring-2 focus-visible:ring-red-500/30 outline-none cursor-pointer ${anim}`}
                     style={delay(2)}
                 >
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-red-500/20 text-red-400"><WifiOff className="w-5 h-5" /></div>
+                        <div className="p-2.5 rounded-xl bg-red-500/20 text-red-400"><WifiOff className="w-5 h-5" aria-hidden="true" /></div>
                         <div>
                             <p className="text-white text-sm font-bold">Le bot est déconnecté</p>
                             <p className="text-red-300/80 text-xs">Reconnectez WhatsApp pour reprendre les ventes.</p>
                         </div>
                     </div>
-                    <ArrowRight className="w-4 h-4 text-red-400 shrink-0" />
+                    <ArrowRight className="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />
                 </Link>
             )}
 
@@ -302,7 +302,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                 <div className={`flex items-center justify-between gap-4 p-4 rounded-2xl border ${botActive ? 'bg-[#00D97E]/5 border-[#00D97E]/20' : 'bg-amber-500/10 border-amber-500/20'} ${anim}`} style={delay(2)}>
                     <div className="flex items-center gap-3 min-w-0">
                         <div className={`p-2.5 rounded-xl shrink-0 ${botActive ? 'bg-[#00D97E]/10 text-[#00D97E]' : 'bg-amber-500/20 text-amber-500'}`}>
-                            <Activity className="w-5 h-5" />
+                            <Activity className="w-5 h-5" aria-hidden="true" />
                         </div>
                         <div className="min-w-0">
                             <p className="text-white text-sm font-bold">{botActive ? 'Le bot répond à vos clients' : 'Le bot est en pause'}</p>
@@ -314,7 +314,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
                     <button
                         onClick={onToggleBot}
                         disabled={togglingBot}
-                        className={`shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold transition-transform active:scale-95 disabled:opacity-50 ${botActive ? 'bg-[#1a1a1a] text-[#888] hover:text-white' : 'bg-[#00D97E] text-black'}`}
+                        className={`shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold transition-[transform,background-color] active:scale-95 disabled:opacity-50 cursor-pointer ${botActive ? 'bg-[#1a1a1a] text-[#888] hover:text-white' : 'bg-[#00D97E] text-black'}`}
                     >
                         {togglingBot ? '…' : botActive ? 'Pause' : 'Activer'}
                     </button>
@@ -333,18 +333,18 @@ export const TodayView: React.FC<TodayViewProps> = ({
                             { done: (productCount ?? 0) > 0, label: 'Ajouter un produit (une photo suffit)', to: '/dashboard/products' },
                             { done: botActive === true, label: 'Activer le bot', to: '/dashboard' },
                         ].map((item) => (
-                            <Link key={item.label} to={item.to} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${item.done ? 'opacity-60' : 'active:bg-[#1a1a1a]'}`}>
+                            <Link key={item.label} to={item.to} className={`flex items-center gap-3 p-3 rounded-xl transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none ${item.done ? 'opacity-60' : 'active:bg-[#1a1a1a]'}`}>
                                 <span className={`flex items-center justify-center w-6 h-6 rounded-full border shrink-0 ${item.done ? 'bg-[#00D97E] border-[#00D97E] text-black' : 'border-[#333] text-transparent'}`}>
-                                    <CheckCircle2 className="w-4 h-4" />
+                                    <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
                                 </span>
                                 <span className={`text-sm ${item.done ? 'text-[#888] line-through' : 'text-white font-medium'}`}>{item.label}</span>
-                                {!item.done && <ArrowRight className="w-4 h-4 text-[#00D97E] ml-auto shrink-0" />}
+                                {!item.done && <ArrowRight className="w-4 h-4 text-[#00D97E] ml-auto shrink-0" aria-hidden="true" />}
                             </Link>
                         ))}
                     </div>
                 ) : !hasUrgentTasks ? (
                     <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-8 text-center">
-                        <CheckCircle2 className="w-10 h-10 text-[#00D97E] mx-auto mb-3" />
+                        <CheckCircle2 className="w-10 h-10 text-[#00D97E] mx-auto mb-3" aria-hidden="true" />
                         <p className="text-white font-medium">Rien à faire de votre côté.</p>
                         <p className="text-[#888] text-xs mt-1">Le bot gère tout. Profitez 🌴</p>
                     </div>
@@ -366,11 +366,11 @@ export const TodayView: React.FC<TodayViewProps> = ({
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-5">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <div className="flex items-center gap-1.5 text-[#888] text-xs mb-1.5"><Activity className="w-3.5 h-3.5" /> Activité</div>
+                            <div className="flex items-center gap-1.5 text-[#888] text-xs mb-1.5"><Activity className="w-3.5 h-3.5" aria-hidden="true" /> Activité</div>
                             <p className="text-2xl font-bold text-white">{logs.length}<span className="text-sm text-[#888] font-normal ml-2">actions</span></p>
                         </div>
                         <div>
-                            <div className="flex items-center gap-1.5 text-[#888] text-xs mb-1.5"><Clock className="w-3.5 h-3.5" /> Dernière vente</div>
+                            <div className="flex items-center gap-1.5 text-[#888] text-xs mb-1.5"><Clock className="w-3.5 h-3.5" aria-hidden="true" /> Dernière vente</div>
                             <p className="text-2xl font-bold text-white">{lastSaleAgo || <span className="text-[#555]">—</span>}</p>
                         </div>
                     </div>
@@ -387,11 +387,11 @@ export const TodayView: React.FC<TodayViewProps> = ({
                     )}
 
                     <Link to="/dashboard/inbox" className="mt-4 inline-flex items-center gap-1 text-xs text-[#00D97E]">
-                        Voir les conversations <ArrowRight className="w-3 h-3" />
+                        Voir les conversations <ArrowRight className="w-3 h-3" aria-hidden="true" />
                     </Link>
                 </div>
                 <Link to="/dashboard/analytics" className="mt-3 inline-flex items-center gap-1 text-xs text-[#888] hover:text-white transition-colors">
-                    Voir mes chiffres en détail <ArrowRight className="w-3 h-3" />
+                    Voir mes chiffres en détail <ArrowRight className="w-3 h-3" aria-hidden="true" />
                 </Link>
             </section>
 
@@ -399,12 +399,12 @@ export const TodayView: React.FC<TodayViewProps> = ({
             {showInstallBanner && (
                 <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-[#111] border border-[#1a1a1a]">
                     <div className="flex items-center gap-3 min-w-0">
-                        <div className="p-2.5 rounded-xl bg-[#00D97E]/10 text-[#00D97E] shrink-0"><Download className="w-4 h-4" /></div>
+                        <div className="p-2.5 rounded-xl bg-[#00D97E]/10 text-[#00D97E] shrink-0"><Download className="w-4 h-4" aria-hidden="true" /></div>
                         <div className="min-w-0">
                             <p className="text-white text-sm font-bold">Installer l'appli sur l'écran d'accueil</p>
                             {isIOS ? (
                                 <p className="text-xs text-[#888] flex items-center gap-1 flex-wrap">
-                                    <Share className="w-3 h-3 shrink-0" />
+                                    <Share className="w-3 h-3 shrink-0" aria-hidden="true" />
                                     <span>Bouton <strong className="text-white">Partager</strong> → <strong className="text-white">Sur l'écran d'accueil</strong></span>
                                 </p>
                             ) : (
@@ -414,9 +414,9 @@ export const TodayView: React.FC<TodayViewProps> = ({
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                         {isInstallable && !isIOS && (
-                            <button onClick={onInstall} className="bg-[#00D97E] text-black font-bold text-xs px-4 py-2 rounded-lg transition-transform active:scale-95">Installer</button>
+                            <button onClick={onInstall} className="bg-[#00D97E] text-black font-bold text-xs px-4 py-2 rounded-lg transition-transform active:scale-95 cursor-pointer">Installer</button>
                         )}
-                        <button onClick={onDismissInstall} aria-label="Fermer" className="text-[#888] hover:text-white text-sm px-2 py-2">✕</button>
+                        <button onClick={onDismissInstall} aria-label="Fermer la bannière d'installation" className="text-[#888] hover:text-white text-sm px-2 py-2 cursor-pointer">✕</button>
                     </div>
                 </div>
             )}
@@ -457,15 +457,15 @@ const TaskCard = ({ to, icon: Icon, count, label, tone }: TaskCardProps) => {
         info: 'bg-[#0EA5E9]/10 border-[#0EA5E9]/20 text-[#0EA5E9]',
     } as const;
     return (
-        <Link to={to} className={`flex items-center justify-between gap-3 p-4 rounded-2xl border transition-transform active:scale-[0.99] ${tones[tone]}`}>
+        <Link to={to} className={`flex items-center justify-between gap-3 p-4 rounded-2xl border transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none cursor-pointer ${tones[tone]}`}>
             <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-xl bg-black/30 shrink-0"><Icon className="w-5 h-5" /></div>
+                <div className="p-2.5 rounded-xl bg-black/30 shrink-0"><Icon className="w-5 h-5" aria-hidden="true" /></div>
                 <div className="min-w-0">
                     <p className="text-2xl font-bold leading-none">{count}</p>
                     <p className="text-xs text-white/80 mt-1 truncate">{label}</p>
                 </div>
             </div>
-            <ArrowRight className="w-4 h-4 shrink-0" />
+            <ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" />
         </Link>
     );
 };

@@ -131,8 +131,8 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => {
                             WhatsApp : {order.userId}
                         </p>
                     </div>
-                    <button onClick={onClose} className="text-[#888] hover:text-white transition-colors bg-[#1a1a1a] p-1.5 rounded-full">
-                        <X size={18} />
+                    <button onClick={onClose} aria-label="Fermer le tiroir" className="text-[#888] hover:text-white transition-colors bg-[#1a1a1a] p-1.5 rounded-full cursor-pointer">
+                        <X size={18} aria-hidden="true" />
                     </button>
                 </div>
 
@@ -162,7 +162,7 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => {
                                     onClick={() => shareOrder(order)}
                                     className="flex-1 py-3 bg-[#00D97E]/10 hover:bg-[#00D97E]/20 text-[#00D97E] border border-[#00D97E]/20 rounded-xl text-xs font-bold uppercase transition-transform active:scale-95 flex items-center justify-center gap-2"
                                 >
-                                    <Send size={14} /> Envoyer au livreur
+                                    <Send size={14} aria-hidden="true" /> Envoyer au livreur
                                 </button>
                                 <button
                                     onClick={() => onUpdateStatus(order.id, 'DELIVERED')}
@@ -254,7 +254,7 @@ const OrderRow = ({ order, onClick }: { order: Order; onClick: () => void }) => 
                 <div className="text-right">
                     <div className="font-mono text-white text-sm font-bold">{order.total.toLocaleString()} F</div>
                     <div className="text-[10px] text-[#555] mt-0.5 flex items-center gap-1 justify-end">
-                        <Clock size={10} />
+                        <Clock size={10} aria-hidden="true" />
                         <span>{new Date(order.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                 </div>
@@ -262,7 +262,7 @@ const OrderRow = ({ order, onClick }: { order: Order; onClick: () => void }) => 
 
             {order.address && (
                 <div className="text-xs text-[#888] flex items-center gap-1.5 pt-2 border-t border-[#1a1a1a]/50">
-                    <MapPin size={12} className="text-[#555] shrink-0" />
+                    <MapPin size={12} className="text-[#555] shrink-0" aria-hidden="true" />
                     <span className="truncate">{order.address}</span>
                 </div>
             )}
@@ -406,13 +406,13 @@ export default function Orders() {
 
             {/* SEARCH */}
             <div className="relative">
-                <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#555] pointer-events-none" />
+                <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#555] pointer-events-none" aria-hidden="true" />
                 <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Rechercher par ID, client ou adresse…"
-                    className="w-full bg-[#111] border border-[#1a1a1a] rounded-xl h-11 pl-11 pr-4 text-sm text-white placeholder:text-[#555] outline-none focus:border-[#00D97E]/40 transition-colors"
+                    className="w-full bg-[#111] border border-[#1a1a1a] rounded-xl h-11 pl-11 pr-4 text-sm text-white placeholder:text-[#555] outline-none focus:border-[#00D97E]/40 focus:ring-2 focus:ring-[#00D97E]/10 transition-[border-color,box-shadow]"
                 />
             </div>
 
@@ -425,13 +425,13 @@ export default function Orders() {
                 <div className="py-16 text-center border border-dashed border-[#1a1a1a] rounded-2xl bg-[#0d0d0d]">
                     {orders.length === 0 ? (
                         <>
-                            <ShoppingBag className="mx-auto h-10 w-10 text-[#333] mb-3" />
+                            <ShoppingBag className="mx-auto h-10 w-10 text-[#333] mb-3" aria-hidden="true" />
                             <h3 className="text-sm font-medium text-white">Aucune commande</h3>
                             <p className="text-[#555] text-xs mt-1">Vos premières ventes apparaîtront ici.</p>
                         </>
                     ) : (
                         <>
-                            <AlertCircle className="mx-auto h-10 w-10 text-[#333] mb-3" />
+                            <AlertCircle className="mx-auto h-10 w-10 text-[#333] mb-3" aria-hidden="true" />
                             <h3 className="text-sm font-medium text-white">Aucun résultat</h3>
                             <p className="text-[#555] text-xs mt-1">
                                 {searchTerm ? 'Essayez un autre terme.' : 'Aucune commande dans ce filtre.'}

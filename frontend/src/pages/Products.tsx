@@ -121,9 +121,9 @@ export default function Products() {
                 </div>
                 <button
                     onClick={handleCreate}
-                    className="hidden md:inline-flex bg-[#00D97E] hover:bg-[#00D97E]/90 text-black px-5 py-3 rounded-xl font-bold items-center gap-2 transition-transform active:scale-95"
+                    className="hidden md:inline-flex bg-[#00D97E] hover:bg-[#00D97E]/95 text-black px-5 py-3 rounded-xl font-bold items-center gap-2 transition-transform active:scale-95 cursor-pointer"
                 >
-                    <Plus size={20} />
+                    <Plus size={20} aria-hidden="true" />
                     <span>Ajouter</span>
                 </button>
             </div>
@@ -131,12 +131,12 @@ export default function Products() {
             {/* Search — appears once there's something to search */}
             {!loading && products.length > 0 && (
                 <div className="relative mb-5">
-                    <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#555] pointer-events-none" />
+                    <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#555] pointer-events-none" aria-hidden="true" />
                     <input
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Rechercher un produit…"
-                        className="w-full bg-[#111] border border-[#1a1a1a] rounded-xl h-12 pl-11 pr-4 text-white placeholder:text-[#555] outline-none focus:border-[#00D97E]/40 transition-colors"
+                        className="w-full bg-[#111] border border-[#1a1a1a] rounded-xl h-12 pl-11 pr-4 text-white placeholder:text-[#555] outline-none focus:border-[#00D97E]/40 focus:ring-2 focus:ring-[#00D97E]/10 transition-[border-color,box-shadow]"
                     />
                 </div>
             )}
@@ -222,9 +222,9 @@ export default function Products() {
             <button
                 onClick={handleCreate}
                 aria-label="Ajouter un produit"
-                className="md:hidden fixed bottom-24 right-4 z-40 w-14 h-14 bg-[#00D97E] rounded-full shadow-lg shadow-[#00D97E]/30 flex items-center justify-center text-black active:scale-90 transition-transform"
+                className="md:hidden fixed bottom-24 right-4 z-40 w-14 h-14 bg-[#00D97E] rounded-full shadow-lg shadow-[#00D97E]/30 flex items-center justify-center text-black active:scale-90 transition-transform cursor-pointer"
             >
-                <Plus size={26} />
+                <Plus size={26} aria-hidden="true" />
             </button>
         </div>
     );

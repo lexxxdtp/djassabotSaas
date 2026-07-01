@@ -68,6 +68,23 @@ export const createTenant = async (data: {
 export const getTenantById = async (id: string): Promise<Tenant | null> => {
     try {
         if (isSupabaseEnabled && supabase) {
+            // Dev mock bypass for offline/local testing
+            if (process.env.SUPABASE_URL?.includes('test.supabase.co')) {
+                return {
+                    id: id,
+                    name: 'Boutique Test Local',
+                    businessType: 'Mode',
+                    status: 'active',
+                    subscriptionTier: 'starter',
+                    whatsappConnected: false,
+                    whatsappPhoneNumber: undefined,
+                    whatsappStatus: 'disconnected',
+                    paystackSubaccountCode: undefined,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                };
+            }
+
             const { data, error } = await supabase
                 .from('tenants')
                 .select('*')
@@ -265,6 +282,22 @@ export const createUser = async (data: {
 export const getUserByEmail = async (email: string): Promise<User | null> => {
     try {
         if (isSupabaseEnabled && supabase) {
+            // Dev mock bypass for offline/local testing
+            if (process.env.SUPABASE_URL?.includes('test.supabase.co')) {
+                return {
+                    id: 'mock-user-id',
+                    tenantId: 'mock-tenant-id',
+                    email: email,
+                    phone: '+2250700000000',
+                    full_name: 'Vendeur Local',
+                    passwordHash: '$2b$10$SF.lHYY.LO.y31m/dAoRH.iY/gHc8Z34vRlQRAF0io1eTHigkwpei',
+                    role: 'owner',
+                    emailVerified: true,
+                    phoneVerified: true,
+                    createdAt: new Date()
+                };
+            }
+
             const { data, error } = await supabase
                 .from('users')
                 .select('*')
@@ -296,6 +329,22 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
 export const getUserByPhone = async (phone: string): Promise<User | null> => {
     try {
         if (isSupabaseEnabled && supabase) {
+            // Dev mock bypass for offline/local testing
+            if (process.env.SUPABASE_URL?.includes('test.supabase.co')) {
+                return {
+                    id: 'mock-user-id',
+                    tenantId: 'mock-tenant-id',
+                    email: 'test@djassabot.com',
+                    phone: phone,
+                    full_name: 'Vendeur Local',
+                    passwordHash: '$2b$10$SF.lHYY.LO.y31m/dAoRH.iY/gHc8Z34vRlQRAF0io1eTHigkwpei',
+                    role: 'owner',
+                    emailVerified: true,
+                    phoneVerified: true,
+                    createdAt: new Date()
+                };
+            }
+
             const { data, error } = await supabase
                 .from('users')
                 .select('*')
@@ -327,6 +376,22 @@ export const getUserByPhone = async (phone: string): Promise<User | null> => {
 export const getUserById = async (id: string): Promise<User | null> => {
     try {
         if (isSupabaseEnabled && supabase) {
+            // Dev mock bypass for offline/local testing
+            if (process.env.SUPABASE_URL?.includes('test.supabase.co')) {
+                return {
+                    id: id,
+                    tenantId: 'mock-tenant-id',
+                    email: 'test@djassabot.com',
+                    phone: '+2250700000000',
+                    full_name: 'Vendeur Local',
+                    passwordHash: '',
+                    role: 'owner',
+                    emailVerified: true,
+                    phoneVerified: true,
+                    createdAt: new Date()
+                };
+            }
+
             const { data, error } = await supabase
                 .from('users')
                 .select('*')

@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 // TEMP — page de prévisualisation pour l'itération design. À SUPPRIMER.
 import { useState, useMemo, useEffect } from 'react';
 import { 
     Plus, Search, PackageOpen, Home, MessageSquare, ShoppingBag, Package, 
     Settings as SettingsIcon, MapPin, X, Send, CheckCircle2, 
-    CreditCard, AlertCircle
+    CreditCard, AlertCircle, Zap, ArrowLeft, Bot
 } from 'lucide-react';
 import type { Product } from '../types';
 import ProductCard from '../components/products/ProductCard';
@@ -30,6 +31,59 @@ const MOCK_LOGS: Log[] = [
     { id: '1', type: 'sale', message: 'Vente conclue : Bazin Riche × 2 (30 000 F)', created_at: new Date().toISOString() },
     { id: '2', type: 'action', message: 'A négocié une remise de 5 % avec un client', created_at: new Date().toISOString() },
     { id: '3', type: 'warning', message: 'Client en attente d\'adresse depuis 12 min', created_at: new Date().toISOString() },
+];
+
+const MOCK_CHATS = [
+    {
+        id: '1',
+        name: 'Amina Diallo',
+        phone: '+225 07 45 89 12 03',
+        lastMessage: 'Je viens de t’envoyer le reçu Wave de 30 000 F',
+        time: '12 min',
+        unread: 1,
+        autopilot: true,
+        state: 'WAITING_ADDRESS_VALIDATION',
+        stateLabel: 'Attente Adresse',
+        messages: [
+            { id: 'm1', role: 'user' as const, text: 'Bonjour, je veux commander 2 bazins riches bleus s\'il vous plaît.' },
+            { id: 'm2', role: 'model' as const, text: 'Salut Amina ! 😊 C\'est noté. Les 2 bazins riches bleus font 30 000 FCFA au total.\n\nQuelle est ton adresse de livraison pour que je prépare l\'expédition ?' },
+            { id: 'm3', role: 'user' as const, text: 'J’habite à Cocody Angré, près de la pharmacie des Oscars.' },
+            { id: 'm4', role: 'model' as const, text: 'Parfait ! La livraison pour Cocody fait 1 500 FCFA. Le total général fait donc 31 500 FCFA.\n\nTu peux faire le dépôt de 31 500 FCFA sur ce numéro Wave : 0700000000. Envoie-moi la capture du reçu une fois fait !' },
+            { id: 'm5', role: 'user' as const, text: 'Je viens de t’envoyer le reçu Wave de 30 000 F' }
+        ]
+    },
+    {
+        id: '2',
+        name: 'Koffi Kouamé',
+        phone: '+225 05 12 34 56 78',
+        lastMessage: 'Est-ce que tu peux faire 40 000 F pour les mèches ?',
+        time: '35 min',
+        unread: 0,
+        autopilot: true,
+        state: 'NEGOTIATION',
+        stateLabel: 'Négociation',
+        messages: [
+            { id: 'm1', role: 'user' as const, text: 'Bonjour, c\'est combien les mèches brésiliennes 22" ?' },
+            { id: 'm2', role: 'model' as const, text: 'Bonjour Koffi ! Nos mèches brésiliennes 22" sont à 45 000 FCFA. C\'est de la qualité premium.' },
+            { id: 'm3', role: 'user' as const, text: 'Est-ce que tu peux faire 40 000 F pour les mèches ?' }
+        ]
+    },
+    {
+        id: '3',
+        name: 'Mariam Koné',
+        phone: '+225 01 78 89 90 22',
+        lastMessage: 'Merci beaucoup, à demain pour la livraison !',
+        time: '2 h',
+        unread: 0,
+        autopilot: false,
+        state: 'IDLE',
+        stateLabel: 'Finalisé',
+        messages: [
+            { id: 'm1', role: 'user' as const, text: 'Le paiement est fait par Orange Money' },
+            { id: 'm2', role: 'model' as const, text: 'Reçu bien validé ! Votre commande est en cours de préparation. La livraison aura lieu demain matin.' },
+            { id: 'm3', role: 'user' as const, text: 'Merci beaucoup, à demain pour la livraison !' }
+        ]
+    }
 ];
 
 const MOCK_ORDERS = [
@@ -109,6 +163,257 @@ function InventoryPreview() {
                 <Plus size={26} />
             </button>
             <ProductFormModal isOpen={showForm} onClose={() => setShowForm(false)} onSuccess={() => setShowForm(false)} templates={[]} />
+        </div>
+    );
+}
+
+function InboxPreview() {
+    const [chats, setChats] = useState(MOCK_CHATS);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [search, setSearch] = useState('');
+    const [filter, setFilter] = useState<'all' | 'auto' | 'manual' | 'unread'>('all');
+    const [typingText, setTypingText] = useState('');
+
+    const activeChat = useMemo(() => chats.find(c => c.id === selectedId), [chats, selectedId]);
+
+    const filteredChats = useMemo(() => {
+        return chats.filter(c => {
+            const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search);
+            const matchesFilter = 
+                filter === 'all' ||
+                (filter === 'auto' && c.autopilot) ||
+                (filter === 'manual' && !c.autopilot) ||
+                (filter === 'unread' && c.unread > 0);
+            return matchesSearch && matchesFilter;
+        });
+    }, [chats, search, filter]);
+
+    const handleToggleAutopilot = (id: string) => {
+        setChats(prev => prev.map(c => c.id === id ? { ...c, autopilot: !c.autopilot } : c));
+    };
+
+    const handleSendMessage = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!typingText.trim() || !selectedId) return;
+
+        const userMsg = { id: `m_user_${Date.now()}`, role: 'user' as const, text: typingText };
+        
+        setChats(prev => prev.map(c => {
+            if (c.id === selectedId) {
+                return { 
+                    ...c, 
+                    messages: [...c.messages, userMsg],
+                    lastMessage: typingText,
+                    time: 'À l’instant'
+                };
+            }
+            return c;
+        }));
+
+        setTypingText('');
+
+        // Simulate Bot Auto Reply if autopilot is active
+        if (activeChat?.autopilot) {
+            setTimeout(() => {
+                const botMsg = { 
+                    id: `m_bot_${Date.now()}`, 
+                    role: 'model' as const, 
+                    text: 'D’accord, j’enregistre cela pour vous ! Je suis le bot de démo DjassaBot 🤖.' 
+                };
+                setChats(prev => prev.map(ch => {
+                    if (ch.id === selectedId) {
+                        return {
+                            ...ch,
+                            messages: [...ch.messages, botMsg],
+                            lastMessage: botMsg.text,
+                            time: 'À l’instant'
+                        };
+                    }
+                    return ch;
+                }));
+            }, 1000);
+        }
+    };
+
+    if (activeChat) {
+        return (
+            <div className="flex flex-col h-[calc(100vh-10rem)] bg-black animate-in fade-in slide-in-from-right duration-200">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-[#1a1a1a] pb-3 pt-1">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setSelectedId(null)} className="p-1.5 rounded-full bg-[#111] border border-[#1a1a1a] text-[#888] hover:text-white active:scale-90 transition-transform">
+                            <ArrowLeft size={18} />
+                        </button>
+                        <div>
+                            <h2 className="font-bold text-white text-base leading-none">{activeChat.name}</h2>
+                            <p className="text-[10px] text-[#555] font-bold mt-1 tracking-wider uppercase">{activeChat.phone}</p>
+                        </div>
+                    </div>
+
+                    {/* Autopilot pill toggle */}
+                    <button 
+                        onClick={() => handleToggleAutopilot(activeChat.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-2xl border transition-all active:scale-95 ${
+                            activeChat.autopilot 
+                            ? 'bg-[#00D97E]/10 text-[#00D97E] border-[#00D97E]/20 font-bold' 
+                            : 'bg-[#111] text-[#888] border-[#1a1a1a]'
+                        }`}
+                    >
+                        <Zap size={13} fill={activeChat.autopilot ? 'currentColor' : 'none'} className={activeChat.autopilot ? 'animate-pulse' : ''} />
+                        <span className="text-[10px] tracking-wider uppercase font-bold">
+                            {activeChat.autopilot ? 'IA Active' : 'Manuel'}
+                        </span>
+                    </button>
+                </div>
+
+                {/* State warning banner */}
+                <div className="my-2 py-1.5 px-3 bg-[#111] border border-[#1a1a1a] rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#00D97E] animate-ping"></div>
+                        <span className="text-[10px] text-[#888] font-medium">État du client :</span>
+                        <span className="text-[10px] font-bold text-white uppercase tracking-wider bg-[#222] px-2 py-0.5 rounded border border-[#333]">
+                            {activeChat.stateLabel}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Messages Feed */}
+                <div className="flex-1 overflow-y-auto py-3 space-y-3 pr-1 scrollbar-hide">
+                    {activeChat.messages.map((m) => {
+                        const isBot = m.role === 'model';
+                        return (
+                            <div key={m.id} className={`flex ${isBot ? 'justify-start' : 'justify-end'} items-end gap-1.5`}>
+                                {isBot && (
+                                    <div className="w-6 h-6 rounded-lg bg-[#00D97E]/10 border border-[#00D97E]/20 text-[#00D97E] flex items-center justify-center shrink-0">
+                                        <Bot size={12} />
+                                    </div>
+                                )}
+                                <div className={`max-w-[78%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                                    isBot 
+                                    ? 'bg-[#111] text-white border border-[#1a1a1a] rounded-tl-sm' 
+                                    : 'bg-[#00D97E] text-black font-medium rounded-tr-sm'
+                                }`}>
+                                    <p className="whitespace-pre-wrap">{m.text}</p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Bottom Input Area */}
+                <form onSubmit={handleSendMessage} className="border-t border-[#1a1a1a] pt-3 pb-1 flex gap-2">
+                    <input 
+                        type="text" 
+                        value={typingText}
+                        onChange={(e) => typingText !== undefined && setTypingText(e.target.value)}
+                        placeholder={activeChat.autopilot ? "Prenez la main en écrivant ici..." : "Écrivez votre message..."}
+                        className="flex-1 bg-[#111] border border-[#1a1a1a] rounded-2xl px-4 py-3 text-sm text-white placeholder:text-[#555] outline-none focus:border-[#00D97E]/40 transition-colors"
+                    />
+                    <button 
+                        type="submit" 
+                        disabled={!typingText.trim()}
+                        className="w-11 h-11 bg-[#00D97E] text-black rounded-2xl flex items-center justify-center shrink-0 disabled:opacity-50 disabled:active:scale-100 active:scale-90 transition-all shadow-md shadow-[#00D97E]/20"
+                    >
+                        <Send size={16} />
+                    </button>
+                </form>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4 animate-in fade-in duration-200">
+            {/* Header */}
+            <div>
+                <h1 className="text-2xl font-bold text-white tracking-tight">Discussions</h1>
+                <p className="text-[#888] text-xs mt-0.5">Discutez en direct et contrôlez l’IA de vos clients</p>
+            </div>
+
+            {/* Filter buttons */}
+            <div className="flex bg-[#111] p-1 rounded-xl border border-[#1a1a1a] w-full">
+                {[
+                    { key: 'all' as const, label: 'Tout' },
+                    { key: 'auto' as const, label: 'IA Active' },
+                    { key: 'manual' as const, label: 'Manuel' },
+                    { key: 'unread' as const, label: 'Non lus' },
+                ].map(b => (
+                    <button
+                        key={b.key}
+                        onClick={() => setFilter(b.key)}
+                        className={`flex-1 py-2 text-center text-xs font-semibold rounded-lg transition-all active:scale-95 duration-100 ${
+                            filter === b.key ? 'bg-[#1a1a1a] text-white border border-white/5 shadow-sm' : 'text-[#888] hover:text-white'
+                        }`}
+                    >
+                        {b.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Search */}
+            <div className="relative">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#555] pointer-events-none" />
+                <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Rechercher par nom ou numéro…"
+                    className="w-full bg-[#111] border border-[#1a1a1a] rounded-xl h-10 pl-10 pr-4 text-xs text-white placeholder:text-[#555] outline-none focus:border-[#00D97E]/40 transition-colors"
+                />
+            </div>
+
+            {/* Chat list */}
+            <div className="space-y-2">
+                {filteredChats.length === 0 ? (
+                    <div className="py-12 text-center border border-dashed border-[#1a1a1a] rounded-2xl bg-[#0d0d0d]">
+                        <MessageSquare className="w-10 h-10 text-[#555] mx-auto mb-3" />
+                        <h3 className="text-sm font-semibold text-white">Aucune discussion</h3>
+                    </div>
+                ) : (
+                    filteredChats.map((c, i) => {
+                        const initials = c.name.split(' ').map(n => n[0]).join('').slice(0, 2);
+                        return (
+                            <div key={c.id} className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both" style={{ animationDuration: '400ms', animationDelay: `${Math.min(i, 8) * 40}ms` }}>
+                                <button
+                                    onClick={() => {
+                                        setSelectedId(c.id);
+                                        // mark read in preview
+                                        setChats(prev => prev.map(ch => ch.id === c.id ? { ...ch, unread: 0 } : ch));
+                                    }}
+                                    className="w-full text-left bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 flex gap-3 hover:border-[#00D97E]/20 transition-all active:scale-[0.99] duration-100 cursor-pointer"
+                                >
+                                    <div className="w-10 h-10 rounded-xl bg-[#00D97E]/10 border border-[#00D97E]/20 text-[#00D97E] font-bold flex items-center justify-center shrink-0 text-sm">
+                                        {initials}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-baseline mb-1">
+                                            <h3 className="font-bold text-white text-sm truncate">{c.name}</h3>
+                                            <span className="text-[10px] text-[#555] font-semibold">{c.time}</span>
+                                        </div>
+                                        <p className="text-xs text-[#888] truncate pr-2 leading-relaxed">{c.lastMessage}</p>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            {c.autopilot ? (
+                                                <span className="flex items-center gap-1 text-[9px] bg-emerald-500/10 text-emerald-500 font-bold px-2 py-0.5 rounded border border-emerald-500/20 uppercase tracking-wider">
+                                                    <Zap size={9} fill="currentColor" /> IA active
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center gap-1 text-[9px] bg-zinc-500/10 text-[#888] font-bold px-2 py-0.5 rounded border border-zinc-500/20 uppercase tracking-wider">
+                                                    Manuel
+                                                </span>
+                                            )}
+                                            <span className="text-[9px] bg-[#222] text-white font-bold px-2 py-0.5 rounded border border-[#333] uppercase tracking-wider">
+                                                {c.stateLabel}
+                                            </span>
+                                            {c.unread > 0 && (
+                                                <span className="w-2.5 h-2.5 rounded-full bg-[#00D97E] ml-auto shrink-0 animate-pulse"></span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
         </div>
     );
 }
@@ -414,7 +719,7 @@ export default function DevPreview() {
     const [view, setView] = useState<'today' | 'inbox' | 'orders' | 'inventory' | 'bot'>('today');
     const navItems = [
         { k: 'today' as const, icon: Home, label: 'Accueil' },
-        { k: null, icon: MessageSquare, label: 'Conv' },
+        { k: 'inbox' as const, icon: MessageSquare, label: 'Conv' },
         { k: 'orders' as const, icon: ShoppingBag, label: 'Commandes' },
         { k: 'inventory' as const, icon: Package, label: 'Produits' },
         { k: 'bot' as const, icon: SettingsIcon, label: 'Réglages' },
@@ -433,6 +738,8 @@ export default function DevPreview() {
                         showInstallBanner={true} isInstallable={false} isIOS={true}
                         onToggleBot={() => {}} onInstall={() => {}} onDismissInstall={() => {}}
                     />
+                ) : view === 'inbox' ? (
+                    <InboxPreview />
                 ) : view === 'bot' ? (
                     <BotPreview />
                 ) : view === 'orders' ? (
