@@ -111,9 +111,9 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
             toast.success('Personnalité configurée avec succès par l\'IA ! ✨');
             setAiPrompt('');
             setShowSliders(true);
-        } catch (error: any) {
+        } catch (error) {
             console.error('AI Config error:', error);
-            toast.error(error.message || 'Impossible d\'analyser la description');
+            toast.error(error instanceof Error ? error.message : 'Impossible d\'analyser la description');
         } finally {
             setAnalyzing(false);
         }

@@ -55,7 +55,7 @@ const VerifyAccount: React.FC = () => {
             if (window.recaptchaVerifier) {
                 try {
                     window.recaptchaVerifier.clear();
-                } catch {}
+                } catch { /* déjà nettoyé / non monté */ }
                 window.recaptchaVerifier = undefined as unknown as RecaptchaVerifier;
             }
         };
@@ -102,8 +102,8 @@ const VerifyAccount: React.FC = () => {
             setOtpSent(false);
             setOtpCode('');
             toast.success('Informations mises à jour.');
-        } catch (err: any) {
-            setError(err.message || 'Une erreur est survenue.');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Une erreur est survenue.');
         } finally {
             setLoading(false);
         }
@@ -149,9 +149,9 @@ const VerifyAccount: React.FC = () => {
                 setCountdown(30);
                 setSuccess('SMS de validation envoyé.');
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error('OTP Send error:', err);
-            setError(err.message || "Une erreur s'est produite lors de l'envoi.");
+            setError(err instanceof Error ? err.message : "Une erreur s'est produite lors de l'envoi.");
         } finally {
             setLoading(false);
         }
@@ -206,8 +206,8 @@ const VerifyAccount: React.FC = () => {
                 await refreshUser();
                 navigate('/onboarding');
             }
-        } catch (err: any) {
-            setError(err.message || 'Code incorrect ou expiré.');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Code incorrect ou expiré.');
         } finally {
             setLoading(false);
         }

@@ -4,7 +4,7 @@ const PROD_API_URL = 'https://187-77-171-44.nip.io/api';
 const isCapacitorApp = () =>
     typeof window !== 'undefined' &&
     (window.location.protocol === 'capacitor:' ||
-        !!(window as any).Capacitor?.isNativePlatform?.());
+        !!(window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.());
 
 export const getApiUrl = () => {
     let url = import.meta.env.VITE_API_URL;

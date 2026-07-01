@@ -34,6 +34,12 @@ interface Log {
     created_at: string;
 }
 
+// Événement PWA non encore standardisé dans les types DOM (Chrome/Android)
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 const Today: React.FC = () => {
     const { token, user, tenant } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
@@ -45,13 +51,13 @@ const Today: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
     // PWA Installation states
-    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [isInstallable, setIsInstallable] = useState(false);
     const [showInstallBanner, setShowInstallBanner] = useState(false);
 
     useEffect(() => {
         // Check if already running in standalone mode (installed)
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as Navigator & { standalone?: boolean }).standalone;
         const dismissed = sessionStorage.getItem('pwa-install-dismissed');
 
         if (!isStandalone && !dismissed) {
@@ -60,7 +66,7 @@ const Today: React.FC = () => {
 
         const handleBeforeInstallPrompt = (e: Event) => {
             e.preventDefault();
-            setDeferredPrompt(e);
+            setDeferredPrompt(e as BeforeInstallPromptEvent);
             setIsInstallable(true);
         };
 
@@ -86,7 +92,7 @@ const Today: React.FC = () => {
         setShowInstallBanner(false);
     };
 
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as Window & { MSStream?: unknown }).MSStream;
 
     const hour = new Date().getHours();
     const isEvening = hour >= 18 || hour < 5;

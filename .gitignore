@@ -44,3 +44,6 @@ frontend/.eslintcache
 *firebase-admin-key.json
 firebase-admin-key.json
 firebase-admin-key*.json
+
+# Local fallback store (demo data, ne pas versionner)
+database/store.json

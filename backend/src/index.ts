@@ -296,8 +296,12 @@ app.delete('/api/products/:id', authenticateTenant, async (req, res) => {
     }
 });
 
-// Seed (Protected — debug only)
+// Seed (Protected — debug only). Désactivé en production : sert uniquement à
+// peupler un tenant de test en local, n'a rien à faire sur le VPS de prod.
 app.post('/api/debug/seed', authenticateTenant, async (req, res) => {
+    if (process.env.NODE_ENV === 'production') {
+        return res.status(404).json({ error: 'Not found' });
+    }
     const products = [
         { id: '1', name: 'Bazin Riche', price: 15000 },
         { id: '2', name: 'Mèche Humaine', price: 45000 },

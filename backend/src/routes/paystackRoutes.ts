@@ -263,14 +263,34 @@ router.post('/create-payment-link', authenticateTenant, async (req, res) => {
 router.post('/webhook', async (req: any, res) => {
     try {
         const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY || '';
-        const payload = req.rawBody || Buffer.from(JSON.stringify(req.body));
+        // Sans secret configuré, on ne peut PAS authentifier le webhook → on refuse
+        // (sinon un HMAC à clé vide laisserait passer des requêtes forgées).
+        if (!PAYSTACK_SECRET) {
+            logger.error('Paystack webhook: PAYSTACK_SECRET_KEY manquant — webhook refusé');
+            return res.status(503).json({ error: 'Webhook non configuré' });
+        }
+
+        // rawBody est capturé dans index.ts (express.json verify). Le fallback
+        // JSON.stringify ne reproduit pas l'octet exact signé par Paystack et
+        // ferait échouer toutes les signatures — donc on l'exige.
+        if (!req.rawBody) {
+            logger.error('Paystack webhook: rawBody manquant — impossible de vérifier la signature');
+            return res.status(400).json({ error: 'Corps de requête invalide' });
+        }
 
         const hash = crypto
             .createHmac('sha512', PAYSTACK_SECRET)
-            .update(payload)
+            .update(req.rawBody)
             .digest('hex');
 
-        if (hash !== req.headers['x-paystack-signature']) {
+        const signature = req.headers['x-paystack-signature'];
+        // Comparaison à temps constant pour éviter les attaques par timing.
+        const expected = Buffer.from(hash, 'utf8');
+        const received = Buffer.from(typeof signature === 'string' ? signature : '', 'utf8');
+        if (
+            expected.length !== received.length ||
+            !crypto.timingSafeEqual(expected, received)
+        ) {
             logger.warn('Paystack webhook: invalid signature');
             return res.status(401).json({ error: 'Invalid signature' });
         }
