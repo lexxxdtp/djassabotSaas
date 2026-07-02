@@ -261,7 +261,7 @@ export default function ProductFormModal({
     return (
         <div
             onClick={onClose}
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
         >
             <div
                 onClick={(e) => e.stopPropagation()}

@@ -161,6 +161,42 @@ export async function handleFlow(tenantId: string, remoteJid: string, text: stri
         };
 
         const updatedOrder = await addItemToSessionCart(tenantId, remoteJid, cartItem);
+
+        // File d'attente : un autre produit à variantes attend son tour
+        // (ex: "bazin bleu + robe wax", tous deux avec tailles/couleurs).
+        const pendingVariations: { productId: string; quantity: number; price: number }[] = tempOrder.pendingVariations || [];
+        if (pendingVariations.length > 0) {
+            const [next, ...rest] = pendingVariations;
+            const nextProduct = await db.getProductById(tenantId, next.productId);
+
+            if (nextProduct && nextProduct.variations && nextProduct.variations.length > 0) {
+                const nextVar = nextProduct.variations[0];
+                const optionsList = nextVar.options.map((o: any, i: number) => `${i + 1}. ${o.value}`).join('\n');
+
+                await updateSession(tenantId, remoteJid, {
+                    state: 'WAITING_FOR_VARIATION',
+                    tempOrder: {
+                        items: updatedOrder.items,
+                        total: updatedOrder.total,
+                        summary: updatedOrder.summary,
+                        productId: nextProduct.id,
+                        productName: nextProduct.name,
+                        basePrice: next.price,
+                        quantity: next.quantity,
+                        variationIndex: 0,
+                        selectedVariations: [],
+                        priceAdjustment: 0,
+                        pendingVariations: rest,
+                    },
+                });
+
+                await reply(sock, tenantId, remoteJid,
+                    `Ajouté ✅ (${cartSummary([cartItem])})\n\nMaintenant pour ${nextProduct.name}, quelle option pour ${nextVar.name} ?\n${optionsList}`);
+                return;
+            }
+            // Produit en file introuvable/sans variantes entre-temps (supprimé ?) → on l'ignore et on continue
+        }
+
         await updateSession(tenantId, remoteJid, { state: 'WAITING_FOR_ADDRESS' });
 
         await reply(sock, tenantId, remoteJid,
@@ -241,9 +277,13 @@ async function answerWithAI(
             // BAD_QUANTITY / UNKNOWN_PRODUCT : on ignore le tag, le texte IA part tel quel
         }
 
-        // Un produit à variantes ? → on démarre le choix de variante (un seul à la fois)
-        const withVariations = accepted.find(a => a.product.variations && a.product.variations.length > 0);
+        // Produits à variantes : la machine à état n'en traite qu'UN à la fois.
+        // Les suivants sont mis en FILE (pendingVariations) pour ne jamais être
+        // perdus silencieusement — ex: "je prends le bazin bleu ET la robe wax"
+        // où les deux ont des tailles/couleurs à choisir.
+        const withVariationsList = accepted.filter(a => a.product.variations && a.product.variations.length > 0);
         const directAdds = accepted.filter(a => !(a.product.variations && a.product.variations.length > 0));
+        const [withVariations, ...queuedVariations] = withVariationsList;
 
         let updatedOrder: { items: CartItem[]; total: number; summary?: string } | undefined;
         for (const a of directAdds) {
@@ -269,11 +309,17 @@ async function answerWithAI(
                     variationIndex: 0,
                     selectedVariations: [],
                     priceAdjustment: 0,
+                    pendingVariations: queuedVariations.map(q => ({
+                        productId: q.product.id,
+                        quantity: q.item.quantity,
+                        price: q.item.price,
+                    })),
                 },
             });
 
             const parts = [cleaned, ...corrections].filter(Boolean);
-            parts.push(`Pour ${product.name}, quelle option pour ${firstVar.name} ?\n${optionsList}`);
+            const extra = queuedVariations.length > 0 ? ` (${product.name} d'abord, on verra ${queuedVariations.map(q => q.product.name).join(' et ')} juste après)` : '';
+            parts.push(`Pour ${product.name}${extra}, quelle option pour ${firstVar.name} ?\n${optionsList}`);
             await reply(sock, tenantId, remoteJid, parts.join('\n\n'));
             return;
         }
