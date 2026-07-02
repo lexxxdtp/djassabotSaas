@@ -32,7 +32,7 @@ interface SettingsDrawerProps {
 const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, title, onSave, saving, children }) => {
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
             <div className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
                 {/* Drag Indicator on Mobile */}
                 <div className="w-12 h-1 bg-[#222] rounded-full mx-auto my-3 md:hidden shrink-0"></div>
