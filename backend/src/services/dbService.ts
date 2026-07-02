@@ -6,9 +6,107 @@ import {
     Product, CartItem, Order, Settings,
     Tenant, User, Subscription
 } from '../types';
+import { DELIVERY_ITEM_ID } from './whatsapp/salesEngine';
 
 // Export types for compatibility with existing imports in other files
 export { Product, CartItem, Order, Settings, Tenant, User, Subscription };
+
+export interface StockFailure {
+    productId: string;
+    productName: string;
+    requested: number;
+    available?: number;
+}
+
+/**
+ * Ajuste le stock d'un article (delta négatif = commande, positif = restock).
+ * Essaie la fonction SQL atomique `adjust_stock` (migration
+ * add_adjust_stock_rpc.sql) ; si elle n'est pas déployée, retombe sur un
+ * read-modify-write JS (non atomique — un warning est loggé pour le signaler).
+ */
+const adjustStock = async (
+    tenantId: string,
+    item: CartItem,
+    delta: number
+): Promise<{ ok: boolean; available?: number }> => {
+    if (!isSupabaseEnabled || !supabase) return { ok: true }; // mode local : pas de stock à gérer
+
+    // 1. Voie atomique (RPC SQL)
+    try {
+        const { data, error } = await supabase.rpc('adjust_stock', {
+            p_tenant_id: tenantId,
+            p_product_id: String(item.productId),
+            p_delta: delta,
+            p_variations: item.selectedVariations && item.selectedVariations.length > 0
+                ? item.selectedVariations
+                : null,
+        });
+        if (!error) {
+            const row = Array.isArray(data) ? data[0] : data;
+            if (row && row.success === false) {
+                return { ok: false, available: row.available ?? undefined };
+            }
+            return { ok: true };
+        }
+        // Fonction absente (migration pas encore appliquée) → fallback JS
+        const missingFn = error.code === 'PGRST202' || /adjust_stock|schema cache|function/i.test(error.message || '');
+        if (!missingFn) {
+            console.error('[DB] adjust_stock RPC error:', error.message);
+        } else {
+            console.warn('[DB] ⚠️ Fonction SQL adjust_stock absente — fallback JS NON atomique. Appliquez database/migrations/add_adjust_stock_rpc.sql');
+        }
+    } catch (e) {
+        console.error('[DB] adjust_stock RPC exception:', e);
+    }
+
+    // 2. Fallback JS (read-modify-write)
+    try {
+        const product = await db.getProductById(tenantId, String(item.productId));
+        if (!product) return { ok: delta > 0 }; // restock d'un produit supprimé : on ignore
+        if (product.manageStock === false) return { ok: true };
+
+        const qty = Math.abs(delta);
+        const isDecrement = delta < 0;
+
+        if (isDecrement && product.stock !== undefined && product.stock !== null && product.stock < qty) {
+            return { ok: false, available: product.stock };
+        }
+
+        // Stock des options de variation sélectionnées
+        let newVariations = product.variations;
+        if (item.selectedVariations && item.selectedVariations.length > 0 && Array.isArray(product.variations)) {
+            for (const sel of item.selectedVariations) {
+                const variation = product.variations.find(v => v.name === sel.name);
+                const option = variation?.options.find(o => o.value === sel.value);
+                if (isDecrement && option && option.stock !== undefined && option.stock < qty) {
+                    return { ok: false, available: option.stock };
+                }
+            }
+            newVariations = product.variations.map(v => ({
+                ...v,
+                options: v.options.map(o => {
+                    const selected = item.selectedVariations!.some(s => s.name === v.name && s.value === o.value);
+                    if (selected && o.stock !== undefined) {
+                        return { ...o, stock: Math.max(0, o.stock + delta) };
+                    }
+                    return o;
+                }),
+            }));
+        }
+
+        const updates: Partial<Product> = { variations: newVariations };
+        if (product.stock !== undefined && product.stock !== null) {
+            updates.stock = Math.max(0, product.stock + delta);
+        }
+        await db.updateProduct(tenantId, String(item.productId), updates);
+        return { ok: true };
+    } catch (e) {
+        console.error('[DB] adjustStock JS fallback failed:', e);
+        // En cas de doute sur un décrément, on laisse passer la vente (priorité au CA)
+        // mais on loggue — le vendeur verra l'écart de stock.
+        return { ok: true };
+    }
+};
 
 // Local JSON Data Persistence
 const DB_FILE = path.join(__dirname, '../../database/store.json');
@@ -283,6 +381,9 @@ export const db = {
     updateOrderStatus: async (tenantId: string, orderId: string, status: string): Promise<any> => {
         if (isSupabaseEnabled && supabase) {
             try {
+                // Statut précédent (pour la gestion du stock à l'annulation/réactivation)
+                const previous = await db.getOrderById(tenantId, orderId);
+
                 const { data, error } = await supabase
                     .from('orders')
                     .update({ status })
@@ -291,6 +392,21 @@ export const db = {
                     .select()
                     .single();
                 if (error) throw error;
+
+                // Stock : annulation → on rend ; réactivation d'une annulée → on reprend
+                if (previous && Array.isArray(previous.items)) {
+                    if (status === 'CANCELLED' && previous.status !== 'CANCELLED') {
+                        await db.restockItems(tenantId, previous.items);
+                    } else if (previous.status === 'CANCELLED' && status !== 'CANCELLED') {
+                        const result = await db.decrementStockForItems(tenantId, previous.items);
+                        if (!result.ok) {
+                            // On ne bloque pas la réactivation, mais le vendeur doit savoir
+                            await db.logActivity(tenantId, 'warning',
+                                `Commande ${orderId.split('-')[1]} réactivée mais stock insuffisant pour certains articles`,
+                                { orderId, failures: result.failures });
+                        }
+                    }
+                }
 
                 // Log the status change
                 await supabase.from('activity_logs').insert([{
@@ -561,34 +677,77 @@ export const db = {
         return localData.products.find((p: any) => p.tenantId === tenantId && p.id === id);
     },
 
-    addToCart: async (tenantId: string, userId: string, product: Product, quantity: number = 1) => {
-        const key = `${tenantId}:${userId}`;
-        if (!localData.carts[key]) localData.carts[key] = [];
+    // --- STOCK (décrément atomique à la commande, restock à l'annulation) ---
 
-        const existing = localData.carts[key].find(item => item.productId === product.id);
-        if (existing) {
-            existing.quantity += quantity;
-        } else {
-            localData.carts[key].push({
-                productId: product.id,
-                productName: product.name,
-                quantity,
-                price: product.price
-            });
+    /**
+     * Décrémente le stock de chaque article (produit + options de variation).
+     * Passe par la fonction SQL atomique `adjust_stock` (verrou de ligne) avec
+     * fallback JS non-atomique si la migration n'est pas encore appliquée.
+     * En cas d'échec partiel, les décréments déjà faits sont RENDUS (rollback).
+     */
+    decrementStockForItems: async (tenantId: string, items: CartItem[]): Promise<{ ok: true } | { ok: false; failures: StockFailure[] }> => {
+        const productItems = items.filter(i => i.productId !== DELIVERY_ITEM_ID);
+        const succeeded: CartItem[] = [];
+        const failures: StockFailure[] = [];
+
+        for (const item of productItems) {
+            const result = await adjustStock(tenantId, item, -item.quantity);
+            if (result.ok) {
+                succeeded.push(item);
+            } else {
+                failures.push({
+                    productId: item.productId,
+                    productName: item.productName,
+                    requested: item.quantity,
+                    available: result.available,
+                });
+            }
         }
-        saveData();
-        return localData.carts[key];
+
+        if (failures.length > 0) {
+            // Rollback des articles déjà décrémentés pour rester cohérent
+            for (const item of succeeded) {
+                await adjustStock(tenantId, item, item.quantity);
+            }
+            return { ok: false, failures };
+        }
+        return { ok: true };
     },
 
-    getCart: async (tenantId: string, userId: string) => {
-        const key = `${tenantId}:${userId}`;
-        return localData.carts[key] || [];
+    /** Rend le stock des articles (annulation de commande, échec de création). */
+    restockItems: async (tenantId: string, items: CartItem[]): Promise<void> => {
+        for (const item of items.filter(i => i.productId !== DELIVERY_ITEM_ID)) {
+            await adjustStock(tenantId, item, item.quantity);
+        }
     },
 
-    clearCart: async (tenantId: string, userId: string) => {
-        const key = `${tenantId}:${userId}`;
-        localData.carts[key] = [];
-        saveData();
+    getOrderById: async (tenantId: string, orderId: string): Promise<Order | null> => {
+        if (isSupabaseEnabled && supabase) {
+            try {
+                const { data, error } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('tenant_id', tenantId)
+                    .eq('id', orderId)
+                    .maybeSingle();
+                if (error) throw error;
+                if (!data) return null;
+                return {
+                    id: data.id,
+                    tenantId: data.tenant_id,
+                    userId: data.user_id,
+                    items: data.items,
+                    total: data.total,
+                    status: data.status,
+                    address: data.address,
+                    createdAt: new Date(data.created_at),
+                } as Order;
+            } catch (e) {
+                console.error('[DB] getOrderById failed', e);
+                return null;
+            }
+        }
+        return (localData.orders.find((o: any) => o.tenantId === tenantId && o.id === orderId) as Order) || null;
     },
 
     // Settings Methods

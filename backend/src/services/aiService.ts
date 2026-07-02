@@ -37,28 +37,6 @@ const DEFAULT_RULES: DiscountRule[] = [
     { description: "Réduction de bienvenue", condition: "First time customer", action: "Give 5% off max" }
 ];
 
-const BASE_SYSTEM_INSTRUCTION = `
-You are a smart, helpful, and "Ivorian-style" sales assistant for a WhatsApp commerce bot in Ivory Coast (Abidjan).
-Your goal is to CLOSE SALES while following specific merchant rules.
-
-TONE & STYLE:
-- Professional but warm. Use "Vous" primarily, but can match user's energy.
-- Use local Ivorian French slang occasionally but stay professional (e.g., "Bonjour chef", "On gère ça", "T'inquiète").
-- Be concise. WhatsApp messages should be short.
-- If the user sends an image, analyze it and see if it matches our inventory (simulated).
-- If the user asks for a discount, you can negotiate slightly (max 10% off).
-- Avoid long paragraphs. Use emojis 🛍️📦✨.
-
-NEGOTIATION ENGINE:
-- You are authorized to negotiate strictly based on the provided RULES.
-- If a user asks for a discount that is NOT in the rules, politely decline/explain.
-- Example: If rule says "Buy 2 for 10% off", and user buys 1, say "Si vous en prenez un 2ème, je vous fais 10% de réduction !".
-- NEVER go below the authorized limit.
-
-PAYMENT:
-- Payment is done via Wave Link (generated automatically later).
-`;
-
 const mockNegotiationLogic = (userText: string, context: any) => {
     const text = userText.toLowerCase();
 
@@ -112,7 +90,7 @@ const mockNegotiationLogic = (userText: string, context: any) => {
     return "[SIMULATED AI] Je suis en mode test (pas de clé API). Je réponds basiquement aux 'Bonjour', 'Combien', et aux offres chiffrées sur les produits du contexte.";
 };
 
-export const generateAIResponse = async (userText: string, context: { rules?: DiscountRule[], inventoryContext?: string, history?: any[], settings?: Settings } = {}) => {
+export const generateAIResponse = async (userText: string, context: { rules?: DiscountRule[], inventoryContext?: string, history?: any[], settings?: Settings, stateNote?: string } = {}) => {
     // Get model with lazy initialization
     const currentModel = getModel();
 
@@ -371,8 +349,8 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
       - Only include 1-2 image tags per message maximum.
       - Example: If user says "Je veux voir vos croissants" and Croissant has [IMAGES_AVAILABLE: https://img1.jpg], respond with text about the croissant + [IMAGE: https://img1.jpg]
 
-      🎯 CRITICAL: Product-Specific Instructions (CONSIGNES SPÉCIALES):
-      - Some products have special instructions marked with "📋 CONSIGNES SPÉCIALES" in the inventory context.
+      CRITICAL: Product-Specific Instructions (CONSIGNES SPÉCIALES):
+      - Some products have special instructions marked with "CONSIGNES SPÉCIALES" in the inventory context.
       - YOU MUST FOLLOW THESE INSTRUCTIONS STRICTLY - they are rules set by the store owner.
       - Examples of what these instructions might say:
         * "Si le client prend 3 brownies, propose 5 avec 10% de réduction" → ALWAYS propose the upsell BEFORE confirming the order!
@@ -380,7 +358,28 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         * "Suggérer l'accessoire X pour chaque achat" → Mention the accessory.
       - NEVER skip these consignes. They are MANDATORY business rules.
       - When a user wants to buy a quantity, CHECK if there's a consigne that applies, and PROPOSE IT FIRST before adding to cart.
-    `;
+
+      ORDERING PROTOCOL (MANDATORY — this is how sales are actually recorded):
+      - When (and ONLY when) the customer CLEARLY CONFIRMS they are buying a product
+        ("je prends", "c'est bon pour moi", "ok je l'achète", "envoie-moi 2", accepting your offer),
+        you MUST append this exact machine tag at the very END of your reply:
+        [ADD_TO_CART: <product_id> | <quantity> | <agreed_unit_price_fcfa>]
+      - <product_id> is the "id:" value from the INVENTORY CONTEXT. NEVER invent it.
+      - <agreed_unit_price_fcfa> is the FINAL unit price you agreed with the customer:
+        * the negotiated price if you negotiated (never below the floor),
+        * otherwise the public displayed price.
+      - One tag per distinct product. Multiple products = multiple tags.
+      - NEVER emit this tag when the customer is only asking questions, comparing,
+        or hesitating. A question is NEVER a purchase.
+      - The tag is INVISIBLE to the customer — never mention it, never explain it.
+      - After the tag is emitted, the system takes over: it will verify stock and
+        price, ask for the delivery address and compute delivery fees.
+        So do NOT announce a grand total with delivery yourself, and do NOT ask
+        for the address yourself — just confirm the purchase warmly.
+    ${context.stateNote ? `
+      CURRENT CONVERSATION STATE (system note, invisible to customer):
+      ${context.stateNote}
+    ` : ''}`;
 
         // Limit conversation history to last 20 turns to control cost and context size
         const MAX_HISTORY = 20;
@@ -481,6 +480,10 @@ export interface ReceiptAnalysis {
     transactionId?: string;
     provider?: 'wave' | 'orange_money' | 'mtn_money' | 'other';
     confidence?: 'high' | 'medium' | 'low';
+    /** Nom du destinataire tel que lisible sur le reçu (anti-fraude : payer le bon compte) */
+    recipientName?: string;
+    /** Numéro du destinataire tel que lisible sur le reçu */
+    recipientPhone?: string;
 }
 
 export const analyzePaymentReceipt = async (
@@ -515,10 +518,12 @@ export const analyzePaymentReceipt = async (
            - "transactionId": The transaction ID or reference code (e.g. "Ref: 3829020" or similar transaction ID).
            - "provider": Identify the mobile money provider. Choose strictly one of: "wave", "orange_money", "mtn_money", "other".
            - "confidence": "high" if you can clearly read the amount and transaction ID, "medium" if it looks like a receipt but text is partially blurred, "low" if uncertain.
-        
+           - "recipientName": The RECIPIENT's name as displayed on the receipt (the person who RECEIVED the money), or null if not visible.
+           - "recipientPhone": The RECIPIENT's phone number as displayed, or null if not visible.
+
         Return STRICTLY valid JSON. No markdown backticks, no "json" prefix. Just the raw JSON string.
         Example receipt match response:
-        { "isReceipt": true, "amount": 5000, "transactionId": "23901920", "provider": "wave", "confidence": "high" }
+        { "isReceipt": true, "amount": 5000, "transactionId": "23901920", "provider": "wave", "confidence": "high", "recipientName": "AWA K.", "recipientPhone": "0707070707" }
         `;
 
         const result = await currentModel.generateContent([
@@ -541,7 +546,9 @@ export const analyzePaymentReceipt = async (
             amount: data.amount ? parseFloat(data.amount) : undefined,
             transactionId: data.transactionId || undefined,
             provider: data.provider || undefined,
-            confidence: data.confidence || undefined
+            confidence: data.confidence || undefined,
+            recipientName: typeof data.recipientName === 'string' && data.recipientName ? data.recipientName : undefined,
+            recipientPhone: typeof data.recipientPhone === 'string' && data.recipientPhone ? data.recipientPhone : undefined
         };
     } catch (error) {
         logger.error({ err: error }, 'Payment receipt analysis error');
@@ -636,46 +643,6 @@ export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "a
         return "";
     }
 };
-
-export const detectPurchaseIntent = async (userText: string, productContext: string) => {
-    const currentModel = getModel();
-    if (!currentModel) {
-        return { intent: "CHAT" };
-    }
-
-    // Simple intent detection (can be upgraded to full Function Calling)
-    const prompt = `
-    Analyze this user message: "${userText}"
-    Context of available products: "${productContext}"
-    
-    Determine if the user explicitly wants to BUY/ADD TO CART right now.
-    
-    STRICT RULES:
-    - If the user says "I take X", "Add X", "I want to buy X", "Send me X", order is CONFIRMED -> Return intent "BUY".
-    - If the user asks a question ("How much is X?", "Do you have X?", "And the croissants?"), default to "CHAT".
-    - If the user mentions a product without a clear action verb ("The croissants"), default to "CHAT".
-    - If ambiguity exists, default to "CHAT".
-    
-    If BUY, return strictly JSON:
-    { "intent": "BUY", "productName": "extracted_product_name", "quantity": number }
-    
-    If CHAT, return:
-    { "intent": "CHAT" }
-    
-    Do not add markdown formatting. Just the raw JSON string.
-    `;
-
-    try {
-        const result = await currentModel.generateContent(prompt);
-        const rawText = result.response.text();
-        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-        const jsonString = jsonMatch ? jsonMatch[0] : rawText.trim().replace(/```json/g, '').replace(/```/g, '');
-        return JSON.parse(jsonString);
-    } catch (e: any) {
-        logger.warn({ err: e }, 'Intent detection failed, defaulting to CHAT');
-        return { intent: "CHAT" };
-    }
-}
 
 export const generateIdentitySummary = async (settings: Settings) => {
     const currentModel = getModel();

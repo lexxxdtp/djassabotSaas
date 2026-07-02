@@ -2,11 +2,19 @@ import { WASocket } from '@whiskeysockets/baileys';
 import { db } from './dbService';
 import { ReceiptAnalysis } from './aiService';
 import { sendPaymentNotification } from './whatsapp/notificationService';
+import { splitDeliveryItem } from './whatsapp/salesEngine';
+import { Order } from '../types';
 import { logger } from '../utils/logger';
 
 /**
  * Service to process and validate payment receipts extracted via Gemini Vision
  * and update order statuses accordingly.
+ *
+ * Matching des montants (dans l'ordre) :
+ * 1. total exact de la commande (cas normal : livraison incluse au checkout)
+ * 2. commande créée avec zone inconnue → montant = articles + une zone configurée
+ *    (le client a payé PLUS pour couvrir la livraison — jamais moins)
+ * Un montant INFÉRIEUR au total n'est jamais auto-validé.
  */
 export const processReceiptValidation = async (
     tenantId: string,
@@ -44,14 +52,14 @@ export const processReceiptValidation = async (
         const orders = await db.getOrders(tenantId);
 
         // Filter pending or confirmed orders for this specific customer
-        const customerPendingOrders = orders.filter(o => 
-            o.userId === remoteJid && 
+        const customerPendingOrders = orders.filter(o =>
+            o.userId === remoteJid &&
             (o.status === 'PENDING' || o.status === 'CONFIRMED')
         );
 
         if (customerPendingOrders.length === 0) {
             logger.info({ remoteJid }, '[PaymentValidation] No pending order found for this user');
-            
+
             // Inform customer that we got the receipt but no pending order matches
             await sock.sendMessage(remoteJid, {
                 text: `🧾 J'ai bien reçu votre reçu de paiement de ${amount.toLocaleString('fr-FR')} FCFA (${provider.toUpperCase()}), mais je ne trouve aucune commande en attente pour votre numéro.\n\nUn conseiller va vérifier manuellement.`
@@ -59,45 +67,69 @@ export const processReceiptValidation = async (
             return false;
         }
 
-        // Find an exact amount match among the pending orders, or default to the most recent one
-        let matchedOrder = customerPendingOrders.find(o => o.total === amount);
-        
+        // 1. Correspondance exacte sur le total
+        let matchedOrder: Order | undefined = customerPendingOrders.find(o => o.total === amount);
+        let matchNote = '';
+
+        // 2. Commande à livraison non chiffrée : articles + une zone configurée
+        //    (le client paie PLUS que le total enregistré, jamais moins)
         if (!matchedOrder) {
-            // Fallback: Use the most recent pending order
-            matchedOrder = customerPendingOrders[0];
-            
+            const settings = await db.getSettings(tenantId);
+            const zones = Array.isArray(settings.deliveryZones) ? settings.deliveryZones : [];
+            for (const o of customerPendingOrders) {
+                const { delivery } = splitDeliveryItem(o.items || []);
+                if (delivery) continue; // la livraison était déjà incluse → pas d'excuse
+                if (amount <= o.total) continue; // jamais auto-valider un sous-paiement
+                const zone = zones.find(z => o.total + z.price === amount);
+                if (zone) {
+                    matchedOrder = o;
+                    matchNote = ` (articles ${o.total.toLocaleString('fr-FR')} + livraison ${zone.name} ${zone.price.toLocaleString('fr-FR')})`;
+                    break;
+                }
+            }
+        }
+
+        if (!matchedOrder) {
+            // Aucun montant ne colle → vérification manuelle (on prend la plus récente pour le contexte)
+            const closest = customerPendingOrders[0];
+
             logger.warn(
-                { orderTotal: matchedOrder.total, receiptAmount: amount }, 
+                { orderTotal: closest.total, receiptAmount: amount },
                 '[PaymentValidation] Amount mismatch'
             );
 
-            // Inform customer about the amount mismatch
             await sock.sendMessage(remoteJid, {
-                text: `🧾 J'ai reçu votre reçu de paiement de ${amount.toLocaleString('fr-FR')} FCFA, mais le montant ne correspond pas au total de votre commande en attente qui est de ${matchedOrder.total.toLocaleString('fr-FR')} FCFA.\n\nUn conseiller va faire la vérification manuellement.`
+                text: `🧾 J'ai reçu votre reçu de paiement de ${amount.toLocaleString('fr-FR')} FCFA, mais le montant ne correspond pas au total de votre commande en attente qui est de ${closest.total.toLocaleString('fr-FR')} FCFA.\n\nUn conseiller va faire la vérification manuellement.`
             });
 
-            // Log activity log for visibility
             await db.logActivity(
                 tenantId,
                 'warning',
-                `Écart montant reçu: Commande ${matchedOrder.id.split('-')[1]} (${matchedOrder.total} FCFA) vs Reçu (${amount} FCFA)`,
-                { orderId: matchedOrder.id, amount, transactionId }
+                `Écart montant reçu: Commande ${closest.id.split('-')[1]} (${closest.total} FCFA) vs Reçu (${amount} FCFA)`,
+                { orderId: closest.id, amount, transactionId, recipientName: analysis.recipientName, recipientPhone: analysis.recipientPhone }
             );
 
             return false;
         }
 
         // Match found! Update status to PAID
-        logger.info({ orderId: matchedOrder.id }, '[PaymentValidation] Order matched, updating to PAID');
-        
+        logger.info({ orderId: matchedOrder.id, matchNote }, '[PaymentValidation] Order matched, updating to PAID');
+
         await db.updateOrderStatus(tenantId, matchedOrder.id, 'PAID');
 
-        // Log activity (the "Pulse")
+        // Log activity (the "Pulse") — le destinataire extrait du reçu est journalisé
+        // pour que le vendeur puisse repérer un paiement envoyé au mauvais compte.
         await db.logActivity(
             tenantId,
             'sale',
-            `Paiement de ${(amount).toLocaleString('fr-FR')} FCFA validé automatiquement par reçu ${provider.toUpperCase()}`,
-            { orderId: matchedOrder.id, total: amount, transactionId }
+            `Paiement de ${(amount).toLocaleString('fr-FR')} FCFA validé automatiquement par reçu ${provider.toUpperCase()}${matchNote}`,
+            {
+                orderId: matchedOrder.id,
+                total: amount,
+                transactionId,
+                recipientName: analysis.recipientName,
+                recipientPhone: analysis.recipientPhone,
+            }
         );
 
         // Confirm to customer
@@ -105,7 +137,7 @@ export const processReceiptValidation = async (
             text: `✅ Merci ! Votre paiement de ${amount.toLocaleString('fr-FR')} FCFA par ${provider.toUpperCase()} (Réf: ${transactionId}) a été validé automatiquement.\n\nVotre commande ${matchedOrder.id.split('-')[1]} est confirmée et en cours de préparation ! 🛍️`
         });
 
-        // Notify merchant
+        // Notify merchant (avec le destinataire lisible sur le reçu — contrôle anti-fraude humain)
         await sendPaymentNotification(
             sock,
             tenantId,
@@ -113,7 +145,8 @@ export const processReceiptValidation = async (
             matchedOrder.id,
             amount,
             transactionId,
-            provider
+            provider,
+            { recipientName: analysis.recipientName, recipientPhone: analysis.recipientPhone }
         );
 
         return true;

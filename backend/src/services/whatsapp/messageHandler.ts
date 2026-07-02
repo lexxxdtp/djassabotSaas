@@ -1,24 +1,46 @@
 import { WASocket, proto, downloadMediaMessage } from '@whiskeysockets/baileys';
 import { db } from '../dbService';
 import { handleFlow } from './flowHandler';
-
-// Import AI services lazily to avoid circular deps if needed, but standard import is fine usually
 import { transcribeAudio, analyzeImage, analyzePaymentReceipt } from '../aiService';
 import { addToHistory } from '../sessionService';
 import { processReceiptValidation } from '../paymentValidationService';
 
+/**
+ * File d'attente PAR CONVERSATION : les messages d'un même client sont traités
+ * strictement dans l'ordre, un à la fois. Sans ça, deux messages rapprochés
+ * (fréquent sur WhatsApp) se traitent en parallèle et se marchent dessus sur
+ * l'état de session (panier, WAITING_FOR_ADDRESS…).
+ */
+const chatQueues = new Map<string, Promise<void>>();
+
+const enqueue = (key: string, fn: () => Promise<void>): Promise<void> => {
+    const prev = chatQueues.get(key) || Promise.resolve();
+    const next = prev.then(fn, fn); // on traite même si le message précédent a échoué
+    chatQueues.set(key, next);
+    next.finally(() => {
+        if (chatQueues.get(key) === next) chatQueues.delete(key);
+    });
+    return next;
+};
+
 export async function handleMessage(tenantId: string, sock: WASocket, msg: proto.IWebMessageInfo, isHistory: boolean = false) {
+    if (!msg.key || !msg.key.remoteJid) return;
+    const remoteJid = msg.key.remoteJid;
+
+    // Ignore status updates
+    if (remoteJid === 'status@broadcast') return;
+
+    await enqueue(`${tenantId}:${remoteJid}`, () => processMessage(tenantId, sock, msg, remoteJid, isHistory));
+}
+
+async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebMessageInfo, remoteJid: string, isHistory: boolean) {
+    let botPaused = true; // par défaut prudent : ne jamais répondre si on ne sait pas
+
     try {
-        if (!msg.key || !msg.key.remoteJid) return;
-        const remoteJid = msg.key.remoteJid;
-
-        // Ignore status updates
-        if (remoteJid === 'status@broadcast') return;
-
         let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
 
         // Handle Self Messages (just log to history)
-        if (msg.key.fromMe) {
+        if (msg.key!.fromMe) {
             if (text) {
                 await addToHistory(tenantId, remoteJid, 'model', text);
             }
@@ -41,7 +63,7 @@ export async function handleMessage(tenantId: string, sock: WASocket, msg: proto
 
         // INTERRUPTEUR GLOBAL — lu une seule fois, utilisé partout dans ce handler
         const settings = await db.getSettings(tenantId);
-        const botPaused = settings.botActive === false;
+        botPaused = settings.botActive === false;
 
         // --- IMAGE ---
         if (msg.message?.imageMessage) {
@@ -68,7 +90,6 @@ export async function handleMessage(tenantId: string, sock: WASocket, msg: proto
                 // Get inventory context for image analysis
                 const products = await db.getProducts(tenantId);
                 const inventoryContext = products.map((p: any) => `- ${p.name}`).join('\n'); // Simplified context for image
-
                 const description = await analyzeImage(buffer as Buffer, mimeType, caption, inventoryContext);
                 text = `[User sent an Image] Description: ${description}. Caption: ${caption}`;
             }
@@ -86,7 +107,7 @@ export async function handleMessage(tenantId: string, sock: WASocket, msg: proto
         if (botPaused) return;
 
         // Mark Read & Typing
-        await sock.readMessages([msg.key]);
+        await sock.readMessages([msg.key!]);
         await sock.sendPresenceUpdate('composing', remoteJid);
 
         // DELAY SIMULATION
@@ -97,5 +118,11 @@ export async function handleMessage(tenantId: string, sock: WASocket, msg: proto
 
     } catch (e) {
         console.error('Error in messageHandler:', e);
+        // Le client ne doit pas rester sans réponse sur un crash technique
+        if (!isHistory && !msg.key?.fromMe && !botPaused) {
+            try {
+                await sock.sendMessage(remoteJid, { text: 'Petit souci technique de mon côté 🙏 Pouvez-vous renvoyer votre message ?' });
+            } catch { /* la connexion est peut-être la cause — on ne boucle pas */ }
+        }
     }
 }

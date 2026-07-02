@@ -4,7 +4,44 @@
 > Donne le contexte produit, technique et l'historique des décisions clés
 > sans qu'il soit nécessaire de relire tout le code ou les anciens docs.
 
-**Dernière mise à jour :** 11 juin 2026 — grosse session Cowork (voir §0 ci-dessous)
+**Dernière mise à jour :** 1er juillet 2026 — MOTEUR DE VENTE DURCI (voir §0bis)
+
+---
+
+## 0bis. ⚡ MISE À JOUR 1ER JUILLET 2026 — LE MOTEUR DE VENTE (lire avant de toucher au flux WhatsApp)
+
+**Principe cardinal : L'IA PROPOSE, LE SERVEUR DISPOSE.** Un méga-audit a révélé
+que la négociation IA n'était pas câblée aux commandes (prix public toujours facturé),
+que le stock n'était JAMAIS décrémenté, que la livraison n'entrait pas dans les totaux,
+et que l'état WAITING_FOR_ADDRESS aspirait n'importe quel texte comme adresse.
+Tout est corrigé via un moteur central :
+
+- **`backend/src/services/whatsapp/salesEngine.ts`** — logique PURE testée (30 tests,
+  `npm test` dans backend/) : contexte inventaire unique (avec `id:` produit),
+  parsing des tags `[ADD_TO_CART: productId | qty | prix_unitaire]` émis par l'IA,
+  `validateDeal` (plancher = minPrice sinon marge, clamp au prix public, stock,
+  quantités bornées), zones de livraison depuis l'adresse, heuristiques
+  annulation/question/adresse.
+- **Protocole IA** (aiService) : quand le client confirme l'achat, l'IA émet le tag
+  ADD_TO_CART avec le PRIX NÉGOCIÉ. Le serveur revalide TOUT ; si l'IA promet sous
+  le plancher → message correctif automatique + activity log warning.
+  `detectPurchaseIntent` supprimé → **1 seul appel Gemini par message** (au lieu de 2).
+- **flowHandler** : échappatoires d'état ("annuler" partout ; une question pendant
+  l'attente d'adresse est répondue par l'IA au lieu de devenir l'adresse) ;
+  à l'adresse → zone matched → **livraison incluse dans le total** (ligne d'article
+  `_delivery` visible dans le dashboard) ; l'historique n'est PLUS effacé après commande.
+- **Stock atomique** : `database/migrations/add_adjust_stock_rpc.sql` (fonction
+  plpgsql `adjust_stock`, verrou FOR UPDATE, gère le stock par option de variation).
+  ⚠️ **À APPLIQUER dans Supabase SQL Editor** — en attendant, fallback JS non-atomique
+  loggé. Décrément à la commande, restock à l'annulation (updateOrderStatus).
+- **File par conversation** (messageHandler) : messages d'un même client sérialisés,
+  réponse polie en cas de crash.
+- **Reçus** : matching tolérant (total exact OU articles+zone configurée si la zone
+  était inconnue au checkout — jamais un sous-paiement) + extraction du DESTINATAIRE
+  du reçu, remontée au vendeur (« vérifiez que c'est bien VOTRE compte »).
+- **Simulateur** (Réglages → Mon Bot, `/api/ai/simulate`) : passe désormais par le
+  VRAI `handleFlow` en mode `dryRun` (faux socket) — aucune divergence possible
+  entre le bot testé et le bot déployé, mais aucune commande/stock réels touchés.
 
 ---
 
