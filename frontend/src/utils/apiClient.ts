@@ -33,6 +33,13 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
             window.dispatchEvent(new Event('auth:unauthorized'));
         }
 
+        // 402 = abonnement expiré (middleware checkSubscription côté backend).
+        // On prévient l'app pour afficher l'écran de renouvellement au lieu de
+        // laisser les pages échouer en silence. On NE déconnecte PAS l'utilisateur.
+        if (response.status === 402) {
+            window.dispatchEvent(new Event('subscription:expired'));
+        }
+
         return response;
     } catch (error) {
         // Network errors or CORS errors

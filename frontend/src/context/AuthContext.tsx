@@ -25,6 +25,7 @@ interface AuthContextType {
     tenant: Tenant | null;
     token: string | null;
     isAuthenticated: boolean;
+    subscriptionExpired: boolean;
     login: (token: string, user: User, tenant: Tenant, rememberMe?: boolean) => void;
     logout: () => void;
     isLoading: boolean;
@@ -69,11 +70,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     const [isLoadingData, setIsLoadingData] = useState(false);
+    const [subscriptionExpired, setSubscriptionExpired] = useState(false);
 
     const logout = useCallback(() => {
         setToken(null);
         setUser(null);
         setTenant(null);
+        setSubscriptionExpired(false);
 
         // Clear from both storages
         localStorage.removeItem('token');
@@ -123,6 +126,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setToken(newToken);
         setUser(newUser);
         setTenant(newTenant);
+        setSubscriptionExpired(false);
 
         // Choose storage based on rememberMe preference
         const storage = rememberMe ? localStorage : sessionStorage;
@@ -150,8 +154,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const handleUnauthorized = () => {
             logout();
         };
+        const handleSubscriptionExpired = () => {
+            setSubscriptionExpired(true);
+        };
         window.addEventListener('auth:unauthorized', handleUnauthorized);
-        return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+        window.addEventListener('subscription:expired', handleSubscriptionExpired);
+        return () => {
+            window.removeEventListener('auth:unauthorized', handleUnauthorized);
+            window.removeEventListener('subscription:expired', handleSubscriptionExpired);
+        };
     }, [logout]);
 
     return (
@@ -160,6 +171,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             tenant,
             token,
             isAuthenticated: !!token,
+            subscriptionExpired,
             login,
             logout,
             isLoading: isLoadingData,

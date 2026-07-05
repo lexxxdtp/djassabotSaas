@@ -22,6 +22,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const VerifyAccount = lazy(() => import('./pages/VerifyAccount'));
+const SubscriptionExpired = lazy(() => import('./pages/SubscriptionExpired'));
 const Terms = lazy(() => import('./pages/Legal').then(m => ({ default: m.Terms })));
 const Privacy = lazy(() => import('./pages/Legal').then(m => ({ default: m.Privacy })));
 
@@ -74,6 +75,7 @@ function App() {
 
             <Route element={<ProtectedRoute />}>
               <Route path="/verify-account" element={<VerifyAccount />} />
+              <Route path="/abonnement-expire" element={<SubscriptionExpired />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/dashboard" element={<DashboardLayout />}>
                 {/* New home: operational dashboard */}

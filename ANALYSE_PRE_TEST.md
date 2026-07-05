@@ -1,211 +1,158 @@
-# 🔍 DjassaBot — Analyse pré-test (audit complet)
+# 🔍 DjassaBot — Re-audit complet (v2)
 
-> Audit d'architecture réalisé le **5 juillet 2026** pour répondre à une seule question :
-> **« Qu'est-ce qui manque VRAIMENT avant de mettre l'app entre les mains de testeurs mercredi ? »**
+> Deuxième passe d'audit, **5 juillet 2026** (Opus, niveau élevé), réalisée APRÈS avoir
+> réglé les bloquants d'inscription. Contrairement à la v1, cette passe lit en profondeur
+> le cœur métier (moteur de vente, stock, IA, DB) et vérifie l'état RÉEL en prod
+> (VPS + Supabase + Vercel + Firebase), pas seulement les docs.
 >
-> Dossier audité : `/Users/alexvianneykoffi/djassabotSaas` (le projet actif — pas `djassabotSaas-1`).
-> Ce document est un **plan d'action** à donner tel quel à une session de code.
+> **Correction importante vs v1 :** plusieurs "manques" de la v1 sont en fait déjà réglés
+> (voir §2). L'enforcement d'abonnement, notamment, EXISTE désormais — mais partiellement.
+
+Dossier audité : `/Users/alexvianneykoffi/djassabotSaas` — HEAD `e42d8bf`, working tree propre, tout pushé.
 
 ---
 
-## 0. Verdict en une phrase
+## 0. Verdict
 
-**Le cœur du produit (bot IA, moteur de vente, WhatsApp, dashboard) est solide et déjà durci.**
-Ce qui manque n'est PAS du code produit — ce sont **3 branchements d'infrastructure** (emails, paiement, SMS)
-et **1 trou stratégique** (rien ne bloque un abonnement expiré). Aucun de ces 4 points n'exige de
-réécrire l'app. Ce sont des connexions à finaliser.
+**Le produit est prêt pour le test de mercredi.** Le cœur (inscription, bot IA, moteur de
+vente, dashboard) est solide et vérifié. Ce qui reste n'est **pas bloquant pour un test
+gratuit** : c'est de l'enforcement de monétisation et du durcissement post-test.
 
-**Peut-on faire tester mercredi ?** → OUI, à condition de régler les 2 bloquants d'inscription
-(emails + le mur de vérification). Le paiement peut attendre le lancement réel (les testeurs ne paient pas).
+Note de qualité : le moteur de vente (`salesEngine` + `flowHandler` + `dbService` stock)
+est **du très bon code** — stock atomique avec rollback, plancher de prix, échappatoires
+d'état, file par conversation, ligne livraison exclue du stock partout. 30/30 tests passent,
+lint clean. Rien à retoucher là-dedans avant le test.
 
 ---
 
-## 1. ✅ Ce qui est SOLIDE — NE PAS y toucher avant le test
+## 1. ✅ Réglé pendant les sessions du 5 juillet (vérifié en réel)
 
-Ne perds pas de temps là-dessus, c'est fait et testé :
-
-| Domaine | État |
+| Point | Preuve |
 |---|---|
-| Moteur de vente (IA propose / serveur dispose, plancher prix, stock, livraison) | ✅ 30 tests unitaires, durci le 1er juillet |
-| Connexion WhatsApp (Baileys) + reconnexion + watchdog + backup nocturne | ✅ |
-| Sécurité auth (JWT, bcrypt, rate-limiting 20/15min + OTP 5/10min) | ✅ |
-| Vérification serveur des OTP téléphone (Firebase Admin) | ✅ code correct |
-| Anti-fraude reçus Wave/OM (anti-réutilisation transaction) | ✅ |
-| Bot en pause par défaut (`bot_active`) + interrupteur | ✅ |
-| Webhook Paystack (signature HMAC constante-time) | ✅ code correct |
-| Pages légales (`/conditions`, `/confidentialite`) + FAQ in-app | ✅ |
-| Refonte UI mobile-first PWA (design system noir/vert cohérent) | ✅ |
-| Multi-tenant (filtrage `tenantId` partout) | ✅ |
+| Emails d'inscription vers tout destinataire | Domaine `djassabot.com` vérifié sur Resend, `RESEND_FROM` posé sur le VPS, code reçu sur `lexxxdtp@gmail.com` (pas le compte owner) |
+| SMS OTP (ex-bug `auth/error-code:-39`) | Projet Firebase propre `djassabot-prod` (Blaze, Téléphone activé, CI autorisée), testé avec un vrai numéro → connexion réussie |
+| Email optionnel à l'inscription, téléphone obligatoire | `Signup.tsx` + backend acceptent déjà `email` absent |
+| SMS prioritaire sur email à la vérification | `VerifyAccount.tsx` |
+| Filet "Vérifier plus tard" | `VerifyAccount.tsx` + `ProtectedRoute.tsx` (flag `verificationSkipped`) |
+| Design inscription (3 étapes) | Refonte via skills, cohérent avec le design system |
+| VPS à jour + bot en ligne | `pm2` : `djassabot-backend` online, 1 tenant actif, Supabase+Firebase OK |
 
 ---
 
-## 2. 🔴 BLOQUANTS — à régler AVANT de laisser un testeur s'inscrire
+## 2. ✅ Dettes de la v1 qui étaient DÉJÀ réglées (le code a avancé)
 
-### B1. Les emails ne partent que vers TON adresse (bloquant n°1)
-- **Preuve :** `backend/src/services/resendService.ts` — l'expéditeur est **codé en dur** à
-  `onboarding@resend.dev` dans **les 4 fonctions** (`sendOtpEmail`, `sendVerificationEmail`,
-  `sendPasswordResetEmail`, `sendBotDownAlert`).
-- `onboarding@resend.dev` est l'adresse bac-à-sable de Resend : elle **ne délivre qu'à ton propre
-  compte** (anadorbreak@gmail.com). Tout autre testeur ne reçoit **jamais** son code.
-- **⚠️ Ce n'est PAS qu'un problème de DNS.** Même après avoir vérifié ton domaine dans Resend,
-  il faut **changer le code** aux 4 endroits pour mettre `DjassaBot <no-reply@ton-domaine.com>`.
-- **À faire :**
-  1. Acheter le domaine + le vérifier dans Resend (ajouter les 3 enregistrements DNS : MX/TXT/DKIM).
-  2. Remplacer les 4 `from: 'DjassaBot <onboarding@resend.dev>'` par ton adresse de domaine.
-     → Idéalement, sortir l'adresse dans une variable d'env `RESEND_FROM` pour ne plus jamais y retoucher.
-  3. Ajouter `RESEND_API_KEY` (la vraie clé) dans le `.env` du VPS s'il n'y est pas.
+La v1 les listait comme "à faire". Vérification faite, elles sont **résolues** :
 
-### B2. La page « Vérifiez votre compte » est un mur SANS issue de secours
-- **Preuve :** `frontend/src/pages/VerifyAccount.tsx`. Après inscription, l'utilisateur atterrit ici
-  et **ne peut avancer que s'il valide un code email OU téléphone**. La seule autre option affichée
-  est **« Se déconnecter »**. Pas de bouton « passer / plus tard ».
-- Conséquence : tant que B1 (email) et B3 (SMS) ne marchent pas, **aucun testeur ne peut entrer**,
-  même si le backend lui a déjà donné un token valide (voir note ci-dessous).
-- **Note importante :** côté backend, `signup` (`authController.ts:78-91`) crée déjà le compte, le trial
-  30 jours, et **renvoie un token utilisable**. La vérification email/téléphone n'est **pas** exigée par
-  le serveur pour utiliser l'app. Le blocage est **100% frontend** (cette page).
-- **2 options :**
-  - **(Recommandé, propre)** régler B1 → l'onglet **E-mail** de cette page marchera pour tout le monde.
-  - **(Filet de sécurité)** ajouter un bouton temporaire « Vérifier plus tard » qui `navigate('/onboarding')`,
-    à retirer après la phase de test. Utile si le domaine n'est pas prêt mercredi matin.
-
-### B3. Inscription par SMS cassée (Firebase `auth/error-code:-39`)
-- Le code frontend + backend est correct ; le blocage est **dans la config du projet Firebase**
-  `gen-lang-client-0191931206` (projet auto-généré par Google AI Studio, trop bridé pour l'Auth SMS).
-- **Décision à prendre :** ne bloque PAS le test là-dessus. Si l'email (B1) marche, **le SMS n'est pas
-  indispensable pour mercredi** — l'onglet E-mail suffit. Traite le SMS après.
-- **Quand tu t'y attaques**, la piste la plus fiable = **créer un projet Firebase propre**
-  (`djassabot-prod`) depuis la console Firebase (PAS depuis AI Studio), puis refaire : service account
-  côté VPS + 7 variables `VITE_FIREBASE_*` sur Vercel + domaine dans « Authorized domains ».
-  Le `projectId` doit être **identique** des deux côtés.
+- **Enforcement d'abonnement** : le middleware `checkSubscription` (`middleware/auth.ts`)
+  existe ET est **branché sur toutes les routes du dashboard** (`index.ts` : whatsapp, chats,
+  marketing, ai, orders, products, settings, dashboard…). Il renvoie **402
+  `SUBSCRIPTION_EXPIRED`** si `subscription.status` = expired/cancelled OU si `expiresAt < now`.
+  → Le dashboard EST donc coupé à l'expiration du trial. (Nuance importante en §3.)
+- **`apiClient` partout** : 22 pages l'utilisent, **0 `fetch` direct** restant. (v1 disait "14 pages en fetch".)
+- **`console.log` frontend** : **0** restant.
+- **Bundle lourd** : le frontend n'importe **plus** `@supabase/supabase-js`. Les uploads
+  passent par le backend (`POST /api/products/upload` → service_role). Aucune clé Supabase
+  embarquée côté navigateur.
+- **Migration stock atomique** `adjust_stock` : **appliquée et présente** en prod Supabase (4 params, vérifiée).
+- **RLS** : n'est plus `using(true)`. Aujourd'hui **RLS activé sur 10/11 tables avec 0 policy**
+  = refus par défaut pour la clé anon, et le backend en `service_role` bypasse → l'app marche
+  et l'accès anon est verrouillé. C'est **plus sûr** que l'ancien état. (Reste un détail en §4.)
 
 ---
 
-## 3. 🟠 IMPORTANT — trou stratégique à corriger vite (avant d'encaisser)
+## 3. 🟠 Le vrai trou restant : enforcement d'abonnement ASYMÉTRIQUE
 
-### S1. RIEN ne bloque un abonnement expiré → le produit est gratuit à vie
-C'est le point le plus important **après** les bloquants d'inscription. Aujourd'hui :
-- Le middleware `backend/src/middleware/auth.ts` ne vérifie **que la validité du JWT** — jamais le
-  statut du tenant ni l'expiration de l'abonnement.
-- Le bot (`messageHandler.ts:66`) ne regarde **que** `botActive` — jamais l'abonnement.
-- Le webhook Paystack `subscription.disable` ne fait **qu'un `console.log`** (`paystackService.ts`) :
-  aucune désactivation réelle.
-- **Aucun cron** ne passe les tenants en `expired` quand `expiresAt` est dépassé.
+C'est le point le plus important de ce re-audit. L'enforcement existe **côté dashboard**
+mais **pas côté bot**, et il manque le câblage UX.
 
-→ Résultat : un vendeur peut s'inscrire (trial 30 j) et **utiliser le bot indéfiniment sans jamais payer**.
-   Pour une phase de test gratuite c'est OK ; **avant le lancement payant, c'est à coder.**
-- **À faire (après le test) :**
-  1. Un cron quotidien qui lit `subscriptions.expiresAt` et passe le tenant en `expired` + coupe le bot.
-  2. Un middleware (ou check dans le flux bot) qui refuse de répondre si `status = expired`.
-  3. Câbler `subscription.disable` / échec de renouvellement Paystack pour marquer `expired`.
-  4. Email de relance J-3 / J-0 (utilise déjà Resend).
+1. **Le bot WhatsApp continue de vendre après expiration.** `messageHandler.ts` ne vérifie
+   QUE `botActive`, jamais l'abonnement. Et `getActiveTenants()` démarre au boot tout tenant
+   dont `status ∈ {active, trial}` — or **aucun cron ne bascule `tenant.status` en `expired`**.
+   Donc un vendeur dont le trial a expiré : ne peut plus voir son dashboard (402), mais son
+   bot répond toujours aux clients. Pour un SaaS, c'est l'inverse du levier voulu (on veut que
+   le bot s'arrête pour pousser au paiement).
+   → **À faire** : (a) check abonnement dans le flux bot (ou au démarrage de session), et
+   (b) un cron quotidien qui passe les tenants expirés en `expired` + coupe la session Baileys.
 
-### S2. Paystack en clés TEST + plans inexistants
-- `.env` : `PAYSTACK_SECRET_KEY=sk_test_xxxxx` et `PAYSTACK_PLAN_*=PLN_..._code` (placeholders).
-- `initializeSubscription` **lève une erreur** si le plan code est vide → l'abonnement ne peut pas
-  s'initialiser, même en test.
-- **Non bloquant pour mercredi** (les testeurs ne paient pas). Mais pour encaisser :
-  1. Passer en clés **live**.
-  2. Créer les 3 plans (5 000 / 10 000 / 15 000 FCFA) dans le dashboard Paystack et coller leurs
-     `PLN_...` dans le `.env` du VPS.
-  3. Enregistrer l'URL du webhook `https://<ton-domaine>/api/paystack/webhook` côté Paystack.
-  4. Faire **un vrai paiement de test** à petit montant.
-  - ⚠️ Vérifie aussi que **Paystack supporte bien les comptes marchands en Côte d'Ivoire** pour ton cas
-    (encaissement mobile money Wave/OM). Si non → prévoir un plan B paiement (lien Wave manuel) pour le lancement.
+2. **Le frontend ne gère pas le 402.** `apiClient` n'intercepte que le 401 (logout). Sur un
+   402 `SUBSCRIPTION_EXPIRED`, les pages échouent en silence (état cassé) au lieu d'afficher
+   un écran "Votre abonnement a expiré → renouveler". → Ajouter un handler 402 dans `apiClient`
+   qui redirige vers un écran paywall.
+
+3. **Paystack ne peut pas encaisser.** Sur le VPS, `PAYSTACK_SECRET_KEY` et les 3
+   `PAYSTACK_PLAN_*` sont **VIDES** (pas juste "test" : rien). `initializeSubscription` lève
+   donc une erreur (vu dans les logs : "Plan code not configured"). Et le webhook
+   `subscription.disable` ne fait qu'un `console.log` (pas de propagation d'annulation).
+   → **À faire pour encaisser** : clés live + créer les 3 plans (5 000/10 000/15 000) + coller
+   les `PLN_...` + enregistrer le webhook + 1 vrai paiement de test. ⚠️ Vérifier aussi que
+   Paystack encaisse bien en Côte d'Ivoire pour ton cas (mobile money), sinon plan B lien Wave.
+
+**Aucun de ces 3 points ne bloque le test de mercredi** (les testeurs sont en trial gratuit,
+30 jours) — mais les 3 sont à régler **avant d'ouvrir le paiement**.
 
 ---
 
-## 4. 🟡 À VÉRIFIER sur le VPS ce soir (config, pas du code)
+## 4. 🟡 Important, non bloquant
 
-Ces points ne se voient pas dans le code local — ils dépendent du `.env` et de l'état du serveur :
-
-- [ ] **`GEMINI_API_KEY`** : le `.env` local a un placeholder. **Confirme que le VPS a la vraie clé**
-      (sinon le bot ne répond jamais — `aiService.ts` log « No valid GEMINI_API_KEY »). Modèle utilisé :
-      `gemini-2.5-flash`.
-- [ ] **`JWT_SECRET`** : doit être le secret fort (pas le défaut `tdjaasa-super-secret...`).
-- [ ] **`SUPABASE_KEY`** : doit être la clé **service_role** (le local en a une valide — vérifie le VPS,
-      surtout AVANT d'appliquer la migration RLS, sinon le dashboard casse).
-- [ ] **`RESEND_API_KEY`** + **`FIREBASE_SERVICE_ACCOUNT_PATH`** présents sur le VPS.
-- [ ] **`NODE_ENV=production`** (désactive `/api/debug/seed`).
-- [ ] **`pm2 startup` + `pm2 save`** actifs (survie au reboot) — normalement fait le 11/06, à re-confirmer.
-- [ ] **Bucket Supabase Storage `product-images`** existe et est **public** (sinon upload photo KO).
-
-### Migrations SQL
-- `database/migrations/add_adjust_stock_rpc.sql` — **stock atomique**. D'après la dernière session
-  vérifiée (2 juillet), cette fonction est **déjà appliquée et prouvée correcte en prod Supabase**.
-  → **À confirmer seulement** (SQL Editor : la fonction `adjust_stock` existe-t-elle bien ?). Le CLAUDE.md
-  qui dit « à appliquer » est périmé sur ce point.
-- `database/migrations/enable_rls_defense_in_depth.sql` — **RLS**, toujours **non appliquée**.
-  ⚠️ N'applique QUE si le `.env` VPS
-  utilise bien la clé service_role, et **teste le dashboard juste après**. Non urgent pour 10 testeurs
-  (le backend filtre déjà par `tenantId`), mais à faire avant d'ouvrir en grand.
+- **Quota conversations/mois non implémenté** (500 Starter / 2 000 Pro / illimité). Un Starter
+  peut consommer autant de Gemini qu'un Business. Seule la limite 50 produits Starter existe.
+  → À coder avant le lancement payant (sinon marge non maîtrisée).
+- **RLS "propre" pas en place** : les policies tenant-scopées (`auth.uid()`/JWT) ne sont pas
+  écrites. État actuel sûr (default-deny + service_role) mais pas la defense-in-depth complète.
+  Détail : la table **`carts` a le RLS désactivé** (exposition faible : état de panier transitoire).
+- **Monitoring serveur absent** : si le VPS tombe à 3h, personne n'est alerté. Health check =
+  juste `GET /` qui renvoie du texte. → UptimeRobot (gratuit) sur `https://187-77-171-44.nip.io/`, 10 min.
+- **Pas de vue admin multi-tenant** pour Alex. Pour 10 testeurs, le Table Editor Supabase suffit.
+- **`support@djassabot.com`** (affiché dans FAQ/CGU) : le domaine existe maintenant → l'adresse
+  peut être créée (Hostinger/Resend). Toujours à faire.
 
 ---
 
-## 5. 🟢 Dette technique connue — NE PAS toucher avant le test
+## 5. 🟢 Dette légère / cosmétique (ignorer avant le test)
 
-À laisser tranquille pour l'instant (aucun impact sur un test à 10 vendeurs) :
-- Bundle frontend un peu lourd (client Supabase de 169 KB pour les uploads — migrable vers le backend plus tard).
-- Table `customers` créée mais inutilisée (CRM léger futur, ou à drop).
-- `console.log` à nettoyer (ProductDetail, Settings, Inbox).
-- Marketing UI mockée (mais le backend paniers abandonnés tourne réellement en cron 30 min).
-- Codes promo non implémentés (retirés de l'UI, OK).
-- Notifications push (nice-to-have post-test).
-- Icônes PWA branded (192/512) toujours par défaut — cosmétique.
-- Monitoring serveur : mettre un **UptimeRobot** (gratuit, 10 min) sur `https://187-77-171-44.nip.io/`
-  pour être alerté si le VPS tombe. Recommandé mais pas bloquant.
+- Notifications push (commande reçue, bot déconnecté) : absentes. L'alerte **email** bot-down existe.
+- `mockNegotiationLogic` (aiService) utilise un ancien format de contexte inventaire — code
+  quasi-mort (ne se déclenche que sans clé Gemini, donc jamais en prod). À nettoyer un jour.
+- Le prompt système IA est passé comme un faux tour "user" au lieu du champ natif
+  `systemInstruction` de Gemini. Fonctionne, défenses anti-injection présentes ; durcissement mineur possible.
+- `@google/generative-ai` est le SDK déprécié (remplacé par `@google/genai`). Fonctionne.
+- Icônes PWA : OK (vrai logo posé). Rien à faire.
 
 ---
 
-## 6. 📋 Plan concret — dans l'ordre
+## 6. 📋 Plan
 
-### ⚠️ D'ABORD : déployer les dernières corrections (elles ne sont PAS en ligne)
-- Le commit `ecc715b` (2ᵉ passe de vérif : 2 trous du moteur de vente + fix z-index formulaire produit)
-  est **committé mais PAS pushé**. Donc ni Vercel (front) ni le VPS (back) n'ont ces correctifs.
-- **À faire :** `git push origin main` (→ Vercel redéploie le front), puis sur le VPS :
-  `git pull origin main && cd backend && npm install && npm run build && pm2 restart djassabot-backend`.
-- Sans ça, tu testerais une version **antérieure aux derniers fixes**.
+### Avant mercredi (test testeurs) — tout est prêt, juste à valider
+1. Créer `support@djassabot.com`.
+2. (Optionnel, 10 min) UptimeRobot sur l'API.
+3. Test de bout en bout d'une VRAIE vente avec ta 2e puce : client écrit → bot négocie →
+   commande au prix négocié → reçu Wave → statut → livraison. (Le code est prêt et testé
+   unitairement ; reste à le voir tourner en conditions réelles une fois.)
+4. Recruter les testeurs.
 
-### 🌙 Ce soir (déblocage inscription)
-1. **Payer le VPS** (reconduction) — sinon tout tombe. (Rappel : renouvellement Hostinger jugé cher —
-   si tu migres vers Hetzner/Contabo, **sauvegarde d'abord** `auth_info_baileys/` + `.env` + `firebase-admin-key.json`.)
-2. **Acheter le domaine.**
-3. **Vérifier le domaine dans Resend** (3 enregistrements DNS).
-4. **Modifier `resendService.ts`** : les 4 `from` → ton adresse de domaine (idéalement via `RESEND_FROM`).
-5. Mettre à jour le `.env` VPS (`RESEND_API_KEY`, domaine), rebuild + `pm2 restart`.
-6. **Filet de sécurité** (si le DNS n'est pas propagé à temps) : bouton temporaire « Vérifier plus tard »
-   sur `VerifyAccount.tsx`.
-7. Créer l'adresse **support@ton-domaine** (affichée dans la FAQ/CGU).
+### Avant d'ouvrir le PAIEMENT (post-test)
+5. Enforcement bot : couper le bot à l'expiration + cron qui passe les tenants en `expired`.
+6. Handler 402 dans `apiClient` + écran paywall "renouveler l'abonnement".
+7. Paystack live + 3 plans + webhook + vrai paiement (vérifier support CI mobile money).
+8. Quota conversations/mois par plan.
 
-### 🔍 Mardi (validation avant les testeurs)
-8. Test d'inscription **end-to-end avec un email qui n'est PAS le tien** → confirmer réception du code.
-9. Vérifier les points VPS du §4 (Gemini, JWT, service_role, NODE_ENV, pm2).
-10. Appliquer `add_adjust_stock_rpc.sql` dans Supabase.
-11. **Parcours de vente complet** avec ta 2ᵉ puce : client écrit → bot répond → photo → négo →
-    commande → reçu Wave → statut → livraison. C'est LE test qui valide le cœur du produit.
-12. (Optionnel) UptimeRobot sur l'API.
-
-### 🚀 Mercredi — test avec de vrais vendeurs
-- L'objectif du test : un vendeur lambda arrive à **bot actif en < 10 min sans ton aide**.
-
-### ⏭️ Après le test (avant d'encaisser)
-- S1 (enforcement abonnement expiré) + S2 (Paystack live + plans + webhook + vrai paiement).
-- B3 (SMS Firebase — projet propre) si tu veux l'inscription par téléphone.
-- RLS Supabase.
+### Durcissement (quand tu veux)
+9. RLS tenant-scopé propre + activer RLS sur `carts`.
+10. Nettoyage `mockNegotiationLogic`, migration `@google/genai`, prompt `systemInstruction` natif.
 
 ---
 
-## 7. ❌ Ce qu'il ne faut PAS faire
+## 7. ❌ À ne pas faire
 
-- ❌ Ne bloque pas mercredi sur le **SMS Firebase** — l'email suffit pour tester.
-- ❌ Ne passe pas Paystack en live **dans la précipitation** — les testeurs ne paient pas ; fais-le proprement après.
-- ❌ N'applique pas la **migration RLS** sans avoir confirmé la clé service_role sur le VPS (ça peut casser le dashboard).
-- ❌ Ne touche pas au **moteur de vente / UI** avant le test : c'est stable, chaque modif = risque de régression.
-- ❌ Ne mets pas les variables Firebase Vercel en « Sensitive » (elles redeviennent illisibles).
+- ❌ Ne touche pas au moteur de vente / stock avant le test : c'est le code le plus solide du
+  projet, chaque modif = risque de régression sur la partie qui fait rentrer l'argent.
+- ❌ Ne passe pas Paystack en live dans la précipitation (testeurs = gratuit ; fais-le proprement après).
+- ❌ N'écris pas les policies RLS tenant-scopées à la va-vite juste avant le test (risque de
+  casser le dashboard si mal fait). L'état actuel est sûr.
 
 ---
 
-*Résumé : le produit est bien plus prêt que « il manque plein de choses ». Il manque surtout
-**le domaine + 4 lignes dans resendService.ts + une porte de sortie sur VerifyAccount**. Fais ça ce soir,
-teste l'inscription avec un email tiers demain, et tu peux lancer mercredi. Le paiement et l'enforcement
-d'abonnement se règlent tranquillement après, pendant que les testeurs utilisent le produit gratuitement.*
+*Résumé v2 : bien plus avancé que ne le disait la v1. Les 3 bloquants d'inscription sont
+levés et vérifiés en réel. Le seul vrai chantier restant est l'enforcement d'abonnement
+(bot + UX 402 + Paystack), et il n'est pas nécessaire tant que les testeurs sont en trial.
+Tu peux lancer mercredi.*

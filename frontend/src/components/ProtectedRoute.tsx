@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute: React.FC = () => {
-    const { isAuthenticated, isLoading, user } = useAuth();
+    const { isAuthenticated, isLoading, user, subscriptionExpired } = useAuth();
     const location = useLocation();
 
     if (isLoading) {
@@ -12,6 +12,15 @@ const ProtectedRoute: React.FC = () => {
 
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
+    }
+
+    // Abonnement / essai expiré (402 renvoyé par le backend) : on bloque l'accès
+    // au dashboard et on dirige vers l'écran de renouvellement, qui reste joignable.
+    if (subscriptionExpired && location.pathname !== '/abonnement-expire') {
+        return <Navigate to="/abonnement-expire" replace />;
+    }
+    if (!subscriptionExpired && location.pathname === '/abonnement-expire') {
+        return <Navigate to="/dashboard" replace />;
     }
 
     // Filet de sécurité phase de test : "Vérifier plus tard" sur VerifyAccount pose ce flag.
