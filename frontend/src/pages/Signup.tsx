@@ -75,7 +75,7 @@ const Signup: React.FC = () => {
                 fullName,
                 birthDate: birthYear ? `${birthYear}-01-01` : null,
                 password,
-                email: email.toLowerCase().trim(),
+                email: email.trim() ? email.toLowerCase().trim() : undefined,
                 phone: `+225${phone}`
             };
 
@@ -103,8 +103,8 @@ const Signup: React.FC = () => {
         setError('');
         if (step === 1) {
             if (!fullName.trim()) return setError('Votre nom complet est requis.');
-            if (!email.trim() || !email.includes('@')) return setError('Adresse e-mail valide requise.');
             if (phone.length !== 10) return setError('Le numéro WhatsApp doit contenir 10 chiffres.');
+            if (email.trim() && !email.includes('@')) return setError('Adresse e-mail invalide.');
             setStep(2);
         } else if (step === 2) {
             if (!businessName.trim()) return setError('Nom du commerce requis.');
@@ -180,20 +180,6 @@ const Signup: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre adresse e-mail</label>
-                            <div className="relative group">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={e => setEmail(e.target.value)}
-                                    placeholder="votre@email.com"
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
                             <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre numéro WhatsApp</label>
                             <div className="relative group">
                                 <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none z-10">
@@ -209,6 +195,22 @@ const Signup: React.FC = () => {
                                 />
                             </div>
                             <p className="mt-1 text-xs text-[#555]">10 chiffres — c'est le numéro qui sera lié à votre bot</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">
+                                Votre adresse e-mail <span className="normal-case font-normal text-[#555]">(optionnel)</span>
+                            </label>
+                            <div className="relative group">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    placeholder="votre@email.com"
+                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                />
+                            </div>
                         </div>
 
                         <button
