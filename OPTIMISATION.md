@@ -23,15 +23,12 @@
 
 ## ⚡ AXE 1 — Vitesse / performance
 
-### 🔴 P1 — Requêtes redondantes du bot à chaque message (backend, risque faible)
-Le chemin chaud (chaque message WhatsApp) refait des requêtes déjà faites :
-- `db.getSettings(tenantId)` est appelé **2 fois** : dans `messageHandler` PUIS dans `flowHandler`.
-- `getSession` est lu dans `messageHandler` (addToHistory) puis **re-lu** dans `flowHandler`.
-- `getProducts` idem selon le chemin.
-→ ~6 allers-retours Supabase par message, dont ~3 redondants.
-**Fix** : passer `settings` / `session` déjà chargés de `messageHandler` à `handleFlow` en
-paramètres, au lieu de les re-fetcher. **Zéro changement de comportement**, juste moins de
-latence et de charge DB. Effort : moyen. Gain : latence bot + coût Supabase, surtout en pic.
+### ✅ P1 — RÉGLÉ : requêtes redondantes du bot à chaque message (backend)
+`db.getSettings(tenantId)` était appelé 2 fois par message (`messageHandler` PUIS `flowHandler`),
+et `getProducts` était re-fetché sur les messages image alors que `messageHandler` l'avait déjà lu
+pour l'analyse de vision. Corrigé (commit `e8c5176`, déployé) : `handleFlow` accepte un paramètre
+optionnel `preloaded` (settings/products), rétrocompatible avec les 2 appelants existants. Zéro
+changement de comportement, juste moins d'allers-retours Supabase par message.
 
 ### 🟠 P2 — Cache court des données quasi-statiques (backend, risque faible)
 `settings`, `products`, `subscription` d'un tenant changent **rarement** mais sont relus à chaque
@@ -86,14 +83,17 @@ test de conversion à faire mercredi. Pas du code — de l'observation terrain.
 
 ## 🛡️ AXE 3 — Qualité / robustesse
 
-### 🔴 P1 — Le fallback `store.json` peut créer un "split-brain" de données (backend)
-Beaucoup de fonctions `dbService` font : *"essaie Supabase, en cas d'échec → écris/lis dans un
-fichier JSON local"*. En prod (Supabase actif), si une écriture Supabase échoue en cours de route
-(ex. `createOrder`), la donnée part dans le JSON local du VPS — invisible du dashboard, désynchro,
-et potentiellement perdue au redéploiement. **Fix** : en prod (Supabase activé), **échouer
-franchement** (remonter l'erreur) plutôt que retomber en silence sur le local, au moins pour les
-écritures critiques (commandes, stock, users). Effort : faible-moyen. Gain : plus de perte/désync
-silencieuse de commandes.
+### ✅ P1 — RÉGLÉ : le fallback `store.json` ne cause plus de "split-brain" de données (backend)
+Trois points corrigés (commit `375d370`, déployé) :
+- **`createOrder`** ne retombe plus silencieusement sur le fichier local si Supabase est configuré
+  — l'erreur est remontée, ce qui ACTIVE une logique déjà écrite mais jusque-là morte dans
+  `flowHandler.finalizeOrder` (restock automatique + message d'excuse au client). Le log d'activité
+  "Nouvelle commande" est isolé dans son propre try/catch pour ne plus risquer de dupliquer/annuler
+  une commande déjà créée avec succès si CETTE écriture secondaire échoue.
+- **`deleteProduct`** ne retombe plus sur le local en cas d'échec Supabase — renvoie `false` au lieu
+  de prétendre "supprimé" alors que le produit reste réel et vendable côté Supabase.
+- **`verifyAuthToken`** : vrai bug corrigé — un retour anticipé empêchait le fallback local (écrit
+  par `storeAuthToken`) d'être jamais consulté, rendant cette résilience prévue inopérante.
 
 ### 🟠 P2 — Code mort `mockNegotiationLogic` (aiService)
 Utilise un ancien format de contexte inventaire, ne se déclenche que sans clé Gemini (donc jamais
@@ -117,13 +117,13 @@ silencieux. Effort : moyen, étalé. À faire opportunément.
 | # | Action | Axe | Effort | Risque |
 |---|--------|-----|--------|--------|
 | ✅ | Index `activity_logs` | Perf | — | — (fait) |
-| 1 | Supprimer les requêtes redondantes du bot (passer settings/session à handleFlow) | Perf | Moyen | Faible |
-| 2 | Email de relance avant/à l'expiration (Resend) | UX/rétention | Faible | Faible |
-| 3 | `store.json` : échouer franchement en prod sur les écritures critiques | Robustesse | Faible-moyen | Faible |
-| 4 | Cache court settings/products/subscription par tenant | Perf/coût | Moyen | Faible |
-| 5 | Quota conversations/mois par formule | UX/offre + coût | Moyen | Moyen |
-| 6 | Alléger la page Analytics (Recharts → lib légère) | Perf | Moyen | Faible |
-| 7 | Nettoyages (mockNegotiationLogic, `any`, SDK Gemini, RLS) | Qualité | Étalé | Faible |
+| ✅ | Requêtes redondantes du bot (settings/products préchargés) | Perf | — | — (fait) |
+| ✅ | `store.json` : échouer franchement en prod (createOrder, deleteProduct, verifyAuthToken) | Robustesse | — | — (fait) |
+| 1 | Email de relance avant/à l'expiration (Resend) | UX/rétention | Faible | Faible |
+| 2 | Cache court settings/products/subscription par tenant | Perf/coût | Moyen | Faible |
+| 3 | Quota conversations/mois par formule | UX/offre + coût | Moyen | Moyen |
+| 4 | Alléger la page Analytics (Recharts → lib légère) | Perf | Moyen | Faible |
+| 5 | Nettoyages (mockNegotiationLogic, `any`, SDK Gemini, RLS) | Qualité | Étalé | Faible |
 
 **Aucun de ces points ne doit être fait avant le test de mercredi** — le produit est prêt. Ce sont
 des améliorations à dérouler une par une, chacune vérifiée en preview/tests avant push, après le test.
