@@ -69,6 +69,7 @@ const Signup: React.FC = () => {
         setError('');
         setLoading(true);
         try {
+            const cleanPhone = phone.replace(/^0/, '');
             const body = {
                 businessName,
                 businessType,
@@ -76,14 +77,20 @@ const Signup: React.FC = () => {
                 birthDate: birthYear ? `${birthYear}-01-01` : null,
                 password,
                 email: email.trim() ? email.toLowerCase().trim() : undefined,
-                phone: `+225${phone}`
+                phone: `+225${cleanPhone}`
             };
 
             const res = await apiClient('/auth/signup', {
                 method: 'POST',
                 body: JSON.stringify(body),
             });
-            const data = await res.json();
+            
+            let data: any = {};
+            try {
+                data = await res.json();
+            } catch {
+                throw new Error('Erreur de communication avec le serveur (réponse invalide).');
+            }
             if (!res.ok) throw new Error(data.error || 'Erreur inscription.');
             
             // Log in the user (they will be redirected to /verify-account by ProtectedRoute)

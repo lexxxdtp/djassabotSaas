@@ -43,7 +43,12 @@ const Login: React.FC = () => {
                 }),
             });
 
-            const data = await response.json();
+            let data: any = {};
+            try {
+                data = await response.json();
+            } catch {
+                throw new Error('Erreur de communication avec le serveur (réponse invalide).');
+            }
             if (!response.ok) throw new Error(data.error || 'Identifiants invalides');
 
             login(data.token, data.user, data.tenant, rememberMe);

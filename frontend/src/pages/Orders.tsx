@@ -289,13 +289,18 @@ export default function Orders() {
 
     const fetchOrders = useCallback(() => {
         apiClient('/orders')
-            .then(res => res.ok ? res.json() : [])
+            .then(res => {
+                if (res.ok) return res.json();
+                toast.error('Impossible de charger les commandes.');
+                return [];
+            })
             .then(data => {
                 setOrders(Array.isArray(data) ? data : []);
                 setLoading(false);
             })
             .catch(err => {
                 console.error(err);
+                toast.error('Erreur réseau. Impossible de charger les commandes.');
                 setOrders([]);
                 setLoading(false);
             });
@@ -309,16 +314,21 @@ export default function Orders() {
         try {
             const tempOrders = orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
             setOrders(tempOrders);
-            await apiClient(`/orders/${orderId}/status`, {
+            const res = await apiClient(`/orders/${orderId}/status`, {
                 method: 'PUT',
                 body: JSON.stringify({ status: newStatus })
             });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || 'Erreur lors de la mise à jour.');
+            }
             fetchOrders();
             if (selectedOrder?.id === orderId) {
                 setSelectedOrder({ ...selectedOrder, status: newStatus });
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error('Update failed', e);
+            toast.error(e.message || 'Impossible de mettre à jour le statut de la commande.');
             fetchOrders();
         }
     };

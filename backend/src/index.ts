@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import whatsappRoutes from './routes/whatsappRoutes';
@@ -13,7 +14,7 @@ import chatRoutes from './routes/chatRoutes';
 import marketingRoutes from './routes/marketingRoutes';
 import './jobs/abandonedCart';
 import { db } from './services/dbService';
-import { authenticateTenant } from './middleware/auth';
+import { authenticateTenant, checkSubscription } from './middleware/auth';
 import { logger } from './utils/logger';
 import { supabase } from './config/supabase';
 
@@ -29,6 +30,11 @@ process.on('unhandledRejection', (reason) => {
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Security headers
+app.use(helmet({
+    contentSecurityPolicy: false // Disable CSP for API responses to avoid cross-domain blocking
+}));
 
 // Trust the reverse proxy (nginx) — needed for correct client IP detection
 // behind nginx for express-rate-limit and other middleware.
@@ -47,8 +53,8 @@ app.use(cors({
         const isAllowed =
             allowedOrigins.includes(cleanOrigin) ||
             allowedOrigins.includes(origin) ||
-            cleanOrigin.endsWith('.vercel.app') ||
-            cleanOrigin.endsWith('.nip.io') ||
+            cleanOrigin === 'https://djassabot-saas.vercel.app' ||
+            cleanOrigin === 'https://187-77-171-44.nip.io' ||
             cleanOrigin.startsWith('http://localhost:') ||
             cleanOrigin.startsWith('http://127.0.0.1:') ||
             // App mobile Capacitor (iOS / Android)
@@ -101,15 +107,20 @@ const upload = multer({
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/signup', authLimiter);
 app.use('/api/auth/send-otp', otpLimiter);
+app.use('/api/auth/send-email-otp', otpLimiter);
+app.use('/api/auth/verify-email-otp', otpLimiter);
+app.use('/api/auth/verify-phone-otp', otpLimiter);
 app.use('/api/auth/forgot-password', otpLimiter);
+app.use('/api/auth/forgot-password-phone', otpLimiter);
+app.use('/api/auth/check-phone', authLimiter);
 app.use('/api/auth', authRoutes);
 
 // Protected Routes
-app.use('/api/whatsapp', whatsappRoutes);
-app.use('/api/chats', chatRoutes);
-app.use('/api/marketing', marketingRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api', variationTemplateRoutes);
+app.use('/api/whatsapp', authenticateTenant, checkSubscription, whatsappRoutes);
+app.use('/api/chats', authenticateTenant, checkSubscription, chatRoutes);
+app.use('/api/marketing', authenticateTenant, checkSubscription, marketingRoutes);
+app.use('/api/ai', authenticateTenant, checkSubscription, aiRoutes);
+app.use('/api', authenticateTenant, checkSubscription, variationTemplateRoutes);
 
 // Paystack Payment Routes
 app.use('/api/paystack', paystackRoutes);
@@ -120,7 +131,7 @@ app.get('/api/settings', authenticateTenant, async (req, res) => {
     res.json(settings);
 });
 
-app.post('/api/settings', authenticateTenant, async (req, res) => {
+app.post('/api/settings', authenticateTenant, checkSubscription, async (req, res) => {
     try {
         logger.info({ tenantId: req.tenantId }, 'Updating settings');
         const settings = await db.updateSettings(req.tenantId!, req.body);
@@ -134,7 +145,7 @@ app.post('/api/settings', authenticateTenant, async (req, res) => {
 // Orders (Protected by JWT)
 // Supporte ?page=1&limit=20 → { items, total, page, limit, totalPages }
 // Sans query params → tableau complet (rétro-compatible)
-app.get('/api/orders', authenticateTenant, async (req, res) => {
+app.get('/api/orders', authenticateTenant, checkSubscription, async (req, res) => {
     const { page, limit } = req.query;
     if (page || limit) {
         const p = Math.max(1, parseInt(page as string) || 1);
@@ -147,8 +158,13 @@ app.get('/api/orders', authenticateTenant, async (req, res) => {
     res.json(orders);
 });
 
-app.put('/api/orders/:id/status', authenticateTenant, async (req, res) => {
+app.put('/api/orders/:id/status', authenticateTenant, checkSubscription, async (req, res) => {
     const { status } = req.body;
+    const VALID_STATUSES = ['PENDING', 'CONFIRMED', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+    if (!VALID_STATUSES.includes(status)) {
+        res.status(400).json({ error: 'Statut de commande invalide' });
+        return;
+    }
     const orderId = req.params.id as string;
     const updated = await db.updateOrderStatus(req.tenantId!, orderId, status);
     if (updated) res.json(updated);
@@ -156,7 +172,7 @@ app.put('/api/orders/:id/status', authenticateTenant, async (req, res) => {
 });
 
 // Dashboard
-app.get('/api/dashboard/pulse', authenticateTenant, async (req, res) => {
+app.get('/api/dashboard/pulse', authenticateTenant, checkSubscription, async (req, res) => {
     try {
         const logs = await db.getRecentActivity(req.tenantId!, 20);
         res.json(logs);
@@ -165,7 +181,7 @@ app.get('/api/dashboard/pulse', authenticateTenant, async (req, res) => {
     }
 });
 
-app.get('/api/dashboard/recent-orders', authenticateTenant, async (req, res) => {
+app.get('/api/dashboard/recent-orders', authenticateTenant, checkSubscription, async (req, res) => {
     try {
         const orders = await db.getRecentOrders(req.tenantId!, 5);
         res.json(orders);
@@ -174,7 +190,7 @@ app.get('/api/dashboard/recent-orders', authenticateTenant, async (req, res) => 
     }
 });
 
-app.post('/api/products/upload', authenticateTenant, upload.single('file'), async (req: any, res: any) => {
+app.post('/api/products/upload', authenticateTenant, checkSubscription, upload.single('file'), async (req: any, res: any) => {
     try {
         if (!supabase) {
             return res.status(500).json({ error: 'Supabase n\'est pas configuré sur le serveur' });
@@ -184,7 +200,19 @@ app.post('/api/products/upload', authenticateTenant, upload.single('file'), asyn
         }
 
         const file = req.file;
-        const fileExt = file.originalname.split('.').pop();
+
+        // Validation du type MIME pour la sécurité (prévenir le XSS ou les scripts malveillants)
+        const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (!ALLOWED_MIMES.includes(file.mimetype)) {
+            return res.status(400).json({ error: 'Type de fichier non autorisé. Seuls les formats JPEG, PNG, WEBP et GIF sont acceptés.' });
+        }
+
+        const fileExt = (file.originalname.split('.').pop() || 'jpg').toLowerCase();
+        const ALLOWED_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        if (!ALLOWED_EXTS.includes(fileExt)) {
+            return res.status(400).json({ error: 'Extension de fichier non autorisée.' });
+        }
+
         const fileName = `product-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
 
         // Televersement vers Supabase Storage dans le bucket 'product-images'
@@ -214,7 +242,7 @@ app.post('/api/products/upload', authenticateTenant, upload.single('file'), asyn
 // Products (Protected by JWT) — minPrice stripped from response
 // Supporte ?page=1&limit=20 → { items, total, page, limit, totalPages }
 // Sans query params → tableau complet (rétro-compatible)
-app.get('/api/products', authenticateTenant, async (req, res) => {
+app.get('/api/products', authenticateTenant, checkSubscription, async (req, res) => {
     const stripMinPrice = ({ minPrice: _mp, ...p }: any) => p;
     const { page, limit } = req.query;
     if (page || limit) {
@@ -229,7 +257,7 @@ app.get('/api/products', authenticateTenant, async (req, res) => {
     res.json(products.map(stripMinPrice));
 });
 
-app.post('/api/products', authenticateTenant, async (req, res) => {
+app.post('/api/products', authenticateTenant, checkSubscription, async (req, res) => {
     try {
         const { name, price, stock } = req.body;
         if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -263,7 +291,7 @@ app.post('/api/products', authenticateTenant, async (req, res) => {
     }
 });
 
-app.put('/api/products/:id', authenticateTenant, async (req, res) => {
+app.put('/api/products/:id', authenticateTenant, checkSubscription, async (req, res) => {
     try {
         const productId = req.params.id as string;
         const { price, stock } = req.body;
@@ -285,7 +313,7 @@ app.put('/api/products/:id', authenticateTenant, async (req, res) => {
     }
 });
 
-app.delete('/api/products/:id', authenticateTenant, async (req, res) => {
+app.delete('/api/products/:id', authenticateTenant, checkSubscription, async (req, res) => {
     try {
         const productId = req.params.id as string;
         const success = await db.deleteProduct(req.tenantId!, productId);

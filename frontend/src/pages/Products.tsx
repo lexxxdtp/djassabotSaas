@@ -40,9 +40,12 @@ export default function Products() {
             if (res.ok) {
                 const data = await res.json();
                 setProducts(Array.isArray(data) ? data : []);
+            } else {
+                toast.error('Impossible de charger les produits.');
             }
         } catch (error) {
             console.error('Failed to fetch products', error);
+            toast.error('Erreur réseau. Impossible de charger les produits.');
         } finally {
             setLoading(false);
         }

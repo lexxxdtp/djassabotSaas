@@ -102,24 +102,25 @@ const Today: React.FC = () => {
 
         const fetchAll = async () => {
             try {
-                const [resOrders, resLogs, resWa, resSettings, resProducts] = await Promise.all([
-                    apiClient('/orders'),
-                    apiClient('/dashboard/pulse'),
-                    apiClient('/whatsapp/status'),
-                    apiClient('/settings'),
-                    apiClient('/products?limit=1'),
-                ]);
-                if (resOrders.ok) setOrders(await resOrders.json());
-                if (resLogs.ok) setLogs(await resLogs.json());
-                if (resWa.ok) {
+                const promises = [
+                    apiClient('/orders').catch(() => null),
+                    apiClient('/dashboard/pulse').catch(() => null),
+                    apiClient('/whatsapp/status').catch(() => null),
+                    apiClient('/settings').catch(() => null),
+                    apiClient('/products?limit=1').catch(() => null),
+                ];
+                const [resOrders, resLogs, resWa, resSettings, resProducts] = await Promise.all(promises);
+                if (resOrders && resOrders.ok) setOrders(await resOrders.json());
+                if (resLogs && resLogs.ok) setLogs(await resLogs.json());
+                if (resWa && resWa.ok) {
                     const data = await resWa.json();
                     setBotStatus(data.status || 'disconnected');
                 }
-                if (resSettings.ok) {
+                if (resSettings && resSettings.ok) {
                     const s = await resSettings.json();
                     setBotActive(s.botActive ?? false);
                 }
-                if (resProducts.ok) {
+                if (resProducts && resProducts.ok) {
                     const p = await resProducts.json();
                     setProductCount(typeof p.total === 'number' ? p.total : (Array.isArray(p) ? p.length : 0));
                 }

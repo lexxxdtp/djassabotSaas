@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
+import { db } from '../services/dbService';
 
 // Lazy getter to ensure dotenv.config() has been called before reading JWT_SECRET
 let _jwtSecret: string | undefined;
@@ -116,4 +117,53 @@ export const optionalAuth = (
     }
 
     next();
+};
+
+/**
+ * Middleware de vérification de l'état de l'abonnement du tenant
+ */
+export const checkSubscription = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        if (!req.tenantId) {
+            res.status(401).json({ error: 'Non authentifié. Impossible de vérifier l\'abonnement.' });
+            return;
+        }
+
+        const subscription = await db.getSubscriptionByTenantId(req.tenantId);
+
+        // Si aucun abonnement n'est trouvé, la période d'essai (trial) par défaut est créée à l'inscription
+        if (!subscription) {
+            next();
+            return;
+        }
+
+        // Si l'abonnement est explicitement marqué comme expiré ou annulé
+        if (subscription.status === 'expired' || subscription.status === 'cancelled') {
+            res.status(402).json({
+                error: 'Votre abonnement a expiré. Veuillez renouveler votre abonnement pour continuer à utiliser le service.',
+                code: 'SUBSCRIPTION_EXPIRED'
+            });
+            return;
+        }
+
+        // Vérification de la date d'expiration pour les abonnements trial ou active
+        const expiresAt = new Date(subscription.expiresAt);
+        if (expiresAt < new Date()) {
+            res.status(402).json({
+                error: 'Votre abonnement a expiré. Veuillez renouveler votre abonnement pour continuer à utiliser le service.',
+                code: 'SUBSCRIPTION_EXPIRED'
+            });
+            return;
+        }
+
+        next();
+    } catch (error) {
+        logger.error({ err: error, tenantId: req.tenantId }, 'Error in checkSubscription middleware');
+        // En cas d'erreur de base de données, on laisse passer pour éviter de bloquer l'usage
+        next();
+    }
 };

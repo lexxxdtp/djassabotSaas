@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { generateToken } from '../middleware/auth';
 import { db } from '../services/dbService';
 import { sendOtpEmail, sendPasswordResetEmail } from '../services/resendService';
@@ -420,7 +421,7 @@ export const sendEmailOtp = async (req: Request, res: Response) => {
             return;
         }
 
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const code = crypto.randomInt(100000, 999999).toString();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
         await db.storeAuthToken(normalizedEmail, 'EMAIL_OTP', code, expiresAt);
