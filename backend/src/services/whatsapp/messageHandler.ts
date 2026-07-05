@@ -4,6 +4,7 @@ import { handleFlow } from './flowHandler';
 import { transcribeAudio, analyzeImage, analyzePaymentReceipt } from '../aiService';
 import { addToHistory } from '../sessionService';
 import { processReceiptValidation } from '../paymentValidationService';
+import { Product } from '../../types';
 
 /**
  * File d'attente PAR CONVERSATION : les messages d'un même client sont traités
@@ -35,6 +36,9 @@ export async function handleMessage(tenantId: string, sock: WASocket, msg: proto
 
 async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebMessageInfo, remoteJid: string, isHistory: boolean) {
     let botPaused = true; // par défaut prudent : ne jamais répondre si on ne sait pas
+    // Réutilisés par handleFlow pour éviter de refaire les mêmes lectures Supabase
+    // (settings est déjà lu ici pour botActive/abonnement ; products si l'image en a eu besoin).
+    let preloadedProducts: Product[] | undefined;
 
     try {
         let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
@@ -99,8 +103,8 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
                 }
 
                 // Get inventory context for image analysis
-                const products = await db.getProducts(tenantId);
-                const inventoryContext = products.map((p: any) => `- ${p.name}`).join('\n'); // Simplified context for image
+                preloadedProducts = await db.getProducts(tenantId);
+                const inventoryContext = preloadedProducts.map((p: any) => `- ${p.name}`).join('\n'); // Simplified context for image
                 const description = await analyzeImage(buffer as Buffer, mimeType, caption, inventoryContext);
                 text = `[User sent an Image] Description: ${description}. Caption: ${caption}`;
             }
@@ -124,8 +128,8 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
         // DELAY SIMULATION
         await new Promise(r => setTimeout(r, Math.random() * 1000 + 500));
 
-        // ROUTE TO FLOW
-        await handleFlow(tenantId, remoteJid, text, sock);
+        // ROUTE TO FLOW — on transmet ce qu'on a déjà lu pour éviter les doublons
+        await handleFlow(tenantId, remoteJid, text, sock, {}, { settings, products: preloadedProducts });
 
     } catch (e) {
         console.error('Error in messageHandler:', e);

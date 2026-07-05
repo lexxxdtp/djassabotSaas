@@ -43,13 +43,31 @@ export interface FlowOptions {
     dryRun?: boolean;
 }
 
-export async function handleFlow(tenantId: string, remoteJid: string, text: string, sock: WASocket, options: FlowOptions = {}) {
+/**
+ * Données déjà chargées par l'appelant (messageHandler a souvent déjà lu
+ * `settings` pour vérifier botActive/abonnement avant d'arriver ici). Évite
+ * de refaire le même aller-retour Supabase à chaque message. Optionnel :
+ * si absent, handleFlow fetch lui-même comme avant (comportement inchangé).
+ */
+export interface Preloaded {
+    settings?: Settings;
+    products?: Product[];
+}
+
+export async function handleFlow(
+    tenantId: string,
+    remoteJid: string,
+    text: string,
+    sock: WASocket,
+    options: FlowOptions = {},
+    preloaded: Preloaded = {},
+) {
     const session = await getSession(tenantId, remoteJid);
 
     if (session.autopilotEnabled === false) return;
 
-    const settings = await db.getSettings(tenantId);
-    const products = await db.getProducts(tenantId);
+    const settings = preloaded.settings ?? await db.getSettings(tenantId);
+    const products = preloaded.products ?? await db.getProducts(tenantId);
 
     // --- ANNULATION GLOBALE : valable dans tous les états d'attente ---
     if (session.state !== 'IDLE' && isCancelIntent(text)) {
