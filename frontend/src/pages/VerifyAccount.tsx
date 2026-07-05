@@ -11,9 +11,10 @@ const VerifyAccount: React.FC = () => {
     const { user, refreshUser, logout } = useAuth();
     const navigate = useNavigate();
 
-    // Verification method: 'email' or 'phone'
+    // Verification method: 'email' ou 'phone'. Le SMS est prioritaire (plus rapide,
+    // pas de dépendance à une boîte mail) — l'email reste disponible en repli.
     const [method, setMethod] = useState<'email' | 'phone'>(() => {
-        return user?.email ? 'email' : 'phone';
+        return user?.phone ? 'phone' : 'email';
     });
 
     const [error, setError] = useState('');
@@ -247,17 +248,17 @@ const VerifyAccount: React.FC = () => {
                     <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-[#1a1a1a] mb-6">
                         <button
                             type="button"
-                            onClick={() => { setMethod('email'); setError(''); setSuccess(''); }}
-                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${method === 'email' ? 'bg-[#00D97E] text-black shadow-lg shadow-[#00D97E]/20' : 'text-[#888] hover:text-white'}`}
-                        >
-                            <Mail className="w-4 h-4" /> E-mail
-                        </button>
-                        <button
-                            type="button"
                             onClick={() => { setMethod('phone'); setError(''); setSuccess(''); }}
                             className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${method === 'phone' ? 'bg-[#00D97E] text-black shadow-lg shadow-[#00D97E]/20' : 'text-[#888] hover:text-white'}`}
                         >
                             <Phone className="w-4 h-4" /> Téléphone
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setMethod('email'); setError(''); setSuccess(''); }}
+                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${method === 'email' ? 'bg-[#00D97E] text-black shadow-lg shadow-[#00D97E]/20' : 'text-[#888] hover:text-white'}`}
+                        >
+                            <Mail className="w-4 h-4" /> E-mail
                         </button>
                     </div>
                 )}
