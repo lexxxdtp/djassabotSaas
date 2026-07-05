@@ -1016,6 +1016,25 @@ export const db = {
     createSubscription: tenantService.createSubscription,
     getSubscriptionByTenantId: tenantService.getSubscriptionByTenantId,
 
+    /**
+     * L'abonnement du tenant est-il actif (donc le bot doit-il répondre) ?
+     * Même logique que le middleware `checkSubscription` (auth.ts) pour que le
+     * dashboard et le bot WhatsApp soient TOUJOURS d'accord. En cas d'absence
+     * d'abonnement ou d'erreur DB, on ne bloque PAS (priorité au service).
+     */
+    isSubscriptionActive: async (tenantId: string): Promise<boolean> => {
+        try {
+            const sub = await tenantService.getSubscriptionByTenantId(tenantId);
+            if (!sub) return true; // trial créé à l'inscription ; pas de ligne = on laisse passer
+            if (sub.status === 'expired' || sub.status === 'cancelled') return false;
+            if (new Date(sub.expiresAt) < new Date()) return false;
+            return true;
+        } catch (e) {
+            console.error('[isSubscriptionActive] Error — bot laissé actif par défaut:', e);
+            return true;
+        }
+    },
+
     // Default Settings Creation
     createDefaultSettings: tenantService.createDefaultSettings,
 

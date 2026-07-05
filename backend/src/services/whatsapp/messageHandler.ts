@@ -65,6 +65,17 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
         const settings = await db.getSettings(tenantId);
         botPaused = settings.botActive === false;
 
+        // ABONNEMENT EXPIRÉ = bot muet (même comportement qu'une mise en pause) :
+        // le message est enregistré dans l'Inbox mais AUCUNE réponse ni validation
+        // de reçu ne part. La session WhatsApp reste connectée (pas besoin de
+        // rescanner le QR au renouvellement) ; le vendeur est prévenu côté dashboard
+        // (402 → écran de renouvellement). On ne teste l'abonnement que si le bot
+        // n'est pas déjà en pause, pour éviter une requête inutile.
+        if (!botPaused) {
+            const subActive = await db.isSubscriptionActive(tenantId);
+            if (!subActive) botPaused = true;
+        }
+
         // --- IMAGE ---
         if (msg.message?.imageMessage) {
             if (isHistory) {
