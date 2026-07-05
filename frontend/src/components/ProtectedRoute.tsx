@@ -14,7 +14,10 @@ const ProtectedRoute: React.FC = () => {
         return <Navigate to="/login" replace />;
     }
 
-    const isUnverified = user && !user.emailVerified && !user.phoneVerified;
+    // Filet de sécurité phase de test : "Vérifier plus tard" sur VerifyAccount pose ce flag.
+    // TODO: retirer avec le reste du filet une fois Resend + Firebase pleinement opérationnels.
+    const verificationSkipped = localStorage.getItem('verificationSkipped') === 'true';
+    const isUnverified = user && !user.emailVerified && !user.phoneVerified && !verificationSkipped;
 
     if (isUnverified && location.pathname !== '/verify-account') {
         return <Navigate to="/verify-account" replace />;

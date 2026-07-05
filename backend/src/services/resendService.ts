@@ -3,13 +3,18 @@ import { Resend } from 'resend';
 // Configurez votre clé d'API Resend dans votre fichier .env
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_key');
 
+// Tant que RESEND_FROM n'est pas configuré (domaine vérifié sur Resend), on retombe sur
+// l'adresse sandbox onboarding@resend.dev — mais celle-ci ne délivre QUE vers le compte
+// Resend propriétaire (anadorbreak@gmail.com), jamais vers un vrai testeur.
+const FROM_ADDRESS = process.env.RESEND_FROM || 'DjassaBot <onboarding@resend.dev>';
+
 /**
  * Envoie un email OTP (code à 6 chiffres) pour la vérification d'email lors de l'inscription.
  */
 export const sendOtpEmail = async (email: string, code: string) => {
     try {
         const data = await resend.emails.send({
-            from: 'DjassaBot <onboarding@resend.dev>',
+            from: FROM_ADDRESS,
             to: [email],
             subject: `${code} - Votre code de vérification DjassaBot`,
             html: `
@@ -46,7 +51,7 @@ export const sendVerificationEmail = async (email: string, token: string) => {
         const verificationLink = `${baseUrl}/verify-email?token=${token}`;
 
         const data = await resend.emails.send({
-            from: 'DjassaBot <onboarding@resend.dev>', // Modifiez avec votre domaine validé sur Resend
+            from: FROM_ADDRESS,
             to: [email],
             subject: 'Vérifiez votre adresse email sur DjassaBot',
             html: `
@@ -82,7 +87,7 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
         const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
         const data = await resend.emails.send({
-            from: 'DjassaBot <onboarding@resend.dev>',
+            from: FROM_ADDRESS,
             to: [email],
             subject: 'Réinitialisation de votre mot de passe DjassaBot',
             html: `
@@ -120,7 +125,7 @@ export const sendBotDownAlert = async (email: string) => {
     try {
         const baseUrl = process.env.FRONTEND_URL || 'https://djassabot-saas.vercel.app';
         const data = await resend.emails.send({
-            from: 'DjassaBot <onboarding@resend.dev>',
+            from: FROM_ADDRESS,
             to: [email],
             subject: '⚠️ Votre bot WhatsApp est déconnecté',
             html: `

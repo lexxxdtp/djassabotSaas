@@ -82,6 +82,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         sessionStorage.removeItem('user');
         localStorage.removeItem('tenant');
         sessionStorage.removeItem('tenant');
+        localStorage.removeItem('verificationSkipped');
     }, []);
 
     const refreshUser = useCallback(async () => {

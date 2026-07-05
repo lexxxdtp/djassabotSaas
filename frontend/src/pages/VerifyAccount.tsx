@@ -408,8 +408,22 @@ const VerifyAccount: React.FC = () => {
                     </div>
                 )}
 
+                {/* Filet de sécurité phase de test : permet de continuer sans code si
+                    l'envoi d'email/SMS n'est pas encore fiable pour tous les comptes.
+                    TODO: retirer ce bouton une fois Resend + Firebase pleinement opérationnels. */}
+                <button
+                    type="button"
+                    onClick={() => {
+                        localStorage.setItem('verificationSkipped', 'true');
+                        navigate('/onboarding');
+                    }}
+                    className="w-full mt-4 py-3 bg-white/5 hover:bg-[#1a1a1a] border border-[#1a1a1a] text-[#888] hover:text-white rounded-xl text-sm font-semibold transition-all"
+                >
+                    Vérifier plus tard
+                </button>
+
                 {/* Logout link */}
-                <p className="mt-8 text-center text-sm text-[#888]">
+                <p className="mt-6 text-center text-sm text-[#888]">
                     <button
                         onClick={logout}
                         className="text-[#888] hover:text-white underline underline-offset-4 cursor-pointer transition-colors"
