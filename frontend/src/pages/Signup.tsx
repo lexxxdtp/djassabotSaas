@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     ShoppingBag, ArrowRight, ArrowLeft, Mail, Lock, Store, Phone, User,
-    Eye, EyeOff, Sparkles
+    Eye, EyeOff, Sparkles, Check, ChevronDown
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -244,33 +244,44 @@ const Signup: React.FC = () => {
 
                         <div>
                             <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Vous vendez quoi ?</label>
-                            <div className="grid grid-cols-4 gap-2">
-                                {BUSINESS_TYPES.map(bt => (
-                                    <button
-                                        key={bt.id}
-                                        type="button"
-                                        onClick={() => setBusinessType(bt.id)}
-                                        className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${businessType === bt.id ? 'bg-[#00D97E]/15 border-[#00D97E] ring-1 ring-[#00D97E]' : 'bg-[#111] border-[#1a1a1a] hover:border-[#333]'}`}
-                                    >
-                                        <span className="text-2xl">{bt.emoji}</span>
-                                        <span className={`text-[10px] leading-tight text-center ${businessType === bt.id ? 'text-white' : 'text-[#888]'}`}>{bt.label}</span>
-                                    </button>
-                                ))}
+                            <div className="grid grid-cols-2 gap-2.5">
+                                {BUSINESS_TYPES.map(bt => {
+                                    const selected = businessType === bt.id;
+                                    return (
+                                        <button
+                                            key={bt.id}
+                                            type="button"
+                                            onClick={() => setBusinessType(bt.id)}
+                                            className={`relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all active:scale-[0.97] ${selected ? 'bg-[#00D97E]/10 border-[#00D97E]' : 'bg-[#111] border-[#1a1a1a] hover:border-[#333]'}`}
+                                        >
+                                            <span className={`flex items-center justify-center w-10 h-10 rounded-xl text-xl shrink-0 transition-colors ${selected ? 'bg-[#00D97E]' : 'bg-white/5'}`}>
+                                                {bt.emoji}
+                                            </span>
+                                            <span className={`text-sm font-semibold text-left leading-tight ${selected ? 'text-white' : 'text-[#888]'}`}>{bt.label}</span>
+                                            {selected && (
+                                                <Check className="absolute top-2 right-2 w-4 h-4 text-[#00D97E]" />
+                                            )}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
                         <div>
                             <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Année de naissance</label>
-                            <select
-                                value={birthYear}
-                                onChange={e => setBirthYear(e.target.value)}
-                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 px-4 text-white focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
-                            >
-                                <option value="" disabled className="bg-black">Sélectionnez une année</option>
-                                {BIRTH_YEARS.map(y => (
-                                    <option key={y} value={y} className="bg-black">{y}</option>
-                                ))}
-                            </select>
+                            <div className="relative">
+                                <select
+                                    value={birthYear}
+                                    onChange={e => setBirthYear(e.target.value)}
+                                    className="w-full appearance-none bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-4 pr-10 text-white focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                >
+                                    <option value="" disabled className="bg-black">Sélectionnez une année</option>
+                                    {BIRTH_YEARS.map(y => (
+                                        <option key={y} value={y} className="bg-black">{y}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
+                            </div>
                             <p className="mt-1 text-xs text-[#555]">Vous devez avoir au moins 18 ans</p>
                         </div>
 
@@ -278,12 +289,12 @@ const Signup: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={goBack}
-                                className="px-5 bg-white/5 border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white font-bold py-3.5 rounded-xl transition-all flex items-center gap-2"
+                                className="px-5 bg-white/5 border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white font-bold py-3.5 rounded-xl transition-all active:scale-[0.97] flex items-center gap-2"
                             ><ArrowLeft className="w-4 h-4" /> Retour</button>
                             <button
                                 type="button"
                                 onClick={goNext}
-                                className="flex-1 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
+                                className="flex-1 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all active:scale-[0.97] flex items-center justify-center gap-2"
                             >Continuer <ArrowRight className="w-5 h-5" /></button>
                         </div>
                     </div>
