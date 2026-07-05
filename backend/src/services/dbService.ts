@@ -342,13 +342,18 @@ export const db = {
                     .single();
                 if (error) throw error;
 
-                // Log activity: New Sale
-                await supabase.from('activity_logs').insert([{
-                    tenant_id: tenantId,
-                    type: 'sale',
-                    message: `Nouvelle commande de ${(total).toLocaleString()} FCFA par ${userId.split('@')[0]}`,
-                    metadata: { orderId: data.id, total }
-                }]);
+                // Log d'activité best-effort : ne doit JAMAIS faire échouer une
+                // commande déjà créée avec succès si cette écriture secondaire rate.
+                try {
+                    await supabase.from('activity_logs').insert([{
+                        tenant_id: tenantId,
+                        type: 'sale',
+                        message: `Nouvelle commande de ${(total).toLocaleString()} FCFA par ${userId.split('@')[0]}`,
+                        metadata: { orderId: data.id, total }
+                    }]);
+                } catch (logErr) {
+                    console.warn('[DB] createOrder: activity log failed (non-bloquant):', logErr);
+                }
 
                 // Map back to camelCase for app usage
                 return {
@@ -356,12 +361,18 @@ export const db = {
                     userId: data.user_id,
                     createdAt: new Date(data.created_at)
                 } as Order;
-            } catch (e) {
-                console.warn('[DB] Supabase createOrder failed, fallback to local:', e);
+            } catch (e: any) {
+                // Commande = donnée critique : on NE retombe PLUS silencieusement sur
+                // le fichier local (elle y serait invisible du dashboard, de Supabase,
+                // et perdue au redéploiement — alors même que le stock, décrémenté
+                // AVANT cet appel, aurait déjà bougé). On remonte l'erreur ;
+                // flowHandler.finalizeOrder restocke et prévient le client proprement.
+                console.error('[DB] createOrder failed:', e);
+                throw new Error(`Database Error (Order): ${e.message || e}`);
             }
         }
 
-        // Local fallback uses camelCase
+        // Mode local UNIQUEMENT si Supabase n'est pas configuré du tout (dev/offline).
         const localOrder: any = {
             id: orderId,
             tenantId,
@@ -615,10 +626,21 @@ export const db = {
                     .delete()
                     .eq('id', id)
                     .eq('tenant_id', tenantId);
-                if (!error) return true;
-            } catch (e) { }
+                if (error) {
+                    console.error('[DB] Delete Product Failed:', error);
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                // On NE retombe PLUS sur le fichier local : un échec ici signalerait
+                // "supprimé" au vendeur alors que le produit resterait bien réel dans
+                // Supabase (visible/vendable ailleurs, incohérent avec le dashboard).
+                console.error('[DB] Delete Product Exception:', e);
+                return false;
+            }
         }
 
+        // Mode local UNIQUEMENT si Supabase n'est pas configuré du tout (dev/offline).
         const index = localData.products.findIndex((p: any) => p.id === id && p.tenantId === tenantId);
         if (index === -1) return false;
 
@@ -1079,8 +1101,11 @@ export const db = {
                 }
 
                 const { data, error } = await query.single();
-                if (error || !data) return { valid: false };
-                return { valid: true, identifier: data.identifier };
+                if (!error && data) return { valid: true, identifier: data.identifier };
+                // Pas trouvé (ou erreur) côté Supabase : on NE renvoie PAS invalid ici —
+                // le token peut avoir été écrit uniquement en local si storeAuthToken
+                // avait échoué sur Supabase au moment de l'envoi. On tombe donc sur la
+                // vérification locale ci-dessous avant de conclure à un échec.
             } catch (e) {
                 console.warn('[DB] verifyAuthToken Failed, checking local map', e);
             }
