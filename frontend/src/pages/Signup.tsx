@@ -184,15 +184,18 @@ const Signup: React.FC = () => {
                             <div className="relative group">
                                 <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none z-10">
                                     <Phone className="text-[#888] w-5 h-5" />
-                                    <span className="text-[#888] font-bold font-mono text-sm border-r border-gray-600 pr-2">+225</span>
+                                    <span className="text-[#888] font-bold font-mono text-sm border-r border-[#333] pr-2">+225</span>
                                 </div>
                                 <input
                                     type="tel"
                                     value={phone}
                                     onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                     placeholder="0709483812"
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-[90px] pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all font-mono text-lg"
+                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-[90px] pr-10 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all font-mono text-lg"
                                 />
+                                {phone.length === 10 && (
+                                    <Check className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00D97E] w-5 h-5" />
+                                )}
                             </div>
                             <p className="mt-1 text-xs text-[#555]">10 chiffres — c'est le numéro qui sera lié à votre bot</p>
                         </div>
@@ -216,7 +219,7 @@ const Signup: React.FC = () => {
                         <button
                             type="button"
                             onClick={goNext}
-                            className="w-full mt-2 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
+                            className="w-full mt-2 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all active:scale-[0.97] flex items-center justify-center gap-2"
                         >
                             Continuer <ArrowRight className="w-5 h-5" />
                         </button>
@@ -366,7 +369,7 @@ const Signup: React.FC = () => {
                             <ol className="space-y-1 list-decimal list-inside text-[#888]">
                                 <li>Connectez votre WhatsApp (30 secondes)</li>
                                 <li>Ajoutez vos produits avec prix et stock</li>
-                                <li>Le bot vend pour vous 24h/24 🚀</li>
+                                <li>Le bot vend pour vous 24h/24</li>
                             </ol>
                         </div>
 
@@ -375,13 +378,13 @@ const Signup: React.FC = () => {
                                 type="button"
                                 onClick={goBack}
                                 disabled={loading}
-                                className="px-5 bg-white/5 border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white font-bold py-3.5 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+                                className="px-5 bg-white/5 border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white font-bold py-3.5 rounded-xl transition-all active:scale-[0.97] flex items-center gap-2 disabled:opacity-50"
                             ><ArrowLeft className="w-4 h-4" /> Retour</button>
                             <button
                                 type="button"
                                 onClick={submitSignup}
                                 disabled={loading || passwordScore < 3 || !confirmPassword}
-                                className="flex-1 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="flex-1 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all active:scale-[0.97] flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 {loading ? 'Création...' : 'Créer mon compte'}
                                 {!loading && <ArrowRight className="w-5 h-5" />}
