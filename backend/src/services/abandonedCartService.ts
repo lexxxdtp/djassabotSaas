@@ -75,6 +75,15 @@ const sendAbandonedCartReminder = async (tenantId: string, userId: string, tempO
             return false;
         }
 
+        // ABONNEMENT EXPIRÉ = même silence que le bot en pause (cohérent avec
+        // messageHandler.ts) — sinon un vendeur non-payant continue de relancer
+        // ses clients WhatsApp automatiquement après expiration.
+        const subActive = await db.isSubscriptionActive(tenantId);
+        if (!subActive) {
+            console.log(`[AbandonedCart] 🚫 Abonnement expiré pour tenant ${tenantId}, relance ignorée`);
+            return false;
+        }
+
         // Récupérer la session WhatsApp du tenant
         const sessionData = await whatsappManager.getSession(tenantId);
 

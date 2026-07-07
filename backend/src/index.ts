@@ -115,15 +115,19 @@ app.use('/api/auth/forgot-password-phone', otpLimiter);
 app.use('/api/auth/check-phone', authLimiter);
 app.use('/api/auth', authRoutes);
 
+// Paystack Payment Routes — monté AVANT le middleware générique '/api' ci-dessous.
+// Sinon authenticateTenant/checkSubscription s'appliqueraient à TOUTES les routes
+// /api/*, y compris /api/paystack/webhook (appelé par Paystack sans JWT) et
+// /api/paystack/subscribe (qui doit rester accessible à un tenant EXPIRÉ pour
+// qu'il puisse justement payer et se débloquer — catch-22 sinon).
+app.use('/api/paystack', paystackRoutes);
+
 // Protected Routes
 app.use('/api/whatsapp', authenticateTenant, checkSubscription, whatsappRoutes);
 app.use('/api/chats', authenticateTenant, checkSubscription, chatRoutes);
 app.use('/api/marketing', authenticateTenant, checkSubscription, marketingRoutes);
 app.use('/api/ai', authenticateTenant, checkSubscription, aiRoutes);
 app.use('/api', authenticateTenant, checkSubscription, variationTemplateRoutes);
-
-// Paystack Payment Routes
-app.use('/api/paystack', paystackRoutes);
 
 // Settings (Protected by JWT)
 app.get('/api/settings', authenticateTenant, async (req, res) => {
