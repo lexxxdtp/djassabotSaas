@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
+import { toast } from 'react-hot-toast';
 import {
     MessageSquare, Send, Bot, Search, ArrowLeft, RefreshCw, Zap
 } from 'lucide-react';
@@ -65,6 +66,7 @@ const Inbox: React.FC = () => {
     const fetchChats = React.useCallback(async () => {
         try {
             const res = await apiClient('/chats');
+            if (!res.ok) throw new Error('Envoi refusé');
             if (res.ok) {
                 const data = await res.json();
                 setChats(data);
@@ -138,6 +140,7 @@ const Inbox: React.FC = () => {
             }
         } catch (error) {
             console.error('Failed to send', error);
+            toast.error('Message non envoyé. Votre texte est conservé, réessayez.');
         } finally {
             setSending(false);
         }
@@ -146,19 +149,20 @@ const Inbox: React.FC = () => {
     const toggleAutopilot = async () => {
         if (!selectedChat) return;
 
+        const chatId = selectedChat.id;
         const newState = !selectedChat.autopilotEnabled;
-        // Optimistic update
-        setSelectedChat(prev => prev ? { ...prev, autopilotEnabled: newState } : null);
-        setChats(prev => prev.map(c => c.id === selectedChat.id ? { ...c, autopilotEnabled: newState } : c));
 
         try {
-            await apiClient(`/chats/${encodeURIComponent(selectedChat.id)}/toggle-autopilot`, {
+            const res = await apiClient(`/chats/${encodeURIComponent(chatId)}/toggle-autopilot`, {
                 method: 'POST',
                 body: JSON.stringify({ enabled: newState })
             });
+            if (!res.ok) throw new Error('Changement refusé');
+            setSelectedChat(prev => prev?.id === chatId ? { ...prev, autopilotEnabled: newState } : prev);
+            setChats(prev => prev.map(c => c.id === chatId ? { ...c, autopilotEnabled: newState } : c));
         } catch (error) {
             console.error('Failed to toggle autopilot', error);
-            // Revert on error ??
+            toast.error('Le changement n’a pas été confirmé. Réessayez.');
         }
     };
 

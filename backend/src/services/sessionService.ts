@@ -43,7 +43,8 @@ export const getSession = async (tenantId: string, userId: string): Promise<Sess
                     state: data.state as any,
                     tempOrder: typeof data.temp_order === 'string' ? JSON.parse(data.temp_order) : data.temp_order,
                     lastInteraction: new Date(data.last_interaction),
-                    autopilotEnabled: data.autopilot_enabled ?? true
+                    autopilotEnabled: data.autopilot_enabled ?? true,
+                    reminderSent: data.reminder_sent ?? false
                 };
             }
         } catch (e) {
@@ -126,7 +127,8 @@ export const getActiveSessions = async (): Promise<Session[]> => {
                     state: d.state as any,
                     tempOrder: typeof d.temp_order === 'string' ? JSON.parse(d.temp_order) : d.temp_order,
                     lastInteraction: new Date(d.last_interaction),
-                    autopilotEnabled: d.autopilot_enabled ?? true
+                    autopilotEnabled: d.autopilot_enabled ?? true,
+                    reminderSent: d.reminder_sent ?? false
                 }));
             }
         } catch (e) { console.error(e); }

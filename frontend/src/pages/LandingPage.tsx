@@ -1,370 +1,136 @@
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Bot, MessageSquare, Package, BarChart2, Zap, Shield, Check } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowDown, ArrowUpRight, Check, CheckCheck, ChevronDown, MessageCircle, Package, ScanLine, SlidersHorizontal, Smartphone, Sparkles, Store, Menu, X, Pause, Play } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useInView } from '../hooks/useInView';
+import SalesDemo from '../components/landing/SalesDemo';
+import '../styles/landing.css';
 
-/**
- * Reveal — wraps children in an IntersectionObserver-gated container.
- * Applies the [data-reveal] CSS pattern (see index.css).
- *
- * Use `stagger` to cascade children with .stagger-child class.
- */
-const Reveal: React.FC<React.PropsWithChildren<{ className?: string; as?: keyof React.JSX.IntrinsicElements }>> = ({ children, className = '', as = 'div' }) => {
-    const { ref, inView } = useInView<HTMLDivElement>('-80px');
-    const Tag = as as React.ElementType;
-    return (
-        <Tag ref={ref} data-reveal={inView ? 'visible' : 'hidden'} className={className}>
-            {children}
-        </Tag>
-    );
-};
+function Reveal({ children, className = '' }: React.PropsWithChildren<{ className?: string }>) {
+    const { ref, inView } = useInView<HTMLDivElement>('0px');
+    return <div ref={ref} data-reveal={inView ? 'visible' : 'hidden'} className={className}>{children}</div>;
+}
 
-const LandingPage = () => {
-    const navigate = useNavigate();
+function Brand() {
+    return <span className="lp-brand"><span className="lp-brand-mark">D<span /></span><span>djassa<span className="lp-green">bot</span><span className="lp-brand-dot">®</span></span></span>;
+}
+
+const capabilities = [
+    { icon: MessageCircle, title: 'Il a le sens du commerce.', text: 'Français, ton chaleureux, expressions ivoiriennes. Votre bot accueille les clients avec la personnalité que vous lui donnez.', label: 'LA CONVERSATION', art: 'voice' },
+    { icon: SlidersHorizontal, title: 'Il négocie. À vos conditions.', text: 'Vous fixez vos prix et votre marge. Il discute avec le client en respectant les limites de votre boutique.', label: 'VOS RÈGLES DU JEU', art: 'price' },
+    { icon: ScanLine, title: 'Du message à la commande.', text: 'Articles, adresse, livraison, reçu de paiement : retrouvez les informations utiles au même endroit.', label: 'LA VENTE, ORGANISÉE', art: 'order' },
+];
+
+const plans = [
+    { name: 'Starter', price: '5 000', description: 'Le début d’une belle histoire.', features: ['1 numéro WhatsApp', 'Jusqu’à 50 produits', 'Bot de vente personnalisable', 'Gestion des commandes', 'Support par email'] },
+    { name: 'Pro', price: '10 000', description: 'Plus de place pour vos ambitions.', features: ['Tout le plan Starter', 'Produits illimités', 'Statistiques détaillées', 'Support prioritaire'], featured: true },
+    { name: 'Business', price: '15 000', description: 'Un accompagnement plus proche.', features: ['Tout le plan Pro', 'Support VIP', 'Formation personnalisée', 'Configuration sur mesure'] },
+];
+
+const questions = [
+    { question: 'Je dois changer de numéro WhatsApp ?', answer: 'Non. Vous connectez votre numéro avec un code de jumelage ou un QR code. Les clients continuent à vous écrire comme d’habitude. Gardez votre téléphone principal régulièrement connecté à WhatsApp.' },
+    { question: 'Et si je veux répondre moi-même ?', answer: 'Vous pouvez reprendre une conversation depuis votre espace vendeur et mettre le bot en pause pour ce client. Vous pouvez aussi désactiver le bot pour toute la boutique.' },
+    { question: 'Le bot peut-il casser mes prix ?', answer: 'Vous définissez un prix minimum ou une marge de négociation dans vos réglages. Le serveur vérifie le prix proposé avant d’ajouter un article à la commande. Vous pouvez également désactiver la négociation.' },
+    { question: 'Comment se passent les paiements des clients ?', answer: 'Vous configurez les moyens de paiement de votre boutique. Les clients peuvent envoyer leur reçu Wave ou Orange Money dans la conversation. Le bot analyse le reçu ; vérifiez toujours que le paiement est bien arrivé sur votre compte.' },
+    { question: 'Est-ce que ça marche sur mon téléphone ?', answer: 'Oui. Votre espace vendeur fonctionne dans le navigateur de votre téléphone. Vous pouvez aussi l’ajouter à votre écran d’accueil pour retrouver rapidement vos commandes, produits et conversations.' },
+];
+
+export default function LandingPage() {
     const { isAuthenticated } = useAuth();
-
-    const go = (path: string) => navigate(isAuthenticated ? '/dashboard' : path);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [motionPaused, setMotionPaused] = useState(false);
+    const signupUrl = isAuthenticated ? '/dashboard' : '/signup';
 
     return (
-        <div className="min-h-screen bg-black text-white font-sans antialiased overflow-x-hidden">
-
-            {/* ═══ NAV ═══ */}
-            <header className="fixed top-0 left-0 right-0 z-50 border-b border-[#1a1a1a] bg-black/90 backdrop-blur-md">
-                <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-                    {/* Logo */}
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-[#00D97E] flex items-center justify-center transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:scale-105">
-                            <Bot className="w-4 h-4 text-black" />
-                        </div>
-                        <span className="font-bold text-[15px] tracking-tight">DjassaBot</span>
-                    </div>
-
-                    {/* Nav links - desktop */}
-                    <nav className="hidden md:flex items-center gap-8">
-                        {['#features', '#pricing'].map((href, i) => (
-                            <a key={i} href={href}
-                                className="text-[13px] text-[#888] hover:text-white transition-colors duration-200">
-                                {['Fonctionnalités', 'Tarifs'][i]}
-                            </a>
-                        ))}
+        <div className={`landing ${motionPaused ? 'lp-motion-paused' : ''}`}>
+            <a href="#main-content" className="lp-skip">Aller au contenu</a>
+            <header className="lp-header">
+                <div className="lp-container lp-nav">
+                    <Link to="/" aria-label="DjassaBot, accueil"><Brand /></Link>
+                    <nav className="lp-desktop-nav" aria-label="Navigation principale">
+                        <a href="#features">Le bot</a><a href="#demo">En action <span className="lp-mini-dot" /></a><a href="#pricing">Les tarifs</a>
                     </nav>
-
-                    {/* CTA */}
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => go('/login')}
-                            className="text-[13px] text-[#888] hover:text-white transition-colors duration-200 px-3 py-1.5 active:scale-[0.97] transition-transform ease-[cubic-bezier(0.23,1,0.32,1)]">
-                            {isAuthenticated ? 'Dashboard' : 'Connexion'}
-                        </button>
-                        <button onClick={() => go('/signup')}
-                            className="text-[13px] font-medium bg-white text-black px-4 py-1.5 rounded-md hover:bg-[#eee] transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]">
-                            {isAuthenticated ? 'Mon Espace' : 'Démarrer'}
-                        </button>
+                    <div className="lp-nav-actions">
+                        <Link className="lp-login" to={isAuthenticated ? '/dashboard' : '/login'}>{isAuthenticated ? 'Mon espace' : 'Connexion'}</Link>
+                        <Link className="lp-button lp-button-small" to={signupUrl}>C’est parti <ArrowUpRight size={16} /></Link>
+                        <button className="lp-menu-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-controls="mobile-navigation" aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}>{menuOpen ? <X size={22} /> : <Menu size={22} />}</button>
                     </div>
                 </div>
+                {menuOpen && <nav id="mobile-navigation" className="lp-mobile-nav" aria-label="Navigation mobile">
+                    <a onClick={() => setMenuOpen(false)} href="#features">Le bot <ArrowUpRight size={18} /></a>
+                    <a onClick={() => setMenuOpen(false)} href="#demo">En action <ArrowUpRight size={18} /></a>
+                    <a onClick={() => setMenuOpen(false)} href="#pricing">Les tarifs <ArrowUpRight size={18} /></a>
+                    <Link to={isAuthenticated ? '/dashboard' : '/login'}>{isAuthenticated ? 'Mon espace' : 'Connexion'} <ArrowUpRight size={18} /></Link>
+                </nav>}
             </header>
 
-            {/* ═══ HERO ═══ */}
-            <section className="relative pt-40 pb-32 px-6 overflow-hidden">
-                {/* Ambient background — subtle radial drift, opacity 0.08 */}
-                <div className="ambient-blob" style={{ top: '20%', left: '50%', transform: 'translateX(-50%)' }} aria-hidden="true" />
-
-                <div className="relative max-w-4xl mx-auto text-center reveal-stagger">
-
-                    {/* Badge */}
-                    <div className="inline-flex items-center gap-2 border border-[#00D97E]/30 bg-[#00D97E]/5 text-[#00D97E] text-[12px] font-medium px-3 py-1 rounded-full mb-10">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#00D97E] animate-pulse" />
-                        Conçu pour les commerçants d'Afrique de l'Ouest
+            <main id="main-content">
+                <section className="lp-container lp-hero">
+                    <div className="lp-hero-copy reveal-stagger">
+                        <p className="lp-eyebrow"><span className="lp-mini-dot" /> LE COMMERCE D’ICI. L’IA EN PLUS.</p>
+                        <h1>Le business<br />continue.<br /><em>Même sans vous.</em></h1>
+                        <p className="lp-hero-description">Vos clients sont sur WhatsApp.<br />Votre meilleur vendeur aussi.</p>
+                        <p className="lp-hero-detail">DjassaBot répond, négocie et prend les commandes.<br className="lp-desktop-break" /> À votre image. Selon vos règles.</p>
+                        <div className="lp-hero-actions"><Link to={signupUrl} className="lp-button">Créer ma boutique <ArrowUpRight size={19} /></Link><a className="lp-text-link" href="#demo"><span className="lp-play"><Play size={12} fill="currentColor" /></span> Voir le bot en action</a></div>
+                        <p className="lp-trial"><Check size={14} /> 30 jours d’essai <span>·</span> Sans carte bancaire</p>
                     </div>
-
-                    {/* Headline */}
-                    <h1 className="text-[56px] sm:text-[72px] lg:text-[88px] font-black leading-[0.95] tracking-tight mb-8">
-                        Votre boutique<br />
-                        <span className="text-[#00D97E]">WhatsApp</span><br />
-                        tourne seule.
-                    </h1>
-
-                    {/* Tagline */}
-                    <p className="text-[#888] text-lg max-w-xl mx-auto mb-12 leading-relaxed">
-                        DjassaBot répond à vos clients, prend les commandes et gère votre stock.
-                        Vous encaissez, l'IA travaille.
-                    </p>
-
-                    {/* CTAs */}
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                        <button onClick={() => go('/signup')}
-                            className="flex items-center gap-2 bg-[#00D97E] text-black font-semibold px-6 py-3 rounded-lg hover:bg-[#00c470] transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] text-sm group">
-                            Commencer gratuitement
-                            <ArrowRight className="w-4 h-4 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-x-1" />
-                        </button>
-                        <button onClick={() => go('/login')}
-                            className="flex items-center gap-2 border border-[#333] text-[#aaa] hover:text-white hover:border-[#555] px-6 py-3 rounded-lg transition-[color,border-color,transform] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] text-sm">
-                            Se connecter
-                        </button>
+                    <div className="lp-hero-art" aria-label="Illustration des fonctions du bot WhatsApp">
+                        <div className="lp-orbit lp-orbit-one" aria-hidden="true" /><div className="lp-orbit lp-orbit-two" aria-hidden="true" />
+                        <div className="lp-disc" aria-hidden="true"><span>d.</span></div>
+                        <div className="lp-art-stamp"><Sparkles size={15} /> FAIT POUR LE DJASSA</div>
+                        <div className="lp-phone">
+                            <div className="lp-phone-top"><span>Votre boutique</span><span className="lp-phone-camera" /><MessageCircle size={15} /></div>
+                            <div className="lp-phone-profile"><span className="lp-bot-avatar">d.</span><div><strong>Votre vendeur IA</strong><small>Un aperçu de ce qu’il sait faire</small></div><Sparkles size={18} /></div>
+                            <div className="lp-phone-body">
+                                <span className="lp-chat-label">COMMENT ÇA MARCHE</span>
+                                <div className="lp-hero-bubble lp-hero-bubble-user">Un client vous écrit…<CheckCheck size={14} /></div>
+                                <div className="lp-hero-bubble lp-hero-bubble-bot">Votre bot prend le relais.<br /><strong>Avec le sens de l’accueil.</strong></div>
+                                <div className="lp-product-art"><svg viewBox="0 0 220 130" role="img" aria-label="Illustration d’un sac de boutique"><ellipse cx="113" cy="118" rx="70" ry="7" fill="#000" opacity=".15" /><path d="M63 47 166 40 182 115 48 115Z" fill="#ffb892" /><path d="m63 47 20 13-10 55H48Z" fill="#d58c69" /><path d="m83 60 83-20 16 75H73Z" fill="#ffd2b5" /><path d="M94 63V40c0-33 44-33 44 0v14" fill="none" stroke="#342b23" strokeWidth="6" strokeLinecap="round" /><path d="m110 77 30-7-12 32-20 4Z" fill="#00d97e" /><path d="m121 82 9-2-5 14-6 1Z" fill="#111" /></svg><div><span>Votre catalogue</span><small>Photos · Prix · Disponibilités</small></div></div>
+                                <div className="lp-hero-bubble lp-hero-bubble-bot">Il conseille. Il négocie.<br />Il prépare la commande.<span className="lp-typing" aria-hidden="true"><i /><i /><i /></span></div>
+                            </div>
+                            <div className="lp-phone-bottom"><span>Votre commerce, bien accompagné.</span><span><ArrowUpRight size={17} /></span></div>
+                        </div>
+                        <div className="lp-float-tag lp-tag-control"><span className="lp-tag-icon"><SlidersHorizontal size={18} /></span><div><strong>Vos prix. Vos règles.</strong><small>Vous gardez la main.</small></div></div>
+                        <div className="lp-float-tag lp-tag-order"><span className="lp-tag-icon"><Package size={18} /></span><div><strong>Prêt pour la livraison.</strong><small>Chaque commande organisée.</small></div><Check size={17} /></div>
+                        <span className="lp-art-caption">WHATSAPP × VOTRE SAVOIR-FAIRE</span>
                     </div>
+                </section>
+
+                <div className="lp-container lp-hero-foot"><span><span className="lp-location-dot" /> Pensé à Abidjan. Pour les commerces d’ici.</span><a href="#features">La suite <ArrowDown size={15} /></a></div>
+                <div className="lp-ticker" aria-label="Mode, beauté, restauration, accessoires, votre commerce">
+                    <div className="lp-ticker-track" aria-hidden="true">{[0, 1].map(copy => <div key={copy}>{['LA MODE', 'LA BEAUTÉ', 'LA RESTAURATION', 'LES ACCESSOIRES', 'VOTRE COMMERCE'].map(word => <span key={word}>{word}<span className="lp-spark">✳</span></span>)}</div>)}</div>
+                    <button className="lp-motion-toggle" onClick={() => setMotionPaused(!motionPaused)} aria-pressed={motionPaused} aria-label={motionPaused ? 'Reprendre les animations décoratives' : 'Mettre en pause les animations décoratives'}>{motionPaused ? <Play size={15} /> : <Pause size={15} />}</button>
                 </div>
-            </section>
 
-            {/* ═══ DIVIDER ═══ */}
-            <div className="border-t border-[#1a1a1a]" />
-
-            {/* ═══ STATS ═══ */}
-            <Reveal as="section" className="py-16 px-6">
-                <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
-                    {[
-                        { value: '30 sec', label: 'pour connecter WhatsApp' },
-                        { value: '24/7', label: 'bot actif sans interruption' },
-                        { value: '100%', label: 'taux de réponse client' },
-                        { value: 'Gratuit', label: 'pour commencer' },
-                    ].map((s, i) => (
-                        <div key={i} className="stagger-child text-center">
-                            <div className="text-3xl font-black text-white mb-1 tracking-tight">{s.value}</div>
-                            <div className="text-[12px] text-[#555] leading-tight">{s.label}</div>
+                <section id="features" className="lp-container lp-section">
+                    <Reveal className="lp-section-heading"><div><p className="lp-eyebrow">01 / UN VENDEUR QUI VOUS RESSEMBLE</p><h2>Vous avez le talent.<br /><em>Il vous donne le temps.</em></h2></div><p>Les mêmes questions, les prix à discuter, les commandes à noter… Vous connaissez. Lui aussi.</p></Reveal>
+                    <Reveal className="lp-feature-grid">{capabilities.map(({ icon: Icon, title, text, label, art }) => <article className={`lp-feature lp-feature-${art}`} key={art}>
+                        <div className="lp-feature-top"><span>{label}</span><Icon size={21} strokeWidth={1.5} /></div>
+                        <div className="lp-feature-visual" aria-hidden="true">
+                            {art === 'voice' && <><span className="lp-quote">« On est ensemble. »</span><div className="lp-waveform">{[10, 24, 38, 18, 48, 32, 56, 22, 42, 16, 32, 10].map((height, i) => <i key={i} style={{ height, animationDelay: `${i * 90}ms` }} />)}</div><span className="lp-visual-caption">LE TON DE VOTRE BOUTIQUE</span></>}
+                            {art === 'price' && <><div className="lp-price-rail"><span>Prix minimum</span><span>Prix affiché</span></div><div className="lp-negotiation-rail"><span /><i /><i /><i /><i /><i /></div><div className="lp-rule-note"><Check size={14} /> Votre marge est la limite.</div></>}
+                            {art === 'order' && <div className="lp-mini-receipt"><div><span>LA COMMANDE</span><CheckCheck size={17} /></div>{['Articles choisis', 'Adresse renseignée', 'Total calculé'].map(item => <p key={item}><Check size={13} />{item}</p>)}<span className="lp-receipt-tear" /></div>}
                         </div>
-                    ))}
-                </div>
-            </Reveal>
+                        <h3>{title}</h3><p>{text}</p>
+                    </article>)}</Reveal>
+                    <Reveal className="lp-control-note"><span><Store size={19} /> Toujours votre commerce.</span><p>Mettez le bot en pause ou reprenez la conversation à tout moment.</p><ArrowUpRight size={20} aria-hidden="true" /></Reveal>
+                </section>
 
-            {/* ═══ DIVIDER ═══ */}
-            <div className="border-t border-[#1a1a1a]" />
+                <section id="demo" className="lp-demo-section"><div className="lp-container lp-demo-layout"><Reveal className="lp-demo-copy"><p className="lp-eyebrow">02 / MOINS DE BLABLA. PLACE AU BOT.</p><h2>Le prochain message<br />peut être<br /><em>une commande.</em></h2><p>Découvrez comment le bot accompagne un client. Choisissez une question, puis regardez la conversation avancer.</p><div className="lp-demo-points"><span><MessageCircle size={17} /> Une conversation naturelle</span><span><SlidersHorizontal size={17} /> Les règles de votre boutique</span><span><Package size={17} /> Une vente bien organisée</span></div><p className="lp-demo-disclaimer">Démonstration guidée et illustrative.<br />Aucun message WhatsApp ni commande réelle.</p></Reveal><Reveal><SalesDemo /></Reveal></div></section>
 
-            {/* ═══ FEATURES ═══ */}
-            <section id="features" className="py-24 px-6">
-                <div className="max-w-6xl mx-auto">
+                <section className="lp-container lp-section" id="how-it-works"><Reveal className="lp-section-heading"><div><p className="lp-eyebrow">03 / SIMPLE, COMME BONJOUR.</p><h2>Votre boutique.<br /><em>En mode augmenté.</em></h2></div><Link className="lp-text-link" to={signupUrl}>Je me lance <ArrowUpRight size={18} /></Link></Reveal><Reveal className="lp-steps">{[
+                    { icon: Smartphone, title: 'Connectez WhatsApp.', text: 'Un code ou un QR code, et votre numéro rejoint votre espace vendeur.' },
+                    { icon: Package, title: 'Montrez ce que vous vendez.', text: 'Ajoutez les photos, les prix et le stock. Précisez comment vous aimez vendre.' },
+                    { icon: Sparkles, title: 'Donnez-lui le feu vert.', text: 'Testez votre bot, ajustez son ton, puis activez-le quand vous êtes prêt.' },
+                ].map(({ icon: Icon, title, text }, i) => <article key={title}><div className="lp-step-number">0{i + 1}<Icon size={25} strokeWidth={1.5} /></div><h3>{title}</h3><p>{text}</p></article>)}</Reveal></section>
 
-                    <Reveal className="mb-16">
-                        <p className="stagger-child text-[#00D97E] text-[12px] font-semibold uppercase tracking-widest mb-3">Fonctionnalités</p>
-                        <h2 className="stagger-child text-[36px] md:text-[48px] font-black leading-tight max-w-lg">
-                            Tout pour vendre<br />sur WhatsApp.
-                        </h2>
-                    </Reveal>
+                <section id="pricing" className="lp-container lp-section lp-pricing-section"><Reveal className="lp-pricing-heading"><p className="lp-eyebrow">04 / UN PRIX QUI PARLE COMMERCE.</p><h2>De petites boutiques.<br /><em>De grandes ambitions.</em></h2><p>30 jours pour essayer. Puis le plan qui vous correspond.</p></Reveal><Reveal className="lp-plans">{plans.map(plan => <article className={`lp-plan ${plan.featured ? 'lp-plan-featured' : ''}`} key={plan.name}><div className="lp-plan-name"><h3>{plan.name}</h3>{plan.featured && <span>POUR GRANDIR <Sparkles size={11} /></span>}</div><p>{plan.description}</p><div className="lp-plan-price">{plan.price}<span>FCFA / mois</span></div><Link className={`lp-button ${plan.featured ? '' : 'lp-button-outline'}`} to={signupUrl}>Choisir {plan.name}<ArrowUpRight size={17} /></Link><ul>{plan.features.map(feature => <li key={feature}><Check size={15} />{feature}</li>)}</ul></article>)}</Reveal></section>
 
-                    <Reveal>
-                        <div className="grid md:grid-cols-3 gap-px bg-[#1a1a1a] border border-[#1a1a1a] rounded-xl overflow-hidden">
-                            {[
-                                {
-                                    icon: MessageSquare,
-                                    title: 'Réponses automatiques',
-                                    desc: "L'IA lit les messages, comprend la demande et répond naturellement — même en nouchi.",
-                                    color: '#00D97E'
-                                },
-                                {
-                                    icon: Package,
-                                    title: 'Gestion des commandes',
-                                    desc: "Les commandes sont prises, enregistrées et notifiées en temps réel. Stock mis à jour automatiquement.",
-                                    color: '#0EA5E9'
-                                },
-                                {
-                                    icon: BarChart2,
-                                    title: 'Tableau de bord',
-                                    desc: 'Suivez vos ventes, commandes et messages depuis un seul endroit, sur mobile ou desktop.',
-                                    color: '#F59E0B'
-                                },
-                                {
-                                    icon: Zap,
-                                    title: 'Connexion instantanée',
-                                    desc: "Scannez un QR code ou entrez un code de jumelage. Votre bot est en ligne en moins d'une minute.",
-                                    color: '#A855F7'
-                                },
-                                {
-                                    icon: Shield,
-                                    title: 'Multi-marchands isolé',
-                                    desc: "Chaque marchand a ses propres données. Rien ne se mélange, jamais. Architecture SaaS sécurisée.",
-                                    color: '#EC4899'
-                                },
-                                {
-                                    icon: Bot,
-                                    title: 'IA personnalisée',
-                                    desc: "Choisissez la personnalité de votre bot : sympa, ivoirien nouchi, ou commercial. Il s'adapte.",
-                                    color: '#00D97E'
-                                },
-                            ].map((f, i) => (
-                                <div key={i}
-                                    className="stagger-child bg-black p-8 hover:bg-[#0a0a0a] transition-[background-color,transform] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-0.5 group">
-                                    <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-5 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
-                                        style={{ backgroundColor: `${f.color}15` }}>
-                                        <f.icon className="w-4 h-4" style={{ color: f.color }} />
-                                    </div>
-                                    <h3 className="font-bold text-[15px] mb-2">{f.title}</h3>
-                                    <p className="text-[#555] text-[13px] leading-relaxed">{f.desc}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </Reveal>
-                </div>
-            </section>
+                <section className="lp-container lp-section lp-faq"><Reveal><p className="lp-eyebrow">ON VOUS RÉPOND.</p><h2>Les bonnes<br /><em>questions.</em></h2><span className="lp-faq-flower" aria-hidden="true">✳</span></Reveal><div>{questions.map(item => <details className="lp-faq-item" key={item.question}><summary>{item.question}<ChevronDown size={19} /></summary><p>{item.answer}</p></details>)}</div></section>
 
-            {/* ═══ DIVIDER ═══ */}
-            <div className="border-t border-[#1a1a1a]" />
-
-            {/* ═══ HOW IT WORKS ═══ */}
-            <section className="py-24 px-6">
-                <div className="max-w-4xl mx-auto">
-                    <Reveal className="mb-16 text-center">
-                        <p className="stagger-child text-[#00D97E] text-[12px] font-semibold uppercase tracking-widest mb-3">Comment ça marche</p>
-                        <h2 className="stagger-child text-[36px] md:text-[48px] font-black">3 étapes. C'est tout.</h2>
-                    </Reveal>
-
-                    <Reveal>
-                        <div className="space-y-px">
-                            {[
-                                {
-                                    num: '01',
-                                    title: 'Créez votre compte',
-                                    desc: 'Inscrivez-vous avec votre numéro ou email. 2 minutes chrono.',
-                                },
-                                {
-                                    num: '02',
-                                    title: 'Connectez WhatsApp',
-                                    desc: 'Scannez le QR code ou saisissez le code de jumelage. Votre numéro reste le vôtre.',
-                                },
-                                {
-                                    num: '03',
-                                    title: 'Ajoutez vos produits',
-                                    desc: 'Renseignez vos articles, leurs prix, vos conditions. Le bot vend pour vous dès maintenant.',
-                                },
-                            ].map((step, i) => (
-                                <div key={i} className="stagger-child flex gap-8 py-8 border-b border-[#1a1a1a] last:border-0">
-                                    <div className="text-[#333] text-[13px] font-mono font-bold w-8 pt-0.5 flex-shrink-0">{step.num}</div>
-                                    <div>
-                                        <h3 className="font-bold text-[17px] mb-1.5">{step.title}</h3>
-                                        <p className="text-[#555] text-[14px] leading-relaxed">{step.desc}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </Reveal>
-                </div>
-            </section>
-
-            {/* ═══ DIVIDER ═══ */}
-            <div className="border-t border-[#1a1a1a]" />
-
-            {/* ═══ PRICING ═══ */}
-            <section id="pricing" className="py-24 px-6">
-                <div className="max-w-5xl mx-auto">
-                    <Reveal className="mb-16 text-center">
-                        <p className="stagger-child text-[#00D97E] text-[12px] font-semibold uppercase tracking-widest mb-3">Tarifs</p>
-                        <h2 className="stagger-child text-[36px] md:text-[48px] font-black mb-3">Simple et transparent.</h2>
-                        <p className="stagger-child text-[#555] text-[14px]">30 jours d'essai gratuit. Aucune carte bancaire requise.</p>
-                    </Reveal>
-
-                    <Reveal>
-                        <div className="grid md:grid-cols-3 gap-4">
-                            {[
-                                {
-                                    name: 'Starter',
-                                    price: '5 000',
-                                    desc: 'Pour lancer votre boutique WhatsApp.',
-                                    features: ['1 numéro WhatsApp', '50 produits', 'Bot IA actif 24/7', 'Tableau de bord'],
-                                    cta: 'Commencer',
-                                    featured: false,
-                                },
-                                {
-                                    name: 'Pro',
-                                    price: '10 000',
-                                    desc: 'Pour les marchands en croissance.',
-                                    features: ['Tout du Starter', 'Produits illimités', 'Analytics avancées', 'IA personnalisée', 'Support prioritaire'],
-                                    cta: 'Choisir Pro',
-                                    featured: true,
-                                },
-                                {
-                                    name: 'Business',
-                                    price: '15 000',
-                                    desc: 'Pour les équipes et multi-boutiques.',
-                                    features: ['Tout du Pro', 'Multi-comptes', 'Accès API', 'Account manager dédié'],
-                                    cta: 'Nous contacter',
-                                    featured: false,
-                                },
-                            ].map((plan, i) => (
-                                <div key={i}
-                                    className={`stagger-child rounded-xl p-7 flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1 ${plan.featured
-                                        ? 'bg-[#00D97E] text-black'
-                                        : 'bg-[#0d0d0d] border border-[#1a1a1a] text-white'
-                                        }`}>
-                                    <div className="mb-6">
-                                        <div className={`text-[12px] font-semibold uppercase tracking-widest mb-1 ${plan.featured ? 'text-black/60' : 'text-[#555]'}`}>
-                                            {plan.name}
-                                        </div>
-                                        <div className="text-[36px] font-black leading-none mb-1">
-                                            {plan.price}
-                                            <span className={`text-[14px] font-normal ml-1 ${plan.featured ? 'text-black/60' : 'text-[#555]'}`}>FCFA/mois</span>
-                                        </div>
-                                        <p className={`text-[13px] mt-2 ${plan.featured ? 'text-black/70' : 'text-[#555]'}`}>{plan.desc}</p>
-                                    </div>
-
-                                    <ul className="space-y-2.5 flex-1 mb-6">
-                                        {plan.features.map((f, j) => (
-                                            <li key={j} className="flex items-center gap-2.5 text-[13px]">
-                                                <Check className={`w-3.5 h-3.5 flex-shrink-0 ${plan.featured ? 'text-black' : 'text-[#00D97E]'}`} />
-                                                {f}
-                                            </li>
-                                        ))}
-                                    </ul>
-
-                                    <button onClick={() => go('/signup')}
-                                        className={`w-full py-2.5 rounded-lg text-[13px] font-semibold transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${plan.featured
-                                            ? 'bg-black text-white hover:bg-[#111]'
-                                            : 'bg-[#1a1a1a] text-white hover:bg-[#222] border border-[#333]'
-                                            }`}>
-                                        {plan.cta}
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </Reveal>
-                </div>
-            </section>
-
-            {/* ═══ CTA BAND ═══ */}
-            <section className="relative py-24 px-6 border-t border-[#1a1a1a] overflow-hidden">
-                {/* Ambient blob in the CTA section too */}
-                <div className="ambient-blob" style={{ bottom: '-30%', left: '50%', transform: 'translateX(-50%)' }} aria-hidden="true" />
-
-                <Reveal className="relative max-w-3xl mx-auto text-center">
-                    <h2 className="stagger-child text-[40px] md:text-[56px] font-black leading-tight mb-6">
-                        Prêt à automatiser<br />vos ventes ?
-                    </h2>
-                    <p className="stagger-child text-[#555] text-[15px] mb-10">
-                        Rejoignez les commerçants qui font confiance à DjassaBot.
-                    </p>
-                    <div className="stagger-child">
-                        <button onClick={() => go('/signup')}
-                            className="inline-flex items-center gap-2 bg-[#00D97E] text-black font-semibold px-8 py-3.5 rounded-lg hover:bg-[#00c470] transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] group">
-                            Créer mon compte gratuitement
-                            <ArrowRight className="w-4 h-4 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-x-1" />
-                        </button>
-                    </div>
-                </Reveal>
-            </section>
-
-            {/* ═══ FOOTER ═══ */}
-            <footer className="border-t border-[#1a1a1a] py-10 px-6">
-                <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded bg-[#00D97E] flex items-center justify-center">
-                            <Bot className="w-3.5 h-3.5 text-black" />
-                        </div>
-                        <span className="font-bold text-[14px]">DjassaBot</span>
-                    </div>
-                    <p className="text-[#333] text-[12px]">© 2026 DjassaBot — Abidjan, Côte d'Ivoire 🇨🇮</p>
-                    <div className="flex gap-5 flex-wrap justify-center">
-                        {['Connexion', 'Créer un compte'].map((label, i) => (
-                            <button key={i} onClick={() => go(i === 0 ? '/login' : '/signup')}
-                                className="text-[#444] hover:text-white text-[12px] transition-colors duration-200">
-                                {label}
-                            </button>
-                        ))}
-                        <button onClick={() => go('/conditions')} className="text-[#444] hover:text-white text-[12px] transition-colors duration-200">Conditions</button>
-                        <button onClick={() => go('/confidentialite')} className="text-[#444] hover:text-white text-[12px] transition-colors duration-200">Confidentialité</button>
-                    </div>
-                </div>
-                <p className="max-w-6xl mx-auto mt-6 text-[#333] text-[11px] text-center md:text-left">
-                    Ce site est protégé par reCAPTCHA ; la <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="underline hover:text-[#555]">politique de confidentialité</a> et
-                    les <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="underline hover:text-[#555]">conditions d'utilisation</a> de Google s'appliquent.
-                </p>
-            </footer>
+                <section className="lp-final"><div className="lp-container"><Reveal><p className="lp-eyebrow">LE PROCHAIN CHAPITRE DE VOTRE COMMERCE.</p><h2>On fait<br /><em>du business ?</em><ArrowUpRight aria-hidden="true" /></h2><div className="lp-final-bottom"><p>Votre boutique mérite un coup de main.<br />Donnez-lui DjassaBot.</p><Link className="lp-button lp-button-dark" to={signupUrl}>Créer ma boutique <ArrowUpRight size={19} /></Link></div></Reveal></div></section>
+            </main>
+            <footer className="lp-container lp-footer"><div className="lp-footer-top"><Link to="/" aria-label="DjassaBot, accueil"><Brand /></Link><p>Le commerce a de l’avenir.<br />Et l’accent d’ici.</p><nav aria-label="Liens utiles"><Link to="/login">Connexion</Link><Link to="/conditions">Conditions</Link><Link to="/confidentialite">Confidentialité</Link></nav></div><div className="lp-footer-bottom"><span>© {new Date().getFullYear()} DjassaBot · Abidjan, Côte d’Ivoire</span><span>CONÇU POUR CEUX QUI ENTREPRENNENT. <span className="lp-green">↗</span></span></div><p className="lp-recaptcha">Ce site est protégé par reCAPTCHA. La <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">politique de confidentialité</a> et les <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer">conditions d’utilisation</a> de Google s’appliquent.</p></footer>
         </div>
     );
-};
-
-export default LandingPage;
+}

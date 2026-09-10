@@ -117,3 +117,29 @@
 ~~CGU + confidentialité~~ ✅ fait · ~~FAQ/support in-app~~ ✅ fait · ~~alerte bot down~~ ✅ fait · ~~stats campagnes~~ ✅ fait · ~~garde-fou wipe_db~~ ✅ fait
 
 *Après ça : recruter les 10 testeurs. Le produit est prêt.*
+
+## Note produit — 9 septembre 2026 : efficacité du parcours de vente
+
+Points à planifier, consignés à la demande d’Alex. Aucune implémentation ni publication autorisée par cette prise de notes.
+
+**Besoin central :** éviter au vendeur de répéter les mêmes informations aux clients, y compris à ceux qui n’achètent pas. Le bot répond de manière autonome à partir du catalogue et des règles renseignées. La reprise manuelle reste possible ; son déclenchement n’est pas le problème prioritaire de cette réflexion.
+
+**Orientation proposée :** conserver l’architecture actuelle (conversation IA, vérifications métier côté serveur), assouplir le parcours et rendre la conclusion de vente explicite. L’efficacité réelle reste à valider par des essais représentatifs.
+
+- [ ] **Identifier le produit concerné rapidement** : vérifier les demandes ambiguës comme « celui-là », les photos et les réponses à un message ou à un statut ; demander une précision seulement quand nécessaire, sans inventer l’article.
+- [ ] **Permettre les changements en cours de commande** : modifier quantité ou variante, ajouter ou retirer un article, puis reprendre le parcours sans perdre le panier. Vérifier que les changements sont réellement appliqués, pas seulement annoncés dans une réponse. Revalider prix, disponibilité et total.
+- [ ] **Faire confirmer le total complet** : présenter articles, quantités, livraison et montant final, puis recueillir un accord explicite avant de considérer la commande comme confirmée. Définir lors de la conception le moment de création du brouillon et de réservation du stock.
+- [ ] **Tester les conversations non linéaires** : questions répétées, hésitations, produit ambigu, changement d’article ou de quantité pendant la collecte d’adresse, interruption puis reprise, refus des frais de livraison et annulation. Observer les répétitions inutiles, les erreurs de panier et les interventions nécessaires du vendeur. Distinguer gain de temps et augmentation des ventes, qui n’est pas garantie.
+
+Ces points sont des axes de conception et de validation, pas une affirmation que chaque scénario échoue actuellement. Les constats de code ne remplacent pas un test de vente de bout en bout.
+
+## Corrections locales — 10 septembre 2026 (non déployées)
+
+- Reçus : une image ne passe plus automatiquement la commande à PAID ; avertissement et notification de vérification au vendeur. Les mentions historiques d'auto-validation ci-dessus décrivent l'ancien comportement.
+- Pause individuelle : appliquée avant le traitement des reçus et aux relances.
+- Relances : restitution de `reminder_sent` lors des deux lectures de sessions, exclusion des conversations manuelles, vérification avant envoi et protection contre deux scans simultanés dans le même processus.
+- Intentions : annulation plus stricte et adresse exigeant un indice de lieu ou une zone configurée ; les messages ambigus demandent une précision. Ce filtre reste une heuristique, pas une compréhension universelle des adresses.
+- Négociation : marge de secours alignée sur le serveur, suppression de la règle contradictoire de prix fixe et conservation de la souplesse zéro.
+- Inbox : erreur d'envoi visible et changement de pause affiché seulement après succès HTTP.
+- Tests isolés ajoutés, sans API réelle. VPS toujours arrêté : recette WhatsApp et persistance réelle à vérifier après restauration.
+- Restent à concevoir/implémenter : panier modifiable, confirmation finale livraison comprise, contexte des messages cités, parcours d'accueil indisponible/onboarding et consultation après expiration. Ces corrections ne constituent pas la refonte complète.

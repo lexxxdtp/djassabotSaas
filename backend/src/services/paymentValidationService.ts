@@ -8,7 +8,8 @@ import { logger } from '../utils/logger';
 
 /**
  * Service to process and validate payment receipts extracted via Gemini Vision
- * and update order statuses accordingly.
+ * Reçoit les analyses de reçus pour vérification humaine, sans confirmer l'encaissement.
+ * Le booléen retourné signifie « message traité », jamais « paiement confirmé ».
  *
  * Matching des montants (dans l'ordre) :
  * 1. total exact de la commande (cas normal : livraison incluse au checkout)
@@ -27,7 +28,8 @@ export const processReceiptValidation = async (
 
         if (!amount || !transactionId || !provider) {
             logger.warn({ analysis, remoteJid }, '[PaymentValidation] Missing critical receipt data');
-            return false;
+            await sock.sendMessage(remoteJid, { text: 'Reçu reçu, mais certaines informations sont illisibles. Merci de transmettre une image plus nette. Aucun paiement n’est confirmé pour le moment.' });
+            return true;
         }
 
         logger.info({ tenantId, remoteJid, amount, transactionId, provider, confidence }, '[PaymentValidation] Validating receipt');
@@ -45,7 +47,7 @@ export const processReceiptValidation = async (
             await sock.sendMessage(remoteJid, {
                 text: `🧾 Ce reçu (Réf: ${transactionId}) a déjà été utilisé pour valider un paiement. Si vous pensez qu'il s'agit d'une erreur, un conseiller va vérifier.`
             });
-            return false;
+            return true;
         }
 
         // Fetch all orders for this tenant
@@ -64,7 +66,7 @@ export const processReceiptValidation = async (
             await sock.sendMessage(remoteJid, {
                 text: `🧾 J'ai bien reçu votre reçu de paiement de ${amount.toLocaleString('fr-FR')} FCFA (${provider.toUpperCase()}), mais je ne trouve aucune commande en attente pour votre numéro.\n\nUn conseiller va vérifier manuellement.`
             });
-            return false;
+            return true;
         }
 
         // 1. Correspondance exacte sur le total
@@ -109,24 +111,25 @@ export const processReceiptValidation = async (
                 { orderId: closest.id, amount, transactionId, recipientName: analysis.recipientName, recipientPhone: analysis.recipientPhone }
             );
 
-            return false;
+            return true;
         }
 
-        // Match found! Update status to PAID
-        logger.info({ orderId: matchedOrder.id, matchNote }, '[PaymentValidation] Order matched, updating to PAID');
+        // Correspondance indicative seulement : aucune confirmation bancaire.
+        logger.info({ orderId: matchedOrder.id, matchNote }, '[PaymentValidation] Receipt awaiting merchant review');
 
-        await db.updateOrderStatus(tenantId, matchedOrder.id, 'PAID');
+        // Une capture n'est pas une preuve d'encaissement : le vendeur doit vérifier.
+        // Ne jamais passer à PAID depuis la seule analyse d'image.
 
         // Log activity (the "Pulse") — le destinataire extrait du reçu est journalisé
         // pour que le vendeur puisse repérer un paiement envoyé au mauvais compte.
         await db.logActivity(
             tenantId,
-            'sale',
-            `Paiement de ${(amount).toLocaleString('fr-FR')} FCFA validé automatiquement par reçu ${provider.toUpperCase()}${matchNote}`,
+            'warning',
+            `Reçu de ${(amount).toLocaleString('fr-FR')} FCFA à vérifier (${provider.toUpperCase()})${matchNote}`,
             {
                 orderId: matchedOrder.id,
                 total: amount,
-                transactionId,
+                receiptReference: transactionId,
                 recipientName: analysis.recipientName,
                 recipientPhone: analysis.recipientPhone,
             }
@@ -134,7 +137,7 @@ export const processReceiptValidation = async (
 
         // Confirm to customer
         await sock.sendMessage(remoteJid, {
-            text: `✅ Merci ! Votre paiement de ${amount.toLocaleString('fr-FR')} FCFA par ${provider.toUpperCase()} (Réf: ${transactionId}) a été validé automatiquement.\n\nVotre commande ${matchedOrder.id.split('-')[1]} est confirmée et en cours de préparation ! 🛍️`
+            text: `Merci, votre reçu de ${amount.toLocaleString('fr-FR')} FCFA a été transmis pour vérification. Le paiement n'est pas encore confirmé : le vendeur doit vérifier l'encaissement sur son compte.`
         });
 
         // Notify merchant (avec le destinataire lisible sur le reçu — contrôle anti-fraude humain)

@@ -310,13 +310,16 @@ export const splitDeliveryItem = (items: CartItem[]): { products: CartItem[]; de
 
 const CANCEL_PATTERNS = [
     'annule', 'annuler', 'annulle', "j'annule", 'stop', 'laisse tomber', 'laisser tomber',
-    'abandonne', 'je ne veux plus', 'je veux plus', "c'est bon laisse", 'oublie', 'oublié ça',
+    'abandonne', 'je ne veux plus', "c'est bon laisse", 'oublie', 'oublié ça',
 ];
 
 export const isCancelIntent = (text: string): boolean => {
     const t = normalize(text);
     if (t.length > 60) return false; // une longue phrase n'est pas une annulation sèche
-    return CANCEL_PATTERNS.some(p => t.includes(normalize(p)));
+    if (/\b(ne|pas|non)\b.*\b(annul|stop|oubli)/.test(t)) return false;
+    const clean = t.replace(/[.!?,]+$/g, '').trim();
+    return CANCEL_PATTERNS.some(p => clean === normalize(p)) ||
+        /^(?:j annule|annule|annuler|annulle) (?:la|ma|cette) commande$/.test(clean);
 };
 
 const QUESTION_STARTERS = [
@@ -335,12 +338,17 @@ export const looksLikeQuestion = (text: string): boolean => {
  * Heuristique : ce texte ressemble-t-il à une adresse de livraison plausible ?
  * (On refuse les questions, annulations et messages trop courts pour être une adresse.)
  */
-export const looksLikeAddress = (text: string): boolean => {
+export const looksLikeAddress = (text: string, zones: string[] = []): boolean => {
     if (isCancelIntent(text) || looksLikeQuestion(text)) return false;
     const t = normalize(text);
     if (t.length < 4) return false;
     if (!/[a-z]/.test(t)) return false; // uniquement chiffres/émojis → pas une adresse
-    return true;
+    if (/\b(merci|plutot|ajoute|retire|remplace|photos?|prix|prends|annuler)\b/.test(t)) return false;
+    const places = ['abidjan', 'cocody', 'angre', 'yopougon', 'abobo', 'adjame', 'marcory', 'koumassi', 'treichville', 'plateau', 'port bouet', 'bingerville', 'anyama', 'bouake', 'yamoussoukro', 'daloa', 'san pedro', ...zones];
+    return places.some(place => {
+        const name = normalize(place);
+        return name.length >= 3 && (` ${t} `).includes(` ${name} `);
+    }) || /\b(rue|avenue|quartier|carrefour|cite|lot|ilot)\s+\S+/.test(t);
 };
 
 // ---------------------------------------------------------------------------

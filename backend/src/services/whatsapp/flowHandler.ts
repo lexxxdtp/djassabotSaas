@@ -91,7 +91,7 @@ export async function handleFlow(
         // Le client pose une question au lieu de donner l'adresse → l'IA répond,
         // puis on re-demande l'adresse. On ne crée JAMAIS une commande avec une
         // question en guise d'adresse.
-        if (!looksLikeAddress(text)) {
+        if (!looksLikeAddress(text, (settings.deliveryZones || []).map(zone => zone.name))) {
             await answerWithAI(tenantId, remoteJid, text, sock, session, settings, products, {
                 stateNote: `The customer has a pending cart awaiting delivery address. Cart: ${tempOrder.summary || cartSummary(tempOrder.items)} (subtotal ${formatFcfa(tempOrder.total)}). Answer their message helpfully, then gently remind them to send their delivery address (quartier + commune) to finalize. Do NOT emit any ADD_TO_CART tag for items already in the cart.`,
                 allowDeals: false,

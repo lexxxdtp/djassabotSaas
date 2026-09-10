@@ -2,7 +2,7 @@ import { WASocket, proto, downloadMediaMessage } from '@whiskeysockets/baileys';
 import { db } from '../dbService';
 import { handleFlow } from './flowHandler';
 import { transcribeAudio, analyzeImage, analyzePaymentReceipt } from '../aiService';
-import { addToHistory } from '../sessionService';
+import { addToHistory, getSession } from '../sessionService';
 import { processReceiptValidation } from '../paymentValidationService';
 import { Product } from '../../types';
 
@@ -68,6 +68,8 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
         // INTERRUPTEUR GLOBAL — lu une seule fois, utilisé partout dans ce handler
         const settings = await db.getSettings(tenantId);
         botPaused = settings.botActive === false;
+        const conversation = await getSession(tenantId, remoteJid);
+        botPaused = botPaused || conversation.autopilotEnabled === false;
 
         // ABONNEMENT EXPIRÉ = bot muet (même comportement qu'une mise en pause) :
         // le message est enregistré dans l'Inbox mais AUCUNE réponse ni validation
@@ -93,7 +95,7 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
                 // processReceiptValidation envoie des messages au client)
                 if (!botPaused) {
                     const receiptAnalysis = await analyzePaymentReceipt(buffer as Buffer, mimeType);
-                    if (receiptAnalysis.isReceipt && receiptAnalysis.confidence !== 'low') {
+                    if (receiptAnalysis.isReceipt) {
                         const validated = await processReceiptValidation(tenantId, remoteJid, receiptAnalysis, sock);
                         if (validated) {
                             await addToHistory(tenantId, remoteJid, 'user', `[Reçu de paiement envoyé] Montant: ${receiptAnalysis.amount} FCFA, Réf: ${receiptAnalysis.transactionId}, Opérateur: ${receiptAnalysis.provider}`);

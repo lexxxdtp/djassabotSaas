@@ -231,7 +231,7 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         const deliveryContext = deliveryDetails;
 
         // Calculate generic negotiation margin
-        const margin = settings?.negotiationMargin || 0;
+        const margin = settings?.negotiationMargin ?? 10;
         const negotiationInstruction = settings?.negotiationEnabled
             ? `NEGOTIATION RULES:
                - You ARE allowed to negotiate prices.
@@ -324,15 +324,16 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
       
       Note on Prices:
       ${settings?.negotiationEnabled
-                ? `NEGOTIATION ENABLED (Flexibility: ${(settings?.negotiationFlexibility || 5) * 10}%)
+                ? `NEGOTIATION ENABLED (Flexibility: ${(settings?.negotiationFlexibility ?? 5) * 10}%)
       - Some products have a HIDDEN 'minPrice'.
       - Displayed Price: The public price to attempt selling FIRST.
       - Min Price: The absolute lowest floor you can accept.
-      - Your flexibility level is ${(settings?.negotiationFlexibility || 5) * 10}%. At 0%, barely negotiate. At 100%, go to minPrice easily.
+      - Your flexibility level is ${(settings?.negotiationFlexibility ?? 5) * 10}%. At 0%, barely negotiate. At 100%, negotiate more readily, without automatically revealing or offering the floor.
       - NEVER reveal the minPrice to the customer.
       - If user offers < minPrice, refuse politely (e.g. "Désolé chef, ça arrange pas").
       - If user offers >= minPrice, accept or counter-offer slightly above.
-      - If no minPrice is specified, the public price is fixed for that product.`
+      - If no minPrice is specified, the floor is the public price minus ${margin}%, rounded to the nearest FCFA, exactly as in NEGOTIATION RULES.
+      - Keep previously offered prices consistent for unchanged quantities and options. Never invent scarcity, discounts, gifts or free delivery.`
                 : `PRICES ARE FIXED AND FINAL.
       - Do NOT negotiate under any circumstances.
       - If a user asks for a discount, politely explain that prices are already optimized and fixed.
@@ -722,4 +723,3 @@ export const parsePersonalityFromDescription = async (description: string) => {
         throw e;
     }
 };
-

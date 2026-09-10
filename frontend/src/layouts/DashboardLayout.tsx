@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { Home, ShoppingBag, Settings, LogOut, Package, MessageSquare, User } from 'lucide-react';
+import { Home, ShoppingBag, Settings, LogOut, Package, MessageSquare, User, Bell, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import UserProfileModal from '../components/UserProfileModal';
 
@@ -36,48 +36,59 @@ const DashboardLayout: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen bg-black text-white font-sans">
+        <div className="flex h-[100dvh] bg-[#050605] text-white overflow-hidden">
             <UserProfileModal isOpen={userModalOpen} onClose={() => setUserModalOpen(false)} />
 
+            <div className="djassa-orb hidden md:block -top-72 -right-40" aria-hidden="true" />
+
             {/* ========== SIDEBAR DESKTOP (unchanged) ========== */}
-            <aside className="hidden md:flex flex-col w-64 bg-black border-r border-[#1a1a1a]">
-                <div className="p-6 border-b border-[#1a1a1a]">
-                    <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-1">
-                        DJASSA<span className="text-[#00D97E]">BOT</span>
-                    </h1>
-                    <p className="text-[10px] text-[#888] mt-1 uppercase tracking-widest font-semibold">Vendeur Augmenté</p>
+            <aside className="hidden md:flex flex-col relative z-10 w-[276px] bg-[#090a09]/95 border-r border-[#242824]">
+                <div className="p-6 pb-5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#00D97E] grid place-items-center text-black font-black text-xl shadow-[0_0_28px_rgba(0,217,126,.18)]">D</div>
+                        <div>
+                            <h1 className="text-lg font-black tracking-[-.06em] leading-none text-white">DJASSA<span className="text-[#00D97E]">BOT</span></h1>
+                            <p className="text-[9px] text-[#737d75] mt-1.5 uppercase tracking-[.18em] font-bold">Commerce autonome</p>
+                        </div>
+                    </div>
+                    <div className="mt-7 p-3 rounded-xl bg-[#101310] border border-[#242824] flex items-center gap-2.5">
+                        <span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00D97E] opacity-50" /><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#00D97E]" /></span>
+                        <span className="text-xs font-semibold text-[#c7cdc8]">Espace vendeur</span>
+                    </div>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-1">
+                <nav className="flex-1 px-4 py-3 space-y-1">
+                    <p className="djassa-kicker px-3 mb-3">Pilotage</p>
                     {navItems.map((item) => (
                         <NavLink
                             key={item.path}
                             to={item.path}
                             end={item.path === '/dashboard'}
                             className={({ isActive }) =>
-                                `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${isActive
-                                    ? 'bg-[#00D97E]/8 text-[#00D97E] border-l-2 border-[#00D97E]'
-                                    : 'text-[#888] hover:bg-[#111] hover:text-white'
+                                `flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${isActive
+                                    ? 'bg-[#00D97E] text-[#031c11] shadow-[0_10px_24px_rgba(0,217,126,.12)]'
+                                    : 'text-[#8d968f] hover:bg-[#151816] hover:text-white'
                                 }`
                             }
                         >
                             {({ isActive }) => (
                                 <>
-                                    <item.icon size={20} className={`transition-colors ${isActive ? 'text-[#00D97E]' : 'text-[#888] group-hover:text-white'}`} />
-                                    <span className="font-medium text-sm">{item.label}</span>
+                                    <item.icon size={19} strokeWidth={isActive ? 2.5 : 1.8} className="transition-colors" />
+                                    <span className="font-bold text-sm tracking-[-.01em] flex-1">{item.label}</span>
+                                    {isActive && <ChevronRight size={15} />}
                                 </>
                             )}
                         </NavLink>
                     ))}
                 </nav>
 
-                <div className="p-4 border-t border-[#1a1a1a] space-y-2">
+                <div className="p-4 border-t border-[#242824] space-y-2">
                     <button
                         onClick={() => setUserModalOpen(true)}
-                        className="w-full flex items-center gap-3 px-3 py-3 rounded-lg bg-white/5 hover:bg-[#1a1a1a] border border-[#1a1a1a] hover:border-[#1a1a1a] transition-all group text-left"
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-[#101310] hover:bg-[#151816] border border-[#242824] transition-all group text-left"
                     >
                         <div className="relative">
-                            <div className="w-9 h-9 rounded-full bg-[#00D97E]/10 flex items-center justify-center text-[#00D97E] font-bold border border-[#00D97E]/20 group-hover:border-[#00D97E]/40 transition-colors">
+                            <div className="w-9 h-9 rounded-xl bg-[#00D97E]/10 flex items-center justify-center text-[#00D97E] font-black border border-[#00D97E]/20 transition-colors">
                                 {tenant?.name?.[0] || user?.email?.[0] || 'U'}
                             </div>
                             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-black rounded-full flex items-center justify-center border border-[#1a1a1a]">
@@ -87,7 +98,7 @@ const DashboardLayout: React.FC = () => {
                         <div className="overflow-hidden flex-1">
                             <p className="text-sm font-bold text-white truncate group-hover:text-[#00D97E] transition-colors">{tenant?.name || 'Mon Business'}</p>
                             <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] bg-[#00D97E]/10 text-[#00D97E] px-1.5 py-0.5 rounded border border-[#00D97E]/20 font-mono uppercase truncate max-w-full">{user?.email}</span>
+                                <span className="text-[10px] text-[#737d75] truncate max-w-full">{user?.email || 'Compte vendeur'}</span>
                             </div>
                         </div>
                     </button>
@@ -103,28 +114,27 @@ const DashboardLayout: React.FC = () => {
             </aside>
 
             {/* ========== MAIN CONTENT ========== */}
-            <main className="flex-1 overflow-auto bg-black scrollbar-hide flex flex-col">
+            <main className="flex-1 overflow-auto relative z-0 djassa-surface scrollbar-hide flex flex-col">
                 {/* Mobile Header — compact, logo + profile */}
-                <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-black/90 backdrop-blur-md sticky top-0 z-10">
-                    <h1 className="text-lg font-bold text-white tracking-tight">
-                        DJASSA<span className="text-[#00D97E]">BOT</span>
-                    </h1>
+                <div className="md:hidden flex items-center justify-between px-4 py-3.5 border-b border-[#242824] bg-[#090a09]/95 backdrop-blur-md sticky top-0 z-10">
+                    <div className="flex items-center gap-2.5"><div className="w-8 h-8 rounded-lg bg-[#00D97E] grid place-items-center text-black text-sm font-black">D</div><h1 className="text-base font-black tracking-[-.06em]">DJASSA<span className="text-[#00D97E]">BOT</span></h1></div>
+                    <div className="flex items-center gap-2"><button aria-label="Notifications" className="w-8 h-8 grid place-items-center text-[#8d968f]"><Bell size={17} /></button>
                     <button
                         onClick={() => setUserModalOpen(true)}
                         className="w-8 h-8 rounded-full bg-[#00D97E]/10 flex items-center justify-center text-[#00D97E] font-bold text-xs border border-[#00D97E]/20 active:scale-95 transition-transform"
                     >
                         {tenant?.name?.[0] || user?.email?.[0] || <User size={14} />}
-                    </button>
+                    </button></div>
                 </div>
 
                 {/* Page Content — extra bottom padding on mobile for the nav bar */}
-                <div className="flex-1 p-4 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto w-full">
+                <div className="flex-1 p-4 md:p-8 lg:p-10 pb-24 md:pb-10 max-w-[1440px] mx-auto w-full">
                     <Outlet />
                 </div>
             </main>
 
             {/* ========== MOBILE BOTTOM NAVIGATION ========== */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl border-t border-[#1a1a1a]">
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#090a09]/95 backdrop-blur-xl border-t border-[#242824]">
                 {/* Safe area for iPhones with home indicator */}
                 <div className="flex items-center justify-around px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
                     {bottomNavItems.map((item) => {
@@ -138,7 +148,7 @@ const DashboardLayout: React.FC = () => {
                                 <div className={`p-1.5 rounded-xl transition-all duration-200 ${active ? 'bg-[#00D97E]/15' : ''}`}>
                                     <item.icon
                                         size={22}
-                                        className={`transition-colors duration-200 ${active ? 'text-[#00D97E]' : 'text-[#888]'}`}
+                                        className={`transition-colors duration-200 ${active ? 'text-[#00D97E]' : 'text-[#8d968f]'}`}
                                         strokeWidth={active ? 2.5 : 1.5}
                                     />
                                 </div>

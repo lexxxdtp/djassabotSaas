@@ -104,7 +104,7 @@ export async function sendPaymentNotification(
             : '\n⚠️ Destinataire illisible sur le reçu — vérifiez que l\'argent est bien arrivé sur VOTRE compte.';
 
         const msg =
-            `💰 *PAIEMENT AUTOMATIQUE REÇU*
+            `🧾 *REÇU À VÉRIFIER*
 📅 *Date:* ${dateStr}
 
 👤 *Client:* ${customerJid.split('@')[0]}
@@ -114,7 +114,7 @@ export async function sendPaymentNotification(
 🏦 *Moyen de Paiement:* ${provider.toUpperCase()}
 ${recipientLine}
 
-✅ Le statut de la commande a été mis à jour à *PAYÉE* automatiquement.`;
+⚠️ Le paiement n'est PAS confirmé. Vérifiez l'encaissement sur votre compte, puis marquez la commande payée dans DjassaBot.`;
 
         await sock.sendMessage(targetJid, { text: msg });
         console.log(`[Notification] Sent payment notification to vendor ${targetJid}`);

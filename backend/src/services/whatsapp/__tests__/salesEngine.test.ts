@@ -16,6 +16,21 @@ import {
 } from '../salesEngine';
 import { Product, Settings } from '../../../types';
 
+test('ne transforme pas un remerciement ou une modification de panier en adresse', () => {
+    for (const text of ['merci', 'je prends deux plutôt', 'ajoute deux articles', 'je ne veux pas annuler']) {
+        assert.equal(looksLikeAddress(text), false, text);
+    }
+    assert.equal(looksLikeAddress('Grand Bassam', ['Grand Bassam']), true);
+});
+
+test('ne confond pas une négation ou une demande supplémentaire avec une annulation', () => {
+    for (const text of ['je ne veux pas annuler', 'je veux plus de photos', 'ne stop pas', 'oublie pas la livraison']) {
+        assert.equal(isCancelIntent(text), false, text);
+    }
+    assert.equal(isCancelIntent('annuler'), true);
+    assert.equal(isCancelIntent('annule ma commande'), true);
+});
+
 // ---------------------------------------------------------------------------
 // FIXTURES
 // ---------------------------------------------------------------------------

@@ -1,5 +1,50 @@
 @import "tailwindcss";
 
+/* DjassaBot visual language — the app is designed for quick decisions on a phone,
+   often under bright daylight. Keep contrast high and decoration purposeful. */
+:root {
+    color-scheme: dark;
+    font-family: "Avenir Next", "Helvetica Neue", Helvetica, sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    background: #050605;
+    color: #f7faf8;
+    --ink: #050605;
+    --panel: #0e100f;
+    --panel-raised: #151816;
+    --line: #242824;
+    --muted: #8d968f;
+    --signal: #00d97e;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--ink); scroll-behavior: smooth; }
+body { min-width: 320px; min-height: 100vh; margin: 0; background: var(--ink); }
+button, input, textarea, select { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+::selection { background: #00d97e; color: #031c11; }
+
+/* A quiet market-grid texture: it establishes depth without competing with data. */
+.djassa-surface {
+    background-color: #050605;
+    background-image:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+    background-size: 32px 32px;
+}
+.djassa-orb {
+    position: fixed;
+    pointer-events: none;
+    width: min(58vw, 720px);
+    aspect-ratio: 1;
+    border-radius: 999px;
+    filter: blur(6px);
+    opacity: .12;
+    background: radial-gradient(circle, #00d97e 0%, rgba(0,217,126,.28) 26%, transparent 68%);
+}
+.djassa-kicker { letter-spacing: .16em; text-transform: uppercase; font-size: 10px; font-weight: 800; color: var(--muted); }
+.djassa-rule { border-color: var(--line); }
+
 /* ────────────────────────────────────────────────────────────
    Motion tokens — Emil Kowalski's framework
    Custom easing curves (default CSS easings are too weak)

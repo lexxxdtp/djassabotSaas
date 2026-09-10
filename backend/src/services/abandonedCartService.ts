@@ -1,4 +1,4 @@
-import { getActiveSessions } from './sessionService';
+import { getActiveSessions, getSession } from './sessionService';
 import { whatsappManager } from './baileysManager';
 import { db } from './dbService';
 
@@ -12,11 +12,14 @@ import { db } from './dbService';
  */
 
 const ABANDONED_CART_THRESHOLD_MINUTES = 30;
+let checking = false;
 
 /**
  * Détecte les paniers abandonnés et envoie des rappels
  */
 export const checkAbandonedCarts = async () => {
+    if (checking) return;
+    checking = true;
     try {
         console.log('[AbandonedCart] 🔍 Checking for abandoned carts...');
 
@@ -28,6 +31,7 @@ export const checkAbandonedCarts = async () => {
         for (const session of allSessions) {
             // Vérifier si la session est en attente d'adresse
             if (session.state !== 'WAITING_FOR_ADDRESS') continue;
+            if (session.autopilotEnabled === false) continue;
 
             // Skip si une relance a déjà été envoyée pour cette session
             if (session.reminderSent) continue;
@@ -59,6 +63,8 @@ export const checkAbandonedCarts = async () => {
         }
     } catch (error) {
         console.error('[AbandonedCart] ❌ Error checking abandoned carts:', error);
+    } finally {
+        checking = false;
     }
 };
 
@@ -68,6 +74,8 @@ export const checkAbandonedCarts = async () => {
  */
 const sendAbandonedCartReminder = async (tenantId: string, userId: string, tempOrder: any): Promise<boolean> => {
     try {
+        const conversation = await getSession(tenantId, userId);
+        if (conversation.autopilotEnabled === false || conversation.reminderSent || conversation.state !== 'WAITING_FOR_ADDRESS') return false;
         // INTERRUPTEUR GLOBAL : bot en pause → pas de relance automatique
         const settings = await db.getSettings(tenantId);
         if (settings.botActive === false) {
@@ -112,6 +120,9 @@ const sendAbandonedCartReminder = async (tenantId: string, userId: string, tempO
         message += 'Si vous voulez reprendre, envoyez simplement votre adresse de livraison.';
 
         // Envoyer le message
+        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
+        const latest = await getSession(tenantId, userId);
+        if (latest.autopilotEnabled === false || latest.reminderSent || latest.state !== 'WAITING_FOR_ADDRESS') return false;
         await sock.sendMessage(remoteJid, { text: message });
 
         console.log(`[AbandonedCart] 📤 Reminder sent to ${userId}`);
