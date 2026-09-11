@@ -38,28 +38,31 @@ export const getSession = async (tenantId: string, userId: string): Promise<Sess
     }
 
     if (isSupabaseEnabled && supabase) {
-        try {
-            const { data, error } = await supabase
-                .from('sessions')
-                .select('*')
-                .eq('id', sessionId)
-                .single();
+        const { data, error } = await supabase
+            .from('sessions')
+            .select('*')
+            .eq('id', sessionId)
+            .maybeSingle();
 
-            if (data) {
-                return {
-                    id: data.id,
-                    userId: data.user_phone,
-                    tenantId: data.tenant_id,
-                    history: typeof data.history === 'string' ? JSON.parse(data.history) : data.history || [],
-                    state: data.state as any,
-                    tempOrder: typeof data.temp_order === 'string' ? JSON.parse(data.temp_order) : data.temp_order,
-                    lastInteraction: new Date(data.last_interaction),
-                    autopilotEnabled: data.autopilot_enabled ?? true,
-                    reminderSent: data.reminder_sent ?? false
-                };
-            }
-        } catch (e) {
-            console.error('[Session] Error fetching from DB:', e);
+        // Une lecture impossible ne doit PAS produire une session vide : cela
+        // effacerait le panier et l'état d'un client en pleine commande, et le
+        // bot repartirait de zéro comme s'il ne l'avait jamais vu.
+        if (error) {
+            throw new Error(`Lecture de session impossible (${sessionId}) : ${error.message}`);
+        }
+
+        if (data) {
+            return {
+                id: data.id,
+                userId: data.user_phone,
+                tenantId: data.tenant_id,
+                history: typeof data.history === 'string' ? JSON.parse(data.history) : data.history || [],
+                state: data.state as any,
+                tempOrder: typeof data.temp_order === 'string' ? JSON.parse(data.temp_order) : data.temp_order,
+                lastInteraction: new Date(data.last_interaction),
+                autopilotEnabled: data.autopilot_enabled ?? true,
+                reminderSent: data.reminder_sent ?? false
+            };
         }
     }
 
@@ -107,7 +110,8 @@ export const addToHistory = async (tenantId: string, userId: string, role: 'user
         session.history = session.history.slice(-20);
     }
 
-    await saveSessionToDb(session);
+    // Perdre un tour de conversation ne doit pas annuler une réponse déjà envoyée.
+    await saveSessionToDb(session, { critical: false });
 };
 
 export const clearHistory = async (tenantId: string, userId: string) => {
@@ -147,8 +151,17 @@ export const getActiveSessions = async (): Promise<Session[]> => {
     return Object.values(localSessions);
 };
 
-// Helper to save/upsert to DB
-const saveSessionToDb = async (session: Session) => {
+/**
+ * Sauvegarde la session.
+ *
+ * `critical` distingue deux natures d'écriture :
+ * - critique (panier, état, validation) : un échec silencieux fait diverger la
+ *   base de ce que le bot vient de dire au client. L'erreur remonte pour que
+ *   l'appelant décide (le messageHandler répond « renvoyez votre message »).
+ * - non critique (ajout à l'historique de conversation) : la perte d'un tour de
+ *   discussion ne justifie pas d'annuler une réponse déjà envoyée.
+ */
+const saveSessionToDb = async (session: Session, { critical = true }: { critical?: boolean } = {}) => {
     const simulation = simulationScope(session.tenantId);
     if (simulation) {
         if (session.userId !== SIMULATION_USER_ID) throw new Error('Identifiant de simulation invalide');
@@ -181,6 +194,9 @@ const saveSessionToDb = async (session: Session) => {
             if (error) throw error;
         } catch (e) {
             console.error('[Session] Error saving to DB:', e);
+            if (critical) {
+                throw new Error(`Sauvegarde de session impossible (${session.id}) : ${e instanceof Error ? e.message : String(e)}`);
+            }
         }
     }
 };

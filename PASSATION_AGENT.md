@@ -37,7 +37,7 @@ Les cases suivantes sont ouvertes. Les détails et preuves initiales restent dan
 
 - [ ] Transaction durable commande + stock + état, clé d'idempotence de validation, concurrence sur dernier article. Aujourd'hui le secours stock reste non atomique et la compensation peut échouer.
 - [ ] Traiter les réponses de base perdues : une écriture peut avoir réussi malgré une erreur réseau. Pas de nouvelle commande ni restitution de stock aveugle.
-- [ ] Faire remonter les échecs critiques de sauvegarde de session ; éviter l'écrasement concurrent panier/pause/historique par lecture-modification-écriture ; vérifier partout le filtrage boutique.
+- [x] **Fait le 11 septembre — échecs critiques de sauvegarde de session.** `saveSessionToDb` distingue désormais l'écriture critique (panier, état) de l'historique : la première remonte l'erreur, la seconde se contente d'un journal. `getSession` lève au lieu de fabriquer une session vide après une lecture en échec, ce qui effaçait le panier d'un client en pleine commande. `finalizeOrder` traite le cas où le panier ne peut pas être fermé après création de la commande : le client est explicitement prié de ne pas renvoyer son adresse et le vendeur reçoit un avertissement, au lieu d'un doublon silencieux. Reste ouvert dans cette ligne : l'écrasement concurrent lecture-modification-écriture hors file de conversation (relances, tableau de bord) et la revérification du filtrage boutique partout.
 - [ ] File persistante de notifications avec reprises et échecs visibles, pas seulement logs. Fermer le panier avant envoi ne couvre pas un crash entre écritures.
 - [ ] Tests sur base isolée : deux clients pour le dernier article, double validation, deux annulations, arrêt entre étapes, réponse perdue, échec partiel multi-articles.
 

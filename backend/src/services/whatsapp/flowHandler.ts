@@ -453,7 +453,23 @@ async function finalizeOrder(
 
     // Fermer le panier avant tout envoi : un échec WhatsApp ne doit pas laisser
     // une commande déjà créée dans l'état « adresse à valider ».
-    await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined, reminderSent: false });
+    // Si cette fermeture échoue, le panier reste ouvert alors que la commande
+    // existe et que le stock est déjà pris : un client qui renvoie son adresse
+    // créerait un doublon. On le lui interdit explicitement et on alerte le vendeur.
+    try {
+        await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined, reminderSent: false });
+    } catch (e) {
+        logger.error({ err: e, tenantId, remoteJid, orderId: order.id }, '[FlowHandler] Cart close failed after order creation');
+        await db.logActivity(tenantId, 'warning',
+            `Commande ${String(order.id).split('-')[1] ?? order.id} enregistrée, mais le panier du client n'a pas pu être fermé. Vérifiez qu'elle n'a pas été saisie deux fois.`,
+            { orderId: order.id, remoteJid }
+        ).catch(() => { });
+        try {
+            await reply(sock, tenantId, remoteJid,
+                `✅ Votre commande est bien enregistrée (total ${formatFcfa(grandTotal)}).\n\n⚠️ Ne renvoyez pas votre adresse : elle serait comptée une deuxième fois. Le vendeur vous recontacte pour la suite.`);
+        } catch { /* la commande existe : on n'insiste pas */ }
+        return;
+    }
 
     // 4. Confirmation claire au client (détail articles + livraison + total)
     const deliveryLine = quote.known

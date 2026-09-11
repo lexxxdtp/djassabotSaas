@@ -44,7 +44,7 @@ test('le marqueur de relance et la pause survivent aux lectures de session', asy
     const row = { id: 'tenant:client', tenant_id: 'tenant', user_phone: 'client', state: 'WAITING_FOR_ADDRESS', history: [], last_interaction: new Date().toISOString(), autopilot_enabled: false, reminder_sent: true };
     const query: any = {
         select() { return this; }, eq() { return this; },
-        single: async () => ({ data: row }),
+        maybeSingle: async () => ({ data: row, error: null }),
         gt: async () => ({ data: [row] }),
     };
     const service = loadIsolated('../../sessionService', {
@@ -56,6 +56,40 @@ test('le marqueur de relance et la pause survivent aux lectures de session', asy
         assert.equal(value.reminderSent, true);
         assert.equal(value.autopilotEnabled, false);
     }
+});
+
+test('une lecture de session en échec ne fabrique pas un panier vide', async () => {
+    let written = false;
+    const query: any = {
+        select() { return this; }, eq() { return this; },
+        maybeSingle: async () => ({ data: null, error: { message: 'connexion perdue' } }),
+        upsert: async () => { written = true; return { error: null }; },
+    };
+    const service = loadIsolated('../../sessionService', {
+        '../config/supabase': { isSupabaseEnabled: true, supabase: { from: () => query } },
+    });
+    // Repartir sur une session neuve écraserait le panier d'un client en pleine commande.
+    await assert.rejects(() => service.getSession('tenant', 'client'), /Lecture de session impossible/);
+    assert.equal(written, false);
+});
+
+test('un panier non sauvegardé remonte, un historique non sauvegardé non', async () => {
+    const row = { id: 'tenant:client', tenant_id: 'tenant', user_phone: 'client', state: 'IDLE', history: [], last_interaction: new Date().toISOString() };
+    const query: any = {
+        select() { return this; }, eq() { return this; },
+        maybeSingle: async () => ({ data: row, error: null }),
+        upsert: async () => ({ error: { message: 'écriture refusée' } }),
+    };
+    const service = loadIsolated('../../sessionService', {
+        '../config/supabase': { isSupabaseEnabled: true, supabase: { from: () => query } },
+    });
+    // Critique : le bot ne doit pas continuer comme si le panier était enregistré.
+    await assert.rejects(
+        () => service.updateSession('tenant', 'client', { state: 'WAITING_FOR_ADDRESS' }),
+        /Sauvegarde de session impossible/,
+    );
+    // Non critique : perdre un tour de discussion n'annule pas une réponse déjà envoyée.
+    await service.addToHistory('tenant', 'client', 'model', 'bonjour');
 });
 
 test('une conversation en pause ne déclenche ni validation de reçu ni réponse', async () => {

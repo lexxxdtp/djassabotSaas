@@ -125,12 +125,38 @@ for (const failure of ['none', 'customer', 'merchant']) {
     });
 }
 
+test('panier impossible à fermer : le client est prévenu de ne pas revalider', async () => {
+    const events: string[] = [];
+    const messages: string[] = [];
+    const warnings: unknown[][] = [];
+    const session: any = { state: 'WAITING_FOR_ADDRESS', autopilotEnabled: true, history: [],
+        tempOrder: { items: [{ productId: 'p', productName: 'robe', price: 1000, quantity: 1 }], total: 1000 } };
+    const service = load('backend/src/services/whatsapp/flowHandler.ts', {
+        '../dbService': { db: { getSettings: async () => ({ deliveryEnabled: false }), getProducts: async () => [],
+            decrementStockForItems: async () => { events.push('stock'); return { ok: true }; },
+            createOrder: async () => { events.push('order'); return { id: 'cmd-4242' }; },
+            restockItems: async () => { events.push('restock'); },
+            logActivity: async (...args: unknown[]) => { warnings.push(args); } } },
+        '../sessionService': { getSession: async () => session, addToHistory: async () => {},
+            updateSession: async () => { events.push('clear'); throw new Error('base injoignable'); } },
+        '../aiService': {}, './salesEngine': load('backend/src/services/whatsapp/salesEngine.ts'), '../../utils/logger': { logger: quiet },
+        './notificationService': { sendOrderNotification: async () => { events.push('merchant'); } }
+    });
+    await service.handleFlow('owner', 'client', 'Cocody', { sendMessage: async (_jid: string, message: { text: string }) => { messages.push(message.text); } });
+    // La commande existe et le stock est pris : ne surtout pas rendre le stock ni rejouer.
+    assert.deepEqual(events, ['stock', 'order', 'clear']);
+    assert.match(messages[0], /bien enregistrée/);
+    assert.match(messages[0], /Ne renvoyez pas votre adresse/);
+    assert.equal(warnings[0][1], 'warning');
+    assert.match(String(warnings[0][2]), /deux fois/);
+});
+
 test('session : effacement du panier envoyé comme null explicite à la base', async () => {
     let saved: any;
-    const query = { select() { return this; }, eq() { return this; }, single: async () => ({ data: {
+    const query = { select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: {
         id: 'owner:client', tenant_id: 'owner', user_phone: 'client', state: 'WAITING_FOR_ADDRESS', history: [],
         temp_order: { items: [] }, last_interaction: new Date().toISOString()
-    } }), upsert: async (payload: unknown) => { saved = payload; return { error: null }; } };
+    }, error: null }), upsert: async (payload: unknown) => { saved = payload; return { error: null }; } };
     const service = load('backend/src/services/sessionService.ts', { '../config/supabase': { isSupabaseEnabled: true, supabase: { from: () => query } } });
     await service.updateSession('owner', 'client', { state: 'IDLE', tempOrder: undefined });
     assert.equal(saved.temp_order, null);
@@ -224,7 +250,7 @@ test('simulation : historique/panier séparés du vrai client même avec le mêm
     let writes = 0;
     const real = { id: 'sim-owner:playground-session', tenant_id: 'sim-owner', user_phone: 'playground-session',
         state: 'IDLE', history: [{ role: 'user', parts: [{ text: 'VRAI CLIENT' }] }], last_interaction: new Date().toISOString() };
-    const query = { select() { return this; }, eq() { return this; }, single: async () => ({ data: real }),
+    const query = { select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: real, error: null }),
         gt: async () => ({ data: [real] }), upsert: async () => { writes++; return { error: null }; } };
     const sessions = load('backend/src/services/sessionService.ts', { '../config/supabase': { isSupabaseEnabled: true, supabase: { from: () => query } } });
     await simulation.runSimulation('sim-owner', async () => {
