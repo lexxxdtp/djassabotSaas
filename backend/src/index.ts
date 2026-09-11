@@ -14,6 +14,7 @@ import chatRoutes from './routes/chatRoutes';
 import marketingRoutes from './routes/marketingRoutes';
 import './jobs/abandonedCart';
 import { db } from './services/dbService';
+import { validateProductInput } from './services/productValidation';
 import { authenticateTenant, checkSubscription } from './middleware/auth';
 import { logger } from './utils/logger';
 import { supabase } from './config/supabase';
@@ -278,15 +279,9 @@ app.get('/api/products', authenticateTenant, checkSubscription, async (req, res)
 
 app.post('/api/products', authenticateTenant, checkSubscription, async (req, res) => {
     try {
-        const { name, price, stock } = req.body;
-        if (!name || typeof name !== 'string' || name.trim().length === 0) {
-            return res.status(400).json({ error: 'Nom du produit requis' });
-        }
-        if (price !== undefined && (typeof price !== 'number' || price < 0)) {
-            return res.status(400).json({ error: 'Prix invalide' });
-        }
-        if (stock !== undefined && (typeof stock !== 'number' || stock < 0)) {
-            return res.status(400).json({ error: 'Stock invalide' });
+        const invalid = validateProductInput(req.body, { requireName: true });
+        if (invalid) {
+            return res.status(400).json({ error: invalid });
         }
 
         // Limite du plan Starter : 50 produits (raison d'upgrader vers Pro)
@@ -313,12 +308,9 @@ app.post('/api/products', authenticateTenant, checkSubscription, async (req, res
 app.put('/api/products/:id', authenticateTenant, checkSubscription, async (req, res) => {
     try {
         const productId = req.params.id as string;
-        const { price, stock } = req.body;
-        if (price !== undefined && (typeof price !== 'number' || price < 0)) {
-            return res.status(400).json({ error: 'Prix invalide' });
-        }
-        if (stock !== undefined && (typeof stock !== 'number' || stock < 0)) {
-            return res.status(400).json({ error: 'Stock invalide' });
+        const invalid = validateProductInput(req.body);
+        if (invalid) {
+            return res.status(400).json({ error: invalid });
         }
         const product = await db.updateProduct(req.tenantId!, productId, req.body);
         if (product) {

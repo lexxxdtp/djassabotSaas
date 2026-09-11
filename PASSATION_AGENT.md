@@ -47,7 +47,7 @@ Cibles : `dbService.ts`, `sessionService.ts`, `flowHandler.ts`, migrations SQL. 
 
 - [ ] Examiner les alertes, notamment Baileys ; mises à jour ciblées avec lockfile et régressions, jamais `audit fix --force` aveugle.
 - [ ] Vérifier propriété de chaque ressource sur les routes service_role, rôles, suspension des comptes avec jeton déjà émis, révocation et limitation des requêtes.
-- [ ] Validation serveur des prix/quantités/variantes et champs entrants, pas uniquement la liste blanche de modification produit.
+- [x] **Fait le 11 septembre — validation serveur des champs produit.** `productValidation.ts`, logique pure testée : NaN et Infinity sont des nombres non négatifs et passaient l'ancienne vérification, un seul produit à NaN contaminant ensuite tous les totaux. `minPrice`, plancher de la négociation, n'était pas validé du tout : il est désormais borné et ne peut pas dépasser le prix affiché. Stock exigé entier. Variantes et options vérifiées (nom, valeur, stock, supplément — une remise négative reste permise). Reste ouvert : la validation des autres entrées (réglages, marketing, profil).
 - [x] **Fait le 11 septembre — CORS et fuites d'erreurs.** `localhost` n'est plus accepté quand `NODE_ENV` vaut production (l'app Capacitor, d'origine locale, reste autorisée). Quatorze routes renvoyaient au client le message d'erreur brut, susceptible de contenir une requête Supabase, une URL interne ou une réponse Paystack : elles renvoient désormais une phrase en français, l'erreur réelle restant journalisée côté serveur. Vérifié : aucune route n'expose la configuration Git. Restent ouverts : séparation preview/production et tri des données dans les logs.
 
 ### 3. Paiements, reçus et abonnements
