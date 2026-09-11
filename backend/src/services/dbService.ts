@@ -411,28 +411,43 @@ export const db = {
                     .single();
                 if (error) throw error;
 
-                // Stock : annulation → on rend ; réactivation d'une annulée → on reprend
-                if (previous && Array.isArray(previous.items)) {
-                    if (status === 'CANCELLED' && previous.status !== 'CANCELLED') {
-                        await db.restockItems(tenantId, previous.items);
-                    } else if (previous.status === 'CANCELLED' && status !== 'CANCELLED') {
-                        const result = await db.decrementStockForItems(tenantId, previous.items);
-                        if (!result.ok) {
-                            // On ne bloque pas la réactivation, mais le vendeur doit savoir
-                            await db.logActivity(tenantId, 'warning',
-                                `Commande ${orderId.split('-')[1]} réactivée mais stock insuffisant pour certains articles`,
-                                { orderId, failures: result.failures });
+                // Le changement de statut est acquis ici. Le stock et les journaux sont
+                // des effets secondaires : leur échec ne doit pas faire croire au vendeur
+                // que la transition a échoué, mais doit rester visible.
+                try {
+                    // Stock : annulation → on rend ; réactivation d'une annulée → on reprend
+                    if (previous && Array.isArray(previous.items)) {
+                        if (status === 'CANCELLED' && previous.status !== 'CANCELLED') {
+                            await db.restockItems(tenantId, previous.items);
+                        } else if (previous.status === 'CANCELLED' && status !== 'CANCELLED') {
+                            const result = await db.decrementStockForItems(tenantId, previous.items);
+                            if (!result.ok) {
+                                // On ne bloque pas la réactivation, mais le vendeur doit savoir
+                                await db.logActivity(tenantId, 'warning',
+                                    `Commande ${orderId.split('-')[1]} réactivée mais stock insuffisant pour certains articles`,
+                                    { orderId, failures: result.failures });
+                            }
                         }
                     }
+                } catch (stockError) {
+                    console.error('[DB] Stock adjustment failed after status change', stockError);
+                    await db.logActivity(tenantId, 'warning',
+                        `Commande ${orderId.split('-')[1]} passée à ${status}, mais le stock n'a pas pu être ajusté. Vérifiez les quantités.`,
+                        { orderId, status, error: String(stockError) }
+                    ).catch(() => { });
                 }
 
                 // Log the status change
-                await supabase.from('activity_logs').insert([{
-                    tenant_id: tenantId,
-                    type: 'action',
-                    message: `Commande ${orderId.split('-')[1]} passée à ${status}`,
-                    metadata: { orderId, status }
-                }]);
+                try {
+                    await supabase.from('activity_logs').insert([{
+                        tenant_id: tenantId,
+                        type: 'action',
+                        message: `Commande ${orderId.split('-')[1]} passée à ${status}`,
+                        metadata: { orderId, status }
+                    }]);
+                } catch (logError) {
+                    console.error('[DB] Activity log failed after status change', logError);
+                }
 
                 return data;
             } catch (e) {

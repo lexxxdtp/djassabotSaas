@@ -55,11 +55,12 @@ export default function Overview() {
                     apiClient('/dashboard/pulse'),
                     apiClient('/dashboard/recent-orders'),
                 ]);
-                setOrdersAvailable(false);
+                let ordersOk = false;
                 if (resOrders.ok) {
                     const data = await resOrders.json();
-                    if (Array.isArray(data)) { setOrders(data); setOrdersAvailable(true); }
+                    if (Array.isArray(data)) { setOrders(data); ordersOk = true; }
                 }
+                setOrdersAvailable(ordersOk);
                 if (resLogs.ok) setLogs(await resLogs.json());
                 if (resRecent.ok) setRecentOrders(await resRecent.json());
             } catch (e) {

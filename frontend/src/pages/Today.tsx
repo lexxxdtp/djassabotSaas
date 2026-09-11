@@ -112,11 +112,12 @@ const Today: React.FC = () => {
                     apiClient('/products?limit=1').catch(() => null),
                 ];
                 const [resOrders, resLogs, resWa, resSettings, resProducts] = await Promise.all(promises);
-                setOrdersAvailable(false);
+                let ordersOk = false;
                 if (resOrders && resOrders.ok) {
                     const data = await resOrders.json();
-                    if (Array.isArray(data)) { setOrders(data); setOrdersAvailable(true); }
+                    if (Array.isArray(data)) { setOrders(data); ordersOk = true; }
                 }
+                setOrdersAvailable(ordersOk);
                 if (resLogs && resLogs.ok) setLogs(await resLogs.json());
                 if (resWa && resWa.ok) {
                     const data = await resWa.json();

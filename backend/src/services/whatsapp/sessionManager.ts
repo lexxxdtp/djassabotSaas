@@ -119,6 +119,17 @@ export class SessionManager {
         const existingSession = this.sessions.get(tenantId);
         const currentRetryCount = existingSession ? existingSession.retryCount : 0;
 
+        // Un socket encore vivant pour cette boutique (jumelage relancé, reconnexion)
+        // doit être fermé explicitement : sinon il continue de recevoir les messages
+        // et le client reçoit deux réponses à la même question.
+        if (existingSession?.sock && existingSession.sock !== sock) {
+            try {
+                existingSession.sock.end(undefined);
+            } catch (e) {
+                console.error(`[Manager] Fermeture de l'ancien socket échouée pour ${tenantId}`, e);
+            }
+        }
+
         this.sessions.set(tenantId, {
             sock,
             status: 'connecting',
@@ -130,6 +141,8 @@ export class SessionManager {
 
         // BIND MESSAGE LISTENER
         sock.ev.on('messages.upsert', async (m) => {
+            // Même garde que connection.update : un socket remplacé ne répond plus.
+            if (this.sessions.get(tenantId)?.sock !== sock) return;
             console.log(`[Manager] 📨 Messages reçus pour ${tenantId} - Count: ${m.messages.length}`);
             for (const msg of m.messages) {
                 try {
