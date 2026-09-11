@@ -28,6 +28,13 @@ export class SessionManager {
     private MAX_RETRIES = 5;
     // Anti-spam : 1 alerte email max par tenant par heure
     private lastDownAlert: Map<string, number> = new Map();
+    // Une seule tentative de connexion en vol par boutique. Sans ça, le tableau
+    // de bord qui interroge le statut toutes les 15 s ouvrait un socket Baileys
+    // à chaque passage — exactement ce qui fait bannir un numéro.
+    private connecting: Map<string, Promise<string | undefined>> = new Map();
+    // État SOUHAITÉ, distinct de l'état observé : un vendeur qui se déconnecte
+    // volontairement ne doit pas être reconnecté par une minuterie en attente.
+    private wantedOffline: Set<string> = new Set();
 
     constructor() { }
 
@@ -84,7 +91,55 @@ export class SessionManager {
         }
     }
 
+    /**
+     * Ouvre (ou réutilise) une connexion WhatsApp pour cette boutique.
+     *
+     * Les appels concurrents partagent la même tentative : le tableau de bord,
+     * la page de connexion et une minuterie de reconnexion peuvent appeler en
+     * même temps sans ouvrir trois sockets.
+     */
     public async createSession(tenantId: string, onConnectionUpdate?: (update: any, sock: WASocket) => void): Promise<string | undefined> {
+        // Demande explicite de connexion : elle annule une déconnexion volontaire.
+        this.wantedOffline.delete(tenantId);
+
+        const inFlight = this.connecting.get(tenantId);
+        if (inFlight) return inFlight;
+
+        const attempt = this.openSession(tenantId, onConnectionUpdate).finally(() => {
+            if (this.connecting.get(tenantId) === attempt) this.connecting.delete(tenantId);
+        });
+        this.connecting.set(tenantId, attempt);
+        return attempt;
+    }
+
+    /**
+     * Ouvre une session SI le vendeur ne s'est pas déconnecté volontairement.
+     *
+     * C'est ce qu'appelle la lecture de statut : consulter l'état de son bot ne
+     * doit jamais rallumer celui qu'on vient d'éteindre. Le rebranchement passe
+     * par une action explicite (demande de code de jumelage).
+     */
+    public ensureSession(tenantId: string): void {
+        if (this.wantedOffline.has(tenantId)) return;
+        if (this.sessions.has(tenantId) || this.connecting.has(tenantId)) return;
+        this.createSession(tenantId).catch(e => console.error('[Manager] ensureSession failed:', e));
+    }
+
+    /** Déconnexion voulue par le vendeur : aucune minuterie ne doit la défaire. */
+    public async disconnect(tenantId: string): Promise<void> {
+        this.wantedOffline.add(tenantId);
+        const session = this.sessions.get(tenantId);
+        if (session?.sock) {
+            try {
+                session.sock.end(undefined);
+            } catch (e) {
+                console.error(`[Manager] Fermeture du socket échouée pour ${tenantId}`, e);
+            }
+        }
+        await this.cleanupSession(tenantId);
+    }
+
+    private async openSession(tenantId: string, onConnectionUpdate?: (update: any, sock: WASocket) => void): Promise<string | undefined> {
         // Si session existe et connectée, retourner null (pas besoin de QR)
         const existing = this.sessions.get(tenantId);
         if (existing?.status === 'connected') return undefined;
@@ -199,6 +254,7 @@ export class SessionManager {
                         console.log(`[Manager] 🔄 Reconnexion dans ${delay / 1000}s (tentative ${retries + 1}/${this.MAX_RETRIES})...`);
 
                         setTimeout(() => {
+                            if (this.wantedOffline.has(tenantId)) return;
                             if (this.sessions.get(tenantId) !== session || session.status !== 'disconnected') return;
                             this.createSession(tenantId, onConnectionUpdate).catch(e => console.error(`[Manager] Retry failed:`, e));
                         }, delay);
@@ -224,6 +280,7 @@ export class SessionManager {
                         }
 
                         setTimeout(() => {
+                            if (this.wantedOffline.has(tenantId)) return;
                             // Ne relancer que si les credentials existent toujours (pas de logout manuel entre-temps)
                             const authPath = path.join(__dirname, `../../../auth_info_baileys/tenant_${tenantId}`);
                             if (fs.existsSync(path.join(authPath, 'creds.json'))) {

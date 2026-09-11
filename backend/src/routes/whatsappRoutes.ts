@@ -32,11 +32,10 @@ router.get('/status', async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        // Si non connecté, s'assurer qu'une session de connexion est lancée pour avoir un QR
-        if (!session || session.status === 'disconnected') {
-            // Lancer la création de session en arrière-plan si pas déjà fait
-            whatsappManager.createSession(tenantId).catch(console.error);
-        }
+        // Lecture passive : cette route est interrogée toutes les 15 secondes par
+        // le tableau de bord. Elle n'ouvre une session que s'il n'en existe
+        // aucune ET que le vendeur ne s'est pas déconnecté volontairement.
+        whatsappManager.ensureSession(tenantId);
 
         // Renvoyer le QR s'il est dispo en mémoire (ou attendre un peu ?)
         // Ici on renvoie ce qu'on a. Le frontend fera du polling.

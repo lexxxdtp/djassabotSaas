@@ -173,3 +173,44 @@ test('paystack : un sous-paiement ne marque pas la commande payée', async () =>
     assert.equal(calls.statuses.length, 0);
     assert.equal(calls.logs[0][1], 'warning');
 });
+
+// --- Fiabilité WhatsApp : ne pas ouvrir de socket en trop, ni répondre deux fois ---
+
+test('un message relivré ne déclenche pas une deuxième réponse', async () => {
+    let flowCalls = 0;
+    const service = loadIsolated('../messageHandler', {
+        '@whiskeysockets/baileys': { downloadMediaMessage: async () => Buffer.from('') },
+        '../dbService': { db: { getSettings: async () => ({ botActive: true }), getProducts: async () => [],
+            isSubscriptionActive: async () => true } },
+        '../sessionService': { getSession: async () => ({ autopilotEnabled: true }), addToHistory: async () => {} },
+        './flowHandler': { handleFlow: async () => { flowCalls++; } },
+        '../aiService': {}, '../paymentValidationService': {},
+    });
+    const sock = { readMessages: async () => {}, sendPresenceUpdate: async () => {}, sendMessage: async () => {} };
+    const msg = { key: { remoteJid: 'client', id: 'MSG-1' }, message: { conversation: 'bonjour' },
+        messageTimestamp: Math.floor(Date.now() / 1000) };
+    await service.handleMessage('tenant', sock, msg);
+    await service.handleMessage('tenant', sock, msg);
+    assert.equal(flowCalls, 1);
+});
+
+test('lire le statut ne rallume pas un bot volontairement éteint', async () => {
+    const opened: string[] = [];
+    const { SessionManager } = loadIsolated('../sessionManager', {
+        '@whiskeysockets/baileys': {}, '@hapi/boom': {}, pino: () => ({}),
+        '../dbService': { db: {} }, '../resendService': { sendBotDownAlert: async () => {} },
+        './messageHandler': { handleMessage: async () => {} },
+    });
+    const manager = new SessionManager();
+    // On n'ouvre pas de vrai socket : seule la décision d'ouvrir nous intéresse.
+    manager.createSession = async (tenantId: string) => { opened.push(tenantId); return undefined; };
+
+    manager.ensureSession('tenant');
+    assert.deepEqual(opened, ['tenant']);
+
+    await manager.disconnect('tenant');
+    manager.ensureSession('tenant');
+    manager.ensureSession('tenant');
+    // Le vendeur s'est déconnecté : consulter son tableau de bord ne le reconnecte pas.
+    assert.deepEqual(opened, ['tenant']);
+});

@@ -24,12 +24,48 @@ const enqueue = (key: string, fn: () => Promise<void>): Promise<void> => {
     return next;
 };
 
+/**
+ * Messages déjà traités, pour ne pas répondre deux fois au même.
+ *
+ * WhatsApp relivre un message après une reconnexion ou une resynchronisation,
+ * et un socket remplacé peut livrer ce que le nouveau livre aussi.
+ *
+ * Limite assumée : cette mémoire est celle du processus. Un redémarrage l'efface,
+ * donc un message relivré juste après un redémarrage peut encore passer deux
+ * fois. Une déduplication persistante reste à faire.
+ */
+const DEDUP_TTL_MS = 10 * 60 * 1000;
+const DEDUP_MAX = 5000;
+const seenMessages = new Map<string, number>();
+
+const alreadySeen = (key: string): boolean => {
+    const now = Date.now();
+    const seenAt = seenMessages.get(key);
+    if (seenAt !== undefined && now - seenAt < DEDUP_TTL_MS) return true;
+
+    seenMessages.set(key, now);
+    if (seenMessages.size > DEDUP_MAX) {
+        for (const [id, at] of seenMessages) {
+            if (now - at >= DEDUP_TTL_MS) seenMessages.delete(id);
+        }
+        // Purge par ancienneté si tout est encore récent (Map conserve l'ordre d'insertion).
+        while (seenMessages.size > DEDUP_MAX) {
+            const oldest = seenMessages.keys().next().value;
+            if (oldest === undefined) break;
+            seenMessages.delete(oldest);
+        }
+    }
+    return false;
+};
+
 export async function handleMessage(tenantId: string, sock: WASocket, msg: proto.IWebMessageInfo, isHistory: boolean = false) {
     if (!msg.key || !msg.key.remoteJid) return;
     const remoteJid = msg.key.remoteJid;
 
     // La vente automatisée concerne uniquement les discussions individuelles.
     if (remoteJid.endsWith('@broadcast') || remoteJid.endsWith('@g.us') || remoteJid.endsWith('@newsletter')) return;
+
+    if (msg.key.id && alreadySeen(`${tenantId}:${remoteJid}:${msg.key.id}`)) return;
 
     await enqueue(`${tenantId}:${remoteJid}`, () => processMessage(tenantId, sock, msg, remoteJid, isHistory));
 }
