@@ -1,4 +1,31 @@
 # 🤖 CLAUDE ROADMAP — DjassaBot SaaS
+
+## 11 septembre 2026 — arrêt pour passation à la demande d'Alex
+
+Crédits insuffisants : aucun développement supplémentaire. Création de `PASSATION_AGENT.md` : cinq lots locaux, fichiers nouveaux à transmettre, vérifications acquises (83 tests), limites et reste à faire priorisé, décisions produit et précautions de reprise. VIABILITE reste le TODO officiel. Documentation seule pour cette étape ; aucun test métier relancé, commit, push, migration ou déploiement. Un autre agent doit récupérer ce dossier avec les fichiers non suivis : GitHub seul ne contient pas ces corrections.
+
+## Suite : isolation du simulateur
+
+Simulation sous portée asynchrone dédiée avec mémoire temporaire par boutique, identifiant serveur fixe et exclusion du stockage des vraies sessions. Une action simultanée maximum par boutique, expiration à 30 minutes d'inactivité, plafond de mémoire. Le mode dryRun est propagé aux réponses IA pour éviter les journaux métier. Reset frontend conditionné au succès, erreurs et limites explicites. 83 tests passent, TypeScript/backend et build frontend vérifiés. Aucun nettoyage de données historiques, commit, push ou déploiement.
+
+## Suite : statistiques et indisponibilité
+
+Accueil et Analytics partagent les règles de calcul du montant des commandes hors annulations, sans promesse d'encaissement. Fenêtres calendaires UTC/Abidjan cohérentes avec le graphique, erreurs de lecture non masquées en liste vide, route commandes en 503 sur panne, état indisponible dans les deux écrans. 79 tests réussis, TypeScript backend et build frontend réussis. Pas de test réel ni déploiement. Suivi et limites dans VIABILITE.md.
+
+## Suite : montants et produits ambigus
+
+Troisième lot local : parsing strict des montants avec suffixe k décimal, refus des quantités fractionnaires et balises invalides, correspondance produit unique et clarification sans ajout partiel ni fausse promesse IA. 71 tests backend réussis, TypeScript vérifié. Aucun appel réel, migration, commit ou push. Voir VIABILITE.md pour les limites et la suite.
+
+## Suite du 11 septembre 2026 : produits, stock, confirmations
+
+Liste blanche des modifications produit et mapping manageStock ; erreurs de stock propagées au lieu d'un faux succès ; compensation des mouvements confirmés après échec partiel ; panier effacé explicitement avant les notifications, erreurs d'envoi isolées de la création de commande. 63 tests isolés réussis et TypeScript backend réussi. Idempotence durable, transaction globale et file de notifications restent ouvertes : voir VIABILITE.md. Aucun accès distant en écriture, migration, commit ou push.
+
+## 11 septembre 2026 : premier lot de corrections après audit
+
+À la demande d'Alex (« passons à l'action »), corrections locales : zéro initial ivoirien préservé à l'inscription et au jumelage ; rejets email correctement remontés ; groupes/broadcasts/chaînes exclus ; aucune analyse média pendant pause/expiration/historique ; état de connexion corrigé à la fermeture, callbacks obsolètes ignorés et session invalidée au nettoyage. Le code de jumelage n'est plus imprimé.
+
+17 tests isolés ajoutés dans `auditFixes.test.ts` : 52 tests backend réussis, TypeScript backend et construction frontend réussis. Aucun accès au VPS, envoi réel, migration, changement de fournisseur IA, commit ou push. Le suivi priorisé reste dans VIABILITE.md. Ce premier lot n'est pas la correction complète de l'audit ni une validation de production.
+
 > Fichier de contexte et journal de bord pour Claude.
 > **Mis à jour le : 17 mai 2026**
 

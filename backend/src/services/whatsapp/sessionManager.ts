@@ -76,7 +76,7 @@ export class SessionManager {
         try {
             console.log(`[Manager] Demande code de jumelage pour ${tenantId} sur le ${cleanPhone}`);
             const code = await session.sock.requestPairingCode(cleanPhone);
-            console.log(`[Manager] Code reçu: ${code}`);
+            console.log(`[Manager] Code de jumelage généré pour ${tenantId}`);
             return code;
         } catch (error) {
             console.error(`[Manager] Erreur demande Pairing Code:`, error);
@@ -147,6 +147,8 @@ export class SessionManager {
 
         return new Promise((resolve) => {
             sock.ev.on('connection.update', async (update) => {
+                // Un ancien socket ne doit pas modifier la nouvelle connexion.
+                if (this.sessions.get(tenantId)?.sock !== sock) return;
                 const { connection, lastDisconnect, qr } = update;
 
                 // 1. Gestion du QR Code
@@ -167,6 +169,10 @@ export class SessionManager {
                     console.log(`[Manager] 🔴 Connexion fermée pour Tenant ${tenantId}. Raison: ${reason}. Reconnect: ${shouldReconnect}`);
 
                     const session = this.sessions.get(tenantId);
+                    if (!session || session.status === 'disconnected') return;
+                    session.status = 'disconnected';
+                    session.qr = undefined;
+                    resolve(undefined);
                     const retries = session?.retryCount ?? 0;
 
                     if (shouldReconnect && retries < this.MAX_RETRIES) {
@@ -180,8 +186,11 @@ export class SessionManager {
                         console.log(`[Manager] 🔄 Reconnexion dans ${delay / 1000}s (tentative ${retries + 1}/${this.MAX_RETRIES})...`);
 
                         setTimeout(() => {
+                            if (this.sessions.get(tenantId) !== session || session.status !== 'disconnected') return;
                             this.createSession(tenantId, onConnectionUpdate).catch(e => console.error(`[Manager] Retry failed:`, e));
                         }, delay);
+
+                        await db.updateTenantWhatsAppStatus(tenantId, 'disconnected');
 
                     } else if (shouldReconnect && retries >= this.MAX_RETRIES) {
                         // Salve de tentatives rapides épuisée (~30s). On ne reste PAS mort :
@@ -241,6 +250,8 @@ export class SessionManager {
     }
 
     public async cleanupSession(tenantId: string) {
+        // Invalider aussi les callbacks et les tentatives rapides de cet ancien socket.
+        this.sessions.delete(tenantId);
         const authPath = path.join(__dirname, `../../../auth_info_baileys/tenant_${tenantId}`);
         if (fs.existsSync(authPath)) {
             fs.rmSync(authPath, { recursive: true, force: true });

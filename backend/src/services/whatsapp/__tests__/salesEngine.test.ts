@@ -60,6 +60,21 @@ const SETTINGS: Settings = {
 // ---------------------------------------------------------------------------
 
 describe('parseAIResponse', () => {
+    test('montants abrégés décimaux et milliers cohérents', () => {
+        for (const [raw, expected] of [['12.5k', 12500], ['12,5K', 12500], ['12.345k', 12345], ['15,000', 15000], ['1 000 000', 1000000]] as const) {
+            const result = parseAIResponse(`[ADD_TO_CART: p1 | 1 | ${raw}]`);
+            assert.equal(result.deals[0].unitPrice, expected, raw);
+            assert.equal(result.invalidDealCount, 0);
+        }
+    });
+    test('balises mal formées retirées sans inventer de prix ou quantité', () => {
+        for (const body of ['p1 | 1.5 | 1000', 'p1 | 1 | 12.5', 'p1 | 1 | 1,23,456', 'p1 | 1 | -1000', 'p1 | 1 | gratuit', 'p1 | 1 | 1000 | surplus', 'p1 | 1k | 1000', 'p1 | 1 | 99999999999999999999']) {
+            const result = parseAIResponse(`Voici [ADD_TO_CART: ${body}]`);
+            assert.equal(result.deals.length, 0, body);
+            assert.equal(result.invalidDealCount, 1, body);
+            assert.equal(result.cleaned, 'Voici');
+        }
+    });
     test('extrait un tag ADD_TO_CART et nettoie le texte', () => {
         const r = parseAIResponse('Super choix ! [ADD_TO_CART: p1 | 2 | 14000]');
         assert.equal(r.cleaned, 'Super choix !');
@@ -98,6 +113,19 @@ describe('parseAIResponse', () => {
 // ---------------------------------------------------------------------------
 
 describe('findProduct', () => {
+    test('ambiguïté refusée indépendamment de l’ordre du catalogue', () => {
+        const robes = [{ ...PRODUCTS[4], id: 'red', name: 'Robe rouge' }, { ...PRODUCTS[4], id: 'blue', name: 'Robe bleue' }];
+        assert.equal(findProduct(robes, 'robe'), undefined);
+        assert.equal(findProduct([...robes].reverse(), 'robe'), undefined);
+        assert.equal(findProduct(robes, 'robe verte'), undefined);
+        assert.equal(findProduct(robes, 'robe rouge')?.id, 'red');
+        assert.equal(findProduct(robes, 'blue')?.id, 'blue');
+    });
+    test('noms identiques nécessitent un identifiant et mots manquants ne sont pas ignorés', () => {
+        assert.equal(findProduct([PRODUCTS[0], { ...PRODUCTS[0], id: 'duplicate' }], PRODUCTS[0].name), undefined);
+        assert.equal(findProduct(PRODUCTS, 'Bazin Riche Rouge'), undefined);
+        assert.equal(findProduct(PRODUCTS, 'Mèche Humaine 2'), undefined);
+    });
     test('trouve par id exact', () => {
         assert.equal(findProduct(PRODUCTS, 'p2')?.name, 'Mèche Humaine 22');
     });
@@ -159,6 +187,10 @@ describe('validateDeal (négociation)', () => {
 });
 
 describe('validateDeal (stock & quantités)', () => {
+    test('une quantité fractionnaire est refusée et non arrondie', () => {
+        const result = validateDeal(PRODUCTS, { productRef: 'p1', quantity: 1.5, unitPrice: 15000 }, SETTINGS);
+        assert.ok(!result.ok && result.reason === 'BAD_QUANTITY');
+    });
     test('stock insuffisant → INSUFFICIENT_STOCK avec le disponible', () => {
         const v = validateDeal(PRODUCTS, { productRef: 'p2', quantity: 5, unitPrice: 45000 }, SETTINGS);
         assert.ok(!v.ok);

@@ -5,6 +5,7 @@ import { authenticateTenant } from '../middleware/auth';
 import { generateIdentitySummary, parsePersonalityFromDescription, analyzeProductPhoto } from '../services/aiService';
 import { handleFlow } from '../services/whatsapp/flowHandler';
 import { addToHistory, clearHistory } from '../services/sessionService';
+import { runSimulation, SIMULATION_USER_ID, SimulationBusyError } from '../services/simulationContext';
 
 const router = Router();
 
@@ -38,22 +39,22 @@ router.post('/analyze-product-photo', photoUpload.single('file'), async (req: an
 /**
  * Endpoint de simulation de chat pour le Playground (Réglages → Mon Bot)
  * POST /api/ai/simulate
- * Body: { message: string, sessionId?: string }
+ * Body: { message: string }. L'identité de test est imposée côté serveur.
  *
  * IMPORTANT : le simulateur passe par LE MÊME moteur que le vrai bot WhatsApp
  * (flowHandler + salesEngine) en mode dryRun — mêmes règles de négociation,
  * de stock, de livraison — mais AUCUNE commande réelle n'est créée et AUCUN
- * stock n'est décrémenté. Ce que le vendeur teste ici est exactement ce que
- * ses clients vivront.
+ * stock n'est décrémenté. Historique et panier sont temporaires et séparés
+ * des clients. La simulation ne valide pas les intégrations WhatsApp réelles.
  */
 router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
     try {
-        const { message, sessionId } = req.body;
+        const { message } = req.body;
         const tenantId = req.tenantId!;
-        const simUserId = sessionId || `sim-${tenantId}`;
+        const simUserId = SIMULATION_USER_ID;
 
-        if (!message) {
-            res.status(400).json({ error: 'Message requis' });
+        if (typeof message !== 'string' || !message.trim() || message.length > 4000) {
+            res.status(400).json({ error: 'Saisissez un message de 1 à 4 000 caractères.' });
             return;
         }
 
@@ -68,8 +69,10 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
         } as unknown as WASocket;
 
         // Même séquence que messageHandler : message utilisateur en historique, puis flux
-        await addToHistory(tenantId, simUserId, 'user', message);
-        await handleFlow(tenantId, simUserId, message, fakeSock, { dryRun: true });
+        await runSimulation(tenantId, async () => {
+            await addToHistory(tenantId, simUserId, 'user', message);
+            await handleFlow(tenantId, simUserId, message, fakeSock, { dryRun: true });
+        });
 
         res.json({
             response: outgoing.texts.join('\n\n') || '…',
@@ -77,7 +80,9 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
         });
     } catch (error: any) {
         console.error('Erreur simulation IA:', error);
-        res.status(500).json({ error: error.message });
+        res.status(error instanceof SimulationBusyError ? 409 : 500).json({ error: error instanceof SimulationBusyError
+            ? 'Un test est en cours. Attendez sa réponse avant de réessayer.'
+            : 'Le test a échoué. Réessayez dans un instant.' });
     }
 });
 
@@ -86,12 +91,13 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
  * POST /api/ai/reset
  */
 router.post('/reset', async (req: Request, res: Response) => {
-    const { sessionId } = req.body;
     const tenantId = req.tenantId!;
-    const simUserId = sessionId || `sim-${tenantId}`;
-
-    await clearHistory(tenantId, simUserId);
-    res.json({ success: true, message: 'Mémoire effacée' });
+    try {
+        await runSimulation(tenantId, () => clearHistory(tenantId, SIMULATION_USER_ID));
+        res.json({ success: true, message: 'Mémoire du test effacée' });
+    } catch (error) {
+        res.status(error instanceof SimulationBusyError ? 409 : 500).json({ error: 'Impossible de remettre le test à zéro. Attendez la fin de la réponse et réessayez.' });
+    }
 });
 
 /**

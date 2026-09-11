@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
+import { deriveDailyMetrics } from '../utils/overviewMetrics';
 
 interface Order {
     id: string;
@@ -41,6 +42,7 @@ interface BeforeInstallPromptEvent extends Event {
 const Today: React.FC = () => {
     const { token, user, tenant } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
+    const [ordersAvailable, setOrdersAvailable] = useState(false);
     const [logs, setLogs] = useState<Log[]>([]);
     const [botStatus, setBotStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
     const [productCount, setProductCount] = useState<number | null>(null);
@@ -110,7 +112,11 @@ const Today: React.FC = () => {
                     apiClient('/products?limit=1').catch(() => null),
                 ];
                 const [resOrders, resLogs, resWa, resSettings, resProducts] = await Promise.all(promises);
-                if (resOrders && resOrders.ok) setOrders(await resOrders.json());
+                setOrdersAvailable(false);
+                if (resOrders && resOrders.ok) {
+                    const data = await resOrders.json();
+                    if (Array.isArray(data)) { setOrders(data); setOrdersAvailable(true); }
+                }
                 if (resLogs && resLogs.ok) setLogs(await resLogs.json());
                 if (resWa && resWa.ok) {
                     const data = await resWa.json();
@@ -138,24 +144,7 @@ const Today: React.FC = () => {
 
     // --- DERIVED DATA ---
     const today = new Date();
-    const { todayOrders, yesterdayOrders } = useMemo(() => {
-        const now = new Date();
-        const isSameDate = (a: Date, b: Date) =>
-            a.getDate() === b.getDate() &&
-            a.getMonth() === b.getMonth() &&
-            a.getFullYear() === b.getFullYear();
-
-        const yesterdayDate = new Date();
-        yesterdayDate.setDate(now.getDate() - 1);
-
-        const todayList = orders.filter(o => isSameDate(new Date(o.createdAt || o.created_at || 0), now));
-        const yesterdayList = orders.filter(o => isSameDate(new Date(o.createdAt || o.created_at || 0), yesterdayDate));
-
-        return { todayOrders: todayList, yesterdayOrders: yesterdayList };
-    }, [orders]);
-
-    const todayRevenue = todayOrders.reduce((s, o) => s + o.total, 0);
-    const yesterdayRevenue = yesterdayOrders.reduce((s, o) => s + o.total, 0);
+    const { todayOrders, yesterdayOrders, todayRevenue, yesterdayRevenue } = useMemo(() => deriveDailyMetrics(orders), [orders]);
     const revenueDelta = yesterdayRevenue > 0
         ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100)
         : null;
@@ -168,6 +157,7 @@ const Today: React.FC = () => {
 
     return (
         <TodayView
+            ordersAvailable={ordersAvailable}
             greeting={greeting}
             displayName={displayName}
             dateStr={today.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -212,6 +202,7 @@ const Today: React.FC = () => {
 // ---------- PRESENTATIONAL VIEW (réutilisée par la preview) ----------
 
 export interface TodayViewProps {
+    ordersAvailable?: boolean;
     greeting: string;
     displayName: string;
     dateStr: string;
@@ -237,6 +228,7 @@ export interface TodayViewProps {
 }
 
 export const TodayView: React.FC<TodayViewProps> = ({
+    ordersAvailable = true,
     greeting, displayName, dateStr, botStatus, botActive, togglingBot, loading,
     newOrdersCount, paidOrdersCount, productCount, logs, lastSaleAgo,
     todayRevenue, todayOrdersCount, yesterdayOrdersCount, revenueDelta,
@@ -261,23 +253,23 @@ export const TodayView: React.FC<TodayViewProps> = ({
 
             {/* HERO — VENTES DU JOUR (money forward, façon Wave) */}
             <div className={`relative overflow-hidden bg-[#111] border border-[#1a1a1a] rounded-2xl p-5 ${anim}`} style={delay(1)}>
-                <p className="text-[#888] text-sm">Ventes aujourd'hui</p>
+                <p className="text-[#888] text-sm">Montant des commandes du jour</p>
                 <p className="text-[38px] leading-none font-bold text-white tracking-tight tabular-nums mt-2">
-                    {todayRevenue.toLocaleString('fr-FR')}
+                    {ordersAvailable ? todayRevenue.toLocaleString('fr-FR') : '—'}
                     <span className="text-lg text-[#888] font-semibold ml-1.5">FCFA</span>
                 </p>
                 <div className="flex items-center gap-3 mt-3 text-sm flex-wrap">
-                    {revenueDelta !== null && (
+                    {ordersAvailable && revenueDelta !== null && (
                         <span className={`inline-flex items-center gap-1 font-semibold ${revenueDelta >= 0 ? 'text-[#00D97E]' : 'text-red-400'}`}>
                             <TrendingUp className={`w-4 h-4 ${revenueDelta < 0 ? 'rotate-180' : ''}`} aria-hidden="true" />
                             {revenueDelta >= 0 ? '+' : ''}{revenueDelta}% <span className="text-[#888] font-normal">vs hier</span>
                         </span>
                     )}
                     <span className="text-[#888]">
-                        {todayOrdersCount} commande{todayOrdersCount > 1 ? 's' : ''}
-                        <span className="text-[#555]"> · {yesterdayOrdersCount} hier</span>
+                        {ordersAvailable ? `${todayOrdersCount} commande(s), ${yesterdayOrdersCount} hier` : 'Commandes indisponibles. Nouvelle tentative automatique.'}
                     </span>
                 </div>
+                <p className="text-xs text-[#888] mt-2">Hors annulations, livraison incluse. Ce total ne confirme pas les encaissements.</p>
             </div>
 
             {/* ALERTE BOT DÉCONNECTÉ */}
@@ -326,7 +318,9 @@ export const TodayView: React.FC<TodayViewProps> = ({
             <section className={anim} style={delay(3)}>
                 <h2 className="text-[15px] font-semibold text-white mb-3">À faire maintenant</h2>
 
-                {!hasUrgentTasks && !loading && notOperational ? (
+                {!ordersAvailable ? (
+                    <p role="status" className="text-sm text-[#888]">{loading ? 'Chargement des commandes…' : 'Impossible de vérifier les commandes à traiter. Nouvelle tentative automatique.'}</p>
+                ) : !hasUrgentTasks && !loading && notOperational ? (
                     <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 space-y-1">
                         <p className="text-white font-medium text-sm mb-2">3 étapes pour que la boutique vende toute seule :</p>
                         {[

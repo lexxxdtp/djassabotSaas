@@ -51,3 +51,6 @@ database/store.json
 # Agent Config & Skills
 .agents/
 skills-lock.json
+
+# Archives locales (backend.zip contient .env et la clé Firebase — ne jamais versionner)
+*.zip

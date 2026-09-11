@@ -14,6 +14,7 @@ export default function AIPlayground() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
     const { token } = useAuth();
 
@@ -27,6 +28,7 @@ export default function AIPlayground() {
     const handleSend = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!input.trim() || loading) return;
+        setError('');
 
         const userMsg = input.trim();
         setInput('');
@@ -42,7 +44,7 @@ export default function AIPlayground() {
         try {
             const res = await apiClient('/ai/simulate', {
                 method: 'POST',
-                body: JSON.stringify({ message: userMsg, sessionId: 'playground-session' })
+                body: JSON.stringify({ message: userMsg })
             });
 
             if (res.ok) {
@@ -53,27 +55,35 @@ export default function AIPlayground() {
                     images: data.images || []
                 }]);
             } else {
-                setMessages(prev => [...prev, { role: 'model', text: '❌ Erreur serveur' }]);
+                setError('Le test a échoué. Attendez un instant et renvoyez votre message.');
+                setInput(userMsg);
             }
         } catch (err) {
             console.error(err);
-            setMessages(prev => [...prev, { role: 'model', text: '❌ Erreur connexion' }]);
+            setError('Connexion indisponible. Votre texte est conservé pour réessayer.');
+            setInput(userMsg);
         } finally {
             setLoading(false);
         }
     };
 
     const handleReset = async () => {
-        if (!token) return;
+        if (!token || loading) return;
+        setLoading(true);
+        setError('');
 
         try {
-            await apiClient('/ai/reset', {
+            const res = await apiClient('/ai/reset', {
                 method: 'POST',
-                body: JSON.stringify({ sessionId: 'playground-session' })
+                body: JSON.stringify({})
             });
+            if (!res.ok) throw new Error('Remise à zéro refusée');
             setMessages([]);
         } catch (e) {
             console.error(e);
+            setError('La remise à zéro a échoué. Votre conversation est conservée ; réessayez.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -87,11 +97,12 @@ export default function AIPlayground() {
                     </div>
                     <div>
                         <h3 className="text-white font-bold text-sm tracking-tight">Simulateur WhatsApp</h3>
-                        <p className="text-[#888] text-[10px] uppercase tracking-wide">Test direct avec votre cerveau IA</p>
+                        <p className="text-[#888] text-xs">Réglages enregistrés · aucune commande réelle</p>
                     </div>
                 </div>
                 <button
                     onClick={handleReset}
+                    disabled={loading}
                     className="p-2 text-[#888] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                     title="Effacer la conversation"
                 >
@@ -164,10 +175,13 @@ export default function AIPlayground() {
             </div>
 
             {/* Input Area */}
+            {error && <p role="alert" className="text-sm text-red-400 px-4 py-2 relative z-10">{error}</p>}
             <form onSubmit={handleSend} className="p-3 bg-[#111] border-t border-[#1a1a1a] flex gap-2 relative z-10">
                 <input
                     type="text"
                     value={input}
+                    maxLength={4000}
+                    disabled={loading}
                     onChange={e => setInput(e.target.value)}
                     placeholder="Tapez un message..."
                     className="flex-1 bg-white/5 border border-[#1a1a1a] rounded-full px-4 py-2 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none placeholder:text-[#555] text-sm"

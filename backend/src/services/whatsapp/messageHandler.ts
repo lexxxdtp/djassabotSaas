@@ -28,8 +28,8 @@ export async function handleMessage(tenantId: string, sock: WASocket, msg: proto
     if (!msg.key || !msg.key.remoteJid) return;
     const remoteJid = msg.key.remoteJid;
 
-    // Ignore status updates
-    if (remoteJid === 'status@broadcast') return;
+    // La vente automatisée concerne uniquement les discussions individuelles.
+    if (remoteJid.endsWith('@broadcast') || remoteJid.endsWith('@g.us') || remoteJid.endsWith('@newsletter')) return;
 
     await enqueue(`${tenantId}:${remoteJid}`, () => processMessage(tenantId, sock, msg, remoteJid, isHistory));
 }
@@ -51,20 +51,6 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
             return;
         }
 
-        // --- AUDIO ---
-        if (msg.message?.audioMessage) {
-            if (isHistory) {
-                text = '[Audio Message]';
-            } else {
-                const buffer = await downloadMediaMessage(msg as any, 'buffer', {});
-                const mimeType = msg.message?.audioMessage?.mimetype || 'audio/ogg';
-                if (buffer instanceof Buffer) {
-                    const transcription = await transcribeAudio(buffer, mimeType);
-                    text = transcription || undefined;
-                }
-            }
-        }
-
         // INTERRUPTEUR GLOBAL — lu une seule fois, utilisé partout dans ce handler
         const settings = await db.getSettings(tenantId);
         botPaused = settings.botActive === false;
@@ -82,9 +68,25 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
             if (!subActive) botPaused = true;
         }
 
+        // Les médias restent visibles dans l'historique sans téléchargement ni IA
+        // lorsque le vendeur a repris la main ou que l'abonnement est inactif.
+        if (msg.message?.audioMessage) {
+            text = '[Message vocal]';
+            if (!isHistory && !botPaused) {
+                const buffer = await downloadMediaMessage(msg as any, 'buffer', {});
+                const mimeType = msg.message.audioMessage.mimetype || 'audio/ogg';
+                const transcription = buffer instanceof Buffer ? await transcribeAudio(buffer, mimeType) : '';
+                if (!transcription?.trim()) {
+                    await addToHistory(tenantId, remoteJid, 'user', '[Message vocal non transcrit]');
+                    throw new Error('Transcription vocale indisponible');
+                }
+                text = transcription;
+            }
+        }
+
         // --- IMAGE ---
         if (msg.message?.imageMessage) {
-            if (isHistory) {
+            if (isHistory || botPaused) {
                 text = `[Image] ${msg.message.imageMessage.caption || ''}`;
             } else {
                 const buffer = await downloadMediaMessage(msg as any, 'buffer', {});

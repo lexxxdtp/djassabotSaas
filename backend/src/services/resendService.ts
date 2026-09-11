@@ -33,7 +33,8 @@ export const sendOtpEmail = async (email: string, code: string) => {
             `,
         });
 
-        console.log(`[Resend] OTP email envoyé à ${email}`, data);
+        if (data.error || !data.data) throw data.error || new Error('Réponse email sans confirmation');
+        console.log('[Resend] OTP accepté par le service email');
         return { success: true, data };
     } catch (error) {
         console.error(`[Resend] Erreur OTP email à ${email}:`, error);
@@ -70,7 +71,8 @@ export const sendVerificationEmail = async (email: string, token: string) => {
             `,
         });
 
-        console.log(`[Resend] Email de vérification envoyé à ${email}`, data);
+        if (data.error || !data.data) throw data.error || new Error('Réponse email sans confirmation');
+        console.log('[Resend] Vérification acceptée par le service email');
         return { success: true, data };
     } catch (error) {
         console.error(`[Resend] Erreur lors de l'envoi de l'email à ${email}:`, error);
@@ -109,7 +111,8 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
             `,
         });
 
-        console.log(`[Resend] Email de réinitialisation de mot de passe envoyé à ${email}`, data);
+        if (data.error || !data.data) throw data.error || new Error('Réponse email sans confirmation');
+        console.log('[Resend] Réinitialisation acceptée par le service email');
         return { success: true, data };
     } catch (error) {
         console.error(`[Resend] Erreur lors de l'envoi de l'email de réinitialisation à ${email}:`, error);
@@ -147,7 +150,8 @@ export const sendBotDownAlert = async (email: string) => {
                 </div>
             `,
         });
-        console.log(`[Resend] Alerte bot déconnecté envoyée à ${email}`, data);
+        if (data.error || !data.data) throw data.error || new Error('Réponse email sans confirmation');
+        console.log('[Resend] Alerte acceptée par le service email');
         return { success: true, data };
     } catch (error) {
         console.error(`[Resend] Erreur alerte bot déconnecté à ${email}:`, error);

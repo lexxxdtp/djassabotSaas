@@ -29,7 +29,7 @@ const adjustStock = async (
     item: CartItem,
     delta: number
 ): Promise<{ ok: boolean; available?: number }> => {
-    if (!isSupabaseEnabled || !supabase) return { ok: true }; // mode local : pas de stock à gérer
+    if (!isSupabaseEnabled || !supabase) throw new Error('Stock indisponible : base non configurée');
 
     // 1. Voie atomique (RPC SQL)
     try {
@@ -46,17 +46,21 @@ const adjustStock = async (
             if (row && row.success === false) {
                 return { ok: false, available: row.available ?? undefined };
             }
-            return { ok: true };
+            if (row?.success === true) return { ok: true };
+            throw new Error('Réponse de stock sans confirmation');
         }
         // Fonction absente (migration pas encore appliquée) → fallback JS
-        const missingFn = error.code === 'PGRST202' || /adjust_stock|schema cache|function/i.test(error.message || '');
+        const missingFn = error.code === 'PGRST202';
         if (!missingFn) {
-            console.error('[DB] adjust_stock RPC error:', error.message);
+            throw new Error('Vérification du stock indisponible');
         } else {
             console.warn('[DB] ⚠️ Fonction SQL adjust_stock absente — fallback JS NON atomique. Appliquez database/migrations/add_adjust_stock_rpc.sql');
         }
     } catch (e) {
         console.error('[DB] adjust_stock RPC exception:', e);
+        // Une réponse réseau perdue peut cacher un mouvement déjà appliqué.
+        // Ne jamais rejouer le mouvement par un autre chemin dans ce cas.
+        throw e;
     }
 
     // 2. Fallback JS (read-modify-write)
@@ -98,13 +102,12 @@ const adjustStock = async (
         if (product.stock !== undefined && product.stock !== null) {
             updates.stock = Math.max(0, product.stock + delta);
         }
-        await db.updateProduct(tenantId, String(item.productId), updates);
+        const saved = await db.updateProduct(tenantId, String(item.productId), updates);
+        if (!saved) throw new Error('Stock non enregistré');
         return { ok: true };
     } catch (e) {
         console.error('[DB] adjustStock JS fallback failed:', e);
-        // En cas de doute sur un décrément, on laisse passer la vente (priorité au CA)
-        // mais on loggue — le vendeur verra l'écart de stock.
-        return { ok: true };
+        throw e;
     }
 };
 
@@ -268,7 +271,8 @@ export const db = {
                     .order('created_at', { ascending: false });
                 if (error) throw error;
                 // Map snake_case DB columns to camelCase for app usage
-                return (data || []).map(o => ({
+                if (!Array.isArray(data)) throw new Error('Réponse commandes invalide');
+                return data.map(o => ({
                     id: o.id,
                     tenantId: o.tenant_id,
                     userId: o.user_id,
@@ -279,7 +283,8 @@ export const db = {
                     createdAt: new Date(o.created_at)
                 }));
             } catch (e) {
-                console.warn('[DB] Supabase getOrders failed, fallback to local');
+                console.error('[DB] Supabase getOrders failed:', e);
+                throw new Error('Commandes temporairement indisponibles');
             }
         }
         return localData.orders.filter((o: any) => o.tenantId === tenantId);
@@ -298,7 +303,8 @@ export const db = {
                     .order('created_at', { ascending: false })
                     .range(from, to);
                 if (error) throw error;
-                const items = (data || []).map(o => ({
+                if (!Array.isArray(data)) throw new Error('Réponse commandes invalide');
+                const items = data.map(o => ({
                     id: o.id,
                     tenantId: o.tenant_id,
                     userId: o.user_id,
@@ -310,7 +316,8 @@ export const db = {
                 }));
                 return { items, total: count ?? items.length };
             } catch (e) {
-                console.warn('[DB] Supabase getOrdersPaged failed, fallback to local');
+                console.error('[DB] Supabase getOrdersPaged failed:', e);
+                throw new Error('Commandes temporairement indisponibles');
             }
         }
         const all = localData.orders.filter((o: any) => o.tenantId === tenantId);
@@ -575,7 +582,14 @@ export const db = {
         }
 
         // Map updates to snake_case
-        const dbUpdates: any = { ...updates };
+        // Ne jamais accepter id/tenant_id/tenantId ou des colonnes arbitraires,
+        // même si un formulaire renvoie l'objet complet obtenu à la lecture.
+        const dbUpdates: Record<string, unknown> = {};
+        for (const key of ['name', 'price', 'stock', 'description', 'images', 'variations'] as const) {
+            if (Object.prototype.hasOwnProperty.call(updates, key) && updates[key] !== undefined) {
+                dbUpdates[key] = updates[key];
+            }
+        }
         if (updates.minPrice !== undefined) {
             dbUpdates.min_price = updates.minPrice;
             delete dbUpdates.minPrice;
@@ -589,6 +603,7 @@ export const db = {
             delete dbUpdates.manageStock;
         }
         // variations is already in correct format (JSON), no mapping needed
+        if (Object.keys(dbUpdates).length === 0) throw new Error('Aucune modification produit autorisée');
 
         if (isSupabaseEnabled && supabase) {
             try {
@@ -599,7 +614,8 @@ export const db = {
                     .eq('tenant_id', tenantId)
                     .select()
                     .single();
-                if (error) return null;
+                if (error) throw error;
+                if (!data) return null;
 
                 // Map back
                 return {
@@ -607,7 +623,8 @@ export const db = {
                     minPrice: data.min_price,
                     tenantId: data.tenant_id,
                     variations: data.variations || [],
-                    aiInstructions: data.ai_instructions
+                    aiInstructions: data.ai_instructions,
+                    manageStock: data.manage_stock ?? true
                 } as Product;
             } catch (e: any) {
                 console.error('[DB] Update Product Failed:', e);
@@ -664,7 +681,8 @@ export const db = {
                         minPrice: data[0].min_price,
                         tenantId: data[0].tenant_id,
                         variations: data[0].variations || [],
-                        aiInstructions: data[0].ai_instructions
+                        aiInstructions: data[0].ai_instructions,
+                        manageStock: data[0].manage_stock ?? true
                     };
                 }
                 return undefined;
@@ -690,7 +708,8 @@ export const db = {
                         minPrice: data.min_price,
                         tenantId: data.tenant_id,
                         variations: data.variations || [],
-                        aiInstructions: data.ai_instructions
+                        aiInstructions: data.ai_instructions,
+                        manageStock: data.manage_stock ?? true
                     };
                 }
                 return undefined;
@@ -712,25 +731,30 @@ export const db = {
         const succeeded: CartItem[] = [];
         const failures: StockFailure[] = [];
 
-        for (const item of productItems) {
-            const result = await adjustStock(tenantId, item, -item.quantity);
-            if (result.ok) {
-                succeeded.push(item);
-            } else {
-                failures.push({
-                    productId: item.productId,
-                    productName: item.productName,
-                    requested: item.quantity,
-                    available: result.available,
-                });
+        try {
+            for (const item of productItems) {
+                const result = await adjustStock(tenantId, item, -item.quantity);
+                if (result.ok) {
+                    succeeded.push(item);
+                } else {
+                    failures.push({
+                        productId: item.productId,
+                        productName: item.productName,
+                        requested: item.quantity,
+                        available: result.available,
+                    });
+                }
             }
+        } catch (error) {
+            // Compenser seulement les mouvements dont le succès est connu.
+            // Un mouvement au résultat incertain exige un rapprochement en base.
+            await db.restockItems(tenantId, succeeded);
+            throw error;
         }
 
         if (failures.length > 0) {
             // Rollback des articles déjà décrémentés pour rester cohérent
-            for (const item of succeeded) {
-                await adjustStock(tenantId, item, item.quantity);
-            }
+            await db.restockItems(tenantId, succeeded);
             return { ok: false, failures };
         }
         return { ok: true };
@@ -739,7 +763,8 @@ export const db = {
     /** Rend le stock des articles (annulation de commande, échec de création). */
     restockItems: async (tenantId: string, items: CartItem[]): Promise<void> => {
         for (const item of items.filter(i => i.productId !== DELIVERY_ITEM_ID)) {
-            await adjustStock(tenantId, item, item.quantity);
+            const result = await adjustStock(tenantId, item, item.quantity);
+            if (!result.ok) throw new Error('Remise en stock non confirmée');
         }
     },
 

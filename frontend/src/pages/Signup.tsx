@@ -69,7 +69,7 @@ const Signup: React.FC = () => {
         setError('');
         setLoading(true);
         try {
-            const cleanPhone = phone.replace(/^0/, '');
+            const cleanPhone = phone.replace(/\D/g, '');
             const body = {
                 businessName,
                 businessType,

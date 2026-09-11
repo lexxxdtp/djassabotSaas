@@ -93,6 +93,7 @@ export async function handleFlow(
         // question en guise d'adresse.
         if (!looksLikeAddress(text, (settings.deliveryZones || []).map(zone => zone.name))) {
             await answerWithAI(tenantId, remoteJid, text, sock, session, settings, products, {
+                ...options,
                 stateNote: `The customer has a pending cart awaiting delivery address. Cart: ${tempOrder.summary || cartSummary(tempOrder.items)} (subtotal ${formatFcfa(tempOrder.total)}). Answer their message helpfully, then gently remind them to send their delivery address (quartier + commune) to finalize. Do NOT emit any ADD_TO_CART tag for items already in the cart.`,
                 allowDeals: false,
             });
@@ -127,6 +128,7 @@ export async function handleFlow(
             // Question pendant le choix → l'IA répond puis on re-propose les options
             if (looksLikeQuestion(text)) {
                 await answerWithAI(tenantId, remoteJid, text, sock, session, settings, products, {
+                    ...options,
                     stateNote: `The customer is currently choosing the "${currentVariation.name}" for ${product.name} (options: ${currentVariation.options.map((o: any) => o.value).join(', ')}). Answer their question, then re-ask which option they want. Do NOT emit any ADD_TO_CART tag.`,
                     allowDeals: false,
                 });
@@ -223,14 +225,14 @@ export async function handleFlow(
     }
 
     // 3. FLUX STANDARD (IDLE) — un seul appel IA, tags validés par le serveur
-    await answerWithAI(tenantId, remoteJid, text, sock, session, settings, products, { allowDeals: true });
+    await answerWithAI(tenantId, remoteJid, text, sock, session, settings, products, { ...options, allowDeals: true });
 }
 
 // ---------------------------------------------------------------------------
 // APPEL IA + TRAITEMENT DES TAGS
 // ---------------------------------------------------------------------------
 
-interface AnswerOptions {
+interface AnswerOptions extends FlowOptions {
     stateNote?: string;
     allowDeals: boolean;
 }
@@ -264,7 +266,12 @@ async function answerWithAI(
         stateNote: options.stateNote,
     });
 
-    const { cleaned, deals, imageUrls } = parseAIResponse(response);
+    const { cleaned, deals, imageUrls, invalidDealCount } = parseAIResponse(response);
+
+    if (options.allowDeals && invalidDealCount > 0) {
+        await reply(sock, tenantId, remoteJid, "Je dois vérifier les quantités et les prix avant d'ajouter ces articles. Pouvez-vous préciser votre choix et la quantité souhaitée ?");
+        return;
+    }
 
     // Sécurité images : n'envoyer QUE des URLs de l'inventaire du tenant
     const allowedImageUrls = new Set<string>(
@@ -284,15 +291,24 @@ async function answerWithAI(
         for (const r of rejected) {
             if (r.reason === 'PRICE_TOO_LOW') {
                 corrections.push(`Ah, après vérification je ne peux finalement pas faire ${formatFcfa(r.offered)} pour ${r.product.name} 🙏 Mon dernier prix c'est ${formatFcfa(r.floor)}. On valide à ce prix ?`);
-                await db.logActivity(tenantId, 'warning', `Négociation bloquée : l'IA a promis ${r.offered} FCFA pour "${r.product.name}" (plancher ${r.floor} FCFA)`, { remoteJid, offered: r.offered, floor: r.floor });
+                if (!options.dryRun) await db.logActivity(tenantId, 'warning', `Négociation bloquée : l'IA a promis ${r.offered} FCFA pour "${r.product.name}" (plancher ${r.floor} FCFA)`, { remoteJid, offered: r.offered, floor: r.floor });
             } else if (r.reason === 'OUT_OF_STOCK') {
                 corrections.push(`Désolé, ${r.product.name} est épuisé pour le moment 😔`);
             } else if (r.reason === 'INSUFFICIENT_STOCK') {
                 corrections.push(`Il ne reste que ${r.available} ${r.product.name} en stock 📦 Je vous mets les ${r.available} ? (${formatFcfa(r.available * r.product.price)})`);
             } else if (r.reason === 'UNKNOWN_PRODUCT') {
-                await db.logActivity(tenantId, 'warning', `L'IA a référencé un produit introuvable : "${r.ref}"`, { remoteJid });
+                corrections.push("Je ne peux pas identifier cet article avec certitude. Pouvez-vous préciser son nom complet ou envoyer sa photo ?");
+                if (!options.dryRun) await db.logActivity(tenantId, 'warning', `L'IA a référencé un produit introuvable : "${r.ref}"`, { remoteJid });
+            } else if (r.reason === 'BAD_QUANTITY') {
+                corrections.push(`Quelle quantité souhaitez-vous pour ${r.product.name} ? Indiquez un nombre entier valide.`);
             }
-            // BAD_QUANTITY / UNKNOWN_PRODUCT : on ignore le tag, le texte IA part tel quel
+        }
+
+        // Ne pas ajouter une partie de la demande ni envoyer une fausse promesse
+        // de confirmation quand une autre ligne doit encore être clarifiée.
+        if (corrections.length > 0) {
+            await reply(sock, tenantId, remoteJid, corrections.join('\n\n'));
+            return;
         }
 
         // Produits à variantes : la machine à état n'en traite qu'UN à la fois.
@@ -435,6 +451,10 @@ async function finalizeOrder(
         return;
     }
 
+    // Fermer le panier avant tout envoi : un échec WhatsApp ne doit pas laisser
+    // une commande déjà créée dans l'état « adresse à valider ».
+    await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined, reminderSent: false });
+
     // 4. Confirmation claire au client (détail articles + livraison + total)
     const deliveryLine = quote.known
         ? (quote.fee > 0 ? `${quote.label} : ${formatFcfa(quote.fee)}` : `${quote.label} ✅`)
@@ -443,17 +463,23 @@ async function finalizeOrder(
     const paymentsArray = Array.isArray(settings.acceptedPayments) ? settings.acceptedPayments : [];
     const hasMobileMoney = paymentsArray.some(p => ['wave', 'om', 'mtn'].includes(p));
     const paymentHint = hasMobileMoney
-        ? '\n\n💡 Après paiement (Wave/Orange Money…), envoyez la capture du reçu ici — je valide automatiquement.'
+        ? '\n\n💡 Après paiement (Wave/Orange Money…), envoyez la capture du reçu ici. Le vendeur vérifiera la réception du paiement.'
         : '';
 
-    await reply(sock, tenantId, remoteJid,
-        `✅ *Commande confirmée !*\n\n${cartSummary(productItems)}\nArticles : ${formatFcfa(itemsTotal)}\n${deliveryLine}\n*Total : ${formatFcfa(grandTotal)}*\n\n📍 Livraison à : ${address}${paymentHint}`);
+    try {
+        await reply(sock, tenantId, remoteJid,
+            `✅ *Commande confirmée !*\n\n${cartSummary(productItems)}\nArticles : ${formatFcfa(itemsTotal)}\n${deliveryLine}\n*Total : ${formatFcfa(grandTotal)}*\n\n📍 Livraison à : ${address}${paymentHint}`);
+    } catch (error) {
+        // La vente existe : ne pas demander au client de rejouer sa validation.
+        logger.error({ err: error, tenantId, orderId: order.id }, '[FlowHandler] Customer confirmation failed after order creation');
+    }
 
     // 5. Notification vendeur
-    await sendOrderNotification(sock, tenantId, remoteJid, address, { items: orderItems, total: grandTotal });
-
-    // 6. Nettoyage — on garde l'HISTORIQUE (le bot doit se souvenir de la commande)
-    await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined, reminderSent: false });
+    try {
+        await sendOrderNotification(sock, tenantId, remoteJid, address, { items: orderItems, total: grandTotal });
+    } catch (error) {
+        logger.error({ err: error, tenantId, orderId: order.id }, '[FlowHandler] Merchant notification failed after order creation');
+    }
 
     logger.info({ tenantId, remoteJid, orderId: order.id, grandTotal, deliveryKnown: quote.known }, '[FlowHandler] Order created');
 }

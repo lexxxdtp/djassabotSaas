@@ -1,5 +1,6 @@
 import { supabase, isSupabaseEnabled } from '../config/supabase';
 import { CartItem, SelectedVariation } from '../types';
+import { simulationScope, SIMULATION_USER_ID } from './simulationContext';
 
 export interface Session {
     id: string; // composite key: tenantId:userId
@@ -25,6 +26,16 @@ const getSessionId = (tenantId: string, userId: string) => `${tenantId}:${userId
 
 export const getSession = async (tenantId: string, userId: string): Promise<Session> => {
     const sessionId = getSessionId(tenantId, userId);
+
+    const simulation = simulationScope(tenantId);
+    if (simulation) {
+        if (userId !== SIMULATION_USER_ID) throw new Error('Identifiant de simulation invalide');
+        simulation.session ??= {
+            id: sessionId, tenantId, userId, history: [], state: 'IDLE',
+            autopilotEnabled: true, lastInteraction: new Date(),
+        };
+        return simulation.session;
+    }
 
     if (isSupabaseEnabled && supabase) {
         try {
@@ -138,6 +149,12 @@ export const getActiveSessions = async (): Promise<Session[]> => {
 
 // Helper to save/upsert to DB
 const saveSessionToDb = async (session: Session) => {
+    const simulation = simulationScope(session.tenantId);
+    if (simulation) {
+        if (session.userId !== SIMULATION_USER_ID) throw new Error('Identifiant de simulation invalide');
+        simulation.session = session;
+        return;
+    }
     // Update local cache/fallback
     localSessions[session.id] = session;
 
@@ -149,7 +166,8 @@ const saveSessionToDb = async (session: Session) => {
                 user_phone: session.userId,
                 state: session.state,
                 history: session.history, // Supabase handles JSONB auto-conversion usually, or stringify if needed
-                temp_order: session.tempOrder,
+                // undefined est omis en JSON : il laisserait l'ancien panier en base.
+                temp_order: session.tempOrder ?? null,
                 last_interaction: session.lastInteraction,
                 reminder_sent: session.reminderSent || false,
                 autopilot_enabled: session.autopilotEnabled ?? true,

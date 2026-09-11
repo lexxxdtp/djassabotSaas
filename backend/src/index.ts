@@ -150,16 +150,20 @@ app.post('/api/settings', authenticateTenant, checkSubscription, async (req, res
 // Supporte ?page=1&limit=20 → { items, total, page, limit, totalPages }
 // Sans query params → tableau complet (rétro-compatible)
 app.get('/api/orders', authenticateTenant, checkSubscription, async (req, res) => {
-    const { page, limit } = req.query;
-    if (page || limit) {
-        const p = Math.max(1, parseInt(page as string) || 1);
-        const l = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
-        const { items, total } = await db.getOrdersPaged(req.tenantId!, p, l);
-        res.json({ items, total, page: p, limit: l, totalPages: Math.ceil(total / l) });
-        return;
+    try {
+        const { page, limit } = req.query;
+        if (page || limit) {
+            const p = Math.max(1, parseInt(page as string) || 1);
+            const l = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+            const { items, total } = await db.getOrdersPaged(req.tenantId!, p, l);
+            res.json({ items, total, page: p, limit: l, totalPages: Math.ceil(total / l) });
+            return;
+        }
+        const orders = await db.getOrders(req.tenantId!);
+        res.json(orders);
+    } catch {
+        res.status(503).json({ error: 'Commandes temporairement indisponibles. Réessayez dans un instant.' });
     }
-    const orders = await db.getOrders(req.tenantId!);
-    res.json(orders);
 });
 
 app.put('/api/orders/:id/status', authenticateTenant, checkSubscription, async (req, res) => {

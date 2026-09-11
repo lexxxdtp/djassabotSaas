@@ -1,5 +1,82 @@
 # ✅ DjassaBot — Checklist de viabilité produit
 
+> **Passation du 11 septembre :** [PASSATION_AGENT.md](PASSATION_AGENT.md) contient l'inventaire des cinq lots locaux, les limites des 83 tests et la liste détaillée du travail restant par priorité. Lire ce document avant de reprendre. Tout est encore local, non commité/non pushé. Les paragraphes de lots ci-dessous sont chronologiques : leurs « restes à faire » décrivent leur date, et certains ont été traités dans les lots suivants. Les grandes cases restent ouvertes tant que tous leurs sous-points ne sont pas validés.
+
+> **Mise à jour du 11 septembre 2026 : les cases historiques ci-dessous ne constituent pas une validation actuelle.** L'audit hors ligne sur `308ed0e` reproduit dix défauts, dont la reconnexion bloquée et un succès de stock malgré une erreur. Le VPS est arrêté selon Alex. La référence actuelle est [l'audit consolidé](AUDIT_VIABILITE_2026-09-11.md), avec preuves, limites et ordre proposé. Pas de feu vert pour des clients payants à ce stade.
+
+## Priorités actuelles issues de l'audit du 11 septembre 2026
+
+### Cinquième lot local : simulateur isolé
+
+- [x] Historique et panier de simulation dans une mémoire séparée, jamais persistés dans les sessions clients ni retournés aux listes de relance. Identifiant de test imposé par le serveur ; `sessionId` fourni par le navigateur ignoré, y compris au reset.
+- [x] Même moteur commercial et lecture des réglages/catalogue enregistrés, sans création de commande, décrément de stock, notification vendeur ou journal métier lors des chemins simulés testés.
+- [x] Une seule action de simulation à la fois par boutique ; chevauchement refusé en 409. Mémoire temporaire expirant après 30 minutes d'inactivité lors du prochain accès, plafond de 1 000 boutiques en mémoire. Redémarrage du processus = perte volontaire des tests.
+- [x] Reset côté écran seulement après succès HTTP ; boutons bloqués pendant l'action, erreurs distinctes des réponses IA, texte conservé après refus et limite de 4 000 caractères. Libellé précisant les réglages enregistrés et l'absence de commande réelle.
+- [x] **83 tests backend réussis**, TypeScript backend et build frontend réussis. Tests : collision avec identifiant client, séparation boutiques, chevauchement, achat simulé complet, reset et validation de requête. Aucun appel IA/WhatsApp réel pour ces vérifications.
+
+Les anciennes sessions de simulation déjà enregistrées en production ne sont pas supprimées automatiquement : il faudra les identifier avant nettoyage. Cette isolation ne remplace ni les quotas IA, ni les tests de panne réelle. Aucun commit, push, changement distant ou migration. Les principes de clarté Impeccable sont conservés pour les erreurs et libellés ; aucune refonte visuelle effectuée.
+
+### Quatrième lot local : statistiques honnêtes et lecture des commandes
+
+- [x] Accueil et Analytics : même calcul, commandes annulées/statuts inconnus/montants invalides exclus. Affichage nommé « Montant des commandes », livraison incluse, sans prétendre mesurer un encaissement. Les commandes en attente restent incluses en tant que commandes, pas en tant que paiements.
+- [x] Sept journées calendaires d'Abidjan, total cohérent avec le graphique ; dates futures et invalides exclues. Panier moyen calculé sur le même ensemble de commandes.
+- [x] Une panne de lecture Supabase ne revient plus à une liste locale vide, y compris en pagination. La route répond HTTP 503 ; Accueil/Analytics affichent l'indisponibilité au lieu de zéro, et l'accueil n'annonce pas « rien à faire » sans commandes chargées.
+- [x] **79 tests réussis**, TypeScript backend et build frontend réussis. Huit tests supplémentaires couvrent calculs et erreurs de lecture/route. Pas de recette visuelle complète ni de requête sur une base réelle.
+
+Les dix reproductions initiales ont désormais chacune des tests du comportement corrigé. Cela ne ferme pas l'audit : paiement/livraison séparés, historique d'encaissement, remboursements, agrégats serveur pour dépasser les limites de lecture et transaction/idempotence restent ouverts. Impeccable a guidé les libellés et états d'erreur ; les consignes Supabase ont guidé la propagation des erreurs sans faux résultat. Aucun commit, push ou déploiement.
+
+### Troisième lot local : compréhension des achats
+
+- [x] Montants abrégés décimaux (`12.5k`, `12,5K`) correctement interprétés, séparateurs de milliers contrôlés et nombres hors limites refusés.
+- [x] Quantités fractionnaires refusées plutôt qu'arrondies. Balises d'achat mal formées retirées du message et suivies d'une demande de précision, sans mutation du panier.
+- [x] Recherche produit : identifiant exact prioritaire, nom exact unique sinon correspondance de tous les mots (accents/pluriels simples tolérés). Pas de premier résultat arbitraire sur ambiguïté, ni de couleur/modèle ignoré.
+- [x] Article introuvable/ambigu ou quantité invalide : clarification explicite au lieu de transmettre la promesse IA. Une demande mixte contenant une ligne refusée n'est pas partiellement ajoutée.
+- [x] **71 tests backend réussis**, TypeScript backend réussi. La dernière reproduction historique encore active concerne les revenus incluant une commande annulée ; cela ne signifie pas que tous les autres chantiers de l'audit sont terminés.
+
+Pas de modification des règles de prix, migration, appel IA réel, commit ou push. Le contexte des photos/messages cités et les changements de panier en cours de conversation restent ouverts. La recherche plus prudente peut demander davantage de précisions ; à évaluer sur les conversations réelles autorisées.
+
+### Deuxième lot local : produits, stock et confirmation
+
+- [x] Modification produit limitée aux champs métier attendus ; identifiants/propriétaire/colonnes arbitraires ignorés, filtres produit + commerçant conservés. Les erreurs de base remontent ; restitution de `manageStock` alignée sur les lectures unitaires et la modification.
+- [x] Stock : plus de succès sur réponse RPC vide, exception ou rejet technique. Secours historique réservé au code explicite de fonction absente ; une sauvegarde nulle échoue. Compensation tentée pour les mouvements précédents confirmés, échec de remise en stock signalé.
+- [x] Panier fermé avant confirmation WhatsApp ; un échec d'envoi client ne bloque plus la tentative de notification vendeur et ne remonte plus comme une invitation à revalider. Effacement du panier écrit avec `null` explicite en base. Promesse trompeuse de validation automatique du reçu remplacée par vérification du vendeur.
+- [x] **63 tests backend réussis**, TypeScript backend réussi. Les trois reproductions historiques restantes portent sur montant abrégé, produit ambigu et revenus annulés. Les nouveaux tests utilisent des dépendances remplacées, pas une base réelle.
+- [ ] **Toujours ouvert : transaction et idempotence durables.** Le lot supprime le chemin de doublon causé par le seul échec d'envoi après une sauvegarde de session réussie. Il ne garantit pas l'absence de doublons si la sauvegarde de session échoue, si le processus s'arrête entre deux écritures ou si une réponse de base est perdue. Le secours stock sans RPC reste non atomique ; les notifications n'ont pas encore de file de reprise durable. Prévoir migration et tests sur base isolée avant production.
+
+Aucune migration appliquée, aucun accès production, aucun commit ni push. Les consignes Supabase ont guidé le filtrage des écritures et la distinction entre panne et refus métier ; la vérification d'intégration réelle reste à effectuer.
+
+### Premier lot local
+
+Alex a autorisé le passage à l'action après l'audit. Premier lot implémenté localement, sans commit, push ni déploiement :
+
+- [x] Conservation du zéro initial pour l'inscription et les deux écrans de connexion WhatsApp ivoiriens ; validation des dix chiffres dans les écrans de connexion.
+- [x] Rejets explicites, réponses vides et exceptions du service email retournés comme échecs pour les quatre fonctions d'envoi. Acceptation par le prestataire ne signifie pas livraison en boîte de réception.
+- [x] Groupes, broadcasts et chaînes exclus avant le traitement métier.
+- [x] Pause globale/individuelle, expiration et historique : pas de téléchargement ni analyse IA des médias ; trace conservée. Le traitement actif des images/vocaux reste testé.
+- [x] Fermeture WhatsApp : état local déconnecté avant nouvelle tentative, ancien socket ignoré, fermeture répétée sans deuxième minuteur. Nettoyage invalidant la session locale. Code de jumelage retiré des logs.
+- [x] 17 tests supplémentaires isolés, soit **52 tests réussis** ; TypeScript backend et build frontend réussis. Les quatre anciennes reproductions corrigées sont remplacées par ces tests ; six autres défauts restent reproduits par le diagnostic.
+
+Ce lot ne règle pas encore les transactions commande/stock, les champs produits, les paiements, les dépendances vulnérables, l'isolation du simulateur, les erreurs Inbox ou la refonte. La récupération de compte reste à durcir ; la reconnexion concurrente, le watchdog et le redémarrage réel restent à compléter/tester. Les grandes cases ci-dessous restent donc ouvertes.
+
+- [ ] **Accès fiable** : conserver les dix chiffres locaux du téléphone à l'inscription/connexion ; traiter les rejets Resend et les échecs de réinitialisation sans annoncer un succès.
+- [ ] **Connexion fiable** : corriger la reprise après fermeture, exclure les groupes, dédupliquer les messages, vérifier la pause avant toute analyse payante.
+- [ ] **Intégrité des données** : liste blanche des champs produits, tests à deux commerçants, transaction commande/stock et validation unique même si l'envoi WhatsApp échoue.
+- [ ] **Sécurité des dépendances** : traiter les alertes, notamment Baileys, par mises à jour ciblées et tests ; aucune exploitation en production n'a été démontrée.
+- [ ] **Paiements et droits** : rapprocher référence/montant/devise/commande ; rendre les webhooks idempotents ; unifier le forfait effectif. Décider avec Alex du renouvellement Mobile Money manuel et de l'automatique par carte.
+- [ ] **Livraison exploitable** : paiement et livraison séparés, fiche partageable avec reste à encaisser même à réception, informations manquantes visibles, suivi des échecs/retours/remboursements.
+- [ ] **Conversation commerciale** : article ambigu, variantes, panier modifiable, total confirmé, offre négociée mémorisée ; supprimer les exemples fictifs des données actives.
+- [ ] **Historique et simulation** : journal commercial distinct de la mémoire courte IA ; simulation sans effet réel ; notifications et reçus à vérifier dans une file durable.
+- [ ] **Prise en main** : cinq destinations cohérentes, accueil orienté actions, éditeur produit unique, compte sans formulaire inerte, erreurs HTTP visibles, accessibilité et mobile. Refonte graphique après validation des parcours.
+- [ ] **Coûts et IA** : mesurer consommation et latence par vendeur ; évaluer OpenRouter et les modèles avec le même jeu de conversations, sans migration ni dépense automatique.
+- [ ] **Exploitation** : migrations reproductibles, inventaire RLS avant application, sauvegardes hors VPS incluant les médias et restauration testée, surveillance extérieure, séparation recette/production.
+- [ ] **Recette réelle après remise en service autorisée** : inscription, reprise WhatsApp, vente complète, paiement, livraison, deux comptes isolés et observation de commerçants non guidés.
+
+Corrections de lecture de l'ancien état : la reconnexion n'est pas garantie ; l'anti-réutilisation des reçus doit être revalidée avec le nouveau traitement manuel ; les revenus incluent actuellement des commandes annulées ; les audiences et statistiques marketing ne sont pas entièrement fiables. L'erreur d'envoi Inbox est visible sur exception réseau, mais pas sur tous les refus HTTP. La mention antérieure « non déployées » doit être distinguée du commit local `308ed0e` ; aucun déploiement backend actuel n'est attesté ici.
+
+**Sauvegardes :** l'affirmation historique « le plan gratuit garde 7 jours » est erronée. Organiser des exports et copies externes selon l'offre réelle ; les sauvegardes de base n'incluent pas les fichiers Storage. Voir la [documentation officielle](https://supabase.com/docs/guides/platform/backups). Les estimations historiques de prix, capacité VPS et coûts IA ci-dessous ne sont pas des mesures ni des tarifs revérifiés.
+
+## Historique de la checklist (à ne pas confondre avec une recette actuelle)
+
 > Les questions qu'il faut se poser AVANT de mettre l'app entre les mains de
 > vendeurs qui paient 5 000 F/mois. Chaque case non cochée = un risque réel.
 >

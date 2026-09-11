@@ -87,32 +87,41 @@ export interface ParsedResponse {
     cleaned: string;      // réponse sans les tags (texte client)
     deals: RawDeal[];
     imageUrls: string[];  // URLs des tags [IMAGE: url] (non filtrées — à valider par l'appelant)
+    invalidDealCount: number;
 }
 
-const CART_TAG_RE = /\[ADD_TO_CART:\s*([^\]|]+?)\s*\|\s*([\d\s.,]+?)\s*\|\s*([\d\s.,]+?k?)\s*\]/gi;
+const CART_TAG_RE = /\[ADD_TO_CART:\s*([^\]]*)\]/gi;
 const IMAGE_TAG_RE = /\[IMAGE:\s*([^\]]+?)\s*\]/gi;
 
 const parseNumber = (raw: string): number => {
-    // Tolère "15 000", "15.000", "15,000" et "15k"
-    const cleaned = raw.trim().toLowerCase().replace(/[\s.,]/g, '');
-    if (cleaned.endsWith('k')) {
-        const n = parseInt(cleaned.slice(0, -1), 10);
-        return Number.isFinite(n) ? n * 1000 : NaN;
+    const cleaned = raw.trim().toLowerCase().replace(/\s/g, ' ');
+    let n: number;
+    if (/^\d+(?:[.,]\d{1,3})?\s*k$/.test(cleaned)) {
+        n = Math.round(Number(cleaned.replace(/\s*k$/, '').replace(',', '.')) * 1000);
+    } else if (/^\d+$/.test(cleaned)) {
+        n = Number(cleaned);
+    } else if (/^\d{1,3}([ .,])\d{3}(?:\1\d{3})*$/.test(cleaned)) {
+        n = Number(cleaned.replace(/[ .,]/g, ''));
+    } else {
+        return NaN; // Ne pas transformer une décimale ou une saisie cassée en milliers.
     }
-    const n = parseInt(cleaned, 10);
-    return Number.isFinite(n) ? n : NaN;
+    return Number.isSafeInteger(n) ? n : NaN;
 };
 
 /** Extrait les tags [ADD_TO_CART] et [IMAGE] de la réponse IA, renvoie le texte nettoyé. */
 export const parseAIResponse = (response: string): ParsedResponse => {
     const deals: RawDeal[] = [];
     const imageUrls: string[] = [];
+    let invalidDealCount = 0;
 
-    let cleaned = response.replace(CART_TAG_RE, (_m, ref: string, qty: string, price: string) => {
-        const quantity = parseNumber(qty);
+    let cleaned = response.replace(CART_TAG_RE, (_m, body: string) => {
+        const [ref = '', qty = '', price = '', ...extra] = body.split('|');
+        const quantity = /k/i.test(qty) ? NaN : parseNumber(qty);
         const unitPrice = parseNumber(price);
-        if (ref.trim() && Number.isFinite(quantity) && Number.isFinite(unitPrice)) {
+        if (!extra.length && ref.trim() && quantity > 0 && unitPrice > 0 && Number.isSafeInteger(quantity) && Number.isSafeInteger(unitPrice)) {
             deals.push({ productRef: ref.trim(), quantity, unitPrice });
+        } else {
+            invalidDealCount++;
         }
         return '';
     });
@@ -124,7 +133,7 @@ export const parseAIResponse = (response: string): ParsedResponse => {
     });
 
     cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
-    return { cleaned, deals, imageUrls };
+    return { cleaned, deals, imageUrls, invalidDealCount };
 };
 
 // ---------------------------------------------------------------------------
@@ -141,7 +150,7 @@ const normalize = (s: string): string =>
 
 /**
  * Retrouve un produit par id exact, sinon par correspondance de tokens sur le
- * nom ("bazin bleu" doit matcher "Bazin Riche Bleu"). Renvoie le meilleur score.
+ * nom ("bazin bleu" doit matcher "Bazin Riche Bleu"). Une ambiguïté ne choisit rien.
  */
 export const findProduct = (products: Product[], ref: string): Product | undefined => {
     if (!ref) return undefined;
@@ -150,26 +159,25 @@ export const findProduct = (products: Product[], ref: string): Product | undefin
     const byId = products.find(p => String(p.id) === trimmed);
     if (byId) return byId;
 
-    const queryTokens = normalize(trimmed).split(' ').filter(t => t.length > 1);
+    const exact = products.filter(p => normalize(p.name) === normalize(trimmed));
+    if (exact.length) return exact.length === 1 ? exact[0] : undefined;
+    const queryTokens = normalize(trimmed).split(' ').filter(Boolean);
     if (queryTokens.length === 0) return undefined;
 
-    let best: { product: Product; score: number } | undefined;
+    const candidates: Product[] = [];
     for (const p of products) {
         const nameTokens = new Set(normalize(p.name).split(' '));
         let matched = 0;
         for (const t of queryTokens) {
             if (nameTokens.has(t)) { matched++; continue; }
-            // préfixe (pluriels : "meches" ~ "meche")
+            // Tolérance limitée au pluriel, pas aux préfixes arbitraires.
             for (const nt of nameTokens) {
-                if (nt.startsWith(t) || t.startsWith(nt)) { matched++; break; }
+                if (nt === `${t}s` || t === `${nt}s`) { matched++; break; }
             }
         }
-        const score = matched / queryTokens.length;
-        if (score >= 0.6 && (!best || score > best.score)) {
-            best = { product: p, score };
-        }
+        if (matched === queryTokens.length) candidates.push(p);
     }
-    return best?.product;
+    return candidates.length === 1 ? candidates[0] : undefined;
 };
 
 // ---------------------------------------------------------------------------
@@ -211,8 +219,8 @@ export const validateDeal = (products: Product[], deal: RawDeal, settings: Setti
     const product = findProduct(products, deal.productRef);
     if (!product) return { ok: false, reason: 'UNKNOWN_PRODUCT', ref: deal.productRef };
 
-    const quantity = Math.round(deal.quantity);
-    if (!Number.isFinite(quantity) || quantity < 1 || quantity > MAX_QTY_PER_LINE) {
+    const quantity = deal.quantity;
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > MAX_QTY_PER_LINE) {
         return { ok: false, reason: 'BAD_QUANTITY', product };
     }
 

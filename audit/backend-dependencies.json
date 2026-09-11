@@ -1,0 +1,450 @@
+{
+  "area": "backend",
+  "checkedOn": "2026-09-10",
+  "scope": "npm audit --omit=dev; exploitability not established",
+  "counts": {
+    "info": 0,
+    "low": 1,
+    "moderate": 12,
+    "high": 8,
+    "critical": 3,
+    "total": 24
+  },
+  "packages": [
+    {
+      "name": "@google-cloud/firestore",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": {
+        "name": "firebase-admin",
+        "version": "14.4.0",
+        "isSemVerMajor": true
+      },
+      "advisories": []
+    },
+    {
+      "name": "@google-cloud/storage",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": []
+    },
+    {
+      "name": "@grpc/grpc-js",
+      "severity": "high",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        {
+          "title": "@grpc/grpc-js: A malformed request can cause a server crash",
+          "url": "https://github.com/advisories/GHSA-5375-pq7m-f5r2",
+          "range": ">=1.14.0 <1.14.4"
+        },
+        {
+          "title": "@grpc/grpc-js: An incoming malformed compressed message can cause a client or server crash",
+          "url": "https://github.com/advisories/GHSA-99f4-grh7-6pcq",
+          "range": ">=1.14.0 <1.14.4"
+        }
+      ]
+    },
+    {
+      "name": "@whiskeysockets/baileys",
+      "severity": "critical",
+      "direct": true,
+      "fixAvailable": true,
+      "advisories": [
+        {
+          "title": "Baileys has message upsert / hist sync spoofing and app state corruption when using maliciously crafted protocolMessage payload",
+          "url": "https://github.com/advisories/GHSA-qvv5-jq5g-4cgg",
+          "range": ">=7.0.0-rc.1 <7.0.0-rc12"
+        }
+      ]
+    },
+    {
+      "name": "@whiskeysockets/libsignal-node",
+      "severity": "high",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": []
+    },
+    {
+      "name": "axios",
+      "severity": "high",
+      "direct": true,
+      "fixAvailable": true,
+      "advisories": [
+        {
+          "title": "Axios: Prototype pollution auth subfields can inject Basic auth",
+          "url": "https://github.com/advisories/GHSA-xj6q-8x83-jv6g",
+          "range": ">=1.15.2 <1.18.0"
+        },
+        {
+          "title": "Axios: Prototype pollution gadgets can alter axios request construction",
+          "url": "https://github.com/advisories/GHSA-mmx7-hfxf-jppx",
+          "range": ">=1.0.0 <1.18.0"
+        },
+        {
+          "title": "Axios: Deep formToJSON Key Recursion Can Cause Denial of Service",
+          "url": "https://github.com/advisories/GHSA-pmv8-rq9r-6j72",
+          "range": ">=1.0.0 <1.18.0"
+        },
+        {
+          "title": "Axios: HTTP/2 streamed uploads bypass `maxBodyLength`",
+          "url": "https://github.com/advisories/GHSA-mwf2-3pr3-8698",
+          "range": ">=1.13.0 <1.18.0"
+        },
+        {
+          "title": "Axios Node HTTP adapter can use an inherited proxy after interceptor config cloning",
+          "url": "https://github.com/advisories/GHSA-gcfj-64vw-6mp9",
+          "range": ">=1.15.2 <1.18.0"
+        },
+        {
+          "title": "Axios: Nested axios option objects can consume polluted prototype values",
+          "url": "https://github.com/advisories/GHSA-7q8q-rj6j-mhjq",
+          "range": ">=1.0.0 <1.18.0"
+        },
+        {
+          "title": "Axios: Fetch adapter `ReadableStream` uploads bypass `maxBodyLength`",
+          "url": "https://github.com/advisories/GHSA-jqh4-m9w3-8hp9",
+          "range": ">=1.7.0 <1.18.0"
+        },
+        {
+          "title": "Axios: NO_PROXY bypass for 0.0.0.0 local addresses in axios",
+          "url": "https://github.com/advisories/GHSA-f4gw-2p7v-4548",
+          "range": ">=1.15.0 <1.18.0"
+        },
+        {
+          "title": "Axios: Excessive recursion in formDataToJSON can cause denial of service",
+          "url": "https://github.com/advisories/GHSA-42h9-826w-cgv3",
+          "range": ">=1.0.0 <1.18.0"
+        },
+        {
+          "title": "Axios form serializer maxDepth bypass via {} metatoken",
+          "url": "https://github.com/advisories/GHSA-hcpx-6fm6-wx23",
+          "range": ">=1.15.1 <1.18.0"
+        }
+      ]
+    },
+    {
+      "name": "body-parser",
+      "severity": "low",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        {
+          "title": "body-parser vulnerable to denial of service when invalid limit value silently disables size enforcement",
+          "url": "https://github.com/advisories/GHSA-v422-hmwv-36x6",
+          "range": ">=2.0.0 <2.3.0"
+        }
+      ]
+    },
+    {
+      "name": "firebase-admin",
+      "severity": "moderate",
+      "direct": true,
+      "fixAvailable": {
+        "name": "firebase-admin",
+        "version": "14.4.0",
+        "isSemVerMajor": true
+      },
+      "advisories": []
+    },
+    {
+      "name": "form-data",
+      "severity": "high",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        {
+          "title": "form-data: CRLF injection in form-data via unescaped multipart field names and filenames",
+          "url": "https://github.com/advisories/GHSA-hmw2-7cc7-3qxx",
+          "range": ">=4.0.0 <4.0.6"
+        },
+        {
+          "title": "form-data: CRLF injection in form-data via unescaped multipart field names and filenames",
+          "url": "https://github.com/advisories/GHSA-hmw2-7cc7-3qxx",
+          "range": "<2.5.6"
+        }
+      ]
+    },
+    {
+      "name": "gaxios",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": []
+    },
+    {
+      "name": "google-gax",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": {
+        "name": "firebase-admin",
+        "version": "14.4.0",
+        "isSemVerMajor": true
+      },
+      "advisories": []
+    },
+    {
+      "name": "ip-address",
+      "severity": "high",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        {
+          "title": "ip-address: Address4 decodes leading-zero octets as decimal while resolvers decode them as octal, allowing SSRF and trust-boundary bypass",
+          "url": "https://github.com/advisories/GHSA-mwp4-54f8-5fhr",
+          "range": "<=10.3.0"
+        },
+        {
+          "title": "ip-address: a CIDR suffix on the parsed address suppresses special-use classification and can bypass SSRF and trust-boundary checks",
+          "url": "https://github.com/advisories/GHSA-4xrf-jv44-h6hh",
+          "range": ">=10.1.1 <=10.2.1"
+        },
+        {
+          "title": "ip-address: misclassification of IPv4-mapped/NAT64 IPv6 addresses can bypass SSRF and trust-boundary checks",
+          "url": "https://github.com/advisories/GHSA-22jq-vg5j-6vgg",
+          "range": ">=10.1.1 <=10.2.0"
+        }
+      ]
+    },
+    {
+      "name": "multer",
+      "severity": "high",
+      "direct": true,
+      "fixAvailable": true,
+      "advisories": [
+        {
+          "title": "Multer vulnerable to Denial of Service via deeply nested field names",
+          "url": "https://github.com/advisories/GHSA-72gw-mp4g-v24j",
+          "range": ">=1.0.0 <2.2.0"
+        },
+        {
+          "title": "Multer vulnerable to Denial of Service via incomplete cleanup of aborted uploads",
+          "url": "https://github.com/advisories/GHSA-3p4h-7m6x-2hcm",
+          "range": ">=2.0.0-alpha.1 <2.2.0"
+        },
+        {
+          "title": "multer vulnerable to Denial of Service via crafted multipart field names",
+          "url": "https://github.com/advisories/GHSA-wc9g-mqfw-jrwm",
+          "range": "<2.3.0"
+        },
+        {
+          "title": "multer vulnerable to file size limit bypass via async fileFilter race condition",
+          "url": "https://github.com/advisories/GHSA-qvfw-j98x-7q72",
+          "range": "<2.3.0"
+        },
+        {
+          "title": "multer vulnerable to Denial of Service via oversized array index in field names",
+          "url": "https://github.com/advisories/GHSA-535w-7cp7-47q4",
+          "range": "<2.3.0"
+        }
+      ]
+    },
+    {
+      "name": "node-cron",
+      "severity": "moderate",
+      "direct": true,
+      "fixAvailable": true,
+      "advisories": []
+    },
+    {
+      "name": "protobufjs",
+      "severity": "critical",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        {
+          "title": "Arbitrary code execution in protobufjs",
+          "url": "https://github.com/advisories/GHSA-xq3m-2v4x-88gg",
+          "range": "<7.5.5"
+        },
+        {
+          "title": "protobuf.js: Code injection through bytes field defaults in generated toObject code",
+          "url": "https://github.com/advisories/GHSA-66ff-xgx4-vchm",
+          "range": "<=7.5.5"
+        },
+        {
+          "title": "protobuf.js: Denial of service from crafted field names in generated code",
+          "url": "https://github.com/advisories/GHSA-2pr8-phx7-x9h3",
+          "range": "<=7.5.5"
+        },
+        {
+          "title": "protobuf.js: Prototype injection in generated message constructors",
+          "url": "https://github.com/advisories/GHSA-fx83-v9x8-x52w",
+          "range": "<=7.5.5"
+        },
+        {
+          "title": "protobuf.js: Code generation gadget after prototype pollution",
+          "url": "https://github.com/advisories/GHSA-75px-5xx7-5xc7",
+          "range": "<=7.5.5"
+        },
+        {
+          "title": "protobuf.js: Process-wide denial of service through unsafe option paths",
+          "url": "https://github.com/advisories/GHSA-jvwf-75h9-cwgg",
+          "range": "<=7.5.5"
+        },
+        {
+          "title": "protobuf.js: Denial of service through unbounded protobuf recursion",
+          "url": "https://github.com/advisories/GHSA-685m-2w69-288q",
+          "range": "<=7.5.5"
+        },
+        {
+          "title": "protobufjs has overlong UTF-8 decoding",
+          "url": "https://github.com/advisories/GHSA-q6x5-8v7m-xcrf",
+          "range": "<=7.5.5"
+        },
+        {
+          "title": "protobufjs: Denial of Service via unbounded recursive JSON descriptor expansion",
+          "url": "https://github.com/advisories/GHSA-jggg-4jg4-v7c6",
+          "range": "<=7.5.7"
+        },
+        {
+          "title": "protobufjs: Denial of service through unbounded Any expansion during JSON conversion",
+          "url": "https://github.com/advisories/GHSA-wcpc-wj8m-hjx6",
+          "range": "<=7.6.0"
+        },
+        {
+          "title": "protobufjs : Schema-derived names can shadow runtime-significant properties",
+          "url": "https://github.com/advisories/GHSA-f38q-mgvj-vph7",
+          "range": "<=7.6.2"
+        },
+        {
+          "title": "protobufjs: Denial of Service via infinite loop in .proto option parsing",
+          "url": "https://github.com/advisories/GHSA-j3f2-48v5-ccww",
+          "range": ">=7.5.0 <=7.6.4"
+        }
+      ]
+    },
+    {
+      "name": "qs",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        {
+          "title": "qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set",
+          "url": "https://github.com/advisories/GHSA-q8mj-m7cp-5q26",
+          "range": ">=6.11.1 <=6.15.1"
+        },
+        {
+          "title": "qs array-limit bypass via bracket-key comma parsing",
+          "url": "https://github.com/advisories/GHSA-x5fp-wj9c-mxmx",
+          "range": ">=6.14.2 <=6.15.3"
+        },
+        {
+          "title": "qs: Denial of Service via Attacker Controlled isBuffer",
+          "url": "https://github.com/advisories/GHSA-4mjr-xmp4-gh2g",
+          "range": ">=2.2.5 <6.16.0"
+        }
+      ]
+    },
+    {
+      "name": "resend",
+      "severity": "moderate",
+      "direct": true,
+      "fixAvailable": true,
+      "advisories": []
+    },
+    {
+      "name": "retry-request",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": {
+        "name": "firebase-admin",
+        "version": "14.4.0",
+        "isSemVerMajor": true
+      },
+      "advisories": []
+    },
+    {
+      "name": "sharp",
+      "severity": "high",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        {
+          "title": "sharp inherited vulnerabilities in libvips: CVE-2026-33327, CVE-2026-33328, CVE-2026-35590, CVE-2026-35591",
+          "url": "https://github.com/advisories/GHSA-f88m-g3jw-g9cj",
+          "range": "<0.35.0"
+        },
+        {
+          "title": "sharp: Vulnerabilities in libheif: GHSA-g89c-p67h-r497 and GHSA-2jg2-4ch7-h545",
+          "url": "https://github.com/advisories/GHSA-rgj7-g3m4-5g8c",
+          "range": "<0.35.4"
+        }
+      ]
+    },
+    {
+      "name": "svix",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": []
+    },
+    {
+      "name": "teeny-request",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": {
+        "name": "firebase-admin",
+        "version": "14.4.0",
+        "isSemVerMajor": true
+      },
+      "advisories": []
+    },
+    {
+      "name": "uuid",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": {
+        "name": "firebase-admin",
+        "version": "14.4.0",
+        "isSemVerMajor": true
+      },
+      "advisories": [
+        {
+          "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+          "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+          "range": "<11.1.1"
+        }
+      ]
+    },
+    {
+      "name": "websocket-driver",
+      "severity": "critical",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        {
+          "title": "websocket-driver: Resource limit bypass via message compression",
+          "url": "https://github.com/advisories/GHSA-mp7j-qc5w-4988",
+          "range": "<0.7.5"
+        },
+        {
+          "title": "websocket-driver: Message corruption via abuse of protocol length headers",
+          "url": "https://github.com/advisories/GHSA-xv26-6w52-cph6",
+          "range": "<0.7.5"
+        }
+      ]
+    },
+    {
+      "name": "ws",
+      "severity": "high",
+      "direct": false,
+      "fixAvailable": true,
+      "advisories": [
+        {
+          "title": "ws: Uninitialized memory disclosure",
+          "url": "https://github.com/advisories/GHSA-58qx-3vcg-4xpx",
+          "range": ">=8.0.0 <8.20.1"
+        },
+        {
+          "title": "ws: Memory exhaustion DoS from tiny fragments and data chunks",
+          "url": "https://github.com/advisories/GHSA-96hv-2xvq-fx4p",
+          "range": ">=8.0.0 <8.21.0"
+        }
+      ]
+    }
+  ]
+}

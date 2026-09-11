@@ -78,7 +78,8 @@ const Onboarding: React.FC = () => {
         setRequestingCode(true);
         setPairingCode(null);
         try {
-            const cleaned = waPhone.replace(/\D/g, '').replace(/^0/, '');
+            const cleaned = waPhone.replace(/\D/g, '');
+            if (cleaned.length !== 10) throw new Error('Saisissez les 10 chiffres de votre numéro.');
             const fullNumber = `225${cleaned}`;
             const res = await apiClient('/whatsapp/pair-code', {
                 method: 'POST',

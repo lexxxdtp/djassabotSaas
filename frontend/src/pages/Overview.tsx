@@ -35,6 +35,7 @@ const STATUS_META: Record<UIStatus, { label: string; color: string }> = {
 export default function Overview() {
     const { token, user, tenant } = useAuth();
     const [orders, setOrders] = useState<DashboardOrder[]>([]);
+    const [ordersAvailable, setOrdersAvailable] = useState(false);
     const [logs, setLogs] = useState<Log[]>([]);
     const [recentOrders, setRecentOrders] = useState<DashboardOrder[]>([]);
     const [loading, setLoading] = useState(true);
@@ -54,10 +55,15 @@ export default function Overview() {
                     apiClient('/dashboard/pulse'),
                     apiClient('/dashboard/recent-orders'),
                 ]);
-                if (resOrders.ok) setOrders(await resOrders.json());
+                setOrdersAvailable(false);
+                if (resOrders.ok) {
+                    const data = await resOrders.json();
+                    if (Array.isArray(data)) { setOrders(data); setOrdersAvailable(true); }
+                }
                 if (resLogs.ok) setLogs(await resLogs.json());
                 if (resRecent.ok) setRecentOrders(await resRecent.json());
             } catch (e) {
+                setOrdersAvailable(false);
                 console.error('Overview fetch error', e);
             } finally {
                 setLoading(false);
@@ -73,6 +79,7 @@ export default function Overview() {
 
     return (
         <OverviewView
+            ordersAvailable={ordersAvailable}
             greeting={greeting}
             loading={loading}
             revenue7={derived.revenue7}
@@ -91,6 +98,7 @@ export default function Overview() {
 // ---------- PRESENTATIONAL VIEW (réutilisée par la preview) ----------
 
 export interface OverviewViewProps {
+    ordersAvailable?: boolean;
     greeting: string;
     loading: boolean;
     revenue7: number;
@@ -105,6 +113,7 @@ export interface OverviewViewProps {
 }
 
 export const OverviewView: React.FC<OverviewViewProps> = ({
+    ordersAvailable = true,
     greeting, loading, revenue7, revenueDelta, orders7, ordersDelta,
     avgBasket, chartData, hasSales7, logs, recentOrders,
 }) => {
@@ -123,12 +132,14 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
             {/* HERO — CHIFFRE D'AFFAIRES 7 JOURS */}
             <div className={`bg-[#111] border border-[#1a1a1a] rounded-2xl p-5 ${anim}`} style={delay(1)}>
-                <p className="text-[#888] text-sm">Chiffre d'affaires · 7 jours</p>
+                <p className="text-[#888] text-sm">Montant des commandes · 7 jours</p>
                 <p className="text-[38px] leading-none font-bold text-white tracking-tight tabular-nums mt-2">
-                    {revenue7.toLocaleString('fr-FR')}
+                    {ordersAvailable ? revenue7.toLocaleString('fr-FR') : '—'}
                     <span className="text-lg text-[#888] font-semibold ml-1.5">FCFA</span>
                 </p>
-                {revenueDelta !== null && (
+                <p className="text-xs text-[#888] mt-2">Hors annulations, livraison incluse. Calcul selon la date de commande, pas la date de paiement.</p>
+                {!ordersAvailable && <p role="status" className="text-sm text-[#888] mt-2">Commandes indisponibles. Nouvelle tentative automatique.</p>}
+                {ordersAvailable && revenueDelta !== null && (
                     <div className="mt-3">
                         <DeltaChip value={revenueDelta} suffix="vs semaine dernière" />
                     </div>
@@ -141,8 +152,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                     <div className="flex items-center gap-1.5 text-[#888] text-xs mb-2">
                         <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" /> Commandes
                     </div>
-                    <p className="text-2xl font-bold text-white tabular-nums">{orders7}</p>
-                    {ordersDelta !== null && (
+                    <p className="text-2xl font-bold text-white tabular-nums">{ordersAvailable ? orders7 : '—'}</p>
+                    {ordersAvailable && ordersDelta !== null && (
                         <div className="mt-2"><DeltaChip value={ordersDelta} compact /></div>
                     )}
                 </div>
@@ -151,7 +162,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         <Receipt className="w-3.5 h-3.5" aria-hidden="true" /> Panier moyen
                     </div>
                     <p className="text-2xl font-bold text-white tabular-nums">
-                        {avgBasket.toLocaleString('fr-FR')}
+                        {ordersAvailable ? avgBasket.toLocaleString('fr-FR') : '—'}
                         <span className="text-sm text-[#888] font-semibold ml-1">F</span>
                     </p>
                     <p className="mt-2 text-[11px] text-[#555]">par commande</p>
@@ -160,9 +171,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
             {/* GRAPHE DES VENTES */}
             <section className={anim} style={delay(3)}>
-                <h2 className="text-[15px] font-semibold text-white mb-3">Évolution des ventes</h2>
+                <h2 className="text-[15px] font-semibold text-white mb-3">Montant des commandes par jour</h2>
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4">
-                    {hasSales7 ? (
+                    {!ordersAvailable ? <p className="text-sm text-[#888] py-8">Graphique indisponible pour le moment.</p> : hasSales7 ? (
                         <div className="h-[200px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
@@ -185,8 +196,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                             <div className="p-3 rounded-2xl bg-[#00D97E]/10 text-[#00D97E] mb-3">
                                 <TrendingUp className="w-6 h-6" aria-hidden="true" />
                             </div>
-                            <p className="text-white text-sm font-medium">Pas encore de ventes cette semaine.</p>
-                            <p className="text-[#888] text-xs mt-1">Vos ventes s'afficheront ici dès la première commande.</p>
+                            <p className="text-white text-sm font-medium">Aucun montant de commande sur ces 7 jours.</p>
+                            <p className="text-[#888] text-xs mt-1">Les commandes annulées ne sont pas comptées.</p>
                         </div>
                     )}
                 </div>

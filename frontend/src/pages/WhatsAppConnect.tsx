@@ -74,11 +74,11 @@ const WhatsAppConnect: React.FC = () => {
 
         // Clean user input
         let cleanLocal = phoneNumber.replace(/[^0-9]/g, '');
-        if (cleanLocal.startsWith('0')) {
+        if (countryCode !== '225' && cleanLocal.startsWith('0')) {
             cleanLocal = cleanLocal.substring(1);
         }
 
-        if (cleanLocal.length < 8) {
+        if ((countryCode === '225' && cleanLocal.length !== 10) || cleanLocal.length < 8) {
             setError('Numéro de téléphone invalide');
             setRequestingCode(false);
             return;
