@@ -38,3 +38,4 @@ test('produit : variantes et options vérifiées', () => {
     // Un supplément négatif est une remise légitime.
     assert.equal(validateProductInput({ variations: [{ name: 'Taille', options: [{ value: 'M', stock: 2, priceModifier: -500 }] }] }), null);
 });
+

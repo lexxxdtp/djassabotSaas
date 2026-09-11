@@ -180,13 +180,17 @@ app.get('/api/orders', authenticateTenant, checkSubscription, async (req, res) =
 
 app.put('/api/orders/:id/status', authenticateTenant, checkSubscription, async (req, res) => {
     const { status } = req.body;
-    const VALID_STATUSES = ['PENDING', 'CONFIRMED', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+    // SHIPPING est le statut déclaré dans les types ; SHIPPED était la seule
+    // orthographe acceptée ici. Les deux entrent, une seule est écrite, pour
+    // que les lignes déjà en base et les appels existants restent valides.
+    const VALID_STATUSES = ['PENDING', 'CONFIRMED', 'PAID', 'SHIPPING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
     if (!VALID_STATUSES.includes(status)) {
         res.status(400).json({ error: 'Statut de commande invalide' });
         return;
     }
+    const canonicalStatus = status === 'SHIPPED' ? 'SHIPPING' : status;
     const orderId = req.params.id as string;
-    const updated = await db.updateOrderStatus(req.tenantId!, orderId, status);
+    const updated = await db.updateOrderStatus(req.tenantId!, orderId, canonicalStatus);
     if (updated) res.json(updated);
     else res.status(400).json({ error: 'Failed to update status' });
 });

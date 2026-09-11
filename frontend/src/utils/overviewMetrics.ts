@@ -28,6 +28,27 @@ export function isCountedOrder(o: DashboardOrder): boolean {
         && Number.isFinite(o.total) && o.total >= 0 && Number.isFinite(orderDate(o));
 }
 
+/**
+ * Les 4 états montrés au vendeur. Le backend garde l'énumération complète.
+ *
+ * Défini ICI et nulle part ailleurs : la même fonction était recopiée dans
+ * Orders, Overview et Today, et les copies ont divergé. « SHIPPED » n'y était
+ * pas traité et tombait dans la branche par défaut, donc une commande expédiée
+ * s'affichait « Annulée » — alors que les statistiques la comptaient en recette.
+ *
+ * SHIPPING et SHIPPED désignent la même chose et valent tous deux « Payée ».
+ * Un statut inconnu n'est PAS annulé : il revient dans « Nouvelle », pour que
+ * le vendeur le voie au lieu qu'il disparaisse.
+ */
+export type UIStatus = 'NEW' | 'PAID' | 'DELIVERED' | 'CANCELLED';
+
+export function toUIStatus(status: string): UIStatus {
+    if (status === 'CANCELLED') return 'CANCELLED';
+    if (status === 'DELIVERED') return 'DELIVERED';
+    if (status === 'PAID' || status === 'SHIPPING' || status === 'SHIPPED') return 'PAID';
+    return 'NEW';
+}
+
 /** Journées d'Abidjan (UTC), indépendantes du fuseau du téléphone. */
 export function startOfBusinessDay(now: number): number {
     const date = new Date(now);

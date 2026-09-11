@@ -535,3 +535,22 @@ test('contrat de saisie : les deux parcours ivoiriens conservent les dix chiffre
         }
     }
 });
+
+test('statuts : une commande expédiée n\'apparaît pas comme annulée', () => {
+    const metrics = load('frontend/src/utils/overviewMetrics.ts');
+    // SHIPPED n'était traité nulle part côté interface et tombait dans la branche
+    // par défaut « Annulée », alors que les statistiques le comptaient en recette :
+    // le vendeur voyait une vente annulée et un chiffre qui montait.
+    assert.equal(metrics.toUIStatus('SHIPPED'), 'PAID');
+    assert.equal(metrics.toUIStatus('SHIPPING'), 'PAID');
+    assert.equal(metrics.toUIStatus('PAID'), 'PAID');
+});
+
+test('statuts : un statut inconnu revient à traiter, il n\'est pas annulé', () => {
+    const metrics = load('frontend/src/utils/overviewMetrics.ts');
+    assert.equal(metrics.toUIStatus('UNE_NOUVEAUTE'), 'NEW');
+    assert.equal(metrics.toUIStatus('PENDING'), 'NEW');
+    assert.equal(metrics.toUIStatus('CONFIRMED'), 'NEW');
+    assert.equal(metrics.toUIStatus('CANCELLED'), 'CANCELLED');
+    assert.equal(metrics.toUIStatus('DELIVERED'), 'DELIVERED');
+});

@@ -5,20 +5,13 @@ import {
     CheckCircle2, Search, CreditCard
 } from 'lucide-react';
 import { apiClient } from '../utils/apiClient';
+import { toUIStatus, type UIStatus } from '../utils/overviewMetrics';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
 // Backend keeps the full enum for compatibility, but the UI only exposes 4 states.
-// Legacy CONFIRMED is shown as NOUVELLE (still awaiting payment), legacy SHIPPING as PAYÉE.
-type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
-type UIStatus = 'NEW' | 'PAID' | 'DELIVERED' | 'CANCELLED';
-
-const toUIStatus = (s: OrderStatus): UIStatus => {
-    if (s === 'PENDING' || s === 'CONFIRMED') return 'NEW';
-    if (s === 'PAID' || s === 'SHIPPING') return 'PAID';
-    if (s === 'DELIVERED') return 'DELIVERED';
-    return 'CANCELLED';
-};
+// Le mapping vit dans utils/overviewMetrics pour rester identique partout.
+type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'SHIPPING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
 interface Order {
     id: string;

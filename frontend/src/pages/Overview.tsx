@@ -4,7 +4,7 @@ import { TrendingUp, ShoppingBag, Receipt, Activity, ArrowRight } from 'lucide-r
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
-import { deriveMetrics, orderDate, type DashboardOrder, type ChartPoint } from '../utils/overviewMetrics';
+import { deriveMetrics, orderDate, toUIStatus, type DashboardOrder, type ChartPoint, type UIStatus } from '../utils/overviewMetrics';
 
 // ---------- TYPES ----------
 
@@ -15,14 +15,6 @@ export interface Log {
     created_at: string;
 }
 
-// UI statuses aligned with the Orders page (backend keeps the full enum).
-type UIStatus = 'NEW' | 'PAID' | 'DELIVERED' | 'CANCELLED';
-const toUIStatus = (s: string): UIStatus => {
-    if (s === 'PENDING' || s === 'CONFIRMED') return 'NEW';
-    if (s === 'PAID' || s === 'SHIPPING') return 'PAID';
-    if (s === 'DELIVERED') return 'DELIVERED';
-    return 'CANCELLED';
-};
 const STATUS_META: Record<UIStatus, { label: string; color: string }> = {
     NEW: { label: 'Nouvelle', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
     PAID: { label: 'Payée', color: 'text-[#00D97E] bg-[#00D97E]/10 border-[#00D97E]/20' },

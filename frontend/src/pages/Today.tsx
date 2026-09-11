@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
-import { deriveDailyMetrics } from '../utils/overviewMetrics';
+import { deriveDailyMetrics, toUIStatus } from '../utils/overviewMetrics';
 
 interface Order {
     id: string;
@@ -150,8 +150,8 @@ const Today: React.FC = () => {
         ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100)
         : null;
 
-    const newOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED');
-    const paidOrders = orders.filter(o => o.status === 'PAID' || o.status === 'SHIPPING');
+    const newOrders = orders.filter(o => toUIStatus(o.status) === 'NEW');
+    const paidOrders = orders.filter(o => toUIStatus(o.status) === 'PAID');
 
     const lastSaleLog = logs.find(l => l.type === 'sale');
     const lastSaleAgo = lastSaleLog ? timeAgo(new Date(lastSaleLog.created_at)) : null;
