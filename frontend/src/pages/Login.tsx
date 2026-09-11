@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Mail, Lock, TrendingUp, Users, Zap } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, type User, type Tenant } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
 
 const Login: React.FC = () => {
@@ -43,7 +43,7 @@ const Login: React.FC = () => {
                 }),
             });
 
-            let data: any = {};
+            let data: Partial<{ error: string; token: string; user: User; tenant: Tenant }> = {};
             try {
                 data = await response.json();
             } catch {
@@ -51,6 +51,7 @@ const Login: React.FC = () => {
             }
             if (!response.ok) throw new Error(data.error || 'Identifiants invalides');
 
+            if (!data.token || !data.user || !data.tenant) throw new Error('Réponse incomplète du serveur.');
             login(data.token, data.user, data.tenant, rememberMe);
             navigate('/dashboard');
         } catch (err: unknown) {

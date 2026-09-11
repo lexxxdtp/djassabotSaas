@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { apiClient } from '../utils/apiClient';
 
-interface User {
+export interface User {
     id: string;
     email?: string;
     phone?: string;
@@ -12,7 +12,7 @@ interface User {
     phoneVerified?: boolean;
 }
 
-interface Tenant {
+export interface Tenant {
     id: string;
     name: string;
     businessType?: string;

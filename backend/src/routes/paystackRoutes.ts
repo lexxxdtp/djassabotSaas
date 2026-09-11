@@ -105,7 +105,7 @@ router.post('/subscribe', authenticateTenant, async (req, res) => {
         }
     } catch (error: any) {
         console.error('[API] Subscribe error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Impossible de démarrer le paiement. Réessayez dans un instant.' });
     }
 });
 
@@ -119,7 +119,8 @@ router.get('/verify/:reference', authenticateTenant, async (req, res) => {
         const result = await paystackService.verifyTransaction(reference);
         res.json(result);
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
+        console.error('[API] Verify transaction error:', error);
+        res.status(500).json({ error: 'Impossible de vérifier ce paiement pour le moment.' });
     }
 });
 
@@ -136,7 +137,8 @@ router.get('/banks', authenticateTenant, async (req, res) => {
         const result = await paystackService.listBanks();
         res.json(result);
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
+        console.error('[API] List banks error:', error);
+        res.status(500).json({ error: 'Liste des banques indisponible pour le moment.' });
     }
 });
 
@@ -155,7 +157,8 @@ router.post('/verify-account', authenticateTenant, async (req, res) => {
         const result = await paystackService.verifyAccountNumber(accountNumber, bankCode);
         res.json(result);
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
+        console.error('[API] Verify account error:', error);
+        res.status(500).json({ error: 'Impossible de vérifier ce compte bancaire pour le moment.' });
     }
 });
 
@@ -208,7 +211,7 @@ router.post('/setup-vendor', authenticateTenant, async (req, res) => {
         }
     } catch (error: any) {
         console.error('[API] Setup vendor error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Impossible de configurer le compte vendeur pour le moment.' });
     }
 });
 
@@ -248,7 +251,7 @@ router.post('/create-payment-link', authenticateTenant, async (req, res) => {
         res.json(result);
     } catch (error: any) {
         console.error('[API] Create payment link error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Impossible de générer le lien de paiement pour le moment.' });
     }
 });
 

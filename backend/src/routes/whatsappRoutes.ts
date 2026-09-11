@@ -48,7 +48,7 @@ router.get('/status', async (req: Request, res: Response): Promise<void> => {
 
     } catch (error: any) {
         console.error('Erreur status WhatsApp:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Statut du bot indisponible pour le moment.' });
     }
 });
 
@@ -68,7 +68,7 @@ router.post('/pair-code', async (req: Request, res: Response) => {
 
     } catch (error: any) {
         console.error('Erreur Pairing Code:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Impossible de générer le code de jumelage. Vérifiez le numéro et réessayez.' });
     }
 });
 
@@ -79,7 +79,8 @@ router.post('/logout', async (req: Request, res: Response) => {
         await whatsappManager.disconnect(tenantId);
         res.json({ success: true, message: 'Déconnecté avec succès' });
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
+        console.error('Erreur déconnexion WhatsApp:', error);
+        res.status(500).json({ error: 'La déconnexion a échoué. Réessayez dans un instant.' });
     }
 });
 

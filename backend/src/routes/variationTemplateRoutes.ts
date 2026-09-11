@@ -69,7 +69,7 @@ router.get('/variation-templates', authenticateTenant, async (req, res) => {
         res.json(allTemplates);
     } catch (error: any) {
         console.error('[API] Get Variation Templates Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to fetch templates' });
+        res.status(500).json({ error: 'Modèles de variantes indisponibles pour le moment.' });
     }
 });
 
@@ -87,7 +87,7 @@ router.post('/variation-templates', authenticateTenant, async (req, res) => {
         res.json(template);
     } catch (error: any) {
         console.error('[API] Save Variation Template Error:', error);
-        res.status(500).json({ error: error.message || 'Failed to save template' });
+        res.status(500).json({ error: 'Impossible d\'enregistrer ce modèle de variante.' });
     }
 });
 

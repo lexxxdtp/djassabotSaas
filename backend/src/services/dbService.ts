@@ -1023,6 +1023,32 @@ export const db = {
         return false;
     },
 
+    /**
+     * Cet événement Paystack a-t-il déjà été traité pour cette boutique ?
+     *
+     * Paystack retente la livraison tant qu'il n'a pas reçu un 2xx : sans cette
+     * garde, un même paiement prolongerait l'abonnement plusieurs fois.
+     *
+     * En cas de doute (lecture impossible), on répond « oui » pour ne pas
+     * rejouer un paiement : l'événement sera retenté et la vérification refaite.
+     */
+    isPaystackEventProcessed: async (tenantId: string, reference: string): Promise<boolean> => {
+        if (!isSupabaseEnabled || !supabase || !reference) return false;
+        try {
+            const { data, error } = await supabase
+                .from('activity_logs')
+                .select('id')
+                .eq('tenant_id', tenantId)
+                .eq('metadata->>paystackReference', reference)
+                .limit(1);
+            if (error) throw error;
+            return (data || []).length > 0;
+        } catch (e) {
+            console.error('[DB] isPaystackEventProcessed Error:', e);
+            return true;
+        }
+    },
+
     getRecentActivity: async (tenantId: string, limit: number = 20) => {
         if (isSupabaseEnabled && supabase) {
             const { data } = await supabase

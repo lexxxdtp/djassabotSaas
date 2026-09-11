@@ -110,7 +110,8 @@ router.post('/summarize-identity', async (req: Request, res: Response) => {
         const summary = await generateIdentitySummary(dummySettings as any);
         res.json({ summary });
     } catch (e: any) {
-        res.status(500).json({ error: e.message });
+        console.error('[AI] summarize-identity error:', e);
+        res.status(500).json({ error: 'Impossible de générer la synthèse pour le moment.' });
     }
 });
 
@@ -129,7 +130,8 @@ router.post('/parse-personality', async (req: Request, res: Response) => {
         const config = await parsePersonalityFromDescription(description);
         res.json(config);
     } catch (e: any) {
-        res.status(500).json({ error: e.message || 'Erreur lors de l\'analyse de la description' });
+        console.error('[AI] parse-personality error:', e);
+        res.status(500).json({ error: 'Erreur lors de l\'analyse de la description.' });
     }
 });
 

@@ -107,3 +107,69 @@ test('une conversation en pause ne déclenche ni validation de reçu ni réponse
     assert.equal(receiptCalls, 0);
     assert.equal(flowCalls, 0);
 });
+
+// --- Webhook Paystack : la métadonnée ne décide pas de ce que le client reçoit ---
+
+function loadPaystack(overrides: Record<string, unknown>) {
+    const calls: { subscriptions: unknown[]; statuses: unknown[]; logs: unknown[][] } = { subscriptions: [], statuses: [], logs: [] };
+    const service = loadIsolated('../../paystackService', {
+        axios: { create: () => ({ post: async () => { throw new Error('appel réseau interdit en test'); } }) },
+        './dbService': { db: {
+            isPaystackEventProcessed: async () => false,
+            createSubscription: async (value: unknown) => { calls.subscriptions.push(value); },
+            updateOrderStatus: async (...args: unknown[]) => { calls.statuses.push(args); },
+            logActivity: async (...args: unknown[]) => { calls.logs.push(args); },
+            getOrderById: async () => ({ id: 'ORD-1', total: 5000 }),
+            ...overrides,
+        } },
+    });
+    return { service, calls };
+}
+
+test('paystack : un montant insuffisant n’active aucun abonnement', async () => {
+    const { service, calls } = loadPaystack({});
+    await service.handlePaystackWebhook('charge.success', {
+        reference: 'ref-1', currency: 'XOF', amount: 100 * 100,
+        metadata: { type: 'subscription', tenantId: 'tenant', plan: 'business' },
+    });
+    assert.equal(calls.subscriptions.length, 0);
+    assert.equal(calls.logs[0][1], 'warning');
+});
+
+test('paystack : un événement déjà traité ne prolonge pas une deuxième fois', async () => {
+    const { service, calls } = loadPaystack({ isPaystackEventProcessed: async () => true });
+    await service.handlePaystackWebhook('charge.success', {
+        reference: 'ref-1', currency: 'XOF', amount: 15000 * 100,
+        metadata: { type: 'subscription', tenantId: 'tenant', plan: 'business' },
+    });
+    assert.equal(calls.subscriptions.length, 0);
+});
+
+test('paystack : une activation ratée remonte au lieu d’être acquittée', async () => {
+    const { service } = loadPaystack({ createSubscription: async () => { throw new Error('base injoignable'); } });
+    // Acquitter ici, c'est encaisser sans livrer : Paystack ne représenterait jamais l'événement.
+    await assert.rejects(() => service.handlePaystackWebhook('charge.success', {
+        reference: 'ref-1', currency: 'XOF', amount: 15000 * 100,
+        metadata: { type: 'subscription', tenantId: 'tenant', plan: 'business' },
+    }), /base injoignable/);
+});
+
+test('paystack : un montant exact active bien l’abonnement', async () => {
+    const { service, calls } = loadPaystack({});
+    await service.handlePaystackWebhook('charge.success', {
+        reference: 'ref-1', currency: 'XOF', amount: 15000 * 100,
+        metadata: { type: 'subscription', tenantId: 'tenant', plan: 'business' },
+    });
+    assert.equal(calls.subscriptions.length, 1);
+    assert.equal((calls.subscriptions[0] as { plan: string }).plan, 'business');
+});
+
+test('paystack : un sous-paiement ne marque pas la commande payée', async () => {
+    const { service, calls } = loadPaystack({});
+    await service.handlePaystackWebhook('charge.success', {
+        reference: 'ref-2', currency: 'XOF', amount: 1000 * 100,
+        metadata: { type: 'order', tenantId: 'tenant', orderId: 'ORD-1' },
+    });
+    assert.equal(calls.statuses.length, 0);
+    assert.equal(calls.logs[0][1], 'warning');
+});

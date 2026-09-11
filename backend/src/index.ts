@@ -50,18 +50,29 @@ app.use(cors({
         // Clean up origin (remove trailing slash if any)
         const cleanOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
 
+        // L'app mobile Capacitor présente une origine locale : elle reste
+        // autorisée en production, contrairement à un navigateur sur localhost.
+        const isCapacitorApp =
+            cleanOrigin === 'capacitor://localhost' ||
+            cleanOrigin === 'ionic://localhost';
+
+        // Serveur de développement : jamais accepté en production, sinon
+        // n'importe quelle page servie en local peut appeler l'API du vendeur.
+        const isLocalDevServer =
+            process.env.NODE_ENV !== 'production' && (
+                cleanOrigin.startsWith('http://localhost:') ||
+                cleanOrigin.startsWith('http://127.0.0.1:') ||
+                cleanOrigin === 'http://localhost' ||
+                cleanOrigin === 'https://localhost'
+            );
+
         const isAllowed =
             allowedOrigins.includes(cleanOrigin) ||
             allowedOrigins.includes(origin) ||
             cleanOrigin === 'https://djassabot-saas.vercel.app' ||
             cleanOrigin === 'https://187-77-171-44.nip.io' ||
-            cleanOrigin.startsWith('http://localhost:') ||
-            cleanOrigin.startsWith('http://127.0.0.1:') ||
-            // App mobile Capacitor (iOS / Android)
-            cleanOrigin === 'capacitor://localhost' ||
-            cleanOrigin === 'ionic://localhost' ||
-            cleanOrigin === 'http://localhost' ||
-            cleanOrigin === 'https://localhost';
+            isCapacitorApp ||
+            isLocalDevServer;
 
         if (isAllowed) {
             return callback(null, true);

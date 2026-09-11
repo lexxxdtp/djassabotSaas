@@ -326,9 +326,9 @@ export default function Orders() {
             if (selectedOrder?.id === orderId) {
                 setSelectedOrder({ ...selectedOrder, status: newStatus });
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error('Update failed', e);
-            toast.error(e.message || 'Impossible de mettre à jour le statut de la commande.');
+            toast.error(e instanceof Error ? e.message : 'Impossible de mettre à jour le statut de la commande.');
             fetchOrders();
         }
     };
