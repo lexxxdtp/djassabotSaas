@@ -79,7 +79,16 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
         setError(null);
 
         try {
-            const userEmail = user?.email || 'user@example.com';
+            // Le reçu Paystack part à cette adresse : jamais d'adresse inventée.
+            let userEmail = user?.email;
+            if (!userEmail) {
+                userEmail = window.prompt('À quelle adresse e-mail devons-nous envoyer votre reçu de paiement ?')?.trim() || '';
+                if (!userEmail) {
+                    setError('Une adresse e-mail est nécessaire pour recevoir votre reçu.');
+                    setLoading(false);
+                    return;
+                }
+            }
 
             const res = await apiClient('/paystack/subscribe', {
                 method: 'POST',

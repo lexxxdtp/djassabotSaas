@@ -54,7 +54,19 @@ export default function Subscription() {
         setLoadingPlan(planId);
         setError(null);
         try {
-            const userEmail = user?.email || 'user@example.com';
+            // Paystack envoie le reçu à cette adresse. Un compte créé par
+            // téléphone n'en a pas : on la demande au lieu d'inventer
+            // « user@example.com », qui faisait partir le reçu dans le vide.
+            let userEmail = user?.email;
+            if (!userEmail) {
+                userEmail = window.prompt('À quelle adresse e-mail devons-nous envoyer votre reçu de paiement ?')?.trim() || '';
+                if (!userEmail) {
+                    setError('Une adresse e-mail est nécessaire pour recevoir votre reçu.');
+                    setLoading(false);
+                    setLoadingPlan(null);
+                    return;
+                }
+            }
             const res = await apiClient('/paystack/subscribe', {
                 method: 'POST',
                 body: JSON.stringify({ plan: planId, email: userEmail }),

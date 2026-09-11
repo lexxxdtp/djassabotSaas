@@ -608,3 +608,24 @@ test('fiche livreur : aucune marge ni prix minimum ne fuit vers le livreur', () 
         assert.doesNotMatch(text, leak);
     }
 });
+
+test('paiement : les adresses bouche-trou sont refusées comme destinataire du reçu', () => {
+    // Extraction du garde-fou réel de la route, sans monter Express.
+    const source = fs.readFileSync(path.join(root, 'backend/src/routes/paystackRoutes.ts'), 'utf8');
+    const start = source.indexOf('const PLACEHOLDER_EMAIL_DOMAINS');
+    const end = source.indexOf('\n}', source.indexOf('function isUsablePaymentEmail')) + 2;
+    assert.ok(start >= 0 && end > start);
+    const sandbox: any = {};
+    vm.runInNewContext(
+        ts.transpileModule(source.slice(start, end) + '\nthis.check = isUsablePaymentEmail;',
+            { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText,
+        sandbox, { timeout: 2000 });
+    const check = sandbox.check;
+
+    // Ces deux-là circulaient réellement et passaient toute vérification de présence.
+    assert.equal(check('user@example.com'), false);
+    assert.equal(check('vendor@djassabot.com'), false);
+    assert.equal(check(undefined), false);
+    assert.equal(check('pas-une-adresse'), false);
+    assert.equal(check('  Alex@Gmail.com '), true);
+});
