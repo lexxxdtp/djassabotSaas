@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { supabase, isSupabaseEnabled } from '../config/supabase';
 import { CartItem, SelectedVariation } from '../types';
 import { simulationScope, SIMULATION_USER_ID } from './simulationContext';
@@ -257,7 +258,11 @@ export const addItemToSessionCart = async (tenantId: string, userId: string, new
         ...session.tempOrder, // Keep other temp props if any
         items: updatedItems,
         total,
-        summary
+        summary,
+        // Identifie CE panier, pas son contenu : deux validations du même panier
+        // portent la même clé et ne peuvent produire qu'une commande. Un nouveau
+        // panier plus tard obtient une autre clé et reste donc autorisé.
+        idempotencyKey: session.tempOrder?.idempotencyKey ?? randomUUID(),
     };
 
     // Update the session

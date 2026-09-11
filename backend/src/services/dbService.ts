@@ -18,6 +18,27 @@ export interface StockFailure {
     available?: number;
 }
 
+// --- Idempotence des commandes (migration add_order_idempotency_key.sql) ---
+
+/** Colonne absente : PGRST204 côté PostgREST, 42703 côté Postgres. */
+const isMissingIdempotencyColumn = (error: { code?: string; message?: string }): boolean =>
+    error?.code === 'PGRST204' || error?.code === '42703' || /idempotency_key/.test(error?.message || '');
+
+/** Violation de contrainte unique : la commande existe déjà pour cette clé. */
+const isUniqueViolation = (error: { code?: string }): boolean => error?.code === '23505';
+
+/** Commande rendue par createOrder ; `alreadyExisted` signale un doublon évité. */
+export interface CreatedOrder extends Order {
+    alreadyExisted?: boolean;
+}
+
+let idempotencyWarned = false;
+const warnIdempotencyUnavailable = () => {
+    if (idempotencyWarned) return;
+    idempotencyWarned = true;
+    console.warn('[DB] Colonne idempotency_key absente : protection anti-doublon de commande INACTIVE. Appliquer database/migrations/add_order_idempotency_key.sql.');
+};
+
 /**
  * Ajuste le stock d'un article (delta négatif = commande, positif = restock).
  * Essaie la fonction SQL atomique `adjust_stock` (migration
@@ -325,11 +346,38 @@ export const db = {
     },
 
 
-    createOrder: async (tenantId: string, userId: string, items: CartItem[], total: number, address: string, createdAt: Date = new Date()): Promise<Order> => {
+    /**
+     * Commande déjà enregistrée pour cette clé d'idempotence, sinon null.
+     *
+     * Retourne null (au lieu de lever) quand la colonne n'existe pas encore :
+     * la migration add_order_idempotency_key.sql peut ne pas être appliquée.
+     */
+    findOrderByIdempotencyKey: async (tenantId: string, key: string): Promise<Order | null> => {
+        if (!isSupabaseEnabled || !supabase || !key) return null;
+
+        const { data, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('tenant_id', tenantId)
+            .eq('idempotency_key', key)
+            .maybeSingle();
+
+        if (error) {
+            if (isMissingIdempotencyColumn(error)) {
+                warnIdempotencyUnavailable();
+                return null;
+            }
+            throw new Error(`Database Error (Order lookup): ${error.message}`);
+        }
+        if (!data) return null;
+        return { ...data, userId: data.user_id, createdAt: new Date(data.created_at) } as Order;
+    },
+
+    createOrder: async (tenantId: string, userId: string, items: CartItem[], total: number, address: string, createdAt: Date = new Date(), idempotencyKey?: string): Promise<CreatedOrder> => {
         const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
 
         // Supabase uses snake_case column names
-        const dbOrder = {
+        const dbOrder: Record<string, unknown> = {
             id: orderId,
             tenant_id: tenantId,
             user_id: userId,  // snake_case for DB
@@ -339,14 +387,35 @@ export const db = {
             address,
             created_at: createdAt.toISOString()  // snake_case for DB
         };
+        if (idempotencyKey) dbOrder.idempotency_key = idempotencyKey;
 
         if (isSupabaseEnabled && supabase) {
             try {
-                const { data, error } = await supabase
+                let { data, error } = await supabase
                     .from('orders')
                     .insert(dbOrder)
                     .select()
                     .single();
+
+                // La colonne d'idempotence n'existe pas encore : on crée la commande
+                // sans protection plutôt que de perdre la vente, mais on le dit.
+                if (error && idempotencyKey && isMissingIdempotencyColumn(error)) {
+                    warnIdempotencyUnavailable();
+                    const { idempotency_key, ...withoutKey } = dbOrder;
+                    ({ data, error } = await supabase.from('orders').insert(withoutKey).select().single());
+                }
+
+                // Course perdue : une validation simultanée a déjà créé cette commande.
+                // L'index unique a fait son travail — on rend celle qui existe au lieu
+                // d'en fabriquer une deuxième.
+                if (error && idempotencyKey && isUniqueViolation(error)) {
+                    const existing = await db.findOrderByIdempotencyKey(tenantId, idempotencyKey);
+                    if (existing) {
+                        console.warn(`[DB] createOrder: doublon évité pour la clé ${idempotencyKey}`);
+                        return { ...existing, alreadyExisted: true };
+                    }
+                }
+
                 if (error) throw error;
 
                 // Log d'activité best-effort : ne doit JAMAIS faire échouer une

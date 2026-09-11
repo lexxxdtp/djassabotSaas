@@ -424,7 +424,22 @@ async function finalizeOrder(
         return;
     }
 
-    // 2. Décrément ATOMIQUE du stock — si le stock a bougé entre-temps, on refuse proprement
+    // 2. Ce panier a-t-il DÉJÀ produit une commande ? (adresse renvoyée deux fois,
+    // panier resté ouvert après un échec de fermeture, message WhatsApp dupliqué)
+    // On vérifie AVANT de toucher au stock : sinon on décrémenterait pour rien.
+    const idempotencyKey: string | undefined = tempOrder.idempotencyKey;
+    if (idempotencyKey) {
+        const already = await db.findOrderByIdempotencyKey(tenantId, idempotencyKey);
+        if (already) {
+            logger.warn({ tenantId, remoteJid, orderId: already.id }, '[FlowHandler] Panier déjà commandé, doublon évité');
+            await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined, reminderSent: false });
+            await reply(sock, tenantId, remoteJid,
+                `✅ Votre commande était déjà enregistrée (total ${formatFcfa(already.total)}). Pas d'inquiétude, elle n'a pas été comptée deux fois.`);
+            return;
+        }
+    }
+
+    // 3. Décrément ATOMIQUE du stock — si le stock a bougé entre-temps, on refuse proprement
     const stockResult = await db.decrementStockForItems(tenantId, productItems);
     if (!stockResult.ok) {
         const lines = stockResult.failures.map(f =>
@@ -439,10 +454,16 @@ async function finalizeOrder(
         return;
     }
 
-    // 3. Création de la commande (livraison incluse dans le total et visible en ligne d'article)
+    // 4. Création de la commande (livraison incluse dans le total et visible en ligne d'article)
     let order;
     try {
-        order = await db.createOrder(tenantId, remoteJid, orderItems, grandTotal, address);
+        order = await db.createOrder(tenantId, remoteJid, orderItems, grandTotal, address, new Date(), idempotencyKey);
+        if (order.alreadyExisted) {
+            // Course perdue contre une validation simultanée : la commande existe
+            // déjà et son stock a été pris par l'autre passage. On rend le nôtre.
+            await db.restockItems(tenantId, productItems);
+            logger.warn({ tenantId, remoteJid, orderId: order.id }, '[FlowHandler] Doublon concurrent évité, stock rendu');
+        }
     } catch (e) {
         // La commande a échoué APRÈS le décrément → on rend le stock
         await db.restockItems(tenantId, productItems);
@@ -471,7 +492,7 @@ async function finalizeOrder(
         return;
     }
 
-    // 4. Confirmation claire au client (détail articles + livraison + total)
+    // 5. Confirmation claire au client (détail articles + livraison + total)
     const deliveryLine = quote.known
         ? (quote.fee > 0 ? `${quote.label} : ${formatFcfa(quote.fee)}` : `${quote.label} ✅`)
         : 'Livraison : à confirmer selon votre zone (le vendeur vous précise ça rapidement)';
@@ -490,7 +511,7 @@ async function finalizeOrder(
         logger.error({ err: error, tenantId, orderId: order.id }, '[FlowHandler] Customer confirmation failed after order creation');
     }
 
-    // 5. Notification vendeur
+    // 6. Notification vendeur
     try {
         await sendOrderNotification(sock, tenantId, remoteJid, address, { items: orderItems, total: grandTotal });
     } catch (error) {

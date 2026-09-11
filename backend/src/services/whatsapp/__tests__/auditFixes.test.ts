@@ -151,6 +151,82 @@ test('panier impossible à fermer : le client est prévenu de ne pas revalider',
     assert.match(String(warnings[0][2]), /deux fois/);
 });
 
+test('panier déjà commandé : ni stock repris, ni deuxième commande', async () => {
+    const events: string[] = [];
+    const messages: string[] = [];
+    const session: any = { state: 'WAITING_FOR_ADDRESS', autopilotEnabled: true, history: [],
+        tempOrder: { items: [{ productId: 'p', productName: 'robe', price: 1000, quantity: 1 }], total: 1000, idempotencyKey: 'cle-panier' } };
+    const service = load('backend/src/services/whatsapp/flowHandler.ts', {
+        '../dbService': { db: { getSettings: async () => ({ deliveryEnabled: false }), getProducts: async () => [],
+            findOrderByIdempotencyKey: async (_t: string, key: string) => {
+                events.push('lookup'); return key === 'cle-panier' ? { id: 'cmd-1', total: 1000 } : null;
+            },
+            decrementStockForItems: async () => { events.push('stock'); return { ok: true }; },
+            createOrder: async () => { events.push('order'); return { id: 'cmd-2' }; },
+            restockItems: async () => { events.push('restock'); }, logActivity: async () => {} } },
+        '../sessionService': { getSession: async () => session, addToHistory: async () => {},
+            updateSession: async () => { events.push('clear'); } },
+        '../aiService': {}, './salesEngine': load('backend/src/services/whatsapp/salesEngine.ts'), '../../utils/logger': { logger: quiet },
+        './notificationService': { sendOrderNotification: async () => { events.push('merchant'); } }
+    });
+    await service.handleFlow('owner', 'client', 'Cocody', { sendMessage: async (_jid: string, message: { text: string }) => { messages.push(message.text); } });
+    // La vérification précède le stock : rien n'est décrémenté pour être rendu ensuite.
+    assert.deepEqual(events, ['lookup', 'clear']);
+    assert.match(messages[0], /déjà enregistrée/);
+    assert.match(messages[0], /pas été comptée deux fois/);
+});
+
+test('course perdue à la création : la commande existante gagne et le stock est rendu', async () => {
+    const events: string[] = [];
+    const session: any = { state: 'WAITING_FOR_ADDRESS', autopilotEnabled: true, history: [],
+        tempOrder: { items: [{ productId: 'p', productName: 'robe', price: 1000, quantity: 1 }], total: 1000, idempotencyKey: 'cle-panier' } };
+    const service = load('backend/src/services/whatsapp/flowHandler.ts', {
+        '../dbService': { db: { getSettings: async () => ({ deliveryEnabled: false }), getProducts: async () => [],
+            findOrderByIdempotencyKey: async () => { events.push('lookup'); return null; },
+            decrementStockForItems: async () => { events.push('stock'); return { ok: true }; },
+            createOrder: async () => { events.push('order'); return { id: 'cmd-1', total: 1000, alreadyExisted: true }; },
+            restockItems: async () => { events.push('restock'); }, logActivity: async () => {} } },
+        '../sessionService': { getSession: async () => session, addToHistory: async () => {},
+            updateSession: async () => { events.push('clear'); } },
+        '../aiService': {}, './salesEngine': load('backend/src/services/whatsapp/salesEngine.ts'), '../../utils/logger': { logger: quiet },
+        './notificationService': { sendOrderNotification: async () => { events.push('merchant'); } }
+    });
+    await service.handleFlow('owner', 'client', 'Cocody', { sendMessage: async () => {} });
+    // Le stock pris par ce passage est rendu : l'autre validation a déjà pris le sien.
+    assert.deepEqual(events, ['lookup', 'stock', 'order', 'restock', 'clear', 'merchant']);
+});
+
+test('idempotence : clé posée au premier article et conservée ensuite', async () => {
+    const saved: any[] = [];
+    let row: any = { id: 'owner:client', tenant_id: 'owner', user_phone: 'client', state: 'IDLE', history: [], last_interaction: new Date().toISOString() };
+    const query = { select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: row, error: null }),
+        upsert: async (payload: any) => { saved.push(payload); row = { ...row, temp_order: payload.temp_order }; return { error: null }; } };
+    const service = load('backend/src/services/sessionService.ts', { '../config/supabase': { isSupabaseEnabled: true, supabase: { from: () => query } } });
+    const first = await service.addItemToSessionCart('owner', 'client', { productId: 'p', productName: 'robe', quantity: 1, price: 1000 });
+    const second = await service.addItemToSessionCart('owner', 'client', { productId: 'q', productName: 'sac', quantity: 1, price: 500 });
+    assert.ok(first.idempotencyKey);
+    // Ajouter un article ne doit pas changer l'identité du panier.
+    assert.equal(second.idempotencyKey, first.idempotencyKey);
+});
+
+test('idempotence : colonne absente, la commande passe quand même', async () => {
+    const inserts: any[] = [];
+    const orders: any = {
+        insert(payload: unknown) { inserts.push(payload); return this; },
+        select() { return this; },
+        single: async () => inserts.length === 1
+            ? { data: null, error: { code: 'PGRST204', message: "Could not find the 'idempotency_key' column" } }
+            : { data: { ...(inserts[1] as any), created_at: new Date().toISOString(), user_id: 'client' }, error: null },
+    };
+    const db = loadDb({ from: (table: string) => table === 'orders' ? orders : { insert: async () => ({ error: null }) } });
+    const order = await db.createOrder('owner', 'client', [], 1000, 'Cocody', new Date(), 'cle-panier');
+    // Sans la migration, la vente ne doit pas être perdue — seulement non protégée.
+    assert.equal(inserts.length, 2);
+    assert.equal(inserts[0].idempotency_key, 'cle-panier');
+    assert.equal(inserts[1].idempotency_key, undefined);
+    assert.ok(order);
+});
+
 test('session : effacement du panier envoyé comme null explicite à la base', async () => {
     let saved: any;
     const query = { select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: {
@@ -240,6 +316,8 @@ function load(file: string, deps: Record<string, unknown> = {}, extra: Record<st
         process: { env: {} }, require(id: string) {
             if (Object.prototype.hasOwnProperty.call(deps, id)) return deps[id];
             if (id === './simulationContext') return simulation;
+            // Natif pur : ni réseau, ni environnement, ni fichier.
+            if (id === 'crypto' || id === 'node:crypto') return require('node:crypto');
             throw new Error(`Dépendance non autorisée : ${id}`);
         }, ...extra
     }, { filename, timeout: 2000 });
