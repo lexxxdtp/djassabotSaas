@@ -554,3 +554,57 @@ test('statuts : un statut inconnu revient à traiter, il n\'est pas annulé', ()
     assert.equal(metrics.toUIStatus('CANCELLED'), 'CANCELLED');
     assert.equal(metrics.toUIStatus('DELIVERED'), 'DELIVERED');
 });
+
+// --- Fiche livreur : ce que le livreur doit savoir, et rien d'autre ---
+
+const slipOrder = (over: Record<string, unknown> = {}) => ({
+    id: 'ORD-1757600000000-ab12c', userId: '2250777225277@s.whatsapp.net', total: 13000, status: 'PAID',
+    address: 'Cocody Angré, près de la pharmacie',
+    items: [
+        { productId: 'p1', productName: 'Robe bazin', quantity: 2, price: 6000, selectedVariations: [{ name: 'Taille', value: 'M' }] },
+        { productId: '_delivery', productName: 'Livraison', quantity: 1, price: 1000 },
+    ],
+    ...over,
+});
+
+test('fiche livreur : montre le reste à encaisser, pas l’identifiant WhatsApp brut', () => {
+    const slip = load('frontend/src/utils/deliverySlip.ts');
+    const paid = slip.buildDeliverySlip(slipOrder(), { merchantPhone: '+2250700000000', alreadyPaid: true });
+    assert.match(paid, /DÉJÀ PAYÉ/);
+    assert.doesNotMatch(paid, /ne rien encaisser[\s\S]*À ENCAISSER/);
+
+    const toCollect = slip.buildDeliverySlip(slipOrder({ status: 'PENDING' }), { alreadyPaid: false });
+    // Sans cette ligne, le livreur ne sait pas s'il doit réclamer de l'argent.
+    assert.match(toCollect, /À ENCAISSER : 13\s?000 FCFA/);
+
+    // L'identifiant WhatsApp brut n'est pas un numéro utilisable.
+    assert.doesNotMatch(paid, /@s\.whatsapp\.net/);
+    assert.match(paid, /\+2250777225277/);
+});
+
+test('fiche livreur : articles et livraison séparés, frais nuls explicites', () => {
+    const slip = load('frontend/src/utils/deliverySlip.ts');
+    const withFee = slip.buildDeliverySlip(slipOrder(), { alreadyPaid: true });
+    assert.match(withFee, /Articles : 12\s?000 FCFA/);
+    assert.match(withFee, /Livraison : 1\s?000 FCFA/);
+
+    const noFee = slip.buildDeliverySlip(slipOrder({ total: 12000, items: [slipOrder().items[0]] }), { alreadyPaid: true });
+    // « Rien d'écrit » se lirait comme « à réclamer ».
+    assert.match(noFee, /Livraison : offerte/);
+});
+
+test('fiche livreur : ce qui manque est dit, jamais deviné', () => {
+    const slip = load('frontend/src/utils/deliverySlip.ts');
+    const incomplete = slip.buildDeliverySlip(slipOrder({ address: '   ', userId: '99999@lid' }), { alreadyPaid: false });
+    assert.match(incomplete, /ADRESSE MANQUANTE/);
+    assert.match(incomplete, /À compléter : adresse, contact client/);
+});
+
+test('fiche livreur : aucune marge ni prix minimum ne fuit vers le livreur', () => {
+    const slip = load('frontend/src/utils/deliverySlip.ts');
+    const text = slip.buildDeliverySlip(slipOrder(), { merchantPhone: '+2250700000000', alreadyPaid: true });
+    // La fiche part à un tiers : elle ne doit porter que le nécessaire.
+    for (const leak of [/minPrice/i, /marge/i, /prix minimum/i, /plancher/i]) {
+        assert.doesNotMatch(text, leak);
+    }
+});
