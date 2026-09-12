@@ -629,3 +629,26 @@ test('paiement : les adresses bouche-trou sont refusées comme destinataire du r
     assert.equal(check('pas-une-adresse'), false);
     assert.equal(check('  Alex@Gmail.com '), true);
 });
+
+test('plus de trois articles : le dépassement est annoncé, pas jeté', async () => {
+    const messages: string[] = [];
+    const warnings: unknown[][] = [];
+    const added: unknown[] = [];
+    const catalogue = ['a', 'b', 'c', 'd', 'e'].map(id => ({ id, name: `Article ${id}`, price: 1000 }));
+    const tags = catalogue.map(p => `[ADD_TO_CART: ${p.id} | 1 | 1000]`).join(' ');
+    const service = load('backend/src/services/whatsapp/flowHandler.ts', {
+        '../dbService': { db: { getSettings: async () => ({ negotiationEnabled: false }), getProducts: async () => catalogue,
+            logActivity: async (...args: unknown[]) => { warnings.push(args); } } },
+        '../sessionService': { getSession: async () => ({ state: 'IDLE', history: [] }), addToHistory: async () => {},
+            addItemToSessionCart: async (_t: string, _j: string, item: unknown) => { added.push(item); return { items: added, total: 0 }; },
+            updateSession: async () => {} },
+        '../aiService': { generateAIResponse: async () => `C'est noté ! ${tags}` },
+        './notificationService': {}, './salesEngine': load('backend/src/services/whatsapp/salesEngine.ts'),
+        '../../utils/logger': { logger: quiet }
+    });
+    await service.handleFlow('owner', 'client', 'je prends tout', { sendMessage: async (_jid: string, m: { text: string }) => { messages.push(m.text); } });
+    // Trois articles entrent au panier, et les deux autres ne disparaissent pas en silence.
+    assert.equal(added.length, 3);
+    assert.ok(messages.some(m => /prochain message/.test(m)));
+    assert.ok(warnings.some(w => w[1] === 'warning' && /au-delà de la limite/.test(String(w[2]))));
+});

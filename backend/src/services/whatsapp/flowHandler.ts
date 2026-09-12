@@ -30,6 +30,9 @@ import { logger } from '../../utils/logger';
  * décrémente le stock atomiquement et intègre les frais de livraison.
  */
 
+/** Plafond d'articles traités par message : garde-fou contre une réponse IA aberrante. */
+const MAX_DEALS_PER_MESSAGE = 3;
+
 /** Envoie un texte au client ET le journalise dans l'historique (Inbox). */
 async function reply(sock: WASocket, tenantId: string, remoteJid: string, text: string) {
     await sock.sendMessage(remoteJid, { text });
@@ -289,7 +292,12 @@ async function answerWithAI(
 
     // --- TRAITEMENT DES DEALS (uniquement en flux IDLE) ---
     if (options.allowDeals && deals.length > 0) {
-        const validations: DealValidation[] = deals.slice(0, 3).map(d => validateDeal(products, d, settings));
+        // Plafond de sécurité contre une IA qui émettrait n'importe quoi. Le
+        // dépassement était jeté en silence : un client qui commandait cinq
+        // articles en recevait trois, sans que personne ne le lui dise.
+        const handledDeals = deals.slice(0, MAX_DEALS_PER_MESSAGE);
+        const droppedDeals = deals.slice(MAX_DEALS_PER_MESSAGE);
+        const validations: DealValidation[] = handledDeals.map(d => validateDeal(products, d, settings));
 
         const accepted = validations.filter((v): v is Extract<DealValidation, { ok: true }> => v.ok);
         const rejected = validations.filter((v): v is Exclude<DealValidation, { ok: true }> => !v.ok);
@@ -317,6 +325,17 @@ async function answerWithAI(
         if (corrections.length > 0) {
             await reply(sock, tenantId, remoteJid, corrections.join('\n\n'));
             return;
+        }
+
+        // Le dépassement est annoncé, jamais avalé.
+        if (droppedDeals.length > 0) {
+            await reply(sock, tenantId, remoteJid,
+                `J'ai noté les ${MAX_DEALS_PER_MESSAGE} premiers articles 👍 Pour le reste, envoyez-les dans un prochain message et je les ajoute au panier.`);
+            if (!options.dryRun) {
+                await db.logActivity(tenantId, 'warning',
+                    `${droppedDeals.length} article(s) demandés au-delà de la limite par message — le client a été invité à les renvoyer`,
+                    { remoteJid, dropped: droppedDeals.length });
+            }
         }
 
         // Produits à variantes : la machine à état n'en traite qu'UN à la fois.
