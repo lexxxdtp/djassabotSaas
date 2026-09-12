@@ -214,3 +214,23 @@ test('lire le statut ne rallume pas un bot volontairement éteint', async () => 
     // Le vendeur s'est déconnecté : consulter son tableau de bord ne le reconnecte pas.
     assert.deepEqual(opened, ['tenant']);
 });
+
+// --- Sans clé IA en production : se taire plutôt qu'inventer ---
+
+test('production sans clé IA : aucune réponse factice n’est envoyée au client', async () => {
+    const previous = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+        const ai = loadIsolated('../../aiService', {
+            '@google/generative-ai': { GoogleGenerativeAI: class { getGenerativeModel() { return {}; } } },
+            '../utils/logger': { logger: { info() {}, warn() {}, error() {} } },
+        });
+        // Sans ce garde-fou, le client recevait « [SIMULATED AI] Je suis en mode
+        // test » ou une description de robe rouge pour n'importe quelle photo.
+        await assert.rejects(() => ai.generateAIResponse('bonjour', {}), /Clé Gemini absente/);
+        await assert.rejects(() => ai.analyzeImage(Buffer.from(''), 'photo'), /Clé Gemini absente/);
+    } finally {
+        if (previous === undefined) delete process.env.NODE_ENV;
+        else process.env.NODE_ENV = previous;
+    }
+});

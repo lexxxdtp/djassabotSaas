@@ -89,12 +89,12 @@ Cibles : `sessionManager.ts`, gestion Baileys, `messageHandler.ts`, relances, co
 
 ### 6. Vente conversationnelle et choix IA
 
-- [ ] Actions structurées plutôt que balises libres ; véritables instructions système côté fournisseur ; désactiver les réponses factices de secours en production sans clé.
+- [~] **Réponses factices coupées en production le 12 septembre ; le reste est ouvert.** Sans clé Gemini valide, le bot envoyait à de vrais clients « [SIMULATED AI] Je suis en mode test », « (Mock: Price Inquiry) », et surtout une description de robe rouge pour n'importe quelle photo reçue — de quoi faire acheter autre chose que ce qui a été montré. En production, l'absence de clé lève désormais : le messageHandler répond qu'il y a un souci technique, ce qui est la vérité. Les simulacres restent disponibles hors production, où ils servent. Restent ouverts : actions structurées plutôt que balises libres, et vraies instructions système côté fournisseur.
 - [ ] Politique de négociation unique : plancher, concessions, offre déjà faite mémorisée, prix par lot/unité, frais séparés. Champ vendeur « dernier prix accepté » accessible.
 - [ ] Changer article/quantité/variante, retirer une ligne et revenir en arrière sans perdre le panier ; confirmation explicite du total livraison comprise avant validation.
 - [ ] Variantes : éviter S correspondant à XS ou L à XL, contrôler supplément/plancher, stock multidimensionnel, images de variantes ; ne pas supprimer silencieusement les achats au-delà de trois lignes.
 - [ ] Produit depuis photo/message cité : contexte fiable, pas simple proximité de nom. Évaluer les clarifications supplémentaires du nouveau matcher.
-- [ ] Ne pas réinjecter d'exemples fictifs quand les exemples enregistrés sont vides ; ne pas sauvegarder d'adresse/téléphone par défaut après échec de chargement ; retirer les données privées inutiles du prompt.
+- [~] **Faux nom de boutique retiré le 12 septembre.** Les valeurs par défaut d'adresse et de téléphone étaient déjà vides, et les exemples d'entraînement ne sont pas réinjectés. Restait `storeName`, qui retombait sur « Ma Boutique Mode » et `businessType` sur « Mode & Vêtements » : le bot annonçait donc à de vrais clients un nom de boutique et une activité inventés. Les deux sont désormais vides, et le prompt dit explicitement à l'IA de ne pas en inventer. Reste ouvert : le tri des données privées inutiles dans le prompt.
 - [ ] **OpenRouter est une passerelle, pas un modèle.** Comparer fournisseurs/modèles avec conversations ivoiriennes anonymisées et autorisées : exactitude commerciale, coût texte/images/vocaux, latence, limites, confidentialité, secours. Aucun changement de fournisseur décidé, aucune promesse que ce sera meilleur.
 - [ ] Tester négociation et confiance avec commerçants locaux ; pas de ton « ivoirien » caricatural ou de méthode unique présumée.
 

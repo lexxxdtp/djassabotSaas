@@ -161,8 +161,10 @@ const DEFAULT_SETTINGS: Settings = {
     negotiationFlexibility: 5,
     voiceEnabled: true,
     systemInstructions: '',
-    storeName: 'Ma Boutique Mode',
-    businessType: 'Mode & Vêtements',
+    // Ni nom ni activité inventés : le bot les annoncerait aux clients comme
+    // étant ceux du vendeur. Une boutique sans nom se décrit sans nom.
+    storeName: '',
+    businessType: '',
     // Jamais de fausses valeurs par défaut : le bot les donnerait aux clients.
     address: '',
     locationUrl: '',
@@ -260,7 +262,7 @@ const mapDbSettingsToSettings = (data: any): Settings => {
         negotiationFlexibility: data.negotiation_flexibility ?? DEFAULT_SETTINGS.negotiationFlexibility,
         voiceEnabled: data.voice_enabled ?? DEFAULT_SETTINGS.voiceEnabled,
         systemInstructions: data.system_instructions || '',
-        storeName: data.store_name || DEFAULT_SETTINGS.storeName,
+        storeName: data.store_name || '',
         businessType: data.business_type || '',
         address: data.address || DEFAULT_SETTINGS.address,
         locationUrl: data.location_url || '',
