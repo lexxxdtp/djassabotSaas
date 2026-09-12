@@ -243,6 +243,25 @@ export async function handleFlow(
 // APPEL IA + TRAITEMENT DES TAGS
 // ---------------------------------------------------------------------------
 
+/**
+ * Le vendeur a-t-il coupé le bot, ou repris cette conversation, pendant que
+ * l'IA réfléchissait ? Relit l'état plutôt que de se fier à celui d'avant
+ * l'attente. En cas d'échec de lecture, on se TAIT : mieux vaut un silence
+ * qu'une réponse envoyée par-dessus le vendeur.
+ */
+async function botWasPausedDuringThinking(tenantId: string, remoteJid: string): Promise<boolean> {
+    try {
+        const [freshSettings, freshSession] = await Promise.all([
+            db.getSettings(tenantId),
+            getSession(tenantId, remoteJid),
+        ]);
+        return freshSettings.botActive === false || freshSession.autopilotEnabled === false;
+    } catch (e) {
+        logger.error({ err: e, tenantId, remoteJid }, '[FlowHandler] Recontrôle de la pause impossible');
+        return true;
+    }
+}
+
 interface AnswerOptions extends FlowOptions {
     stateNote?: string;
     allowDeals: boolean;
@@ -276,6 +295,15 @@ async function answerWithAI(
         history,
         stateNote: options.stateNote,
     });
+
+    // L'appel IA dure plusieurs secondes. Le vendeur a pu, pendant ce temps,
+    // couper son bot ou reprendre la main sur cette conversation depuis l'Inbox.
+    // La pause était contrôlée AVANT l'attente seulement : le bot parlait donc
+    // par-dessus le vendeur, quelques secondes après qu'il ait pris le relais.
+    if (!options.dryRun && await botWasPausedDuringThinking(tenantId, remoteJid)) {
+        logger.info({ tenantId, remoteJid }, '[FlowHandler] Bot mis en pause pendant la réflexion — réponse abandonnée');
+        return;
+    }
 
     const { cleaned, deals, imageUrls, invalidDealCount } = parseAIResponse(response);
 

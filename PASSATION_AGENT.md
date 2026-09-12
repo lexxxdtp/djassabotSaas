@@ -81,7 +81,7 @@ Cibles : Orders, `notificationService.ts`, types et données commande. Commencer
 - [x] **Lecture du statut passive — fait le 11 septembre.** `GET /whatsapp/status` ouvrait un socket Baileys à chaque appel pour une boutique déconnectée, soit toutes les 15 secondes depuis le tableau de bord : c'est précisément ce qui fait bannir un numéro. La route appelle maintenant `ensureSession`, qui n'ouvre que s'il n'existe aucune session et que le vendeur ne s'est pas déconnecté volontairement. Le rebranchement passe par la demande de code de jumelage, qui est explicite. Reste ouverte : la reprise au démarrage des sessions déconnectées disposant d'identifiants.
 - [~] **Déduplication en mémoire faite le 11 septembre ; persistance toujours ouverte.** Un message relivré (reconnexion, resynchronisation, socket remplacé) ne déclenche plus une deuxième réponse : les identifiants vus sont retenus 10 minutes, bornés à 5 000 entrées. Limite assumée : cette mémoire est celle du processus, un redémarrage l'efface. Restent ouverts : la déduplication persistante, la politique de retard après panne et l'arrêt propre.
 - [~] **`voiceEnabled` et durée des vocaux faits le 12 septembre.** Le réglage était enregistré, mappé, sauvegardé… et jamais lu : un vendeur qui désactivait les messages vocaux voyait quand même chaque note téléchargée puis transcrite par Gemini, donc facturée. Il est respecté, et un vocal de plus de trois minutes n'est plus transcrit. Dans les deux cas le client reçoit une demande d'écrire en texte, au lieu d'un silence. Restent ouverts : limites de taille des images, timeouts, messages cités, statuts, localisation, contacts et identifiants `@lid`.
-- [ ] Recontrôler pause avant envoi après attente IA ; coordonner réponses manuelles, bot et relances ; consentement/opposition aux relances. Les délais ne garantissent pas l'absence de bannissement.
+- [~] **Recontrôle de la pause fait le 12 septembre ; la coordination reste ouverte.** L'appel IA dure plusieurs secondes et la pause n'était vérifiée qu'AVANT cette attente : un vendeur qui coupait son bot ou reprenait la conversation depuis l'Inbox voyait le bot répondre par-dessus lui deux secondes plus tard. L'état global et l'état de la conversation sont relus juste avant l'envoi, et une lecture impossible fait se taire le bot plutôt que parler à l'aveugle. Restent ouverts : coordination entre réponses manuelles, bot et relances ; consentement et opposition aux relances.
 - [~] **Sauvegarde et consommation du jeton vérifiées le 12 septembre ; inscription partielle toujours ouverte.** `updateUser` rend `null` en cas d'échec au lieu de lever, et trois routes ignoraient ce retour. À la réinitialisation : mot de passe non enregistré, lien pourtant consommé, réponse « Mot de passe réinitialisé » — l'utilisateur se retrouvait enfermé dehors, ancien mot de passe oublié et lien brûlé. Même chose aux vérifications e-mail et téléphone, qui annonçaient « vérifié » sans que le drapeau soit écrit, bloquant l'utilisateur au contrôle suivant, code déjà consommé. Les trois vérifient désormais l'écriture avant de répondre, et le jeton n'est consommé qu'après confirmation. Reste ouverte : l'inscription partielle récupérable et idempotente.
 - [ ] Examiner parcours de vérification inactifs et contournements de test ; recette réelle Firebase/Resend quand possible, sans annoncer l'envoi s'il n'existe pas.
 
@@ -135,12 +135,12 @@ Nuance sur `audit/offline-probes.cjs` : ses dix sondes ont été remplacées par
 
 ## Session du 12 septembre — ce qui a été corrigé, et ce que ça ne prouve pas
 
-Quinze commits sur la branche `claude/dois-commiter-3h9adk`. Les cases concernées
+Vingt-deux commits sur la branche `claude/dois-commiter-3h9adk`. Les cases concernées
 ci-dessus sont annotées individuellement : `[x]` pour fait, `[~]` pour
 partiellement fait avec le reste explicité. Rien n'a été déployé, aucune
 migration n'a été appliquée, aucun accès distant n'a eu lieu.
 
-**Vérifications à la fin de la session** : 114 tests backend (contre 83), TypeScript
+**Vérifications à la fin de la session** : 121 tests backend (contre 83), TypeScript
 backend, ESLint frontend sans erreur pour la première fois, build frontend,
 `git diff --check`. Alertes de dépendances : backend 25 → 9 (aucune critique ni
 haute), frontend 18 → 0.
@@ -170,6 +170,17 @@ en mode permissif.
 `Orders.tsx` utilise `apiClient` et que « les 14 autres pages utilisent `fetch`
 direct ». Vérifié le 12 septembre : plus aucun `fetch` direct dans
 `frontend/src`, la migration est faite.
+
+**Décision produit à trancher avec Alex, volontairement non codée** : la priorité 3
+demande de « garder la consultation des commandes existantes à expiration tout en
+suspendant l'automatisation ». L'intention est claire mais l'implémentation ne
+l'est pas : aujourd'hui `checkSubscription` renvoie 402 sur toutes les routes
+protégées, et côté frontend un seul 402 sur n'importe quel appel fait basculer
+`ProtectedRoute` vers l'écran de renouvellement, qui bloque tout le tableau de
+bord. Rendre les commandes consultables demande donc de définir un vrai mode
+lecture seule : quels écrans restent atteignables, ce qui est désactivé, comment
+le renouvellement est proposé. C'est dessiner un paywall, pas corriger un bug —
+à valider avant de coder.
 
 **Ce qui reste le plus gros trou de la priorité 1** : la transaction durable
 commande + stock + état n'existe toujours pas. La clé d'idempotence empêche le

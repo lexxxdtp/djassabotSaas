@@ -652,3 +652,28 @@ test('plus de trois articles : le dépassement est annoncé, pas jeté', async (
     assert.ok(messages.some(m => /prochain message/.test(m)));
     assert.ok(warnings.some(w => w[1] === 'warning' && /au-delà de la limite/.test(String(w[2]))));
 });
+
+for (const pause of ['global', 'conversation', 'lecture-impossible']) {
+    test(`pause pendant la réflexion IA (${pause}) : la réponse est abandonnée`, async () => {
+        const messages: string[] = [];
+        const service = load('backend/src/services/whatsapp/flowHandler.ts', {
+            '../dbService': { db: {
+                getSettings: async () => pause === 'lecture-impossible'
+                    ? (() => { throw new Error('base injoignable'); })()
+                    : { negotiationEnabled: false, botActive: pause !== 'global' },
+                getProducts: async () => [], logActivity: async () => {} } },
+            '../sessionService': {
+                // Au premier appel le bot a le droit de parler ; au recontrôle, plus.
+                getSession: async () => ({ state: 'IDLE', history: [], autopilotEnabled: pause !== 'conversation' }),
+                addToHistory: async () => {}, addItemToSessionCart: async () => {}, updateSession: async () => {} },
+            '../aiService': { generateAIResponse: async () => 'Bonjour ! Voici nos robes.' },
+            './notificationService': {}, './salesEngine': load('backend/src/services/whatsapp/salesEngine.ts'),
+            '../../utils/logger': { logger: quiet }
+        });
+        await service.handleFlow('owner', 'client', 'bonjour',
+            { sendMessage: async (_jid: string, m: { text: string }) => { messages.push(m.text); } },
+            {}, { settings: { negotiationEnabled: false }, products: [] });
+        // Le bot ne doit pas parler par-dessus le vendeur qui vient de reprendre.
+        assert.deepEqual(messages, []);
+    });
+}
