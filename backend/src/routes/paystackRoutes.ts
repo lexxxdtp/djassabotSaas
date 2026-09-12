@@ -137,6 +137,9 @@ router.get('/verify/:reference', authenticateTenant, async (req, res) => {
     try {
         const reference = req.params.reference as string;
         const result = await paystackService.verifyTransaction(reference);
+        if (result.data && result.data.metadata?.tenantId !== req.tenantId) {
+            return res.status(404).json({ error: 'Paiement introuvable' });
+        }
         res.json(result);
     } catch (error: any) {
         console.error('[API] Verify transaction error:', error);
@@ -249,8 +252,25 @@ router.post('/setup-vendor', authenticateTenant, async (req, res) => {
  */
 router.post('/create-payment-link', authenticateTenant, async (req, res) => {
     try {
-        const { orderId, amount, customerEmail, customerPhone, orderSummary } = req.body;
+        const { orderId, customerEmail } = req.body;
         const tenantId = req.tenantId!;
+
+        if (typeof orderId !== 'string' || !orderId.trim()) {
+            return res.status(400).json({ error: 'Commande requise' });
+        }
+
+        // Le navigateur ne décide ni du prix, ni du client, ni du contenu de la
+        // commande. On recharge toujours la commande du tenant authentifié.
+        const order = await db.getOrderById(tenantId, orderId);
+        if (!order) {
+            return res.status(404).json({ error: 'Commande introuvable' });
+        }
+        if (['PAID', 'DELIVERED', 'CANCELLED'].includes(order.status)) {
+            return res.status(409).json({ error: 'Cette commande ne peut plus recevoir de nouveau lien de paiement.' });
+        }
+        if (!Number.isSafeInteger(order.total) || order.total <= 0) {
+            return res.status(422).json({ error: 'Le montant enregistré pour cette commande est invalide.' });
+        }
 
         // Get tenant's subaccount code
         const tenant = await db.getTenantById(tenantId);
@@ -268,15 +288,18 @@ router.post('/create-payment-link', authenticateTenant, async (req, res) => {
 
         const result = await paystackService.createOrderPaymentLink(
             tenantId,
-            orderId,
-            amount,
+            order.id,
+            order.total,
             customerEmail,
-            customerPhone,
+            order.customerPhone || order.userId.split('@')[0],
             subaccountCode,
-            orderSummary
+            order.items
+                .filter(item => item.productId !== '_delivery')
+                .map(item => `${item.quantity} × ${item.productName}`)
+                .join(', ')
         );
 
-        res.json(result);
+        res.status(result.success ? 200 : 400).json(result);
     } catch (error: any) {
         console.error('[API] Create payment link error:', error);
         res.status(500).json({ error: 'Impossible de générer le lien de paiement pour le moment.' });

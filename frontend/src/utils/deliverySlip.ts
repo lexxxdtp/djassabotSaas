@@ -82,11 +82,19 @@ export function buildDeliverySlip(order: SlipOrder, context: SlipContext): strin
 
     lines.push(`Articles : ${fcfa(itemsTotal)}`);
     // Frais nuls explicites : « rien d'écrit » se lit comme « à réclamer ».
-    lines.push(deliveryLine ? `Livraison : ${fcfa(deliveryFee)}` : 'Livraison : offerte');
-    lines.push(`Total : ${fcfa(order.total)}`);
+    const deliveryLabel = deliveryLine
+        ? (deliveryFee > 0 ? fcfa(deliveryFee) : deliveryLine.productName.replace(/^Livraison\s*/i, '').trim() || fcfa(0))
+        : 'À CONFIRMER';
+    lines.push(`Livraison : ${deliveryLabel}`);
+    lines.push(`${deliveryLine ? 'Total' : 'Sous-total provisoire'} : ${fcfa(order.total)}`);
     lines.push('');
 
-    if (context.alreadyPaid) {
+    if (!deliveryLine && context.alreadyPaid) {
+        lines.push('✅ ARTICLES DÉJÀ PAYÉS');
+        lines.push('⛔ FRAIS DE LIVRAISON : À CONFIRMER AVEC LE VENDEUR');
+    } else if (!deliveryLine) {
+        lines.push('⛔ MONTANT À ENCAISSER : À CONFIRMER AVEC LE VENDEUR');
+    } else if (context.alreadyPaid) {
         lines.push(`✅ DÉJÀ PAYÉ — ne rien encaisser`);
     } else {
         lines.push(`💵 À ENCAISSER : ${fcfa(order.total)}`);

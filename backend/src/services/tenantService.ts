@@ -473,6 +473,7 @@ export const createSubscription = async (data: {
     plan: 'starter' | 'pro' | 'business';
     status?: 'active' | 'trial' | 'expired' | 'cancelled';
     expiresAt: Date;
+    paymentReference?: string;
 }): Promise<Subscription> => {
     const subscription: Subscription = {
         id: uuidv4(),
@@ -492,7 +493,8 @@ export const createSubscription = async (data: {
             status: subscription.status,
             started_at: subscription.startedAt,
             expires_at: subscription.expiresAt,
-            auto_renew: subscription.autoRenew
+            auto_renew: subscription.autoRenew,
+            paystack_reference: data.paymentReference || null
         };
 
         const { data: inserted, error } = await supabase
@@ -500,6 +502,25 @@ export const createSubscription = async (data: {
             .insert(dbSub)
             .select()
             .single();
+
+        if (error?.code === '23505' && data.paymentReference) {
+            const { data: existing, error: readError } = await supabase
+                .from('subscriptions')
+                .select('*')
+                .eq('paystack_reference', data.paymentReference)
+                .eq('tenant_id', data.tenantId)
+                .single();
+            if (readError || !existing) throw new Error(`Database Error (Sub): ${readError?.message || error.message}`);
+            return {
+                id: existing.id,
+                tenantId: existing.tenant_id,
+                plan: existing.plan,
+                status: existing.status,
+                startedAt: new Date(existing.started_at),
+                expiresAt: new Date(existing.expires_at),
+                autoRenew: existing.auto_renew
+            };
+        }
 
         if (error) {
             logger.error({ err: error }, '[createSubscription] Supabase Error');

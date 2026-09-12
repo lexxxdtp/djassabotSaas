@@ -111,13 +111,17 @@ test('une conversation en pause ne déclenche ni validation de reçu ni réponse
 // --- Webhook Paystack : la métadonnée ne décide pas de ce que le client reçoit ---
 
 function loadPaystack(overrides: Record<string, unknown>) {
-    const calls: { subscriptions: unknown[]; statuses: unknown[]; logs: unknown[][] } = { subscriptions: [], statuses: [], logs: [] };
+    const calls: { subscriptions: unknown[]; statuses: unknown[]; logs: unknown[][]; completed: string[]; failed: string[] } = {
+        subscriptions: [], statuses: [], logs: [], completed: [], failed: [],
+    };
     const service = loadIsolated('../../paystackService', {
         axios: { create: () => ({ post: async () => { throw new Error('appel réseau interdit en test'); } }) },
         './dbService': { db: {
-            isPaystackEventProcessed: async () => false,
+            claimPaystackEvent: async () => 'claimed',
+            completePaystackEvent: async (_tenantId: string, reference: string) => { calls.completed.push(reference); },
+            failPaystackEvent: async (_tenantId: string, reference: string) => { calls.failed.push(reference); },
             createSubscription: async (value: unknown) => { calls.subscriptions.push(value); },
-            updateOrderStatus: async (...args: unknown[]) => { calls.statuses.push(args); },
+            updateOrderStatus: async (...args: unknown[]) => { calls.statuses.push(args); return { id: 'ORD-1', status: 'PAID' }; },
             logActivity: async (...args: unknown[]) => { calls.logs.push(args); },
             getOrderById: async () => ({ id: 'ORD-1', total: 5000 }),
             ...overrides,
@@ -137,12 +141,20 @@ test('paystack : un montant insuffisant n’active aucun abonnement', async () =
 });
 
 test('paystack : un événement déjà traité ne prolonge pas une deuxième fois', async () => {
-    const { service, calls } = loadPaystack({ isPaystackEventProcessed: async () => true });
+    const { service, calls } = loadPaystack({ claimPaystackEvent: async () => 'completed' });
     await service.handlePaystackWebhook('charge.success', {
         reference: 'ref-1', currency: 'XOF', amount: 15000 * 100,
         metadata: { type: 'subscription', tenantId: 'tenant', plan: 'business' },
     });
     assert.equal(calls.subscriptions.length, 0);
+});
+
+test('paystack : un événement traité simultanément n’est jamais acquitté trop tôt', async () => {
+    const { service } = loadPaystack({ claimPaystackEvent: async () => 'processing' });
+    await assert.rejects(() => service.handlePaystackWebhook('charge.success', {
+        reference: 'ref-course', currency: 'XOF', amount: 15000 * 100,
+        metadata: { type: 'subscription', tenantId: 'tenant', plan: 'business' },
+    }), /en cours de traitement/);
 });
 
 test('paystack : une activation ratée remonte au lieu d’être acquittée', async () => {
@@ -162,6 +174,8 @@ test('paystack : un montant exact active bien l’abonnement', async () => {
     });
     assert.equal(calls.subscriptions.length, 1);
     assert.equal((calls.subscriptions[0] as { plan: string }).plan, 'business');
+    assert.equal((calls.subscriptions[0] as { paymentReference: string }).paymentReference, 'ref-1');
+    assert.deepEqual(calls.completed, ['ref-1']);
 });
 
 test('paystack : un sous-paiement ne marque pas la commande payée', async () => {
@@ -172,6 +186,17 @@ test('paystack : un sous-paiement ne marque pas la commande payée', async () =>
     });
     assert.equal(calls.statuses.length, 0);
     assert.equal(calls.logs[0][1], 'warning');
+    assert.deepEqual(calls.completed, ['ref-2']);
+});
+
+test('paystack : une commande non mise à jour fait échouer le webhook', async () => {
+    const { service, calls } = loadPaystack({ updateOrderStatus: async () => null });
+    await assert.rejects(() => service.handlePaystackWebhook('charge.success', {
+        reference: 'ref-order-fail', currency: 'XOF', amount: 5000 * 100,
+        metadata: { type: 'order', tenantId: 'tenant', orderId: 'ORD-1' },
+    }), /non marquée payée/);
+    assert.deepEqual(calls.completed, []);
+    assert.deepEqual(calls.failed, ['ref-order-fail']);
 });
 
 // --- Fiabilité WhatsApp : ne pas ouvrir de socket en trop, ni répondre deux fois ---

@@ -465,7 +465,9 @@ async function finalizeOrder(
 
     // 1. Livraison calculée à partir de l'adresse (zones du vendeur)
     const quote = computeDelivery(itemsTotal, address, settings);
-    const orderItems: CartItem[] = quote.fee > 0 ? [...productItems, buildDeliveryItem(quote)] : [...productItems];
+    // Une ligne à 0 est nécessaire pour distinguer une livraison réellement
+    // offerte d'une zone inconnue dont le tarif doit encore être confirmé.
+    const orderItems: CartItem[] = quote.known ? [...productItems, buildDeliveryItem(quote)] : [...productItems];
     const grandTotal = itemsTotal + quote.fee;
 
     // MODE SIMULATION : même confirmation, mais rien n'est écrit (ni commande, ni stock)

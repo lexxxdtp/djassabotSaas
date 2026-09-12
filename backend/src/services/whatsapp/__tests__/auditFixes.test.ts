@@ -588,9 +588,53 @@ test('fiche livreur : articles et livraison séparés, frais nuls explicites', (
     assert.match(withFee, /Articles : 12\s?000 FCFA/);
     assert.match(withFee, /Livraison : 1\s?000 FCFA/);
 
-    const noFee = slip.buildDeliverySlip(slipOrder({ total: 12000, items: [slipOrder().items[0]] }), { alreadyPaid: true });
+    const noFee = slip.buildDeliverySlip(slipOrder({
+        total: 12000,
+        items: [slipOrder().items[0], { productId: '_delivery', productName: 'Livraison offerte', quantity: 1, price: 0 }],
+    }), { alreadyPaid: true });
     // « Rien d'écrit » se lirait comme « à réclamer ».
     assert.match(noFee, /Livraison : offerte/);
+});
+
+test('fiche livreur : une zone inconnue n’est jamais présentée comme offerte', () => {
+    const slip = load('frontend/src/utils/deliverySlip.ts');
+    const unknown = slip.buildDeliverySlip(
+        slipOrder({ total: 12000, status: 'PENDING', items: [slipOrder().items[0]] }),
+        { alreadyPaid: false },
+    );
+    assert.match(unknown, /Livraison : À CONFIRMER/);
+    assert.match(unknown, /Sous-total provisoire/);
+    assert.match(unknown, /MONTANT À ENCAISSER : À CONFIRMER/);
+    assert.doesNotMatch(unknown, /Livraison : offerte/);
+    assert.doesNotMatch(unknown, /À ENCAISSER : 12/);
+});
+
+test('création lien Paystack : montant, téléphone et résumé viennent de la commande', () => {
+    const source = fs.readFileSync(path.join(root, 'backend/src/routes/paystackRoutes.ts'), 'utf8');
+    const start = source.indexOf("router.post('/create-payment-link'");
+    const end = source.indexOf('// ============================================\n// WEBHOOK ROUTE', start);
+    const route = source.slice(start, end);
+    assert.match(route, /db\.getOrderById\(tenantId, orderId\)/);
+    assert.match(route, /order\.total/);
+    assert.match(route, /order\.customerPhone \|\| order\.userId/);
+    assert.doesNotMatch(route, /const \{[^}]*amount/);
+    assert.doesNotMatch(route, /const \{[^}]*customerPhone/);
+    assert.doesNotMatch(route, /const \{[^}]*orderSummary/);
+});
+
+test('finalisation : une livraison connue à zéro reste identifiable dans la commande', () => {
+    const source = fs.readFileSync(path.join(root, 'backend/src/services/whatsapp/flowHandler.ts'), 'utf8');
+    assert.match(source, /const orderItems: CartItem\[\] = quote\.known\s*\? \[\.\.\.productItems, buildDeliveryItem\(quote\)\]/);
+    assert.doesNotMatch(source, /const orderItems: CartItem\[\] = quote\.fee > 0/);
+});
+
+test('vérification Paystack : une référence d’une autre boutique reste invisible', () => {
+    const source = fs.readFileSync(path.join(root, 'backend/src/routes/paystackRoutes.ts'), 'utf8');
+    const start = source.indexOf("router.get('/verify/:reference'");
+    const end = source.indexOf('// ============================================\n// VENDOR SUBACCOUNT ROUTES', start);
+    const route = source.slice(start, end);
+    assert.match(route, /result\.data\.metadata\?\.tenantId !== req\.tenantId/);
+    assert.doesNotMatch(route, /result\.success && result\.data/);
 });
 
 test('fiche livreur : ce qui manque est dit, jamais deviné', () => {

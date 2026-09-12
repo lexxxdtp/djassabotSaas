@@ -977,9 +977,49 @@ export const db = {
     logActivity: async (tenantId: string, type: 'info' | 'sale' | 'warning' | 'action', message: string, metadata: any = {}) => {
         if (isSupabaseEnabled && supabase) {
             try {
-                await supabase.from('activity_logs').insert([{ tenant_id: tenantId, type, message, metadata }]);
+                const { error } = await supabase.from('activity_logs').insert([{ tenant_id: tenantId, type, message, metadata }]);
+                if (error) throw error;
             } catch (e) { console.error('Log Error', e); }
         }
+    },
+
+    claimPaystackEvent: async (
+        tenantId: string,
+        reference: string,
+        eventType: string,
+        payload: Record<string, unknown>,
+    ): Promise<'claimed' | 'processing' | 'completed'> => {
+        if (!isSupabaseEnabled || !supabase) throw new Error('Base de données indisponible pour le webhook Paystack');
+        const { data, error } = await supabase.rpc('claim_paystack_event', {
+            p_tenant_id: tenantId,
+            p_reference: reference,
+            p_event_type: eventType,
+            p_payload: payload,
+        });
+        if (error) throw error;
+        if (!['claimed', 'processing', 'completed'].includes(data)) {
+            throw new Error(`État de webhook Paystack inattendu : ${String(data)}`);
+        }
+        return data as 'claimed' | 'processing' | 'completed';
+    },
+
+    completePaystackEvent: async (tenantId: string, reference: string): Promise<void> => {
+        if (!isSupabaseEnabled || !supabase) throw new Error('Base de données indisponible pour le webhook Paystack');
+        const { error } = await supabase.rpc('complete_paystack_event', {
+            p_tenant_id: tenantId,
+            p_reference: reference,
+        });
+        if (error) throw error;
+    },
+
+    failPaystackEvent: async (tenantId: string, reference: string, reason: string): Promise<void> => {
+        if (!isSupabaseEnabled || !supabase) throw new Error('Base de données indisponible pour le webhook Paystack');
+        const { error } = await supabase.rpc('fail_paystack_event', {
+            p_tenant_id: tenantId,
+            p_reference: reference,
+            p_error: reason,
+        });
+        if (error) throw error;
     },
 
     /** Email du propriétaire d'un tenant (pour les alertes : bot déconnecté, etc.) */
@@ -1023,32 +1063,6 @@ export const db = {
             }
         }
         return false;
-    },
-
-    /**
-     * Cet événement Paystack a-t-il déjà été traité pour cette boutique ?
-     *
-     * Paystack retente la livraison tant qu'il n'a pas reçu un 2xx : sans cette
-     * garde, un même paiement prolongerait l'abonnement plusieurs fois.
-     *
-     * En cas de doute (lecture impossible), on répond « oui » pour ne pas
-     * rejouer un paiement : l'événement sera retenté et la vérification refaite.
-     */
-    isPaystackEventProcessed: async (tenantId: string, reference: string): Promise<boolean> => {
-        if (!isSupabaseEnabled || !supabase || !reference) return false;
-        try {
-            const { data, error } = await supabase
-                .from('activity_logs')
-                .select('id')
-                .eq('tenant_id', tenantId)
-                .eq('metadata->>paystackReference', reference)
-                .limit(1);
-            if (error) throw error;
-            return (data || []).length > 0;
-        } catch (e) {
-            console.error('[DB] isPaystackEventProcessed Error:', e);
-            return true;
-        }
     },
 
     getRecentActivity: async (tenantId: string, limit: number = 20) => {
