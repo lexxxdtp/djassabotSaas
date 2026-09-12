@@ -8,6 +8,7 @@ import { apiClient } from '../utils/apiClient';
 import { toUIStatus, type UIStatus } from '../utils/overviewMetrics';
 import { buildDeliverySlip } from '../utils/deliverySlip';
 import { useAuth } from '../context/AuthContext';
+import { useModalA11y } from '../hooks/useModalA11y';
 import { toast } from 'react-hot-toast';
 
 // Backend keeps the full enum for compatibility, but the UI only exposes 4 states.
@@ -103,12 +104,19 @@ interface OrderModalProps {
 }
 
 const OrderModal = ({ order, onClose, onUpdateStatus, merchantPhone }: OrderModalProps) => {
+    const dialogRef = useModalA11y(onClose);
     const ui = toUIStatus(order.status);
     const meta = UI_META[ui];
 
     return (
         <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+            <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label={`Commande ${order.id.split('-').pop()?.slice(0, 6) || order.id.slice(0, 6)}`}
+                tabIndex={-1}
+                className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
                 {/* Drag Indicator on Mobile */}
                 <div className="w-12 h-1 bg-[#222] rounded-full mx-auto my-3 md:hidden shrink-0"></div>
 
