@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { apiClient } from '../utils/apiClient';
 
-interface User {
+export interface User {
     id: string;
     email?: string;
     phone?: string;
@@ -12,13 +12,16 @@ interface User {
     phoneVerified?: boolean;
 }
 
-interface Tenant {
+export interface Tenant {
     id: string;
     name: string;
     businessType?: string;
     subscription_tier?: string;
     status?: string;
 }
+
+/** Préfixe des caches propres à une boutique, effacés à la déconnexion. */
+export const TENANT_CACHE_PREFIX = 'tenantCache:';
 
 interface AuthContextType {
     user: User | null;
@@ -86,6 +89,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.removeItem('tenant');
         sessionStorage.removeItem('tenant');
         localStorage.removeItem('verificationSkipped');
+
+        // Caches privés de boutique : sans ce nettoyage, le vendeur suivant sur
+        // le même téléphone retrouvait la synthèse d'identité du précédent.
+        for (const key of Object.keys(localStorage)) {
+            if (key.startsWith(TENANT_CACHE_PREFIX)) localStorage.removeItem(key);
+        }
     }, []);
 
     const refreshUser = useCallback(async () => {

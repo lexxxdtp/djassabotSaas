@@ -18,6 +18,27 @@ export interface StockFailure {
     available?: number;
 }
 
+// --- Idempotence des commandes (migration add_order_idempotency_key.sql) ---
+
+/** Colonne absente : PGRST204 côté PostgREST, 42703 côté Postgres. */
+const isMissingIdempotencyColumn = (error: { code?: string; message?: string }): boolean =>
+    error?.code === 'PGRST204' || error?.code === '42703' || /idempotency_key/.test(error?.message || '');
+
+/** Violation de contrainte unique : la commande existe déjà pour cette clé. */
+const isUniqueViolation = (error: { code?: string }): boolean => error?.code === '23505';
+
+/** Commande rendue par createOrder ; `alreadyExisted` signale un doublon évité. */
+export interface CreatedOrder extends Order {
+    alreadyExisted?: boolean;
+}
+
+let idempotencyWarned = false;
+const warnIdempotencyUnavailable = () => {
+    if (idempotencyWarned) return;
+    idempotencyWarned = true;
+    console.warn('[DB] Colonne idempotency_key absente : protection anti-doublon de commande INACTIVE. Appliquer database/migrations/add_order_idempotency_key.sql.');
+};
+
 /**
  * Ajuste le stock d'un article (delta négatif = commande, positif = restock).
  * Essaie la fonction SQL atomique `adjust_stock` (migration
@@ -140,8 +161,10 @@ const DEFAULT_SETTINGS: Settings = {
     negotiationFlexibility: 5,
     voiceEnabled: true,
     systemInstructions: '',
-    storeName: 'Ma Boutique Mode',
-    businessType: 'Mode & Vêtements',
+    // Ni nom ni activité inventés : le bot les annoncerait aux clients comme
+    // étant ceux du vendeur. Une boutique sans nom se décrit sans nom.
+    storeName: '',
+    businessType: '',
     // Jamais de fausses valeurs par défaut : le bot les donnerait aux clients.
     address: '',
     locationUrl: '',
@@ -239,7 +262,7 @@ const mapDbSettingsToSettings = (data: any): Settings => {
         negotiationFlexibility: data.negotiation_flexibility ?? DEFAULT_SETTINGS.negotiationFlexibility,
         voiceEnabled: data.voice_enabled ?? DEFAULT_SETTINGS.voiceEnabled,
         systemInstructions: data.system_instructions || '',
-        storeName: data.store_name || DEFAULT_SETTINGS.storeName,
+        storeName: data.store_name || '',
         businessType: data.business_type || '',
         address: data.address || DEFAULT_SETTINGS.address,
         locationUrl: data.location_url || '',
@@ -325,11 +348,38 @@ export const db = {
     },
 
 
-    createOrder: async (tenantId: string, userId: string, items: CartItem[], total: number, address: string, createdAt: Date = new Date()): Promise<Order> => {
+    /**
+     * Commande déjà enregistrée pour cette clé d'idempotence, sinon null.
+     *
+     * Retourne null (au lieu de lever) quand la colonne n'existe pas encore :
+     * la migration add_order_idempotency_key.sql peut ne pas être appliquée.
+     */
+    findOrderByIdempotencyKey: async (tenantId: string, key: string): Promise<Order | null> => {
+        if (!isSupabaseEnabled || !supabase || !key) return null;
+
+        const { data, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('tenant_id', tenantId)
+            .eq('idempotency_key', key)
+            .maybeSingle();
+
+        if (error) {
+            if (isMissingIdempotencyColumn(error)) {
+                warnIdempotencyUnavailable();
+                return null;
+            }
+            throw new Error(`Database Error (Order lookup): ${error.message}`);
+        }
+        if (!data) return null;
+        return { ...data, userId: data.user_id, createdAt: new Date(data.created_at) } as Order;
+    },
+
+    createOrder: async (tenantId: string, userId: string, items: CartItem[], total: number, address: string, createdAt: Date = new Date(), idempotencyKey?: string): Promise<CreatedOrder> => {
         const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
 
         // Supabase uses snake_case column names
-        const dbOrder = {
+        const dbOrder: Record<string, unknown> = {
             id: orderId,
             tenant_id: tenantId,
             user_id: userId,  // snake_case for DB
@@ -339,14 +389,35 @@ export const db = {
             address,
             created_at: createdAt.toISOString()  // snake_case for DB
         };
+        if (idempotencyKey) dbOrder.idempotency_key = idempotencyKey;
 
         if (isSupabaseEnabled && supabase) {
             try {
-                const { data, error } = await supabase
+                let { data, error } = await supabase
                     .from('orders')
                     .insert(dbOrder)
                     .select()
                     .single();
+
+                // La colonne d'idempotence n'existe pas encore : on crée la commande
+                // sans protection plutôt que de perdre la vente, mais on le dit.
+                if (error && idempotencyKey && isMissingIdempotencyColumn(error)) {
+                    warnIdempotencyUnavailable();
+                    const { idempotency_key, ...withoutKey } = dbOrder;
+                    ({ data, error } = await supabase.from('orders').insert(withoutKey).select().single());
+                }
+
+                // Course perdue : une validation simultanée a déjà créé cette commande.
+                // L'index unique a fait son travail — on rend celle qui existe au lieu
+                // d'en fabriquer une deuxième.
+                if (error && idempotencyKey && isUniqueViolation(error)) {
+                    const existing = await db.findOrderByIdempotencyKey(tenantId, idempotencyKey);
+                    if (existing) {
+                        console.warn(`[DB] createOrder: doublon évité pour la clé ${idempotencyKey}`);
+                        return { ...existing, alreadyExisted: true };
+                    }
+                }
+
                 if (error) throw error;
 
                 // Log d'activité best-effort : ne doit JAMAIS faire échouer une
@@ -411,28 +482,43 @@ export const db = {
                     .single();
                 if (error) throw error;
 
-                // Stock : annulation → on rend ; réactivation d'une annulée → on reprend
-                if (previous && Array.isArray(previous.items)) {
-                    if (status === 'CANCELLED' && previous.status !== 'CANCELLED') {
-                        await db.restockItems(tenantId, previous.items);
-                    } else if (previous.status === 'CANCELLED' && status !== 'CANCELLED') {
-                        const result = await db.decrementStockForItems(tenantId, previous.items);
-                        if (!result.ok) {
-                            // On ne bloque pas la réactivation, mais le vendeur doit savoir
-                            await db.logActivity(tenantId, 'warning',
-                                `Commande ${orderId.split('-')[1]} réactivée mais stock insuffisant pour certains articles`,
-                                { orderId, failures: result.failures });
+                // Le changement de statut est acquis ici. Le stock et les journaux sont
+                // des effets secondaires : leur échec ne doit pas faire croire au vendeur
+                // que la transition a échoué, mais doit rester visible.
+                try {
+                    // Stock : annulation → on rend ; réactivation d'une annulée → on reprend
+                    if (previous && Array.isArray(previous.items)) {
+                        if (status === 'CANCELLED' && previous.status !== 'CANCELLED') {
+                            await db.restockItems(tenantId, previous.items);
+                        } else if (previous.status === 'CANCELLED' && status !== 'CANCELLED') {
+                            const result = await db.decrementStockForItems(tenantId, previous.items);
+                            if (!result.ok) {
+                                // On ne bloque pas la réactivation, mais le vendeur doit savoir
+                                await db.logActivity(tenantId, 'warning',
+                                    `Commande ${orderId.split('-')[1]} réactivée mais stock insuffisant pour certains articles`,
+                                    { orderId, failures: result.failures });
+                            }
                         }
                     }
+                } catch (stockError) {
+                    console.error('[DB] Stock adjustment failed after status change', stockError);
+                    await db.logActivity(tenantId, 'warning',
+                        `Commande ${orderId.split('-')[1]} passée à ${status}, mais le stock n'a pas pu être ajusté. Vérifiez les quantités.`,
+                        { orderId, status, error: String(stockError) }
+                    ).catch(() => { });
                 }
 
                 // Log the status change
-                await supabase.from('activity_logs').insert([{
-                    tenant_id: tenantId,
-                    type: 'action',
-                    message: `Commande ${orderId.split('-')[1]} passée à ${status}`,
-                    metadata: { orderId, status }
-                }]);
+                try {
+                    await supabase.from('activity_logs').insert([{
+                        tenant_id: tenantId,
+                        type: 'action',
+                        message: `Commande ${orderId.split('-')[1]} passée à ${status}`,
+                        metadata: { orderId, status }
+                    }]);
+                } catch (logError) {
+                    console.error('[DB] Activity log failed after status change', logError);
+                }
 
                 return data;
             } catch (e) {
@@ -891,9 +977,49 @@ export const db = {
     logActivity: async (tenantId: string, type: 'info' | 'sale' | 'warning' | 'action', message: string, metadata: any = {}) => {
         if (isSupabaseEnabled && supabase) {
             try {
-                await supabase.from('activity_logs').insert([{ tenant_id: tenantId, type, message, metadata }]);
+                const { error } = await supabase.from('activity_logs').insert([{ tenant_id: tenantId, type, message, metadata }]);
+                if (error) throw error;
             } catch (e) { console.error('Log Error', e); }
         }
+    },
+
+    claimPaystackEvent: async (
+        tenantId: string,
+        reference: string,
+        eventType: string,
+        payload: Record<string, unknown>,
+    ): Promise<'claimed' | 'processing' | 'completed'> => {
+        if (!isSupabaseEnabled || !supabase) throw new Error('Base de données indisponible pour le webhook Paystack');
+        const { data, error } = await supabase.rpc('claim_paystack_event', {
+            p_tenant_id: tenantId,
+            p_reference: reference,
+            p_event_type: eventType,
+            p_payload: payload,
+        });
+        if (error) throw error;
+        if (!['claimed', 'processing', 'completed'].includes(data)) {
+            throw new Error(`État de webhook Paystack inattendu : ${String(data)}`);
+        }
+        return data as 'claimed' | 'processing' | 'completed';
+    },
+
+    completePaystackEvent: async (tenantId: string, reference: string): Promise<void> => {
+        if (!isSupabaseEnabled || !supabase) throw new Error('Base de données indisponible pour le webhook Paystack');
+        const { error } = await supabase.rpc('complete_paystack_event', {
+            p_tenant_id: tenantId,
+            p_reference: reference,
+        });
+        if (error) throw error;
+    },
+
+    failPaystackEvent: async (tenantId: string, reference: string, reason: string): Promise<void> => {
+        if (!isSupabaseEnabled || !supabase) throw new Error('Base de données indisponible pour le webhook Paystack');
+        const { error } = await supabase.rpc('fail_paystack_event', {
+            p_tenant_id: tenantId,
+            p_reference: reference,
+            p_error: reason,
+        });
+        if (error) throw error;
     },
 
     /** Email du propriétaire d'un tenant (pour les alertes : bot déconnecté, etc.) */

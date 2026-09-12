@@ -15,6 +15,7 @@ import {
     looksLikeQuestion,
     looksLikeAddress,
     splitDeliveryItem,
+    chooseVariationOption,
     DealValidation,
 } from './salesEngine';
 import { Product, Settings, CartItem } from '../../types';
@@ -28,6 +29,9 @@ import { logger } from '../../utils/logger';
  * passe par validateDeal (prix plancher, stock, quantité). Chaque commande
  * décrémente le stock atomiquement et intègre les frais de livraison.
  */
+
+/** Plafond d'articles traités par message : garde-fou contre une réponse IA aberrante. */
+const MAX_DEALS_PER_MESSAGE = 3;
 
 /** Envoie un texte au client ET le journalise dans l'historique (Inbox). */
 async function reply(sock: WASocket, tenantId: string, remoteJid: string, text: string) {
@@ -119,10 +123,17 @@ export async function handleFlow(
         }
 
         const currentVariation = product.variations[tempOrder.variationIndex];
-        const userInput = text.trim().toLowerCase();
 
-        const selectedOption = currentVariation.options.find((o: any) => o.value.toLowerCase().includes(userInput)) ||
-            currentVariation.options[parseInt(userInput) - 1];
+        const choice = chooseVariationOption(text, currentVariation.options as any);
+
+        // Deux options possibles : demander, jamais trancher à la place du client.
+        if (choice.kind === 'ambiguous') {
+            await reply(sock, tenantId, remoteJid,
+                `Vous voulez dire laquelle ? ${choice.candidates.map(o => o.value).join(' ou ')} 🙂`);
+            return;
+        }
+
+        const selectedOption: any = choice.kind === 'match' ? choice.option : undefined;
 
         if (!selectedOption) {
             // Question pendant le choix → l'IA répond puis on re-propose les options
@@ -232,6 +243,25 @@ export async function handleFlow(
 // APPEL IA + TRAITEMENT DES TAGS
 // ---------------------------------------------------------------------------
 
+/**
+ * Le vendeur a-t-il coupé le bot, ou repris cette conversation, pendant que
+ * l'IA réfléchissait ? Relit l'état plutôt que de se fier à celui d'avant
+ * l'attente. En cas d'échec de lecture, on se TAIT : mieux vaut un silence
+ * qu'une réponse envoyée par-dessus le vendeur.
+ */
+async function botWasPausedDuringThinking(tenantId: string, remoteJid: string): Promise<boolean> {
+    try {
+        const [freshSettings, freshSession] = await Promise.all([
+            db.getSettings(tenantId),
+            getSession(tenantId, remoteJid),
+        ]);
+        return freshSettings.botActive === false || freshSession.autopilotEnabled === false;
+    } catch (e) {
+        logger.error({ err: e, tenantId, remoteJid }, '[FlowHandler] Recontrôle de la pause impossible');
+        return true;
+    }
+}
+
 interface AnswerOptions extends FlowOptions {
     stateNote?: string;
     allowDeals: boolean;
@@ -266,6 +296,15 @@ async function answerWithAI(
         stateNote: options.stateNote,
     });
 
+    // L'appel IA dure plusieurs secondes. Le vendeur a pu, pendant ce temps,
+    // couper son bot ou reprendre la main sur cette conversation depuis l'Inbox.
+    // La pause était contrôlée AVANT l'attente seulement : le bot parlait donc
+    // par-dessus le vendeur, quelques secondes après qu'il ait pris le relais.
+    if (!options.dryRun && await botWasPausedDuringThinking(tenantId, remoteJid)) {
+        logger.info({ tenantId, remoteJid }, '[FlowHandler] Bot mis en pause pendant la réflexion — réponse abandonnée');
+        return;
+    }
+
     const { cleaned, deals, imageUrls, invalidDealCount } = parseAIResponse(response);
 
     if (options.allowDeals && invalidDealCount > 0) {
@@ -281,7 +320,12 @@ async function answerWithAI(
 
     // --- TRAITEMENT DES DEALS (uniquement en flux IDLE) ---
     if (options.allowDeals && deals.length > 0) {
-        const validations: DealValidation[] = deals.slice(0, 3).map(d => validateDeal(products, d, settings));
+        // Plafond de sécurité contre une IA qui émettrait n'importe quoi. Le
+        // dépassement était jeté en silence : un client qui commandait cinq
+        // articles en recevait trois, sans que personne ne le lui dise.
+        const handledDeals = deals.slice(0, MAX_DEALS_PER_MESSAGE);
+        const droppedDeals = deals.slice(MAX_DEALS_PER_MESSAGE);
+        const validations: DealValidation[] = handledDeals.map(d => validateDeal(products, d, settings));
 
         const accepted = validations.filter((v): v is Extract<DealValidation, { ok: true }> => v.ok);
         const rejected = validations.filter((v): v is Exclude<DealValidation, { ok: true }> => !v.ok);
@@ -309,6 +353,17 @@ async function answerWithAI(
         if (corrections.length > 0) {
             await reply(sock, tenantId, remoteJid, corrections.join('\n\n'));
             return;
+        }
+
+        // Le dépassement est annoncé, jamais avalé.
+        if (droppedDeals.length > 0) {
+            await reply(sock, tenantId, remoteJid,
+                `J'ai noté les ${MAX_DEALS_PER_MESSAGE} premiers articles 👍 Pour le reste, envoyez-les dans un prochain message et je les ajoute au panier.`);
+            if (!options.dryRun) {
+                await db.logActivity(tenantId, 'warning',
+                    `${droppedDeals.length} article(s) demandés au-delà de la limite par message — le client a été invité à les renvoyer`,
+                    { remoteJid, dropped: droppedDeals.length });
+            }
         }
 
         // Produits à variantes : la machine à état n'en traite qu'UN à la fois.
@@ -410,7 +465,9 @@ async function finalizeOrder(
 
     // 1. Livraison calculée à partir de l'adresse (zones du vendeur)
     const quote = computeDelivery(itemsTotal, address, settings);
-    const orderItems: CartItem[] = quote.fee > 0 ? [...productItems, buildDeliveryItem(quote)] : [...productItems];
+    // Une ligne à 0 est nécessaire pour distinguer une livraison réellement
+    // offerte d'une zone inconnue dont le tarif doit encore être confirmé.
+    const orderItems: CartItem[] = quote.known ? [...productItems, buildDeliveryItem(quote)] : [...productItems];
     const grandTotal = itemsTotal + quote.fee;
 
     // MODE SIMULATION : même confirmation, mais rien n'est écrit (ni commande, ni stock)
@@ -424,7 +481,22 @@ async function finalizeOrder(
         return;
     }
 
-    // 2. Décrément ATOMIQUE du stock — si le stock a bougé entre-temps, on refuse proprement
+    // 2. Ce panier a-t-il DÉJÀ produit une commande ? (adresse renvoyée deux fois,
+    // panier resté ouvert après un échec de fermeture, message WhatsApp dupliqué)
+    // On vérifie AVANT de toucher au stock : sinon on décrémenterait pour rien.
+    const idempotencyKey: string | undefined = tempOrder.idempotencyKey;
+    if (idempotencyKey) {
+        const already = await db.findOrderByIdempotencyKey(tenantId, idempotencyKey);
+        if (already) {
+            logger.warn({ tenantId, remoteJid, orderId: already.id }, '[FlowHandler] Panier déjà commandé, doublon évité');
+            await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined, reminderSent: false });
+            await reply(sock, tenantId, remoteJid,
+                `✅ Votre commande était déjà enregistrée (total ${formatFcfa(already.total)}). Pas d'inquiétude, elle n'a pas été comptée deux fois.`);
+            return;
+        }
+    }
+
+    // 3. Décrément ATOMIQUE du stock — si le stock a bougé entre-temps, on refuse proprement
     const stockResult = await db.decrementStockForItems(tenantId, productItems);
     if (!stockResult.ok) {
         const lines = stockResult.failures.map(f =>
@@ -439,10 +511,16 @@ async function finalizeOrder(
         return;
     }
 
-    // 3. Création de la commande (livraison incluse dans le total et visible en ligne d'article)
+    // 4. Création de la commande (livraison incluse dans le total et visible en ligne d'article)
     let order;
     try {
-        order = await db.createOrder(tenantId, remoteJid, orderItems, grandTotal, address);
+        order = await db.createOrder(tenantId, remoteJid, orderItems, grandTotal, address, new Date(), idempotencyKey);
+        if (order.alreadyExisted) {
+            // Course perdue contre une validation simultanée : la commande existe
+            // déjà et son stock a été pris par l'autre passage. On rend le nôtre.
+            await db.restockItems(tenantId, productItems);
+            logger.warn({ tenantId, remoteJid, orderId: order.id }, '[FlowHandler] Doublon concurrent évité, stock rendu');
+        }
     } catch (e) {
         // La commande a échoué APRÈS le décrément → on rend le stock
         await db.restockItems(tenantId, productItems);
@@ -453,9 +531,25 @@ async function finalizeOrder(
 
     // Fermer le panier avant tout envoi : un échec WhatsApp ne doit pas laisser
     // une commande déjà créée dans l'état « adresse à valider ».
-    await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined, reminderSent: false });
+    // Si cette fermeture échoue, le panier reste ouvert alors que la commande
+    // existe et que le stock est déjà pris : un client qui renvoie son adresse
+    // créerait un doublon. On le lui interdit explicitement et on alerte le vendeur.
+    try {
+        await updateSession(tenantId, remoteJid, { state: 'IDLE', tempOrder: undefined, reminderSent: false });
+    } catch (e) {
+        logger.error({ err: e, tenantId, remoteJid, orderId: order.id }, '[FlowHandler] Cart close failed after order creation');
+        await db.logActivity(tenantId, 'warning',
+            `Commande ${String(order.id).split('-')[1] ?? order.id} enregistrée, mais le panier du client n'a pas pu être fermé. Vérifiez qu'elle n'a pas été saisie deux fois.`,
+            { orderId: order.id, remoteJid }
+        ).catch(() => { });
+        try {
+            await reply(sock, tenantId, remoteJid,
+                `✅ Votre commande est bien enregistrée (total ${formatFcfa(grandTotal)}).\n\n⚠️ Ne renvoyez pas votre adresse : elle serait comptée une deuxième fois. Le vendeur vous recontacte pour la suite.`);
+        } catch { /* la commande existe : on n'insiste pas */ }
+        return;
+    }
 
-    // 4. Confirmation claire au client (détail articles + livraison + total)
+    // 5. Confirmation claire au client (détail articles + livraison + total)
     const deliveryLine = quote.known
         ? (quote.fee > 0 ? `${quote.label} : ${formatFcfa(quote.fee)}` : `${quote.label} ✅`)
         : 'Livraison : à confirmer selon votre zone (le vendeur vous précise ça rapidement)';
@@ -474,7 +568,7 @@ async function finalizeOrder(
         logger.error({ err: error, tenantId, orderId: order.id }, '[FlowHandler] Customer confirmation failed after order creation');
     }
 
-    // 5. Notification vendeur
+    // 6. Notification vendeur
     try {
         await sendOrderNotification(sock, tenantId, remoteJid, address, { items: orderItems, total: grandTotal });
     } catch (error) {

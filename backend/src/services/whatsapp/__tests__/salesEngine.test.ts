@@ -6,6 +6,7 @@ import {
     findProduct,
     priceFloor,
     matchDeliveryZone,
+    chooseVariationOption,
     computeDelivery,
     isCancelIntent,
     looksLikeQuestion,
@@ -297,4 +298,31 @@ describe('intentions client', () => {
         assert.ok(!looksLikeAddress('ok'));
         assert.ok(!looksLikeAddress('👍'));
     });
+});
+
+test('variantes : « S » ne vend pas du XS, « L » pas du XL', () => {
+    const tailles = [{ value: 'XS' }, { value: 'S' }, { value: 'M' }, { value: 'L' }, { value: 'XL' }];
+    // L'ancienne règle testait includes() : « xs » contient « s », « xl » contient « l ».
+    // Le client recevait une autre taille que celle demandée, sans aucun signal.
+    assert.equal((chooseVariationOption('S', tailles) as any).option.value, 'S');
+    assert.equal((chooseVariationOption(' l ', tailles) as any).option.value, 'L');
+    assert.equal((chooseVariationOption('xl', tailles) as any).option.value, 'XL');
+});
+
+test('variantes : le rang dans la liste reste utilisable', () => {
+    const couleurs = [{ value: 'Rouge' }, { value: 'Bleu' }];
+    assert.equal((chooseVariationOption('2', couleurs) as any).option.value, 'Bleu');
+    assert.equal(chooseVariationOption('9', couleurs).kind, 'none');
+    // « 2XL » est un nom d'option, pas un rang.
+    const tailles = [{ value: 'M' }, { value: '2XL' }];
+    assert.equal((chooseVariationOption('2XL', tailles) as any).option.value, '2XL');
+});
+
+test('variantes : une saisie ambiguë fait demander, jamais deviner', () => {
+    const options = [{ value: 'Bleu clair' }, { value: 'Bleu foncé' }];
+    const result = chooseVariationOption('bleu', options);
+    assert.equal(result.kind, 'ambiguous');
+    assert.equal((result as any).candidates.length, 2);
+    assert.equal(chooseVariationOption('vert', options).kind, 'none');
+    assert.equal(chooseVariationOption('   ', options).kind, 'none');
 });

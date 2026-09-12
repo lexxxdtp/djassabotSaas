@@ -24,12 +24,51 @@ const enqueue = (key: string, fn: () => Promise<void>): Promise<void> => {
     return next;
 };
 
+/**
+ * Messages déjà traités, pour ne pas répondre deux fois au même.
+ *
+ * WhatsApp relivre un message après une reconnexion ou une resynchronisation,
+ * et un socket remplacé peut livrer ce que le nouveau livre aussi.
+ *
+ * Limite assumée : cette mémoire est celle du processus. Un redémarrage l'efface,
+ * donc un message relivré juste après un redémarrage peut encore passer deux
+ * fois. Une déduplication persistante reste à faire.
+ */
+/** Au-delà, on demande un texte plutôt que de payer une transcription hasardeuse. */
+const MAX_VOICE_SECONDS = 180;
+
+const DEDUP_TTL_MS = 10 * 60 * 1000;
+const DEDUP_MAX = 5000;
+const seenMessages = new Map<string, number>();
+
+const alreadySeen = (key: string): boolean => {
+    const now = Date.now();
+    const seenAt = seenMessages.get(key);
+    if (seenAt !== undefined && now - seenAt < DEDUP_TTL_MS) return true;
+
+    seenMessages.set(key, now);
+    if (seenMessages.size > DEDUP_MAX) {
+        for (const [id, at] of seenMessages) {
+            if (now - at >= DEDUP_TTL_MS) seenMessages.delete(id);
+        }
+        // Purge par ancienneté si tout est encore récent (Map conserve l'ordre d'insertion).
+        while (seenMessages.size > DEDUP_MAX) {
+            const oldest = seenMessages.keys().next().value;
+            if (oldest === undefined) break;
+            seenMessages.delete(oldest);
+        }
+    }
+    return false;
+};
+
 export async function handleMessage(tenantId: string, sock: WASocket, msg: proto.IWebMessageInfo, isHistory: boolean = false) {
     if (!msg.key || !msg.key.remoteJid) return;
     const remoteJid = msg.key.remoteJid;
 
     // La vente automatisée concerne uniquement les discussions individuelles.
     if (remoteJid.endsWith('@broadcast') || remoteJid.endsWith('@g.us') || remoteJid.endsWith('@newsletter')) return;
+
+    if (msg.key.id && alreadySeen(`${tenantId}:${remoteJid}:${msg.key.id}`)) return;
 
     await enqueue(`${tenantId}:${remoteJid}`, () => processMessage(tenantId, sock, msg, remoteJid, isHistory));
 }
@@ -72,7 +111,15 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
         // lorsque le vendeur a repris la main ou que l'abonnement est inactif.
         if (msg.message?.audioMessage) {
             text = '[Message vocal]';
-            if (!isHistory && !botPaused) {
+            // Le réglage voiceEnabled était enregistré et jamais lu : le vendeur
+            // qui désactivait les vocaux voyait quand même chaque note téléchargée
+            // puis transcrite par Gemini, donc facturée.
+            const voiceAllowed = settings.voiceEnabled !== false;
+            // Un vocal très long coûte cher à transcrire pour un résultat médiocre.
+            const durationSeconds = msg.message.audioMessage.seconds ?? 0;
+            const tooLong = durationSeconds > MAX_VOICE_SECONDS;
+
+            if (!isHistory && !botPaused && voiceAllowed && !tooLong) {
                 const buffer = await downloadMediaMessage(msg as any, 'buffer', {});
                 const mimeType = msg.message.audioMessage.mimetype || 'audio/ogg';
                 const transcription = buffer instanceof Buffer ? await transcribeAudio(buffer, mimeType) : '';
@@ -81,6 +128,15 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
                     throw new Error('Transcription vocale indisponible');
                 }
                 text = transcription;
+            } else if (!isHistory && !botPaused && (!voiceAllowed || tooLong)) {
+                // Ne pas laisser le client sans réponse devant un silence.
+                await addToHistory(tenantId, remoteJid, 'user', text);
+                await sock.sendMessage(remoteJid, {
+                    text: tooLong
+                        ? 'Votre message vocal est un peu long pour moi 🙏 Pouvez-vous m\'écrire l\'essentiel en texte ?'
+                        : 'Je ne peux pas écouter les messages vocaux 🙏 Pouvez-vous m\'écrire votre demande ?',
+                });
+                return;
             }
         }
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, User, Crown, Shield, Check, Mail, Building } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface UserProfileModalProps {
     isOpen: boolean;
@@ -79,7 +80,16 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
         setError(null);
 
         try {
-            const userEmail = user?.email || 'user@example.com';
+            // Le reçu Paystack part à cette adresse : jamais d'adresse inventée.
+            let userEmail = user?.email;
+            if (!userEmail) {
+                userEmail = window.prompt('À quelle adresse e-mail devons-nous envoyer votre reçu de paiement ?')?.trim() || '';
+                if (!userEmail) {
+                    setError('Une adresse e-mail est nécessaire pour recevoir votre reçu.');
+                    setLoading(false);
+                    return;
+                }
+            }
 
             const res = await apiClient('/paystack/subscribe', {
                 method: 'POST',
@@ -107,11 +117,19 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
         }
     };
 
+    const dialogRef = useModalA11y(onClose, isOpen);
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-4xl bg-[#111] border border-[#1a1a1a] rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
+            <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Mon compte"
+                tabIndex={-1}
+                className="w-full max-w-4xl bg-[#111] border border-[#1a1a1a] rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]">
 
                 {/* Sidebar Menu */}
                 <div className="md:w-64 bg-black border-r border-zinc-900 p-6 flex flex-col gap-2">

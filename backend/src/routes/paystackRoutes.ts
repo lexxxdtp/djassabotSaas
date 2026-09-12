@@ -7,6 +7,20 @@ import { logger } from '../utils/logger';
 
 const router = express.Router();
 
+/**
+ * Une adresse utilisable pour un paiement : bien formée, et pas un bouche-trou.
+ * « user@example.com » et « vendor@djassabot.com » circulaient et satisfaisaient
+ * toute vérification de présence, tout en n'appartenant à personne.
+ */
+const PLACEHOLDER_EMAIL_DOMAINS = ['example.com', 'example.org', 'test.com', 'djassabot.com'];
+
+function isUsablePaymentEmail(email: unknown): email is string {
+    if (typeof email !== 'string') return false;
+    const value = email.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(value)) return false;
+    return !PLACEHOLDER_EMAIL_DOMAINS.some(domain => value.endsWith(`@${domain}`));
+}
+
 // ============================================
 // SUBSCRIPTION ROUTES (Protected)
 // ============================================
@@ -78,14 +92,20 @@ router.post('/subscribe', authenticateTenant, async (req, res) => {
             return res.status(404).json({ error: 'Tenant non trouvé' });
         }
 
-        // Require email — either passed in body or fetched from the user record
+        // Paystack envoie le reçu à cette adresse : elle doit être RÉELLE.
+        // Les comptes créés par téléphone n'en ont pas ; le client en demande
+        // une plutôt que d'en inventer, sinon le vendeur paie sans jamais
+        // recevoir la moindre preuve de paiement.
         let email = req.body.email;
         if (!email) {
             const user = await db.getUserById(req.userId!);
             email = user?.email;
         }
-        if (!email) {
-            return res.status(400).json({ error: 'Email requis pour le paiement' });
+        if (!isUsablePaymentEmail(email)) {
+            return res.status(400).json({
+                error: 'Une adresse e-mail valide est nécessaire : c\'est là que Paystack envoie votre reçu.',
+                code: 'PAYMENT_EMAIL_REQUIRED',
+            });
         }
 
         const result = await paystackService.initializeSubscription(
@@ -105,7 +125,7 @@ router.post('/subscribe', authenticateTenant, async (req, res) => {
         }
     } catch (error: any) {
         console.error('[API] Subscribe error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Impossible de démarrer le paiement. Réessayez dans un instant.' });
     }
 });
 
@@ -117,9 +137,13 @@ router.get('/verify/:reference', authenticateTenant, async (req, res) => {
     try {
         const reference = req.params.reference as string;
         const result = await paystackService.verifyTransaction(reference);
+        if (result.data && result.data.metadata?.tenantId !== req.tenantId) {
+            return res.status(404).json({ error: 'Paiement introuvable' });
+        }
         res.json(result);
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
+        console.error('[API] Verify transaction error:', error);
+        res.status(500).json({ error: 'Impossible de vérifier ce paiement pour le moment.' });
     }
 });
 
@@ -136,7 +160,8 @@ router.get('/banks', authenticateTenant, async (req, res) => {
         const result = await paystackService.listBanks();
         res.json(result);
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
+        console.error('[API] List banks error:', error);
+        res.status(500).json({ error: 'Liste des banques indisponible pour le moment.' });
     }
 });
 
@@ -155,7 +180,8 @@ router.post('/verify-account', authenticateTenant, async (req, res) => {
         const result = await paystackService.verifyAccountNumber(accountNumber, bankCode);
         res.json(result);
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
+        console.error('[API] Verify account error:', error);
+        res.status(500).json({ error: 'Impossible de vérifier ce compte bancaire pour le moment.' });
     }
 });
 
@@ -180,11 +206,19 @@ router.post('/setup-vendor', authenticateTenant, async (req, res) => {
             return res.status(404).json({ error: 'Tenant non trouvé' });
         }
 
-        // Try to get user email if not provided
+        // Jamais d'adresse inventée : « vendor@djassabot.com » était la même
+        // pour tous les vendeurs, sur un domaine qui n'existe pas. Les
+        // notifications Paystack du sous-compte n'arrivaient donc à personne.
         let contactEmail = email;
         if (!contactEmail) {
             const user = await db.getUserById(req.userId!);
-            contactEmail = user?.email || 'vendor@djassabot.com';
+            contactEmail = user?.email;
+        }
+        if (!isUsablePaymentEmail(contactEmail)) {
+            return res.status(400).json({
+                error: 'Une adresse e-mail valide est nécessaire pour recevoir les notifications de paiement.',
+                code: 'PAYMENT_EMAIL_REQUIRED',
+            });
         }
 
         const result = await paystackService.createVendorSubaccount(
@@ -208,7 +242,7 @@ router.post('/setup-vendor', authenticateTenant, async (req, res) => {
         }
     } catch (error: any) {
         console.error('[API] Setup vendor error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Impossible de configurer le compte vendeur pour le moment.' });
     }
 });
 
@@ -218,8 +252,25 @@ router.post('/setup-vendor', authenticateTenant, async (req, res) => {
  */
 router.post('/create-payment-link', authenticateTenant, async (req, res) => {
     try {
-        const { orderId, amount, customerEmail, customerPhone, orderSummary } = req.body;
+        const { orderId, customerEmail } = req.body;
         const tenantId = req.tenantId!;
+
+        if (typeof orderId !== 'string' || !orderId.trim()) {
+            return res.status(400).json({ error: 'Commande requise' });
+        }
+
+        // Le navigateur ne décide ni du prix, ni du client, ni du contenu de la
+        // commande. On recharge toujours la commande du tenant authentifié.
+        const order = await db.getOrderById(tenantId, orderId);
+        if (!order) {
+            return res.status(404).json({ error: 'Commande introuvable' });
+        }
+        if (['PAID', 'DELIVERED', 'CANCELLED'].includes(order.status)) {
+            return res.status(409).json({ error: 'Cette commande ne peut plus recevoir de nouveau lien de paiement.' });
+        }
+        if (!Number.isSafeInteger(order.total) || order.total <= 0) {
+            return res.status(422).json({ error: 'Le montant enregistré pour cette commande est invalide.' });
+        }
 
         // Get tenant's subaccount code
         const tenant = await db.getTenantById(tenantId);
@@ -237,18 +288,21 @@ router.post('/create-payment-link', authenticateTenant, async (req, res) => {
 
         const result = await paystackService.createOrderPaymentLink(
             tenantId,
-            orderId,
-            amount,
+            order.id,
+            order.total,
             customerEmail,
-            customerPhone,
+            order.customerPhone || order.userId.split('@')[0],
             subaccountCode,
-            orderSummary
+            order.items
+                .filter(item => item.productId !== '_delivery')
+                .map(item => `${item.quantity} × ${item.productName}`)
+                .join(', ')
         );
 
-        res.json(result);
+        res.status(result.success ? 200 : 400).json(result);
     } catch (error: any) {
         console.error('[API] Create payment link error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Impossible de générer le lien de paiement pour le moment.' });
     }
 });
 

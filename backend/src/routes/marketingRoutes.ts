@@ -10,6 +10,12 @@ const router = Router();
 router.use(authenticateTenant);
 
 const VIP_THRESHOLD_FCFA = 100_000;
+/**
+ * Statuts qui valent de l'argent encaissé. PENDING et CONFIRMED attendent
+ * toujours un paiement, CANCELLED n'en verra jamais : aucun des trois ne
+ * représente une dépense du client.
+ */
+const PAID_STATUSES = new Set(['PAID', 'SHIPPING', 'SHIPPED', 'DELIVERED']);
 const RECENT_DAYS = 30;
 
 type Audience = 'all' | 'vip' | 'recent';
@@ -30,13 +36,20 @@ async function resolveAudience(tenantId: string, audience: Audience): Promise<st
         )];
     }
 
-    // VIP : clients dont le total des commandes dépasse le seuil
+    // VIP : clients dont le total RÉELLEMENT PAYÉ dépasse le seuil.
+    // Toutes les commandes étaient additionnées, statut compris : un client qui
+    // avait commandé pour 150 000 FCFA sans jamais payer, ou qui avait annulé,
+    // était classé VIP. Le vendeur visait alors ses meilleurs clients auprès de
+    // gens qui ne lui avaient rien rapporté.
     const orders = await db.getOrders(tenantId);
     const totals = new Map<string, number>();
     for (const o of orders) {
         const jid = (o as any).userId;
         if (!jid) continue;
-        totals.set(jid, (totals.get(jid) || 0) + (o.total || 0));
+        if (!PAID_STATUSES.has(o.status)) continue;
+        const amount = Number(o.total);
+        if (!Number.isFinite(amount) || amount <= 0) continue;
+        totals.set(jid, (totals.get(jid) || 0) + amount);
     }
     const vipJids = [...totals.entries()]
         .filter(([, total]) => total >= VIP_THRESHOLD_FCFA)

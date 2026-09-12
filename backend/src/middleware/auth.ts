@@ -133,7 +133,22 @@ export const checkSubscription = async (
             return;
         }
 
-        const subscription = await db.getSubscriptionByTenantId(req.tenantId);
+        const [tenant, subscription] = await Promise.all([
+            db.getTenantById(req.tenantId),
+            db.getSubscriptionByTenantId(req.tenantId),
+        ]);
+
+        // La connexion refuse déjà un compte suspendu, mais un jeton émis AVANT
+        // la suspension restait valable sept jours : le compte gardait tout son
+        // accès à l'API pendant une semaine. L'état est donc revérifié à chaque
+        // requête, pas seulement au moment de la connexion.
+        if (tenant && (tenant.status === 'suspended' || tenant.status === 'cancelled')) {
+            res.status(403).json({
+                error: `Compte ${tenant.status === 'suspended' ? 'suspendu' : 'annulé'}. Contactez le support.`,
+                code: 'ACCOUNT_SUSPENDED',
+            });
+            return;
+        }
 
         // Si aucun abonnement n'est trouvé, la période d'essai (trial) par défaut est créée à l'inscription
         if (!subscription) {

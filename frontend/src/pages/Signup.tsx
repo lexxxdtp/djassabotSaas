@@ -4,7 +4,7 @@ import {
     Eye, EyeOff, Sparkles, Check, ChevronDown
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, type User as AuthUser, type Tenant } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
 
 // Visual business categories tailored for African commerce
@@ -85,7 +85,7 @@ const Signup: React.FC = () => {
                 body: JSON.stringify(body),
             });
             
-            let data: any = {};
+            let data: Partial<{ error: string; token: string; user: AuthUser; tenant: Tenant }> = {};
             try {
                 data = await res.json();
             } catch {
@@ -94,6 +94,7 @@ const Signup: React.FC = () => {
             if (!res.ok) throw new Error(data.error || 'Erreur inscription.');
             
             // Log in the user (they will be redirected to /verify-account by ProtectedRoute)
+            if (!data.token || !data.user || !data.tenant) throw new Error('Réponse incomplète du serveur.');
             login(data.token, data.user, data.tenant);
             navigate('/verify-account');
         } catch (err) {

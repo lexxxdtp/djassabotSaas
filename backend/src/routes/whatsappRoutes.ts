@@ -32,11 +32,10 @@ router.get('/status', async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        // Si non connecté, s'assurer qu'une session de connexion est lancée pour avoir un QR
-        if (!session || session.status === 'disconnected') {
-            // Lancer la création de session en arrière-plan si pas déjà fait
-            whatsappManager.createSession(tenantId).catch(console.error);
-        }
+        // Lecture passive : cette route est interrogée toutes les 15 secondes par
+        // le tableau de bord. Elle n'ouvre une session que s'il n'en existe
+        // aucune ET que le vendeur ne s'est pas déconnecté volontairement.
+        whatsappManager.ensureSession(tenantId);
 
         // Renvoyer le QR s'il est dispo en mémoire (ou attendre un peu ?)
         // Ici on renvoie ce qu'on a. Le frontend fera du polling.
@@ -48,7 +47,7 @@ router.get('/status', async (req: Request, res: Response): Promise<void> => {
 
     } catch (error: any) {
         console.error('Erreur status WhatsApp:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Statut du bot indisponible pour le moment.' });
     }
 });
 
@@ -68,7 +67,7 @@ router.post('/pair-code', async (req: Request, res: Response) => {
 
     } catch (error: any) {
         console.error('Erreur Pairing Code:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Impossible de générer le code de jumelage. Vérifiez le numéro et réessayez.' });
     }
 });
 
@@ -79,7 +78,8 @@ router.post('/logout', async (req: Request, res: Response) => {
         await whatsappManager.disconnect(tenantId);
         res.json({ success: true, message: 'Déconnecté avec succès' });
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
+        console.error('Erreur déconnexion WhatsApp:', error);
+        res.status(500).json({ error: 'La déconnexion a échoué. Réessayez dans un instant.' });
     }
 });
 

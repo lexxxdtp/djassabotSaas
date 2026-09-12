@@ -455,12 +455,21 @@ export const verifyEmailOtp = async (req: Request, res: Response) => {
             return;
         }
 
-        await db.deleteAuthToken(normalizedEmail, 'EMAIL_OTP');
-
         const user = await db.getUserByEmail(normalizedEmail);
         if (user) {
-            await db.updateUser(user.id, { emailVerified: true });
+            // Annoncer « vérifié » sans que le drapeau soit écrit bloque
+            // l'utilisateur au prochain contrôle, code déjà consommé, sans
+            // qu'il puisse comprendre pourquoi.
+            const updated = await db.updateUser(user.id, { emailVerified: true });
+            if (!updated) {
+                logger.error({ userId: user.id }, 'Verify email OTP: user update failed, code left usable');
+                res.status(500).json({ error: 'La vérification n\'a pas pu être enregistrée. Votre code reste valide, réessayez dans un instant.' });
+                return;
+            }
         }
+
+        // Le code n'est consommé qu'après un enregistrement confirmé.
+        await db.deleteAuthToken(normalizedEmail, 'EMAIL_OTP');
 
         res.json({ success: true, verified: true });
     } catch (error: any) {
@@ -553,8 +562,18 @@ export const resetPassword = async (req: Request, res: Response) => {
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
-        await db.updateUser(userId, { passwordHash });
+        // updateUser rend null en cas d'échec au lieu de lever. Sans cette
+        // vérification, on brûlait le lien et on annonçait la réinitialisation
+        // alors que rien n'avait changé : l'utilisateur se retrouvait enfermé
+        // dehors, avec son ancien mot de passe oublié et son lien consommé.
+        const updated = await db.updateUser(userId, { passwordHash });
+        if (!updated) {
+            logger.error({ userId }, 'Reset password: user update failed, token left usable');
+            res.status(500).json({ error: 'Le mot de passe n\'a pas pu être enregistré. Votre lien reste valide, réessayez dans un instant.' });
+            return;
+        }
 
+        // Le jeton n'est consommé qu'après un enregistrement confirmé.
         await db.deleteAuthToken(token, 'PASSWORD_RESET');
 
         res.json({ success: true, message: 'Mot de passe réinitialisé.' });
@@ -592,10 +611,14 @@ export const verifyPhoneOtp = async (req: Request, res: Response) => {
         }
 
         const user = await db.getUserByPhone(phone);
-        if (user) {
-            await db.updateUser(user.id, { phoneVerified: true });
-        } else {
+        if (!user) {
             res.status(404).json({ error: 'Utilisateur introuvable.' });
+            return;
+        }
+        const updated = await db.updateUser(user.id, { phoneVerified: true });
+        if (!updated) {
+            logger.error({ userId: user.id }, 'Verify phone OTP: user update failed');
+            res.status(500).json({ error: 'La vérification n\'a pas pu être enregistrée. Réessayez dans un instant.' });
             return;
         }
 

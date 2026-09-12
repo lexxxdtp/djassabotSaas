@@ -7,6 +7,24 @@ import { logger } from '../utils/logger';
 let genAI: GoogleGenerativeAI | null = null;
 let model: GenerativeModel | null = null;
 
+/**
+ * En production, l'absence de clé IA est une panne, pas un mode dégradé.
+ *
+ * Les réponses de secours ci-dessous sont des textes inventés : « (Mock: Price
+ * Inquiry) », « [SIMULATED AI] Je suis en mode test », ou une description de
+ * robe rouge produite pour n'importe quelle photo. Envoyées à un vrai client
+ * sur WhatsApp, elles décrédibilisent la boutique et peuvent lui faire acheter
+ * autre chose que ce qu'il a montré.
+ *
+ * Mieux vaut lever : le messageHandler répond alors poliment qu'il y a un souci
+ * technique, ce qui est la vérité.
+ */
+const requireModelInProduction = (usage: string): void => {
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error(`Clé Gemini absente ou invalide — ${usage} impossible. Aucune réponse inventée ne sera envoyée au client.`);
+    }
+};
+
 const getModel = (): GenerativeModel | null => {
     const apiKey = process.env.GEMINI_API_KEY;
 
@@ -95,6 +113,7 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
     const currentModel = getModel();
 
     if (!currentModel) {
+        requireModelInProduction('la réponse au client');
         console.warn('[AI] No Valid API Key found. Using Mock Logic.');
         return mockNegotiationLogic(userText, context);
     }
@@ -197,7 +216,7 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
 
         const storeContext = `
         STORE IDENTITY (Your Business):
-        - Name: ${settings?.storeName}
+        - Name: ${settings?.storeName?.trim() || '(not set — never invent one, say "la boutique")'}
         - Activity: ${settings?.businessType || 'Commerce'}
         - Location: ${settings?.address}
         - Google Maps: ${settings?.locationUrl || 'N/A'}
@@ -245,7 +264,7 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
                - If a customer insists, politely explain that quality has a price.`;
 
         let systemInstruction = `
-        You are ${botName}, a smart sales assistant for ${settings?.storeName} in Abidjan.
+        You are ${botName}, a smart sales assistant for ${settings?.storeName?.trim() || 'this shop'} in Abidjan.
         
         ${storeContext}
         
@@ -426,6 +445,7 @@ export const analyzeImage = async (imageInput: string | Buffer, mimeType: string
     const currentModel = getModel();
 
     if (!currentModel) {
+        requireModelInProduction("l'analyse de l'image");
         console.warn('[AI] No Valid API Key found. Using Mock Image Analysis.');
         if (caption && caption.toLowerCase().includes('robe')) return "C'est une belle robe rouge. (Mock Analysis)";
         return "Je vois un produit de mode intéressant. (Mock Analysis)";
@@ -654,7 +674,7 @@ export const generateIdentitySummary = async (settings: Settings) => {
     
     CONFIG:
     Nom: ${settings.botName}
-    Boutique: ${settings.storeName} (${settings.businessType})
+    Boutique: ${[settings.storeName?.trim(), settings.businessType?.trim()].filter(Boolean).join(' — ') || '(non renseignée)'}
     Style: ${settings.persona} 
     Communication: Politesse=${settings.politeness}, Emojis=${settings.emojiLevel}, Argot/Nouchi=${settings.slangLevel || 'low'}, Humour=${settings.humorLevel || 'medium'}
     Politique: ${settings.policyDescription || 'Standard'}

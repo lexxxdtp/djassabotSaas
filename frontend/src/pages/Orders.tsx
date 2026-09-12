@@ -5,20 +5,15 @@ import {
     CheckCircle2, Search, CreditCard
 } from 'lucide-react';
 import { apiClient } from '../utils/apiClient';
+import { toUIStatus, type UIStatus } from '../utils/overviewMetrics';
+import { buildDeliverySlip } from '../utils/deliverySlip';
 import { useAuth } from '../context/AuthContext';
+import { useModalA11y } from '../hooks/useModalA11y';
 import { toast } from 'react-hot-toast';
 
 // Backend keeps the full enum for compatibility, but the UI only exposes 4 states.
-// Legacy CONFIRMED is shown as NOUVELLE (still awaiting payment), legacy SHIPPING as PAYÉE.
-type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
-type UIStatus = 'NEW' | 'PAID' | 'DELIVERED' | 'CANCELLED';
-
-const toUIStatus = (s: OrderStatus): UIStatus => {
-    if (s === 'PENDING' || s === 'CONFIRMED') return 'NEW';
-    if (s === 'PAID' || s === 'SHIPPING') return 'PAID';
-    if (s === 'DELIVERED') return 'DELIVERED';
-    return 'CANCELLED';
-};
+// Le mapping vit dans utils/overviewMetrics pour rester identique partout.
+type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PAID' | 'SHIPPING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
 interface Order {
     id: string;
@@ -28,6 +23,8 @@ interface Order {
     address: string;
     paymentMethod?: string;
     items: {
+        // productId distingue la ligne de livraison (_delivery) des articles.
+        productId: string;
         productName: string;
         quantity: number;
         price: number;
@@ -59,21 +56,18 @@ const matchesFilter = (order: Order, filter: FilterKey): boolean => {
     }
 };
 
-const generateDeliveryMessage = (order: Order): string => {
-    const items = order.items.map(i =>
-        `  • ${i.quantity}x ${i.productName}${i.selectedVariations?.length ? ` (${i.selectedVariations.map(v => v.value).join(', ')})` : ''}`
-    ).join('\n');
-    return `📦 COMMANDE #${order.id}\n\n👤 Client : ${order.userId}\n\n🛒 Articles :\n${items}\n\n💰 Total : ${order.total.toLocaleString()} FCFA\n📍 Adresse : ${order.address || 'Non renseignée'}\n\nSaaS : DjassaBot`;
-};
-
-const shareOrder = async (order: Order) => {
-    const message = generateDeliveryMessage(order);
+const shareOrder = async (order: Order, merchantPhone?: string) => {
+    // Une commande encore « Nouvelle » n'est pas encaissée : le livreur collecte.
+    const message = buildDeliverySlip(order, {
+        merchantPhone,
+        alreadyPaid: toUIStatus(order.status) === 'PAID',
+    });
     if (navigator.share) {
         try { await navigator.share({ text: message }); return; } catch { /* fall through */ }
     }
     try {
         await navigator.clipboard.writeText(message);
-        toast.success('📋 Résumé copié ! Collez-le dans votre groupe livreurs.');
+        toast.success('📋 Fiche copiée ! Collez-la dans votre groupe livreurs.');
     } catch {
         toast.error('Impossible de copier');
     }
@@ -106,15 +100,23 @@ interface OrderModalProps {
     order: Order;
     onClose: () => void;
     onUpdateStatus: (orderId: string, status: OrderStatus) => void;
+    merchantPhone?: string;
 }
 
-const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => {
+const OrderModal = ({ order, onClose, onUpdateStatus, merchantPhone }: OrderModalProps) => {
+    const dialogRef = useModalA11y(onClose);
     const ui = toUIStatus(order.status);
     const meta = UI_META[ui];
 
     return (
         <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+            <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label={`Commande ${order.id.split('-').pop()?.slice(0, 6) || order.id.slice(0, 6)}`}
+                tabIndex={-1}
+                className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
                 {/* Drag Indicator on Mobile */}
                 <div className="w-12 h-1 bg-[#222] rounded-full mx-auto my-3 md:hidden shrink-0"></div>
 
@@ -143,6 +145,12 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => {
                         {ui === 'NEW' && (
                             <>
                                 <button
+                                    onClick={() => shareOrder(order, merchantPhone)}
+                                    className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white border border-[#1a1a1a] rounded-xl text-xs font-bold uppercase transition-transform active:scale-95 flex items-center justify-center gap-2"
+                                >
+                                    <Send size={14} aria-hidden="true" /> Fiche livreur
+                                </button>
+                                <button
                                     onClick={() => onUpdateStatus(order.id, 'CANCELLED')}
                                     className="flex-1 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-xl text-xs font-bold uppercase transition-transform active:scale-95"
                                 >
@@ -159,10 +167,10 @@ const OrderModal = ({ order, onClose, onUpdateStatus }: OrderModalProps) => {
                         {ui === 'PAID' && (
                             <>
                                 <button
-                                    onClick={() => shareOrder(order)}
+                                    onClick={() => shareOrder(order, merchantPhone)}
                                     className="flex-1 py-3 bg-[#00D97E]/10 hover:bg-[#00D97E]/20 text-[#00D97E] border border-[#00D97E]/20 rounded-xl text-xs font-bold uppercase transition-transform active:scale-95 flex items-center justify-center gap-2"
                                 >
-                                    <Send size={14} aria-hidden="true" /> Envoyer au livreur
+                                    <Send size={14} aria-hidden="true" /> Fiche livreur
                                 </button>
                                 <button
                                     onClick={() => onUpdateStatus(order.id, 'DELIVERED')}
@@ -273,7 +281,7 @@ const OrderRow = ({ order, onClick }: { order: Order; onClick: () => void }) => 
 // --- MAIN ---
 
 export default function Orders() {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
@@ -326,9 +334,9 @@ export default function Orders() {
             if (selectedOrder?.id === orderId) {
                 setSelectedOrder({ ...selectedOrder, status: newStatus });
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error('Update failed', e);
-            toast.error(e.message || 'Impossible de mettre à jour le statut de la commande.');
+            toast.error(e instanceof Error ? e.message : 'Impossible de mettre à jour le statut de la commande.');
             fetchOrders();
         }
     };
@@ -372,6 +380,7 @@ export default function Orders() {
                     order={selectedOrder}
                     onClose={() => setSelectedOrder(null)}
                     onUpdateStatus={updateStatus}
+                    merchantPhone={user?.phone}
                 />
             )}
 

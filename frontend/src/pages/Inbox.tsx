@@ -61,16 +61,18 @@ const Inbox: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState<'all' | 'auto' | 'manual'>('all');
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesBoxRef = useRef<HTMLDivElement>(null);
+    // Identifie la conversation affichée : une réponse arrivée après un
+    // changement de conversation ne doit pas écraser celle qu'on regarde.
+    const displayedChatRef = useRef<string | null>(null);
 
     // Fetch Chats
     const fetchChats = React.useCallback(async () => {
         try {
             const res = await apiClient('/chats');
-            if (!res.ok) throw new Error('Envoi refusé');
-            if (res.ok) {
-                const data = await res.json();
-                setChats(data);
-            }
+            if (!res.ok) throw new Error('Lecture des conversations refusée');
+            const data = await res.json();
+            if (Array.isArray(data)) setChats(data);
         } catch (error) {
             console.error('Error fetching chats', error);
         } finally {
@@ -79,18 +81,22 @@ const Inbox: React.FC = () => {
     }, []);
 
     // Fetch Messages for Selected Chat
-    const fetchMessages = React.useCallback(async (jid: string) => {
-        setLoadingMessages(true);
+    const fetchMessages = React.useCallback(async (jid: string, withLoader = true) => {
+        if (withLoader) setLoadingMessages(true);
         try {
             const res = await apiClient(`/chats/${encodeURIComponent(jid)}/messages`);
-            if (res.ok) {
-                const data = await res.json();
-                setMessages(data);
-            }
+            if (!res.ok) return;
+            const data = await res.json();
+            // Une réponse d'erreur reste du JSON : sans cette vérification,
+            // un objet d'erreur remplaçait la liste des messages.
+            if (!Array.isArray(data)) return;
+            // Le vendeur a pu changer de conversation pendant la requête.
+            if (displayedChatRef.current !== jid) return;
+            setMessages(data);
         } catch (error) {
             console.error('Error fetching messages', error);
         } finally {
-            setLoadingMessages(false);
+            if (withLoader) setLoadingMessages(false);
         }
     }, []);
 
@@ -103,22 +109,29 @@ const Inbox: React.FC = () => {
 
     // Poll messages if chat selected
     useEffect(() => {
-        if (!selectedChat) return;
-        fetchMessages(selectedChat.id); // Initial fetch
+        if (!selectedChat) {
+            displayedChatRef.current = null;
+            return;
+        }
+        const jid = selectedChat.id;
+        displayedChatRef.current = jid;
+        // Vider tout de suite : sans ça, les messages du client précédent
+        // restent visibles sous le nom du nouveau le temps de la requête.
+        setMessages([]);
+        fetchMessages(jid);
 
-        const interval = setInterval(() => {
-            // Background update without loader
-            apiClient(`/chats/${encodeURIComponent(selectedChat.id)}/messages`)
-                .then(res => res.json())
-                .then(data => setMessages(data))
-                .catch(e => console.error(e));
-        }, 8000); // Poll messages every 8s (reduced from 3s)
-
+        const interval = setInterval(() => fetchMessages(jid, false), 8000);
         return () => clearInterval(interval);
     }, [selectedChat, token, fetchMessages]);
 
-    // Scroll to bottom
+    // Descendre vers le dernier message — mais seulement si le vendeur y était
+    // déjà. S'il a remonté l'historique, un rafraîchissement toutes les 8 s le
+    // ramenait de force en bas, rendant la lecture impossible.
     useEffect(() => {
+        const box = messagesBoxRef.current;
+        if (!box) return;
+        const distanceFromBottom = box.scrollHeight - box.scrollTop - box.clientHeight;
+        if (distanceFromBottom > 120) return;
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
@@ -133,11 +146,16 @@ const Inbox: React.FC = () => {
                 body: JSON.stringify({ text: newMessage })
             });
 
-            if (res.ok) {
-                setNewMessage('');
-                // Optimistic update
-                setMessages(prev => [...prev, { role: 'model', parts: [{ text: newMessage }] }]);
+            if (!res.ok) {
+                // Le texte reste dans le champ : le vendeur peut réessayer
+                // sans le retaper. Sans ce cas, un refus du serveur ne
+                // produisait strictement rien à l'écran.
+                toast.error('Message non envoyé. Votre texte est conservé, réessayez.');
+                return;
             }
+            setNewMessage('');
+            // Optimistic update
+            setMessages(prev => [...prev, { role: 'model', parts: [{ text: newMessage }] }]);
         } catch (error) {
             console.error('Failed to send', error);
             toast.error('Message non envoyé. Votre texte est conservé, réessayez.');
@@ -349,7 +367,7 @@ const Inbox: React.FC = () => {
                     })()}
 
                     {/* Messages Area */}
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-black scrollbar-hide">
+                    <div ref={messagesBoxRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-black scrollbar-hide">
                         {loadingMessages ? (
                             <div className="flex justify-center py-10">
                                 <RefreshCw className="animate-spin text-[#00D97E]" />

@@ -247,53 +247,114 @@ export const verifyAccountNumber = async (accountNumber: string, bankCode: strin
 // WEBHOOK HANDLERS
 // ============================================
 
+/**
+ * Traite un événement Paystack.
+ *
+ * Deux règles tiennent tout le reste :
+ * - Une écriture ratée LÈVE. La route répond alors 500 et Paystack retente.
+ *   Acquitter un événement qu'on n'a pas su enregistrer, c'est encaisser un
+ *   paiement sans livrer l'abonnement, sans jamais le revoir passer.
+ * - La métadonnée ne fait pas foi sur le montant. Elle dit quel plan le client
+ *   a choisi ; seul le montant réellement payé décide de ce qu'il reçoit.
+ */
 export const handlePaystackWebhook = async (event: string, data: any) => {
     console.log(`[Paystack Webhook] Event: ${event}`);
 
-    switch (event) {
-        case 'charge.success':
-            const metadata = data.metadata;
-
-            if (metadata?.type === 'subscription') {
-                console.log(`[Paystack] Subscription payment successful for tenant ${metadata.tenantId}`);
-                try {
-                    const expiresAt = new Date();
-                    expiresAt.setDate(expiresAt.getDate() + 30);
-
-                    // Use createSubscription from dbService (which wraps tenantService)
-                    await db.createSubscription({
-                        tenantId: metadata.tenantId,
-                        plan: metadata.plan,
-                        status: 'active',
-                        expiresAt
-                    });
-                    console.log(`[Paystack] ✅ Tenant ${metadata.tenantId} subscription activated.`);
-                } catch (e) {
-                    console.error('[Paystack] ❌ Failed to activate subscription:', e);
-                }
-            } else if (metadata?.type === 'order') {
-                console.log(`[Paystack] Order payment successful: ${metadata.orderId}`);
-                await db.updateOrderStatus(metadata.tenantId, metadata.orderId, 'PAID');
-            }
-            break;
-
-        case 'subscription.create':
-            console.log('[Paystack] New subscription created');
-            break;
-
-        case 'subscription.disable':
-            console.log('[Paystack] Subscription disabled');
-            break;
-
-        case 'transfer.success':
-            console.log('[Paystack] Transfer to vendor successful');
-            break;
-
-        default:
-            console.log(`[Paystack] Unhandled event: ${event}`);
+    if (event !== 'charge.success') {
+        console.log(`[Paystack] Événement sans effet ici : ${event}`);
+        return { received: true };
     }
 
-    return { received: true };
+    const metadata = data?.metadata;
+    const reference: string | undefined = data?.reference;
+    const tenantId: string | undefined = metadata?.tenantId;
+
+    if (!tenantId || !reference) {
+        console.warn('[Paystack] charge.success sans tenantId ou référence — ignoré');
+        return { received: true };
+    }
+
+    // Le registre SQL fait une prise atomique de la référence. Une recherche puis
+    // une insertion dans activity_logs laisserait passer deux webhooks simultanés.
+    const claim = await db.claimPaystackEvent(tenantId, reference, event, {
+        type: metadata.type,
+        plan: metadata.plan,
+        orderId: metadata.orderId,
+        amount: data.amount,
+        currency: data.currency,
+    });
+    if (claim === 'completed') {
+        console.log(`[Paystack] Référence ${reference} déjà traitée — ignorée`);
+        return { received: true };
+    }
+    if (claim === 'processing') {
+        // Ne pas acquitter pendant qu'un autre worker travaille : si celui-ci
+        // tombe, Paystack doit représenter l'événement.
+        throw new Error(`Référence Paystack ${reference} déjà en cours de traitement`);
+    }
+
+    try {
+        if (metadata.type === 'subscription') {
+            const plan = metadata.plan;
+            const expectedAmount = PLAN_PRICES[plan];
+
+            // Le montant payé décide, pas la métadonnée : un paiement de 100 FCFA
+            // annoncé « business » ne doit pas ouvrir un abonnement à 15 000.
+            if (!expectedAmount) {
+                console.error(`[Paystack] Plan inconnu « ${plan} » pour ${tenantId} — abonnement NON activé`);
+                await db.logActivity(tenantId, 'warning', `Paiement reçu pour un plan inconnu (${plan}). Abonnement non activé, contactez le support.`, { paystackReference: reference, plan });
+                await db.completePaystackEvent(tenantId, reference);
+                return { received: true };
+            }
+            if (data.currency !== 'XOF' || data.amount !== expectedAmount * 100) {
+                console.error(`[Paystack] Montant inattendu pour ${tenantId} : ${data.amount} ${data.currency} au lieu de ${expectedAmount * 100} XOF`);
+                await db.logActivity(tenantId, 'warning', `Paiement d'un montant inattendu (${data.amount} ${data.currency}). Abonnement non activé, contactez le support.`, { paystackReference: reference, plan, amount: data.amount, currency: data.currency });
+                await db.completePaystackEvent(tenantId, reference);
+                return { received: true };
+            }
+
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 30);
+            await db.createSubscription({ tenantId, plan, status: 'active', expiresAt, paymentReference: reference });
+            await db.completePaystackEvent(tenantId, reference);
+            await db.logActivity(tenantId, 'action', `Abonnement ${plan} activé pour 30 jours`, { paystackReference: reference, plan });
+            console.log(`[Paystack] ✅ Tenant ${tenantId} subscription activated.`);
+            return { received: true };
+        }
+
+        if (metadata.type === 'order') {
+            const order = await db.getOrderById(tenantId, metadata.orderId);
+            if (!order) {
+                // Un paiement réel sans commande exige une reprise ou une intervention.
+                // L'acquitter le ferait disparaître définitivement des tentatives.
+                throw new Error(`Commande ${metadata.orderId} introuvable pour le paiement ${reference}`);
+            }
+            // Un sous-paiement ne vaut pas commande payée.
+            if (data.currency !== 'XOF' || data.amount < order.total * 100) {
+                console.error(`[Paystack] Paiement insuffisant sur ${order.id} : ${data.amount} ${data.currency} pour ${order.total * 100} XOF attendus`);
+                await db.logActivity(tenantId, 'warning', `Paiement insuffisant sur la commande ${String(order.id).split('-')[1] ?? order.id}. Statut inchangé.`, { paystackReference: reference, orderId: order.id, amount: data.amount, expected: order.total * 100 });
+                await db.completePaystackEvent(tenantId, reference);
+                return { received: true };
+            }
+
+            const updated = await db.updateOrderStatus(tenantId, order.id, 'PAID');
+            if (!updated) throw new Error(`Commande ${order.id} non marquée payée`);
+            await db.completePaystackEvent(tenantId, reference);
+            await db.logActivity(tenantId, 'action', `Commande ${String(order.id).split('-')[1] ?? order.id} payée par Paystack`, { paystackReference: reference, orderId: order.id });
+            return { received: true };
+        }
+
+        console.warn(`[Paystack] Type de métadonnée inconnu : ${metadata.type}`);
+        await db.completePaystackEvent(tenantId, reference);
+        return { received: true };
+    } catch (error) {
+        try {
+            await db.failPaystackEvent(tenantId, reference, error instanceof Error ? error.message : String(error));
+        } catch (ledgerError) {
+            console.error('[Paystack] Impossible de marquer le webhook en échec', ledgerError);
+        }
+        throw error;
+    }
 };
 
 export default {

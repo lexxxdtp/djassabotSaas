@@ -8,7 +8,8 @@ import { toast } from 'react-hot-toast';
 import WhatsAppConnect from './WhatsAppConnect';
 import Subscription from './Subscription';
 import AIPlayground from '../components/AIPlayground';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, TENANT_CACHE_PREFIX } from '../context/AuthContext';
+import { useModalA11y } from '../hooks/useModalA11y';
 import { apiClient } from '../utils/apiClient';
 import type { SettingsConfig } from '../types';
 
@@ -30,10 +31,17 @@ interface SettingsDrawerProps {
 }
 
 const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, title, onSave, saving, children }) => {
+    const dialogRef = useModalA11y(onClose, isOpen);
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+            <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label={title}
+                tabIndex={-1}
+                className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
                 {/* Drag Indicator on Mobile */}
                 <div className="w-12 h-1 bg-[#222] rounded-full mx-auto my-3 md:hidden shrink-0"></div>
 
@@ -193,10 +201,16 @@ export default function Settings() {
         fetchProfile();
     }, [token]);
 
+    // Clé par boutique : une synthèse décrit une boutique précise (ses produits,
+    // son ton, sa politique). Sous une clé globale, elle s'affichait chez le
+    // vendeur suivant connecté sur le même téléphone.
+    const summaryCacheKey = tenant?.id ? `${TENANT_CACHE_PREFIX}aiSummary:${tenant.id}` : null;
+
     useEffect(() => {
-        const saved = localStorage.getItem('aiSummary');
-        if (saved) setAiSummary(saved);
-    }, []);
+        if (!summaryCacheKey) return;
+        const saved = localStorage.getItem(summaryCacheKey);
+        setAiSummary(saved || '');
+    }, [summaryCacheKey]);
 
     const handleSave = async () => {
         if (!token) {
@@ -229,7 +243,7 @@ export default function Settings() {
                 });
                 if (res.ok) {
                     toast.success('Paramètres sauvegardés !');
-                    localStorage.removeItem('aiSummary');
+                    if (summaryCacheKey) localStorage.removeItem(summaryCacheKey);
                     setAiSummary('');
                     setOpenDrawer(null);
                 } else toast.error('Erreur lors de la sauvegarde');
@@ -253,7 +267,7 @@ export default function Settings() {
             const data = await res.json();
             if (data.summary) {
                 setAiSummary(data.summary);
-                localStorage.setItem('aiSummary', data.summary);
+                if (summaryCacheKey) localStorage.setItem(summaryCacheKey, data.summary);
             }
         } catch (e) {
             console.error(e);

@@ -3,6 +3,7 @@ import { X, Camera, Loader2, Plus } from 'lucide-react';
 import { apiClient } from '../../utils/apiClient';
 import type { Product, ProductVariation, VariationTemplate } from '../../types';
 import ProductVariations from './ProductVariations';
+import { useModalA11y } from '../../hooks/useModalA11y';
 import { toast } from 'react-hot-toast';
 
 
@@ -48,7 +49,7 @@ export default function ProductFormModal({
     const [aiAnalyzing, setAiAnalyzing] = useState(false);
     const [variationsEnabled, setVariationsEnabled] = useState(false);
     const [loading, setLoading] = useState(false);
-
+    const dialogRef = useModalA11y(onClose, isOpen);
 
     useEffect(() => {
         if (isOpen) {
@@ -264,6 +265,11 @@ export default function ProductFormModal({
             className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
         >
             <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label={productToEdit ? 'Modifier le produit' : 'Nouveau produit'}
+                tabIndex={-1}
                 onClick={(e) => e.stopPropagation()}
                 className="bg-[#111] border-t sm:border border-[#1a1a1a] w-full sm:max-w-lg max-h-[92vh] sm:max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl shadow-2xl shadow-black/40 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 ease-out"
             >

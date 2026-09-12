@@ -9,19 +9,14 @@ export const whatsappManager = {
     getSessionStatus: (tenantId: string) => manager.getSessionStatus(tenantId),
     requestPairingCode: (tenantId: string, phone: string) => manager.requestPairingCode(tenantId, phone),
     createSession: (tenantId: string) => manager.createSession(tenantId),
+    ensureSession: (tenantId: string) => manager.ensureSession(tenantId),
     cleanupSession: (tenantId: string) => manager.cleanupSession(tenantId),
 
     // Get Session (Expose internal session data for routes)
     getSession: (tenantId: string) => manager.getSession(tenantId),
 
-    // Disconnect (Wrapper around cleanup or socket end)
-    disconnect: async (tenantId: string) => {
-        const session = manager.getSession(tenantId);
-        if (session?.sock) {
-            session.sock.end(undefined);
-        }
-        await manager.cleanupSession(tenantId);
-    }
+    // Déconnexion volontaire : le manager retient qu'aucune minuterie ne doit reconnecter.
+    disconnect: (tenantId: string) => manager.disconnect(tenantId),
 };
 
 export const startAllTenantInstances = async () => {

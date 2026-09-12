@@ -14,6 +14,7 @@ import chatRoutes from './routes/chatRoutes';
 import marketingRoutes from './routes/marketingRoutes';
 import './jobs/abandonedCart';
 import { db } from './services/dbService';
+import { validateProductInput } from './services/productValidation';
 import { authenticateTenant, checkSubscription } from './middleware/auth';
 import { logger } from './utils/logger';
 import { supabase } from './config/supabase';
@@ -50,18 +51,29 @@ app.use(cors({
         // Clean up origin (remove trailing slash if any)
         const cleanOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
 
+        // L'app mobile Capacitor présente une origine locale : elle reste
+        // autorisée en production, contrairement à un navigateur sur localhost.
+        const isCapacitorApp =
+            cleanOrigin === 'capacitor://localhost' ||
+            cleanOrigin === 'ionic://localhost';
+
+        // Serveur de développement : jamais accepté en production, sinon
+        // n'importe quelle page servie en local peut appeler l'API du vendeur.
+        const isLocalDevServer =
+            process.env.NODE_ENV !== 'production' && (
+                cleanOrigin.startsWith('http://localhost:') ||
+                cleanOrigin.startsWith('http://127.0.0.1:') ||
+                cleanOrigin === 'http://localhost' ||
+                cleanOrigin === 'https://localhost'
+            );
+
         const isAllowed =
             allowedOrigins.includes(cleanOrigin) ||
             allowedOrigins.includes(origin) ||
             cleanOrigin === 'https://djassabot-saas.vercel.app' ||
             cleanOrigin === 'https://187-77-171-44.nip.io' ||
-            cleanOrigin.startsWith('http://localhost:') ||
-            cleanOrigin.startsWith('http://127.0.0.1:') ||
-            // App mobile Capacitor (iOS / Android)
-            cleanOrigin === 'capacitor://localhost' ||
-            cleanOrigin === 'ionic://localhost' ||
-            cleanOrigin === 'http://localhost' ||
-            cleanOrigin === 'https://localhost';
+            isCapacitorApp ||
+            isLocalDevServer;
 
         if (isAllowed) {
             return callback(null, true);
@@ -168,13 +180,17 @@ app.get('/api/orders', authenticateTenant, checkSubscription, async (req, res) =
 
 app.put('/api/orders/:id/status', authenticateTenant, checkSubscription, async (req, res) => {
     const { status } = req.body;
-    const VALID_STATUSES = ['PENDING', 'CONFIRMED', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+    // SHIPPING est le statut déclaré dans les types ; SHIPPED était la seule
+    // orthographe acceptée ici. Les deux entrent, une seule est écrite, pour
+    // que les lignes déjà en base et les appels existants restent valides.
+    const VALID_STATUSES = ['PENDING', 'CONFIRMED', 'PAID', 'SHIPPING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
     if (!VALID_STATUSES.includes(status)) {
         res.status(400).json({ error: 'Statut de commande invalide' });
         return;
     }
+    const canonicalStatus = status === 'SHIPPED' ? 'SHIPPING' : status;
     const orderId = req.params.id as string;
-    const updated = await db.updateOrderStatus(req.tenantId!, orderId, status);
+    const updated = await db.updateOrderStatus(req.tenantId!, orderId, canonicalStatus);
     if (updated) res.json(updated);
     else res.status(400).json({ error: 'Failed to update status' });
 });
@@ -267,15 +283,9 @@ app.get('/api/products', authenticateTenant, checkSubscription, async (req, res)
 
 app.post('/api/products', authenticateTenant, checkSubscription, async (req, res) => {
     try {
-        const { name, price, stock } = req.body;
-        if (!name || typeof name !== 'string' || name.trim().length === 0) {
-            return res.status(400).json({ error: 'Nom du produit requis' });
-        }
-        if (price !== undefined && (typeof price !== 'number' || price < 0)) {
-            return res.status(400).json({ error: 'Prix invalide' });
-        }
-        if (stock !== undefined && (typeof stock !== 'number' || stock < 0)) {
-            return res.status(400).json({ error: 'Stock invalide' });
+        const invalid = validateProductInput(req.body, { requireName: true });
+        if (invalid) {
+            return res.status(400).json({ error: invalid });
         }
 
         // Limite du plan Starter : 50 produits (raison d'upgrader vers Pro)
@@ -302,12 +312,9 @@ app.post('/api/products', authenticateTenant, checkSubscription, async (req, res
 app.put('/api/products/:id', authenticateTenant, checkSubscription, async (req, res) => {
     try {
         const productId = req.params.id as string;
-        const { price, stock } = req.body;
-        if (price !== undefined && (typeof price !== 'number' || price < 0)) {
-            return res.status(400).json({ error: 'Prix invalide' });
-        }
-        if (stock !== undefined && (typeof stock !== 'number' || stock < 0)) {
-            return res.status(400).json({ error: 'Stock invalide' });
+        const invalid = validateProductInput(req.body);
+        if (invalid) {
+            return res.status(400).json({ error: invalid });
         }
         const product = await db.updateProduct(req.tenantId!, productId, req.body);
         if (product) {
