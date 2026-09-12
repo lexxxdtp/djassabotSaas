@@ -295,3 +295,33 @@ test('compte actif : rien ne change', async () => {
     await middleware.checkSubscription({ tenantId: 'tenant' }, res, () => { passed = true; });
     assert.equal(passed, true);
 });
+
+// --- Segment VIP : une commande impayée n'est pas une dépense ---
+
+test('marketing : impayées et annulées ne font pas d’un client un VIP', async () => {
+    const sessions = [
+        { tenantId: 'tenant', userId: 'jamais-paye', lastInteraction: new Date() },
+        { tenantId: 'tenant', userId: 'bon-client', lastInteraction: new Date() },
+    ];
+    const orders = [
+        { userId: 'jamais-paye', total: 150000, status: 'PENDING' },
+        { userId: 'jamais-paye', total: 150000, status: 'CANCELLED' },
+        { userId: 'bon-client', total: 120000, status: 'DELIVERED' },
+    ];
+    const routes: Record<string, Function> = {};
+    loadIsolated('../../../routes/marketingRoutes', {
+        express: { Router: () => ({ use() {}, get: (route: string, ...h: Function[]) => { routes[route] = h[h.length - 1]; }, post() {} }) },
+        '../middleware/auth': { authenticateTenant() {} },
+        '../services/dbService': { db: { getOrders: async () => orders, logActivity: async () => {} } },
+        '../services/sessionService': { getActiveSessions: async () => sessions },
+        '../services/baileysManager': { whatsappManager: {} },
+        '../utils/logger': { logger: { info() {}, warn() {}, error() {} } },
+    });
+
+    let payload: any;
+    const res = { status() { return this; }, json(value: unknown) { payload = value; } };
+    await routes['/audience']({ tenantId: 'tenant' }, res);
+    // Sans le filtre, « jamais-paye » comptait 300 000 FCFA et passait VIP.
+    assert.equal(payload.vip, 1);
+    assert.equal(payload.all, 2);
+});

@@ -104,7 +104,7 @@ Cibles : `aiService.ts`, `salesEngine.ts`, `flowHandler.ts`, réglages et catalo
 
 - [ ] Journal de conversations durable distinct des 20 messages de contexte ; historique et pagination adaptés (les sessions actives sur 24 h ne sont pas l'ensemble des clients).
 - [ ] Vrais états lu/non lu ; agrégats serveur au-delà des limites de lecture Supabase ; journal paiements/remboursements avant statistiques d'encaissement réel.
-- [ ] Marketing : type de journal compatible schéma, erreurs visibles, segments n'assimilant pas commandes impayées à dépenses, opposition aux campagnes. Fonctions avancées secondaires au parcours de vente.
+- [~] **Segment VIP corrigé le 12 septembre ; le reste de la ligne est ouvert.** Le calcul additionnait TOUTES les commandes, statut compris : un client ayant commandé pour 150 000 FCFA sans jamais payer, ou ayant annulé, était classé VIP. Le vendeur visait donc sa campagne « meilleurs clients » sur des gens qui ne lui avaient rien rapporté. Seuls les statuts valant de l'argent encaissé comptent désormais, et les montants non finis ou négatifs sont écartés. Restent ouverts : type de journal compatible schéma, erreurs visibles, opposition aux campagnes.
 - [x] **Fait le 11 septembre — les cinq points.** Un refus HTTP à l'envoi ne produisait rien à l'écran (seule une coupure réseau montrait quelque chose) : il affiche maintenant une erreur et conserve le texte. Le sondage écrivait `setMessages` sans vérifier ni le statut ni la forme de la réponse, donc un objet d'erreur remplaçait la liste. Une réponse arrivée après un changement de conversation écrasait celle qu'on regardait : la conversation affichée est désormais comparée avant affichage, et la liste est vidée au changement au lieu de laisser les messages du client précédent sous le nom du nouveau. Le défilement automatique ne s'applique plus que si le vendeur était déjà en bas — sinon un rafraîchissement toutes les 8 secondes le ramenait de force et rendait la lecture de l'historique impossible.
 - [~] **Caches privés isolés le 12 septembre ; le reste de la ligne est ouvert.** La synthèse d'identité générée par l'IA était stockée sous la clé globale `aiSummary` et n'était pas effacée à la déconnexion : sur un téléphone partagé, le vendeur suivant retrouvait la description de la boutique du précédent — produits, ton, politique commerciale. La clé est désormais préfixée par l'identifiant de la boutique, et la déconnexion efface tous les caches portant ce préfixe. Restent ouverts : unifier l'édition produit et compte, supprimer les commandes visuelles inactives, la sauvegarde effective du profil, la mise à jour du contexte utilisateur, la cohérence des champs optionnels.
 - [ ] Onboarding reprenable : minimum d'informations, règles boutique réutilisées, test puis activation explicite ; accueil montrant état réel du bot et prochaine action. Ne pas annoncer « prêt » trop tôt.
@@ -165,6 +165,11 @@ par un paiement réel. Aucune recette visuelle n'a été faite.
 protections en dépendent désormais : le refus des origines CORS locales, et
 l'interdiction des réponses IA factices. Sans cette variable, les deux restent
 en mode permissif.
+
+**Note sur une dette du CLAUDE.md devenue fausse** : le §6bis.2 affirme que seul
+`Orders.tsx` utilise `apiClient` et que « les 14 autres pages utilisent `fetch`
+direct ». Vérifié le 12 septembre : plus aucun `fetch` direct dans
+`frontend/src`, la migration est faite.
 
 **Ce qui reste le plus gros trou de la priorité 1** : la transaction durable
 commande + stock + état n'existe toujours pas. La clé d'idempotence empêche le
