@@ -1,0 +1,34 @@
+-- Suppression de la table morte `carts`
+--
+-- Pourquoi : c'était la SEULE table du schéma public sans Row Level Security,
+-- donc lisible et modifiable par quiconque possède la clé publique `anon` —
+-- clé qui est, par conception, embarquée dans le bundle frontend. Supabase la
+-- signalait en ERROR (lint 0013_rls_disabled_in_public).
+--
+-- Toutes les autres tables ont RLS actif sans aucune politique : tout y est
+-- refusé par défaut, et le backend passe par la clé `service_role` qui
+-- contourne RLS. `carts` était la seule exception à cette règle.
+--
+-- Pourquoi la supprimer plutôt qu'activer RLS : elle datait du schéma initial
+-- et n'a jamais servi. Le panier vit dans `sessions.temp_order` (voir
+-- `sessionService.ts`). Vérifié avant suppression, le 12 septembre 2026 :
+--   - 0 ligne ;
+--   - aucune référence dans backend/src ni frontend/src ;
+--   - aucune clé étrangère entrante ;
+--   - aucune vue ni fonction dépendante.
+--
+-- Structure au moment de la suppression, pour mémoire si elle devait revenir
+-- un jour (mais un panier persistant devrait alors être conçu avec RLS dès
+-- le départ, et non recopié tel quel) :
+--
+--   id         uuid    not null default uuid_generate_v4()
+--   tenant_id  uuid    null
+--   user_id    text    not null
+--   items      jsonb   null default '[]'::jsonb
+--   created_at timestamp null default now()
+--   updated_at timestamp null default now()
+--
+-- Sans CASCADE volontairement : si une dépendance apparaît d'ici l'exécution,
+-- la migration doit échouer bruyamment plutôt qu'emporter autre chose.
+
+DROP TABLE IF EXISTS public.carts;

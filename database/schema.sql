@@ -99,20 +99,12 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_settings_tenant_id ON settings(tenant_id);
 
 -- ==========================================
--- 7. TABLE CARTS (Ajouter tenant_id)
+-- 7. TABLE CARTS — SUPPRIMÉE
 -- ==========================================
--- Créer si n'existe pas
-CREATE TABLE IF NOT EXISTS carts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
-    user_id TEXT NOT NULL, -- WhatsApp phone number
-    items JSONB DEFAULT '[]'::jsonb,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_carts_tenant_id ON carts(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_carts_user_id ON carts(user_id);
+-- Retirée du schéma le 12 septembre 2026 : elle n'a jamais servi (le panier vit
+-- dans sessions.temp_order) et elle était la seule table sans RLS, donc exposée
+-- à la clé publique anon. La recréer ici ferait revenir la faille à chaque
+-- installation fraîche. Voir database/migrations/drop_unused_carts_table.sql.
 
 -- ==========================================
 -- 8. ROW LEVEL SECURITY (RLS)
@@ -139,12 +131,6 @@ DROP POLICY IF EXISTS tenant_isolation_settings ON settings;
 CREATE POLICY tenant_isolation_settings ON settings
     USING (tenant_id::text = current_setting('app.current_tenant', true));
 
--- Carts
-ALTER TABLE carts ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS tenant_isolation_carts ON carts;
-CREATE POLICY tenant_isolation_carts ON carts
-    USING (tenant_id::text = current_setting('app.current_tenant', true));
 
 -- ==========================================
 -- 9. SEED DATA (Tenant de test)
