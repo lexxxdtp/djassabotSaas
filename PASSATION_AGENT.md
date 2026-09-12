@@ -133,6 +133,44 @@ Relecture du diff et des rapports par un agent tiers, sans exécution distante. 
 
 Nuance sur `audit/offline-probes.cjs` : ses dix sondes ont été remplacées par des tests de régression et n'exécutent plus rien. Son « 0 constat reproduit » ne doit pas être cité comme une vérification indépendante des corrections.
 
+## Session du 12 septembre — ce qui a été corrigé, et ce que ça ne prouve pas
+
+Quinze commits sur la branche `claude/dois-commiter-3h9adk`. Les cases concernées
+ci-dessus sont annotées individuellement : `[x]` pour fait, `[~]` pour
+partiellement fait avec le reste explicité. Rien n'a été déployé, aucune
+migration n'a été appliquée, aucun accès distant n'a eu lieu.
+
+**Vérifications à la fin de la session** : 114 tests backend (contre 83), TypeScript
+backend, ESLint frontend sans erreur pour la première fois, build frontend,
+`git diff --check`. Alertes de dépendances : backend 25 → 9 (aucune critique ni
+haute), frontend 18 → 0.
+
+**Ce que ces vérifications ne prouvent pas.** Aucun test ne touche une vraie base,
+une vraie connexion WhatsApp, une vraie clé IA, Firebase, Resend ou Paystack. Les
+corrections de paiement sont validées par des tests à dépendances remplacées, pas
+par un paiement réel. Aucune recette visuelle n'a été faite.
+
+**Deux points demandent une action humaine avant la remise en ligne :**
+
+1. **Appliquer `database/migrations/add_order_idempotency_key.sql`** dans Supabase.
+   Sans elle, la protection anti-doublon de commande est INACTIVE : le code
+   détecte la colonne absente, journalise un avertissement une fois, et crée la
+   commande comme avant. La même remarque vaut toujours pour
+   `add_adjust_stock_rpc.sql`, jamais appliquée.
+2. **Vérifier Baileys manuellement.** Il est passé de rc.9 à rc14 dans la plage
+   déjà déclarée. Jumelage, réception d'un message, envoi d'une image : à
+   éprouver sur un vrai numéro avant d'ouvrir aux vendeurs.
+
+**Vérifier aussi que `NODE_ENV=production` est bien positionné sur le VPS.** Deux
+protections en dépendent désormais : le refus des origines CORS locales, et
+l'interdiction des réponses IA factices. Sans cette variable, les deux restent
+en mode permissif.
+
+**Ce qui reste le plus gros trou de la priorité 1** : la transaction durable
+commande + stock + état n'existe toujours pas. La clé d'idempotence empêche le
+doublon, mais un arrêt entre le décrément du stock et la création de la commande
+laisse encore un écart que seule une compensation, faillible, rattrape.
+
 ## Décisions à demander à Alex
 
 Modalités de renouvellement et grâce ; réservation du stock et moment exact de confirmation ; politique retours/remboursements ; conservation des données ; budget/fournisseur IA ; navigation de la refonte. Achats, migration distante, déploiement, messages et paiements réels nécessitent le périmètre/accord approprié. Ne pas refaire décider les petites corrections déjà autorisées, mais ne pas déduire une autorisation de production d'un « continue ».
