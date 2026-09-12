@@ -234,3 +234,30 @@ test('production sans clé IA : aucune réponse factice n’est envoyée au clie
         else process.env.NODE_ENV = previous;
     }
 });
+
+// --- Réinitialisation : ne jamais brûler le lien sur une écriture non confirmée ---
+
+test('mot de passe : un enregistrement raté ne consomme pas le lien', async () => {
+    const deleted: unknown[] = [];
+    const controller = loadIsolated('../../../controllers/authController', {
+        bcryptjs: { hash: async () => 'hash', compare: async () => true },
+        '../middleware/auth': { generateToken: () => 'jwt' },
+        '../services/dbService': { db: {
+            verifyAuthToken: async () => ({ valid: true, identifier: 'user-1' }),
+            updateUser: async () => null, // updateUser rend null au lieu de lever
+            deleteAuthToken: async (...args: unknown[]) => { deleted.push(args); },
+        } },
+        '../services/resendService': {}, '../services/firebaseAdminService': {},
+        uuid: { v4: () => 'id' },
+        '../utils/logger': { logger: { info() {}, warn() {}, error() {} } },
+    });
+
+    let status = 200; let payload: any;
+    const res = { status(code: number) { status = code; return this; }, json(value: unknown) { payload = value; } };
+    await controller.resetPassword({ body: { token: 'lien', password: 'Motdepasse1' } }, res);
+
+    // Sinon : mot de passe inchangé, lien consommé, utilisateur enfermé dehors.
+    assert.equal(status, 500);
+    assert.match(payload.error, /lien reste valide/);
+    assert.equal(deleted.length, 0);
+});
