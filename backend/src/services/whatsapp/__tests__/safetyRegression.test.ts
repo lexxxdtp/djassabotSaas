@@ -261,3 +261,37 @@ test('mot de passe : un enregistrement raté ne consomme pas le lien', async () 
     assert.match(payload.error, /lien reste valide/);
     assert.equal(deleted.length, 0);
 });
+
+// --- Suspension : un jeton déjà émis ne doit pas survivre à la suspension ---
+
+function loadAuthMiddleware(tenant: unknown, subscription: unknown) {
+    return loadIsolated('../../../middleware/auth', {
+        jsonwebtoken: { verify: () => ({}), sign: () => 'jwt' },
+        '../services/dbService': { db: {
+            getTenantById: async () => tenant,
+            getSubscriptionByTenantId: async () => subscription,
+        } },
+        '../utils/logger': { logger: { info() {}, warn() {}, error() {}, debug() {} } },
+    });
+}
+
+test('compte suspendu : l’accès est coupé même avec un jeton encore valide', async () => {
+    const middleware = loadAuthMiddleware({ id: 'tenant', status: 'suspended' }, null);
+    let status = 200; let payload: any; let passed = false;
+    const res = { status(code: number) { status = code; return this; }, json(value: unknown) { payload = value; } };
+    // Le JWT dure sept jours : sans cette vérification, la suspension ne prenait
+    // effet qu'à l'expiration du jeton.
+    await middleware.checkSubscription({ tenantId: 'tenant' }, res, () => { passed = true; });
+    assert.equal(passed, false);
+    assert.equal(status, 403);
+    assert.equal(payload.code, 'ACCOUNT_SUSPENDED');
+});
+
+test('compte actif : rien ne change', async () => {
+    const middleware = loadAuthMiddleware({ id: 'tenant', status: 'active' },
+        { status: 'active', expiresAt: new Date(Date.now() + 86400000) });
+    let passed = false;
+    const res = { status() { return this; }, json() {} };
+    await middleware.checkSubscription({ tenantId: 'tenant' }, res, () => { passed = true; });
+    assert.equal(passed, true);
+});
