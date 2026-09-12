@@ -373,3 +373,52 @@ export const cartSummary = (items: CartItem[]): string =>
             : '';
         return `${i.quantity}x ${i.productName}${vars} — ${formatFcfa(i.price * i.quantity)}`;
     }).join('\n');
+
+// ---------------------------------------------------------------------------
+// CHOIX D'UNE OPTION DE VARIATION
+// ---------------------------------------------------------------------------
+
+export interface VariationOption {
+    value: string;
+    [key: string]: unknown;
+}
+
+export type OptionChoice =
+    | { kind: 'match'; option: VariationOption }
+    | { kind: 'none' }
+    | { kind: 'ambiguous'; candidates: VariationOption[] };
+
+/**
+ * Choisit l'option demandée par le client, ou refuse de choisir.
+ *
+ * L'ancienne règle était `option.value.toLowerCase().includes(saisie)`. Or
+ * « xs » contient « s » et « xl » contient « l » : un client qui répondait
+ * « S » se voyait vendre du XS, et « L » du XL — sans que rien ne le signale,
+ * ni à lui ni au vendeur, jusqu'à la livraison.
+ *
+ * Ordre : correspondance exacte, puis numéro de la liste, puis correspondance
+ * partielle SEULEMENT si elle désigne une option et une seule. Deux candidates
+ * font demander de préciser, ce qui vaut mieux qu'un tirage au sort.
+ */
+export const chooseVariationOption = (input: string, options: VariationOption[]): OptionChoice => {
+    const typed = input.trim().toLowerCase();
+    if (!typed || !Array.isArray(options) || options.length === 0) return { kind: 'none' };
+
+    const exact = options.filter(o => String(o.value).trim().toLowerCase() === typed);
+    if (exact.length === 1) return { kind: 'match', option: exact[0] };
+    if (exact.length > 1) return { kind: 'ambiguous', candidates: exact };
+
+    // « 2 » = deuxième option proposée. Uniquement si la saisie est un nombre seul,
+    // sinon une option nommée « 2XL » serait interprétée comme un rang.
+    if (/^\d+$/.test(typed)) {
+        const index = parseInt(typed, 10) - 1;
+        if (index >= 0 && index < options.length) return { kind: 'match', option: options[index] };
+        return { kind: 'none' };
+    }
+
+    const partial = options.filter(o => String(o.value).trim().toLowerCase().includes(typed));
+    if (partial.length === 1) return { kind: 'match', option: partial[0] };
+    if (partial.length > 1) return { kind: 'ambiguous', candidates: partial };
+
+    return { kind: 'none' };
+};

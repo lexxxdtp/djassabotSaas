@@ -15,6 +15,7 @@ import {
     looksLikeQuestion,
     looksLikeAddress,
     splitDeliveryItem,
+    chooseVariationOption,
     DealValidation,
 } from './salesEngine';
 import { Product, Settings, CartItem } from '../../types';
@@ -119,10 +120,17 @@ export async function handleFlow(
         }
 
         const currentVariation = product.variations[tempOrder.variationIndex];
-        const userInput = text.trim().toLowerCase();
 
-        const selectedOption = currentVariation.options.find((o: any) => o.value.toLowerCase().includes(userInput)) ||
-            currentVariation.options[parseInt(userInput) - 1];
+        const choice = chooseVariationOption(text, currentVariation.options as any);
+
+        // Deux options possibles : demander, jamais trancher à la place du client.
+        if (choice.kind === 'ambiguous') {
+            await reply(sock, tenantId, remoteJid,
+                `Vous voulez dire laquelle ? ${choice.candidates.map(o => o.value).join(' ou ')} 🙂`);
+            return;
+        }
+
+        const selectedOption: any = choice.kind === 'match' ? choice.option : undefined;
 
         if (!selectedOption) {
             // Question pendant le choix → l'IA répond puis on re-propose les options
