@@ -20,6 +20,9 @@ export interface Tenant {
     status?: string;
 }
 
+/** Préfixe des caches propres à une boutique, effacés à la déconnexion. */
+export const TENANT_CACHE_PREFIX = 'tenantCache:';
+
 interface AuthContextType {
     user: User | null;
     tenant: Tenant | null;
@@ -86,6 +89,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.removeItem('tenant');
         sessionStorage.removeItem('tenant');
         localStorage.removeItem('verificationSkipped');
+
+        // Caches privés de boutique : sans ce nettoyage, le vendeur suivant sur
+        // le même téléphone retrouvait la synthèse d'identité du précédent.
+        for (const key of Object.keys(localStorage)) {
+            if (key.startsWith(TENANT_CACHE_PREFIX)) localStorage.removeItem(key);
+        }
     }, []);
 
     const refreshUser = useCallback(async () => {

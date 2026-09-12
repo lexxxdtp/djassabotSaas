@@ -8,7 +8,7 @@ import { toast } from 'react-hot-toast';
 import WhatsAppConnect from './WhatsAppConnect';
 import Subscription from './Subscription';
 import AIPlayground from '../components/AIPlayground';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, TENANT_CACHE_PREFIX } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
 import type { SettingsConfig } from '../types';
 
@@ -193,10 +193,16 @@ export default function Settings() {
         fetchProfile();
     }, [token]);
 
+    // Clé par boutique : une synthèse décrit une boutique précise (ses produits,
+    // son ton, sa politique). Sous une clé globale, elle s'affichait chez le
+    // vendeur suivant connecté sur le même téléphone.
+    const summaryCacheKey = tenant?.id ? `${TENANT_CACHE_PREFIX}aiSummary:${tenant.id}` : null;
+
     useEffect(() => {
-        const saved = localStorage.getItem('aiSummary');
-        if (saved) setAiSummary(saved);
-    }, []);
+        if (!summaryCacheKey) return;
+        const saved = localStorage.getItem(summaryCacheKey);
+        setAiSummary(saved || '');
+    }, [summaryCacheKey]);
 
     const handleSave = async () => {
         if (!token) {
@@ -229,7 +235,7 @@ export default function Settings() {
                 });
                 if (res.ok) {
                     toast.success('Paramètres sauvegardés !');
-                    localStorage.removeItem('aiSummary');
+                    if (summaryCacheKey) localStorage.removeItem(summaryCacheKey);
                     setAiSummary('');
                     setOpenDrawer(null);
                 } else toast.error('Erreur lors de la sauvegarde');
@@ -253,7 +259,7 @@ export default function Settings() {
             const data = await res.json();
             if (data.summary) {
                 setAiSummary(data.summary);
-                localStorage.setItem('aiSummary', data.summary);
+                if (summaryCacheKey) localStorage.setItem(summaryCacheKey, data.summary);
             }
         } catch (e) {
             console.error(e);
