@@ -1,8 +1,12 @@
 # 🤖 CLAUDE ROADMAP — DjassaBot SaaS
 
+## 12 septembre 2026 — relecture de la branche Claude et durcissement Paystack
+
+Relecture de `claude/dois-commiter-3h9adk` (`01aceab`) : 121 tests initiaux réussis, mais quatre risques restaient ouverts. Le correctif `codex/secure-payments` (`6650823`) recharge le montant et le contenu depuis la commande du tenant, refuse d'acquitter une commande non mise à jour, ajoute un registre SQL atomique des webhooks et une référence unique d'abonnement, protège la vérification inter-tenant et distingue livraison offerte de tarif inconnu. Validation hors ligne : 127 tests backend, TypeScript backend, build et ESLint frontend réussis. La migration `add_paystack_event_ledger.sql` et une recette réelle restent obligatoires avant production. Aucun déploiement VPS.
+
 ## 11 septembre 2026 — arrêt pour passation à la demande d'Alex
 
-Crédits insuffisants : aucun développement supplémentaire. Création de `PASSATION_AGENT.md` : cinq lots locaux, fichiers nouveaux à transmettre, vérifications acquises (83 tests), limites et reste à faire priorisé, décisions produit et précautions de reprise. VIABILITE reste le TODO officiel. Documentation seule pour cette étape ; aucun test métier relancé, commit, push, migration ou déploiement. Un autre agent doit récupérer ce dossier avec les fichiers non suivis : GitHub seul ne contient pas ces corrections.
+Crédits insuffisants : aucun développement supplémentaire. Création de `PASSATION_AGENT.md` : cinq lots locaux, vérifications acquises (83 tests), limites et reste à faire priorisé, décisions produit et précautions de reprise. Les cinq lots ont depuis été regroupés dans le commit local `aedd5ef`, non pushé. Création de `DESIGN.md` à partir de la page de garde appréciée par Alex : fondations, composants, architecture mobile, traitement de chaque écran, accessibilité, performance, méthode et critères d'acceptation. VIABILITE reste le TODO officiel. Documentation seule pour cette étape ; aucun test métier relancé, push, migration ou déploiement. Un autre agent doit récupérer ce dossier et son commit local : GitHub seul ne contient pas ces corrections.
 
 ## Suite : isolation du simulateur
 

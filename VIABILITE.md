@@ -1,6 +1,6 @@
 # ✅ DjassaBot — Checklist de viabilité produit
 
-> **Passation du 11 septembre :** [PASSATION_AGENT.md](PASSATION_AGENT.md) contient l'inventaire des cinq lots locaux, les limites des 83 tests et la liste détaillée du travail restant par priorité. Lire ce document avant de reprendre. Tout est encore local, non commité/non pushé. Les paragraphes de lots ci-dessous sont chronologiques : leurs « restes à faire » décrivent leur date, et certains ont été traités dans les lots suivants. Les grandes cases restent ouvertes tant que tous leurs sous-points ne sont pas validés.
+> **Passation actualisée le 12 septembre :** [PASSATION_AGENT.md](PASSATION_AGENT.md) donne les branches et validations exactes. Lire aussi [DESIGN.md](DESIGN.md) pour la future refonte. La base `aedd5ef` est sur `main`; les compléments restent à intégrer depuis `claude/dois-commiter-3h9adk` puis `codex/secure-payments`. Les grandes cases restent ouvertes tant que les migrations et la recette réelle n'ont pas été validées.
 
 > **Mise à jour du 11 septembre 2026 : les cases historiques ci-dessous ne constituent pas une validation actuelle.** L'audit hors ligne sur `308ed0e` reproduit dix défauts, dont la reconnexion bloquée et un succès de stock malgré une erreur. Le VPS est arrêté selon Alex. La référence actuelle est [l'audit consolidé](AUDIT_VIABILITE_2026-09-11.md), avec preuves, limites et ordre proposé. Pas de feu vert pour des clients payants à ce stade.
 

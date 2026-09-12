@@ -4,9 +4,11 @@
 
 Alex suspend le travail par manque de crédits et demande une transmission, pas un nouveau développement. Le VPS Hostinger est arrêté faute de renouvellement. L'objectif reste une application de vente WhatsApp fiable, simple sur téléphone, adaptée aux commerçants de Côte d'Ivoire et à leur budget. Ne pas confondre belle interface, tests isolés réussis et produit prêt à vendre.
 
-Lire les instructions `AGENTS.md`, le contexte `CLAUDE.md`, puis le TODO officiel `VIABILITE.md`, cette passation, l'audit consolidé `AUDIT_VIABILITE_2026-09-11.md` et le journal `CLAUDE_ROADMAP.md`. Cette passation précise l'état courant ; les affirmations historiques « tout est corrigé » ne font pas foi. L'audit global du 10 septembre est préliminaire ; les constats détaillés des audits décrivent parfois l'état AVANT les cinq lots ci-dessous.
+Lire les instructions `AGENTS.md`, le contexte `CLAUDE.md`, puis le TODO officiel `VIABILITE.md`, cette passation, la direction `DESIGN.md`, l'audit consolidé `AUDIT_VIABILITE_2026-09-11.md` et le journal `CLAUDE_ROADMAP.md`. Cette passation précise l'état courant ; les affirmations historiques « tout est corrigé » ne font pas foi. L'audit global du 10 septembre est préliminaire ; les constats détaillés des audits décrivent parfois l'état AVANT les cinq lots ci-dessous.
 
-**État de livraison : les cinq lots sont locaux, non commités et non pushés.** Dernière base connue : `308ed0e`, branche main ; aucune nouvelle vérification distante à la passation. Un clone GitHub seul ne contient donc pas ce travail. Reprendre dans ce dossier ou transférer les fichiers modifiés ET nouveaux, après contrôle des secrets. `git diff` seul omet les fichiers non suivis. Ne pas embarquer `.env`, clés Firebase, identifiants WhatsApp, `node_modules` ou archives non examinées. `backend.zip` préexistait : laissé intact, pas un livrable validé. Cette archive de 36 Mo contient `backend/.env` et `firebase-admin-key.json` : elle est désormais exclue par `.gitignore`. Ne jamais la committer, la joindre à un transfert ni l'extraire dans un dépôt partagé ; vérifier `git status` avant tout `git add`.
+**État de livraison vérifié le 12 septembre 2026 :** `main` et `origin/main` pointent sur `aedd5ef`. Les compléments de Claude sont sur `claude/dois-commiter-3h9adk` au commit `01aceab`. Leur relecture a trouvé quatre risques de paiement/livraison, corrigés et vérifiés sur la branche locale `codex/secure-payments` au commit `6650823`, qui contient déjà toute la branche de Claude. Cette branche atteint 127 tests backend, TypeScript backend, build et ESLint frontend réussis. Elle n'est pas encore fusionnée ni poussée. La migration `add_paystack_event_ledger.sql` doit impérativement être appliquée avant de déployer ce code. Aucune recette Supabase, Paystack ou WhatsApp réelle n'a été faite puisque le VPS reste arrêté.
+
+Ne pas embarquer `.env`, clés Firebase, identifiants WhatsApp, `node_modules` ou archives non examinées. `backend.zip` préexistait : laissé intact, pas un livrable validé. Cette archive de 36 Mo contient `backend/.env` et `firebase-admin-key.json` : elle est exclue par `.gitignore`. Ne jamais la committer, la joindre à un transfert ni l'extraire dans un dépôt partagé ; vérifier `git status` avant tout `git add`.
 
 ## Ce qui est déjà corrigé localement — ne pas refaire
 
@@ -99,6 +101,8 @@ Cibles : `sessionManager.ts`, gestion Baileys, `messageHandler.ts`, relances, co
 Cibles : `aiService.ts`, `salesEngine.ts`, `flowHandler.ts`, réglages et catalogue. Valider budget et politique de données avec Alex avant tout benchmark payant.
 
 ### 7. Données, interface et prise en main
+
+La direction complète de la future refonte, dérivée de la page de garde appréciée par Alex, est désormais consignée dans `DESIGN.md`. Elle doit guider les wireframes et composants, mais ne ferme aucun problème métier ci-dessous.
 
 - [ ] Journal de conversations durable distinct des 20 messages de contexte ; historique et pagination adaptés (les sessions actives sur 24 h ne sont pas l'ensemble des clients).
 - [ ] Vrais états lu/non lu ; agrégats serveur au-delà des limites de lecture Supabase ; journal paiements/remboursements avant statistiques d'encaissement réel.

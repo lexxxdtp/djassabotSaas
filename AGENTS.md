@@ -12,6 +12,8 @@ mobile-first, français — parfois en transcription vocale, le fond est toujour
 2. **`VIABILITE.md`** — la checklist de viabilité : état réel case par case et
    plan d'action priorisé. **C'est le TODO officiel du projet.**
 3. `CLAUDE_ROADMAP.md` — journal détaillé des sessions précédentes.
+4. **`PASSATION_AGENT.md`** — état local actuel, limites des tests et ordre de reprise.
+5. **`DESIGN.md`** — direction officielle de la future refonte, dérivée de la page de garde.
 
 ## Règles essentielles (résumé — détail dans CLAUDE.md)
 

@@ -1,6 +1,6 @@
 # DjassaBot — Briefing IA (Claude, Gemini/Antigravity, Cursor…)
 
-> **État courant — 11 septembre 2026 :** lire [PASSATION_AGENT.md](PASSATION_AGENT.md) et [VIABILITE.md](VIABILITE.md) avant toute reprise. VPS arrêté, audit non clos, cinq lots corrigés uniquement en local ; 83 tests isolés passent mais aucune validation production. Les affirmations de complétude de juillet ci-dessous sont historiques et ne remplacent pas cette passation. Alex demande maintenant uniquement de documenter pour transmettre à un autre agent.
+> **État courant — 12 septembre 2026 :** lire [PASSATION_AGENT.md](PASSATION_AGENT.md), [VIABILITE.md](VIABILITE.md) et [DESIGN.md](DESIGN.md) avant toute reprise. VPS arrêté et aucune validation production. Les premiers lots sont sur `main` jusqu'à `aedd5ef`; les compléments de Claude sont sur `claude/dois-commiter-3h9adk` (`01aceab`) et le durcissement Paystack/livraison vérifié est sur `codex/secure-payments` (`6650823`). Les affirmations de complétude historiques ne remplacent pas cette passation.
 
 > Document de mise au courant rapide pour toute session IA future.
 > Donne le contexte produit, technique et l'historique des décisions clés
