@@ -12,6 +12,7 @@ import {
     X,
 } from 'lucide-react';
 import { apiClient } from '../utils/apiClient';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 export type Audience = 'all' | 'vip' | 'recent';
 export interface AudienceCounts { all: number; vip: number; recent: number }
@@ -104,6 +105,8 @@ export const MarketingView: React.FC<MarketingViewProps> = ({
     sending, feedback, onSend,
 }) => {
     const [confirmOpen, setConfirmOpen] = useState(false);
+    // Un envoi en cours ne doit pas être interrompu par Échap.
+    const confirmDialogRef = useModalA11y(() => { if (!sending) setConfirmOpen(false); }, confirmOpen);
 
     const audienceCount = counts ? counts[audience] : null;
     const audienceLabel = AUDIENCE_OPTIONS.find(o => o.key === audience)?.label || '';
@@ -273,9 +276,11 @@ export const MarketingView: React.FC<MarketingViewProps> = ({
                     onClick={() => { if (!sending) setConfirmOpen(false); }}
                 >
                     <div
+                        ref={confirmDialogRef}
                         role="dialog"
                         aria-modal="true"
                         aria-label="Confirmer l'envoi de la campagne"
+                        tabIndex={-1}
                         onClick={e => e.stopPropagation()}
                         className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col"
                     >

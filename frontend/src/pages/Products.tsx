@@ -6,6 +6,7 @@ import ProductFormModal from '../components/products/ProductFormModal';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 function CardSkeleton() {
     return (
@@ -30,6 +31,7 @@ export default function Products() {
 
     // Delete Modal State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const deleteDialogRef = useModalA11y(() => setIsDeleteModalOpen(false), isDeleteModalOpen);
     const [deleteProductId, setDeleteProductId] = useState<string | null>(null);
 
     const { token } = useAuth();
@@ -200,7 +202,13 @@ export default function Products() {
             {/* Delete Confirmation Modal */}
             {isDeleteModalOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div
+                        ref={deleteDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Confirmer la suppression du produit"
+                        tabIndex={-1}
+                        className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
                         <h3 className="text-lg font-bold text-white mb-2">Supprimer ce produit ?</h3>
                         <p className="text-[#888] text-sm mb-6">Cette action est irréversible. Le produit ne sera plus disponible.</p>
                         <div className="flex gap-3">

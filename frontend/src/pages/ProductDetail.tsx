@@ -4,6 +4,7 @@ import { ArrowLeft, Trash2, Image as ImageIcon, X, Plus, Tags, Bot, Check } from
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
+import { useModalA11y } from '../hooks/useModalA11y';
 import {
     hasActiveVariations,
     computeTotalStock,
@@ -260,6 +261,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
         onBack, onSave, onDelete, onChange, onImageUpload, onRemoveImage, onToggleVariations,
     } = props;
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const deleteDialogRef = useModalA11y(() => setConfirmDelete(false), confirmDelete);
 
     const active = hasActiveVariations(product.variations);
     const stockValue = computeTotalStock(product);
@@ -482,9 +484,11 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
                     onClick={() => setConfirmDelete(false)}
                 >
                     <div
+                        ref={deleteDialogRef}
                         role="dialog"
                         aria-modal="true"
                         aria-label="Confirmer la suppression"
+                        tabIndex={-1}
                         onClick={e => e.stopPropagation()}
                         className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300"
                     >
