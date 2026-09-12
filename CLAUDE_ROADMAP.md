@@ -2,7 +2,7 @@
 
 ## 12 septembre 2026 — relecture de la branche Claude et durcissement Paystack
 
-Relecture de `claude/dois-commiter-3h9adk` (`01aceab`) : 121 tests initiaux réussis, mais quatre risques restaient ouverts. Le correctif `codex/secure-payments` (`6650823`) recharge le montant et le contenu depuis la commande du tenant, refuse d'acquitter une commande non mise à jour, ajoute un registre SQL atomique des webhooks et une référence unique d'abonnement, protège la vérification inter-tenant et distingue livraison offerte de tarif inconnu. Validation hors ligne : 127 tests backend, TypeScript backend, build et ESLint frontend réussis. La migration `add_paystack_event_ledger.sql` et une recette réelle restent obligatoires avant production. Aucun déploiement VPS.
+Relecture de `claude/dois-commiter-3h9adk` (`01aceab`) : 121 tests initiaux réussis, mais quatre risques restaient ouverts. Le correctif `codex/secure-payments` (`6650823`) recharge le montant et le contenu depuis la commande du tenant, refuse d'acquitter une commande non mise à jour, ajoute un registre SQL atomique des webhooks et une référence unique d'abonnement, protège la vérification inter-tenant et distingue livraison offerte de tarif inconnu. Ces changements et la documentation ont ensuite été fusionnés dans le `main` local. Validation du résultat : 127 tests backend, TypeScript backend, build et ESLint frontend réussis. La migration `add_paystack_event_ledger.sql` et une recette réelle restent obligatoires avant production. Aucun déploiement VPS.
 
 ## 11 septembre 2026 — arrêt pour passation à la demande d'Alex
 

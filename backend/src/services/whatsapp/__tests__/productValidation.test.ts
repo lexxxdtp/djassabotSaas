@@ -10,7 +10,6 @@ test('produit : NaN et Infinity refusés comme montants', () => {
     assert.match(String(validateProductInput({ stock: NaN })), /Stock invalide/);
     assert.equal(validateProductInput({ price: 1500, stock: 3 }), null);
 });
-
 test('produit : plancher de négociation cohérent avec le prix affiché', () => {
     assert.match(String(validateProductInput({ price: 1000, minPrice: 1500 })), /ne peut pas dépasser/);
     assert.match(String(validateProductInput({ minPrice: -1 })), /Prix minimum invalide/);
@@ -38,4 +37,3 @@ test('produit : variantes et options vérifiées', () => {
     // Un supplément négatif est une remise légitime.
     assert.equal(validateProductInput({ variations: [{ name: 'Taille', options: [{ value: 'M', stock: 2, priceModifier: -500 }] }] }), null);
 });
-
