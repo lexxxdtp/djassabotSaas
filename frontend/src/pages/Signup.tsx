@@ -6,6 +6,7 @@ import {
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth, type User as AuthUser, type Tenant } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 // Visual business categories tailored for African commerce
 const BUSINESS_TYPES = [
@@ -26,6 +27,7 @@ const MAX_AGE = 80;
 const BIRTH_YEARS = Array.from({ length: MAX_AGE - MIN_AGE + 1 }, (_, i) => CURRENT_YEAR - MIN_AGE - i);
 
 const Signup: React.FC = () => {
+    usePageTitle('Créer ma boutique');
     const navigate = useNavigate();
     const { login, isAuthenticated } = useAuth();
     const [step, setStep] = useState<1 | 2 | 3>(1);

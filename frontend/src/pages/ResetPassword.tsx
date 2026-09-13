@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Lock, ArrowRight } from 'lucide-react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { apiClient } from '../utils/apiClient';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const ResetPassword: React.FC = () => {
+    usePageTitle('Nouveau mot de passe');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Bot } from 'lucide-react';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 /**
  * Pages légales — Conditions d'utilisation et Politique de confidentialité.
@@ -9,7 +10,9 @@ import { ArrowLeft, Bot } from 'lucide-react';
  * d'un avocat ivoirien pour une revue finale avant la croissance.
  */
 
-const LegalLayout = ({ title, updated, children }: { title: string; updated: string; children: React.ReactNode }) => (
+const LegalLayout = ({ title, updated, children }: { title: string; updated: string; children: React.ReactNode }) => {
+    usePageTitle(title);
+    return (
     <div className="min-h-screen bg-black text-white">
         <header className="border-b border-[#1a1a1a] px-6 py-4">
             <div className="max-w-3xl mx-auto flex items-center justify-between">
@@ -19,23 +22,27 @@ const LegalLayout = ({ title, updated, children }: { title: string; updated: str
                     </div>
                     <span className="font-bold">DjassaBot</span>
                 </Link>
-                <Link to="/" className="flex items-center gap-1.5 text-sm text-[#888] hover:text-white transition-colors">
-                    <ArrowLeft className="w-4 h-4" /> Retour
+                {/* min-h-11 : 20 px de haut, c'était sous le seuil tactile confortable. */}
+                <Link to="/" className="flex items-center gap-1.5 min-h-11 px-2 -mr-2 text-sm text-[#888] hover:text-white transition-colors">
+                    <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Retour
                 </Link>
             </div>
         </header>
         <main className="max-w-3xl mx-auto px-6 py-12">
             <h1 className="text-3xl font-bold tracking-tight mb-2">{title}</h1>
-            <p className="text-[#555] text-sm mb-10">Dernière mise à jour : {updated}</p>
+            {/* #555 sur noir = 2,82 de contraste, sous le minimum AA de 4,5. #888 est
+                déjà dans le design system et passe à 5,9. */}
+            <p className="text-[#888] text-sm mb-10">Dernière mise à jour : {updated}</p>
             <div className="space-y-8 text-[#aaa] text-[15px] leading-relaxed [&_h2]:text-white [&_h2]:font-bold [&_h2]:text-lg [&_h2]:mb-2 [&_strong]:text-white">
                 {children}
             </div>
         </main>
-        <footer className="border-t border-[#1a1a1a] py-8 text-center text-[#444] text-xs">
+        <footer className="border-t border-[#1a1a1a] py-8 text-center text-[#888] text-xs">
             © 2026 DjassaBot — Abidjan, Côte d'Ivoire
         </footer>
     </div>
-);
+    );
+};
 
 export const Terms = () => (
     <LegalLayout title="Conditions d'utilisation" updated="11 juin 2026">

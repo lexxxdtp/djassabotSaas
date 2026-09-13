@@ -4,8 +4,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { apiClient } from '../utils/apiClient';
 import { auth } from '../firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const ForgotPassword: React.FC = () => {
+    usePageTitle('Mot de passe oublié');
     const [usePhone, setUsePhone] = useState(false);
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');

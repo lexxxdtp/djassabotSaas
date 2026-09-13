@@ -35,12 +35,12 @@
 .lp-button:active, .lp-demo-tabs button:active { transform: scale(.97); }
 .lp-button-outline { border: 1px solid #3a3a3a; color: #fff; background: transparent; }
 .lp-button-dark { background: #000; color: #fff; }
-.lp-text-link { display: inline-flex; align-items: center; gap: 12px; font-size: 13px; white-space: nowrap; }
+.lp-text-link { display: inline-flex; align-items: center; gap: 12px; font-size: 13px; white-space: nowrap; min-height: 44px; }
 .lp-play { width: 32px; height: 32px; border: 1px solid #414141; border-radius: 50%; display: grid; place-items: center; }
 .lp-menu-toggle, .lp-mobile-nav { display: none; }
 .lp-eyebrow { display: flex; align-items: center; gap: 9px; color: #aaa; font-size: 10px; line-height: 1.6; font-weight: 600; letter-spacing: .13em; }
 .lp-hero { display: grid; grid-template-columns: 1.13fr 1fr; align-items: center; gap: 25px; padding-top: 66px; padding-bottom: 35px; min-height: 720px; }
-.lp-hero-copy { position: relative; z-index: 2; }
+.lp-hero-copy { position: relative; z-index: 2; min-width: 0; }
 .lp-hero-copy h1 { font-size: clamp(60px, 6.8vw, 90px); font-weight: 650; letter-spacing: -.07em; line-height: .99; margin-top: 25px; margin-bottom: 28px; }
 .lp-hero-copy h1 em { font-size: .86em; white-space: nowrap; line-height: 1.2; }
 .lp-hero-description { font-size: 21px; line-height: 1.5; font-weight: 500; letter-spacing: -.02em; }
@@ -49,7 +49,7 @@
 .lp-trial { display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 11px; margin-top: 17px !important; }
 .lp-trial svg { color: var(--lp-accent); }
 .lp-trial > span { margin: 0 2px; }
-.lp-hero-art { position: relative; height: 620px; isolation: isolate; }
+.lp-hero-art { position: relative; height: 620px; isolation: isolate; min-width: 0; }
 .lp-disc { position: absolute; width: 470px; height: 470px; left: 50%; top: 49%; transform: translate(-50%, -50%); border-radius: 50%; background: var(--lp-accent); overflow: hidden; z-index: -1; }
 .lp-disc > span { position: absolute; font-size: 440px; font-weight: 900; letter-spacing: -.15em; color: #000; opacity: .1; top: -135px; left: -30px; transform: rotate(-20deg); }
 .lp-orbit { position: absolute; width: 550px; height: 550px; border: 1px solid #202020; left: 50%; top: 49%; border-radius: 50%; transform: translate(-50%, -50%); z-index: -2; }
@@ -99,7 +99,7 @@
 .lp-ticker-track > div { display: flex; align-items: center; }
 .lp-ticker-track > div > span { display: flex; align-items: center; gap: 45px; padding-right: 45px; font-size: 21px; font-weight: 750; letter-spacing: -.03em; }
 .lp-spark { font-size: 30px; line-height: 1; }
-.lp-motion-toggle { position: absolute; right: 5%; top: 20px; display: grid; place-items: center; width: 32px; height: 32px; background: #000; color: var(--lp-accent); border: 1px solid var(--lp-accent); border-radius: 50%; }
+.lp-motion-toggle { position: absolute; right: 5%; top: 20px; display: grid; place-items: center; width: 44px; height: 44px; background: #000; color: var(--lp-accent); border: 1px solid var(--lp-accent); border-radius: 50%; }
 .landing .lp-motion-toggle:focus-visible { outline-color: #000; }
 .lp-section { padding-block: 125px 30px; }
 .landing h2 { font-size: clamp(38px, 4.3vw, 58px); line-height: 1.05; font-weight: 600; letter-spacing: -.06em; }
@@ -212,6 +212,9 @@
 .lp-footer-top { display: flex; align-items: center; gap: 70px; padding-bottom: 40px; }
 .lp-footer-top > p { font-size: 12px; color: #999; line-height: 1.7; }
 .lp-footer-top nav { display: flex; gap: 23px; margin-left: auto; font-size: 11px; color: #aaa; }
+/* Les liens de pied de page mesuraient 15 px de haut. On agrandit la zone
+   tactile sans déplacer le texte, grâce à une marge négative compensatoire. */
+.lp-footer-top nav a { display: inline-flex; align-items: center; min-height: 44px; margin-block: -14px; }
 .lp-footer-bottom { display: flex; justify-content: space-between; gap: 16px; border-top: 1px solid var(--lp-border); padding-top: 23px; color: #999; font-size: 9px; }
 .lp-footer-bottom > span:last-child { font-size: 8px; letter-spacing: .06em; }
 .lp-footer-bottom .lp-green { font-size: 16px; margin-left: 8px; }
@@ -259,7 +262,10 @@
     .lp-menu-toggle { display: grid; place-items: center; width: 40px; height: 44px; }
     .lp-mobile-nav { display: grid; padding: 10px 32px 22px; border-top: 1px solid #222; }
     .lp-mobile-nav a { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; font-size: 15px; }
-    .lp-hero { grid-template-columns: 1fr; padding-top: 50px; gap: 10px; }
+    /* minmax(0, 1fr) et non 1fr : une piste « 1fr » se dimensionne sur le
+       contenu minimal de ses enfants, ici l'illustration large de 480 px, ce
+       qui faisait déborder tout le bloc de texte hors de l'écran. */
+    .lp-hero { grid-template-columns: minmax(0, 1fr); padding-top: 50px; gap: 10px; }
     .lp-hero-copy { max-width: 640px; }
     .lp-hero-copy h1 { font-size: clamp(56px, 10vw, 80px); }
     .lp-hero-actions { flex-wrap: nowrap; }
@@ -307,7 +313,7 @@
     .lp-login { display: none; }
     .lp-nav-actions { gap: 8px; }
     .lp-button-small { font-size: 11px; gap: 5px; padding: 10px 11px; }
-    .lp-menu-toggle { width: 30px; }
+    .lp-menu-toggle { width: 44px; }
     .lp-mobile-nav { padding-inline: 20px; }
     .lp-hero { padding-top: 37px; padding-bottom: 0; }
     .lp-eyebrow { font-size: 8px; letter-spacing: .1em; }
@@ -399,6 +405,31 @@
     .lp-footer-top nav { gap: 20px; font-size: 10px; }
     .lp-footer-bottom { flex-direction: column; gap: 9px; }
 }
+/*
+ * Très petits écrans (320–400 px). Ces largeurs existent encore sur les
+ * Android d'entrée de gamme de la cible, et rien ne les traitait : le dernier
+ * palier s'arrêtait à 540 px.
+ *
+ * Le défaut principal venait de « Même sans vous. » en white-space: nowrap.
+ * Une ligne insécable impose sa largeur à la colonne de grille qui la contient,
+ * ici 480 px — sur un écran de 320. Tout le bloc de texte débordait donc et se
+ * retrouvait coupé au bord droit : le ® de la marque, le point final du titre,
+ * le « À » de la description. La ligne peut se replier ici ; l'effet
+ * typographique reste lisible sur deux lignes, tandis qu'un texte tronqué, non.
+ */
+@media (max-width: 400px) {
+    .lp-container { width: calc(100% - 32px); }
+    .lp-hero-copy h1 { font-size: clamp(40px, 13vw, 48px); }
+    .lp-hero-copy h1 em { white-space: normal; }
+    .lp-hero-description { font-size: 16px; }
+    .lp-hero-detail { max-width: 100%; }
+    /* Le bouton du menu passait sur deux lignes faute de place. */
+    .lp-button-small { padding: 9px 10px; font-size: 10px; white-space: nowrap; }
+    .lp-nav { gap: 6px; }
+    /* Le tampon décoratif sortait de l'écran par la droite. */
+    .lp-art-stamp { right: 4px; transform: scale(.85); transform-origin: top right; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     html:has(.landing) { scroll-behavior: auto; }
     .landing *, .landing *::before, .landing *::after { animation: none !important; transition: none !important; }

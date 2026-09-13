@@ -1,9 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <!-- Ni maximum-scale ni user-scalable=no : ils interdisaient le zoom à deux
+         doigts, donc empêchaient une vendeuse presbyte d'agrandir son tableau de
+         bord. Ils servaient à éviter le zoom iOS au focus d'un champ, qui ne se
+         produit pas ici : tous les champs héritent d'une taille de 16 px. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- PWA / Mobile App Meta -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -13,7 +17,8 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     
-    <title>DjassaBot — Vendeur IA</title>
+    <meta name="description" content="DjassaBot répond à vos clients sur WhatsApp, négocie et prend les commandes, à votre image et selon vos règles. Pour les commerçants de Côte d'Ivoire." />
+    <title>DjassaBot — Votre vendeur IA sur WhatsApp</title>
   </head>
   <body>
     <div id="root"></div>

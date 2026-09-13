@@ -3,8 +3,10 @@ import { ArrowRight, Mail, Lock, TrendingUp, Users, Zap } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth, type User, type Tenant } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const Login: React.FC = () => {
+    usePageTitle('Connexion');
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(true);
@@ -101,14 +103,14 @@ const Login: React.FC = () => {
                             <div key={stat.label} className="rounded-xl border border-[#1a1a1a] bg-[#111] p-4">
                                 <stat.icon className="w-4 h-4 text-[#00D97E] mb-3" />
                                 <div className="text-white font-bold text-xl tracking-tight">{stat.value}</div>
-                                <div className="text-[#555] text-[10px] uppercase tracking-wider mt-0.5">{stat.label}</div>
+                                <div className="text-[#888] text-[10px] uppercase tracking-wider mt-0.5">{stat.label}</div>
                             </div>
                         ))}
                     </div>
                 </div>
 
                 {/* Footer */}
-                <p className="text-[#555] text-xs">© 2026 DjassaBot — Abidjan, Côte d'Ivoire 🇨🇮</p>
+                <p className="text-[#888] text-xs">© 2026 DjassaBot — Abidjan, Côte d'Ivoire 🇨🇮</p>
             </div>
 
             {/* ========== DROITE : FORMULAIRE ========== */}
@@ -170,16 +172,26 @@ const Login: React.FC = () => {
                         </div>
 
                         {/* Remember + forgot */}
-                        <div className="flex items-center justify-between pt-1">
-                            <div className="flex items-center gap-2">
-                                <button type="button" onClick={() => setRememberMe(!rememberMe)}
-                                    className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${rememberMe ? 'bg-[#00D97E] border-[#00D97E]' : 'bg-transparent border-[#333]'}`}
+                        <div className="flex items-center justify-between pt-1 gap-3">
+                            {/* La case seule mesurait 16x16 : intappable sur téléphone, sans nom
+                                accessible, et son texte n'était relié que par un onClick. Case et
+                                texte ne font plus qu'une cible, annoncée correctement. */}
+                            <button
+                                type="button"
+                                role="checkbox"
+                                aria-checked={rememberMe}
+                                onClick={() => setRememberMe(!rememberMe)}
+                                className="flex items-center gap-2 py-2.5 -my-2.5 text-xs text-[#888] hover:text-white transition-colors cursor-pointer"
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-all ${rememberMe ? 'bg-[#00D97E] border-[#00D97E]' : 'bg-transparent border-[#333]'}`}
                                 >
                                     {rememberMe && <svg className="w-2.5 h-2.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                                </button>
-                                <label onClick={() => setRememberMe(!rememberMe)} className="text-xs text-[#888] cursor-pointer">Me garder connecté</label>
-                            </div>
-                            <Link to="/forgot-password" className="text-xs text-[#00D97E] hover:text-white transition-colors font-medium">Mot de passe oublié ?</Link>
+                                </span>
+                                Me garder connecté
+                            </button>
+                            <Link to="/forgot-password" className="text-xs text-[#00D97E] hover:text-white transition-colors font-medium py-2.5 -my-2.5">Mot de passe oublié ?</Link>
                         </div>
 
                         {/* Bouton */}
@@ -195,7 +207,7 @@ const Login: React.FC = () => {
 
                     <p className="mt-8 text-center text-sm text-[#888]">
                         Pas de compte ?{' '}
-                        <Link to="/signup" className="text-[#00D97E] hover:text-white font-bold transition-colors">Créer un compte</Link>
+                        <Link to="/signup" className="text-[#00D97E] hover:text-white font-bold transition-colors inline-block py-2 -my-2">Créer un compte</Link>
                     </p>
                 </div>
             </div>
