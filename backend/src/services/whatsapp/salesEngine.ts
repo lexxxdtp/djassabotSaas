@@ -5,7 +5,8 @@ import { Product, Settings, CartItem, DeliveryZone, SelectedVariation } from '..
  * WhatsApp (flowHandler) et le simulateur du dashboard (aiRoutes).
  *
  * Rôle : c'est le garde-fou serveur autour de l'IA. L'IA propose (tags
- * [ADD_TO_CART]), le serveur DISPOSE : prix plancher, stock, quantités.
+ * [ADD_TO_CART], [REMOVE_FROM_CART], [SET_QUANTITY]), le serveur DISPOSE :
+ * prix plancher, stock, quantités, puis total accepté par le client.
  * Aucune promesse faite au client ne part sans être validée ici.
  */
 
@@ -74,7 +75,7 @@ export const buildInventoryContext = (products: Product[]): string => {
 };
 
 // ---------------------------------------------------------------------------
-// PARSING DES TAGS [ADD_TO_CART]
+// PARSING DES TAGS DE PANIER ET D'IMAGE
 // ---------------------------------------------------------------------------
 
 export interface RawDeal {
@@ -83,15 +84,27 @@ export interface RawDeal {
     unitPrice: number;
 }
 
+/** Modification d'un panier existant demandée par l'IA. */
+export interface CartEdit {
+    kind: 'remove' | 'set_quantity';
+    productRef: string;
+    quantity?: number;   // set_quantity uniquement ; 0 revient à retirer
+}
+
 export interface ParsedResponse {
     cleaned: string;      // réponse sans les tags (texte client)
     deals: RawDeal[];
+    cartEdits: CartEdit[];
     imageUrls: string[];  // URLs des tags [IMAGE: url] (non filtrées — à valider par l'appelant)
-    invalidDealCount: number;
+    invalidDealCount: number; // tags de panier mal formés (ajout, retrait ou quantité)
 }
 
 const CART_TAG_RE = /\[ADD_TO_CART:\s*([^\]]*)\]/gi;
+const REMOVE_TAG_RE = /\[REMOVE_FROM_CART:\s*([^\]]*)\]/gi;
+const QUANTITY_TAG_RE = /\[SET_QUANTITY:\s*([^\]]*)\]/gi;
 const IMAGE_TAG_RE = /\[IMAGE:\s*([^\]]+?)\s*\]/gi;
+/** Tag machine inventé ou recopié du contexte ([CONFIRM_ORDER], [IMAGES_AVAILABLE: …]) : jamais montré au client. */
+const STRAY_TAG_RE = /\[[A-Z][A-Z_]{2,}(?::[^\]]*)?\]/g;
 
 const parseNumber = (raw: string): number => {
     const cleaned = raw.trim().toLowerCase().replace(/\s/g, ' ');
@@ -108,9 +121,10 @@ const parseNumber = (raw: string): number => {
     return Number.isSafeInteger(n) ? n : NaN;
 };
 
-/** Extrait les tags [ADD_TO_CART] et [IMAGE] de la réponse IA, renvoie le texte nettoyé. */
+/** Extrait les tags de panier et [IMAGE] de la réponse IA, renvoie le texte nettoyé. */
 export const parseAIResponse = (response: string): ParsedResponse => {
     const deals: RawDeal[] = [];
+    const cartEdits: CartEdit[] = [];
     const imageUrls: string[] = [];
     let invalidDealCount = 0;
 
@@ -126,14 +140,33 @@ export const parseAIResponse = (response: string): ParsedResponse => {
         return '';
     });
 
+    cleaned = cleaned.replace(REMOVE_TAG_RE, (_m, body: string) => {
+        const ref = body.trim();
+        if (ref && !ref.includes('|')) cartEdits.push({ kind: 'remove', productRef: ref });
+        else invalidDealCount++;
+        return '';
+    });
+
+    cleaned = cleaned.replace(QUANTITY_TAG_RE, (_m, body: string) => {
+        const [ref = '', qty = '', ...extra] = body.split('|');
+        const quantity = /k/i.test(qty) ? NaN : parseNumber(qty);
+        if (!extra.length && ref.trim() && Number.isSafeInteger(quantity) && quantity >= 0 && quantity <= MAX_QTY_PER_LINE) {
+            cartEdits.push({ kind: 'set_quantity', productRef: ref.trim(), quantity });
+        } else {
+            invalidDealCount++;
+        }
+        return '';
+    });
+
     cleaned = cleaned.replace(IMAGE_TAG_RE, (_m, url: string) => {
         const u = url.trim();
         if (u && !imageUrls.includes(u)) imageUrls.push(u);
         return '';
     });
 
+    cleaned = cleaned.replace(STRAY_TAG_RE, '');
     cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
-    return { cleaned, deals, imageUrls, invalidDealCount };
+    return { cleaned, deals, cartEdits, imageUrls, invalidDealCount };
 };
 
 // ---------------------------------------------------------------------------
@@ -253,6 +286,188 @@ export const validateDeal = (products: Product[], deal: RawDeal, settings: Setti
 };
 
 // ---------------------------------------------------------------------------
+// REVALIDATION DU PANIER AU MOMENT DU « OUI »
+// ---------------------------------------------------------------------------
+
+const findOption = (product: Product, selection: SelectedVariation) =>
+    product.variations?.find(v => v.name === selection.name)?.options.find(o => o.value === selection.value);
+
+/**
+ * Somme des suppléments des options choisies, ou null si une option n'existe
+ * plus dans la fiche (supprimée ou renommée depuis l'ajout au panier).
+ */
+export const selectedModifier = (product: Product, selected: SelectedVariation[] | undefined): number | null => {
+    let total = 0;
+    for (const selection of selected || []) {
+        const option = findOption(product, selection);
+        if (!option) return null;
+        const modifier = option.priceModifier ?? 0;
+        if (!Number.isFinite(modifier)) return null;
+        total += modifier;
+    }
+    return total;
+};
+
+export type CartIssue =
+    | { kind: 'REMOVED'; item: CartItem }
+    | { kind: 'STOCK'; item: CartItem; available: number }
+    | { kind: 'PRICE'; item: CartItem; newPrice: number };
+
+/**
+ * Revérifie le panier contre le catalogue et les réglages ACTUELS, juste avant
+ * d'enregistrer la commande. Entre l'ajout et le « oui », le vendeur a pu
+ * changer un prix, un plancher, une option ou le stock : le client doit alors
+ * revoir le récapitulatif, pas payer un prix que plus rien ne justifie.
+ *
+ * - produit ou option disparus, quantité invalide, prix final négatif → ligne retirée
+ * - stock (produit ou option) insuffisant pour les quantités cumulées → ligne retirée
+ * - prix hors [plancher, prix public], suppléments inclus → ramené dans l'intervalle
+ */
+export const revalidateCart = (products: Product[], items: CartItem[], settings: Settings): { items: CartItem[]; issues: CartIssue[] } => {
+    const lines = splitDeliveryItem(items).products;
+    const optionKey = (productId: string, selection: SelectedVariation) => `${productId} ${selection.name} ${selection.value}`;
+    const perProduct = new Map<string, number>();
+    const perOption = new Map<string, number>();
+    for (const line of lines) {
+        const id = String(line.productId);
+        perProduct.set(id, (perProduct.get(id) ?? 0) + line.quantity);
+        for (const selection of line.selectedVariations || []) {
+            const key = optionKey(id, selection);
+            perOption.set(key, (perOption.get(key) ?? 0) + line.quantity);
+        }
+    }
+
+    const kept: CartItem[] = [];
+    const issues: CartIssue[] = [];
+    for (const item of lines) {
+        const id = String(item.productId);
+        const product = products.find(p => String(p.id) === id);
+        const modifier = product ? selectedModifier(product, item.selectedVariations) : null;
+        const ceiling = product && modifier !== null ? product.price + modifier : NaN;
+        if (!product || modifier === null || !Number.isSafeInteger(item.quantity) || item.quantity < 1
+            || !Number.isSafeInteger(ceiling) || ceiling < 0) {
+            issues.push({ kind: 'REMOVED', item });
+            continue;
+        }
+
+        if (product.manageStock !== false) {
+            let available: number | undefined;
+            const stock = availableStock(product);
+            if (stock !== undefined && (perProduct.get(id) ?? 0) > stock) available = stock;
+            for (const selection of item.selectedVariations || []) {
+                const option = findOption(product, selection);
+                if (option && option.stock !== undefined && option.stock !== null
+                    && (perOption.get(optionKey(id, selection)) ?? 0) > option.stock) {
+                    available = Math.min(available ?? option.stock, option.stock);
+                }
+            }
+            if (available !== undefined) {
+                issues.push({ kind: 'STOCK', item, available: Math.max(0, available) });
+                continue;
+            }
+        }
+
+        const floor = Math.min(ceiling, Math.max(0, Math.ceil(priceFloor(product, settings) + modifier)));
+        let newPrice = item.price;
+        if (!Number.isSafeInteger(item.price) || item.price > ceiling) newPrice = ceiling;
+        else if (item.price < floor) newPrice = floor;
+
+        if (newPrice !== item.price) {
+            issues.push({ kind: 'PRICE', item, newPrice });
+            kept.push({ ...item, price: newPrice });
+            continue;
+        }
+        kept.push(item);
+    }
+    return { items: kept, issues };
+};
+
+/** Explication client des corrections apportées par revalidateCart. */
+export const describeCartIssues = (issues: CartIssue[]): string => issues.map(issue => {
+    const name = `${issue.item.productName}${variationSuffix(issue.item)}`;
+    if (issue.kind === 'REMOVED') return `- ${name} : n'est plus disponible, je l'ai retiré`;
+    if (issue.kind === 'STOCK') {
+        return issue.available > 0
+            ? `- ${name} : il n'en reste que ${issue.available}, je l'ai retiré (redites-moi la quantité voulue)`
+            : `- ${name} : épuisé entre-temps, je l'ai retiré`;
+    }
+    return `- ${name} : le prix est maintenant de ${formatFcfa(issue.newPrice)} l'unité`;
+}).join('\n');
+
+// ---------------------------------------------------------------------------
+// MODIFICATION DU PANIER (retrait, quantité)
+// ---------------------------------------------------------------------------
+
+export type CartEditOutcome =
+    | { ok: true; items: CartItem[]; changes: string[] }
+    | { ok: false; message: string };
+
+/**
+ * Applique au panier RÉEL les retraits et changements de quantité demandés par
+ * l'IA. Une demande ambiguë ou impossible ne modifie rien et renvoie la
+ * question à poser au client : jamais de « c'est fait » sans que ce soit fait.
+ */
+export const applyCartEdits = (items: CartItem[], edits: CartEdit[], products: Product[]): CartEditOutcome => {
+    let lines = splitDeliveryItem(items).products.map(item => ({ ...item }));
+    const changes: string[] = [];
+
+    for (const edit of edits) {
+        let targets = lines.filter(line => String(line.productId) === edit.productRef);
+        if (targets.length === 0) {
+            const product = findProduct(products, edit.productRef)
+                ?? findProduct(lines.map(line => ({ id: line.productId, name: line.productName }) as Product), edit.productRef);
+            if (product) targets = lines.filter(line => String(line.productId) === String(product.id));
+        }
+        if (targets.length === 0) {
+            return {
+                ok: false,
+                message: lines.length > 0
+                    ? `Je ne retrouve pas cet article dans votre panier 🤔 Il contient :\n${cartSummary(lines)}\n\nLequel voulez-vous modifier ?`
+                    : 'Votre panier est vide pour le moment 🙂 Dites-moi ce qui vous ferait plaisir !',
+            };
+        }
+
+        if (edit.kind === 'remove' || edit.quantity === 0) {
+            lines = lines.filter(line => !targets.includes(line));
+            changes.push(`${targets[0].productName} retiré`);
+            continue;
+        }
+
+        if (targets.length > 1) {
+            return {
+                ok: false,
+                message: `Vous avez plusieurs ${targets[0].productName} dans le panier :\n${cartSummary(targets)}\n\nLequel voulez-vous modifier ?`,
+            };
+        }
+
+        const line = targets[0];
+        const quantity = edit.quantity as number;
+        const product = products.find(p => String(p.id) === String(line.productId));
+        if (product && product.manageStock !== false) {
+            let available = availableStock(product);
+            for (const selection of line.selectedVariations || []) {
+                const option = findOption(product, selection);
+                if (option && option.stock !== undefined && option.stock !== null) {
+                    available = Math.min(available ?? option.stock, option.stock);
+                }
+            }
+            if (available !== undefined && quantity > available) {
+                return {
+                    ok: false,
+                    message: available > 0
+                        ? `Il ne reste que ${available} ${line.productName}${variationSuffix(line)} en stock 📦 Dites-moi la quantité voulue (${available} maximum).`
+                        : `Désolé, ${line.productName}${variationSuffix(line)} est épuisé 😔`,
+                };
+            }
+        }
+        line.quantity = quantity;
+        changes.push(`${line.productName}${variationSuffix(line)} : ${quantity}`);
+    }
+
+    return { ok: true, items: lines, changes };
+};
+
+// ---------------------------------------------------------------------------
 // LIVRAISON
 // ---------------------------------------------------------------------------
 
@@ -268,7 +483,9 @@ export const matchDeliveryZone = (address: string, zones: DeliveryZone[] | undef
     if (!address || !Array.isArray(zones) || zones.length === 0) return undefined;
     const addr = ` ${normalize(address)} `;
     // On privilégie la zone au nom le plus long (ex: "Abidjan Nord" avant "Abidjan")
-    const sorted = [...zones].sort((a, b) => b.name.length - a.name.length);
+    const sorted = zones
+        .filter(z => z && typeof z.name === 'string')
+        .sort((a, b) => b.name.length - a.name.length);
     for (const z of sorted) {
         const zn = normalize(z.name);
         if (zn && addr.includes(` ${zn} `)) return z;
@@ -284,17 +501,20 @@ export const computeDelivery = (itemsTotal: number, address: string, settings: S
         return { known: true, fee: 0, label: 'Retrait / livraison à convenir' };
     }
 
+    // Sans zone reconnue, aucun tarif n'est annoncé — pas même « offert » : le
+    // seuil de gratuité ne vaut que là où le vendeur livre réellement.
+    const zone = matchDeliveryZone(address, settings.deliveryZones);
+    const price = Number(zone?.price);
+    if (!zone || !Number.isSafeInteger(price) || price < 0) {
+        return { known: false, fee: 0, label: 'Livraison à confirmer selon votre zone' };
+    }
+
     const threshold = settings.freeDeliveryThreshold || 0;
     if (threshold > 0 && itemsTotal >= threshold) {
-        return { known: true, fee: 0, label: 'Livraison offerte' };
+        return { known: true, fee: 0, label: 'Livraison offerte', zone };
     }
 
-    const zone = matchDeliveryZone(address, settings.deliveryZones);
-    if (zone) {
-        return { known: true, fee: zone.price, label: `Livraison (${zone.name})`, zone };
-    }
-
-    return { known: false, fee: 0, label: 'Livraison à confirmer selon votre zone' };
+    return { known: true, fee: price, label: `Livraison (${zone.name})`, zone };
 };
 
 /** Ligne d'article représentant la livraison dans la commande (visible dans le dashboard). */
@@ -312,8 +532,20 @@ export const splitDeliveryItem = (items: CartItem[]): { products: CartItem[]; de
     return { products, delivery };
 };
 
+/**
+ * Lignes enregistrées dans la commande. Une ligne à 0 est nécessaire pour
+ * distinguer une livraison réellement offerte d'une zone inconnue dont le
+ * tarif doit encore être confirmé (aucune ligne).
+ */
+export const buildOrderLines = (productItems: CartItem[], quote: DeliveryQuote): CartItem[] =>
+    quote.known ? [...productItems, buildDeliveryItem(quote)] : [...productItems];
+
+/** Total des articles, hors livraison. */
+export const cartTotal = (items: CartItem[]): number =>
+    splitDeliveryItem(items).products.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
 // ---------------------------------------------------------------------------
-// INTENTIONS CLIENT (annulation, question) — heuristiques sans appel IA
+// INTENTIONS CLIENT (annulation, question, confirmation) — sans appel IA
 // ---------------------------------------------------------------------------
 
 const CANCEL_PATTERNS = [
@@ -342,15 +574,19 @@ export const looksLikeQuestion = (text: string): boolean => {
     return QUESTION_STARTERS.some(q => t.startsWith(normalize(q)));
 };
 
+/** « Je ne suis pas à Cocody », « c'est pas à Yopougon » : une zone citée pour être exclue. */
+const NEGATED_PLACE_RE = /\b(?:ne|n)\s+(?:suis|habite|reste|vis|serai|sera|est|livre|livrez)\s+(?:pas|plus)\b|\b(?:suis|habite|reste|vis)\s+(?:pas|plus)\b|\bpas\s+(?:a|au|aux|en|dans|sur|vers|chez)\b|\b(?:hors|dehors)\b/;
+
 /**
  * Heuristique : ce texte ressemble-t-il à une adresse de livraison plausible ?
- * (On refuse les questions, annulations et messages trop courts pour être une adresse.)
+ * (On refuse les questions, annulations, négations et messages trop courts.)
  */
 export const looksLikeAddress = (text: string, zones: string[] = []): boolean => {
     if (isCancelIntent(text) || looksLikeQuestion(text)) return false;
     const t = normalize(text);
     if (t.length < 4) return false;
     if (!/[a-z]/.test(t)) return false; // uniquement chiffres/émojis → pas une adresse
+    if (NEGATED_PLACE_RE.test(t)) return false;
     if (/\b(merci|plutot|ajoute|retire|remplace|photos?|prix|prends|annuler)\b/.test(t)) return false;
     const places = ['abidjan', 'cocody', 'angre', 'yopougon', 'abobo', 'adjame', 'marcory', 'koumassi', 'treichville', 'plateau', 'port bouet', 'bingerville', 'anyama', 'bouake', 'yamoussoukro', 'daloa', 'san pedro', ...zones];
     return places.some(place => {
@@ -359,20 +595,91 @@ export const looksLikeAddress = (text: string, zones: string[] = []): boolean =>
     }) || /\b(rue|avenue|quartier|carrefour|cite|lot|ilot)\s+\S+/.test(t);
 };
 
+const CONFIRM_PHRASES = [
+    'oui', 'ouais', 'ouai', 'wi', 'yes', 'ok', 'okay', 'okey', 'd accord', 'daccord', 'dac',
+    'je confirme', 'confirme', 'confirmer', 'c est bon', 'cest bon', 'c bon', 'je valide', 'on valide',
+    'valide', 'valider', 'go', 'vas y', 'vasy', 'vazy', 'allez y', 'parfait', 'ca marche', 'exactement', 'tout a fait',
+];
+const CONFIRM_WORDS = new Set([
+    ...CONFIRM_PHRASES.flatMap(phrase => phrase.split(' ')),
+    'merci', 'beaucoup', 'svp', 'stp', 'chef', 'patron', 'boss', 'deh', 'bien', 'sur', 'pour', 'moi',
+    'ma', 'la', 'commande', 'je', 'on', 'hein', 'tantie', 'tonton', 'maman',
+]);
+const CONFIRM_BLOCKERS = /\b(?:non|nan|pas|mais|sauf|attends?|attendez|plutot|ajoute|ajouter|retire|retirer|enleve|enlever|change|changer|annule|annuler|combien|quand|comment|pourquoi)\b/;
+
+/** Répétitions de chat (« ouiii », « okkk ») ramenées à la forme simple. */
+const squeeze = (t: string) => t.replace(/(.)\1{2,}/g, '$1');
+
+/**
+ * Le client valide-t-il, sans rien ajouter, le récapitulatif qu'on vient de lui
+ * montrer ? Tout doute (question, négation, demande de modification, mot
+ * inconnu) renvoie false : un « oui mais… » ne crée jamais une commande.
+ */
+export const isConfirmIntent = (text: string): boolean => {
+    const raw = text.trim();
+    if (!raw || raw.includes('?')) return false;
+    if (/^[\s\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}\u{FE0F}\u{200D}]+$/u.test(raw)) return /👍|👌|✅/u.test(raw);
+    const t = squeeze(normalize(raw));
+    if (!t || t.length > 60 || CONFIRM_BLOCKERS.test(t)) return false;
+    if (!CONFIRM_PHRASES.some(phrase => t === phrase || t.startsWith(`${phrase} `))) return false;
+    return t.split(' ').every(word => CONFIRM_WORDS.has(word));
+};
+
+/** « Non », « pas encore » : le client refuse le récapitulatif sans dire quoi changer. */
+export const isNegativeReply = (text: string): boolean => {
+    const t = squeeze(normalize(text));
+    return /^(?:non|nan|no|nope|pas encore|pas maintenant|pas pour l instant|attends?|attendez)(?: merci)?$/.test(t);
+};
+
 // ---------------------------------------------------------------------------
 // FORMATAGE
 // ---------------------------------------------------------------------------
 
 export const formatFcfa = (n: number): string => `${n.toLocaleString('fr-FR')} FCFA`;
 
+const variationSuffix = (item: CartItem): string =>
+    item.selectedVariations && item.selectedVariations.length > 0
+        ? ` (${item.selectedVariations.map((v: SelectedVariation) => v.value).join(', ')})`
+        : '';
+
 /** Récapitulatif lisible d'un panier (sans la ligne livraison). */
 export const cartSummary = (items: CartItem[]): string =>
-    splitDeliveryItem(items).products.map(i => {
-        const vars = i.selectedVariations && i.selectedVariations.length > 0
-            ? ` (${i.selectedVariations.map((v: SelectedVariation) => v.value).join(', ')})`
-            : '';
-        return `${i.quantity}x ${i.productName}${vars} — ${formatFcfa(i.price * i.quantity)}`;
-    }).join('\n');
+    splitDeliveryItem(items).products
+        .map(i => `${i.quantity}x ${i.productName}${variationSuffix(i)} — ${formatFcfa(i.price * i.quantity)}`)
+        .join('\n');
+
+/** Panier tel que l'IA doit le voir pour émettre des tags justes (ids inclus). */
+export const cartContextForAI = (items: CartItem[]): string => {
+    const lines = splitDeliveryItem(items).products;
+    if (lines.length === 0) return '(panier vide)';
+    return lines
+        .map(i => `- ${i.quantity}x ${i.productName}${variationSuffix(i)} (id: ${i.productId}) — ${i.price} FCFA l'unité`)
+        .join('\n');
+};
+
+const deliveryAndTotalLines = (quote: DeliveryQuote, itemsTotal: number): string => quote.known
+    ? `${quote.fee > 0 ? `${quote.label} : ${formatFcfa(quote.fee)}` : `${quote.label} ✅`}\n*Total : ${formatFcfa(itemsTotal + quote.fee)}*`
+    : `Livraison : tarif à confirmer par le vendeur pour votre zone\n*Total articles : ${formatFcfa(itemsTotal)}* (livraison en plus)`;
+
+/** Récapitulatif soumis au client AVANT toute écriture : il doit répondre « oui ». */
+export const confirmationRecap = (productItems: CartItem[], quote: DeliveryQuote, address: string): string => {
+    const itemsTotal = cartTotal(productItems);
+    return `📦 *Récapitulatif de votre commande*\n\n${cartSummary(productItems)}\nArticles : ${formatFcfa(itemsTotal)}\n${deliveryAndTotalLines(quote, itemsTotal)}\n📍 Livraison à : ${address}\n\n✅ Répondez *OUI* pour valider la commande.\n✏️ Sinon, dites-moi ce qu'il faut changer (article, quantité ou adresse).`;
+};
+
+/** Confirmation envoyée une fois la commande réellement enregistrée. */
+export const orderConfirmationText = (productItems: CartItem[], quote: DeliveryQuote, address: string, acceptedPayments: unknown): string => {
+    const itemsTotal = cartTotal(productItems);
+    const payments = Array.isArray(acceptedPayments) ? acceptedPayments : [];
+    const paymentHint = payments.some(p => ['wave', 'om', 'mtn'].includes(p))
+        ? '\n\n💡 Après paiement (Wave/Orange Money…), envoyez la capture du reçu ici. Le vendeur vérifiera la réception du paiement.'
+        : '';
+    return `✅ *Commande confirmée !*\n\n${cartSummary(productItems)}\nArticles : ${formatFcfa(itemsTotal)}\n${deliveryAndTotalLines(quote, itemsTotal)}\n\n📍 Livraison à : ${address}${paymentHint}`;
+};
+
+/** Zone non reconnue : on montre les zones desservies plutôt que d'inventer un tarif. */
+export const zoneQuestion = (zones: DeliveryZone[]): string =>
+    `Je n'ai pas reconnu votre zone de livraison 🤔 Nous livrons à :\n${zones.map(z => `- ${z.name} : ${formatFcfa(Number(z.price))}`).join('\n')}\n\nDans quelle zone êtes-vous ? (ou précisez votre commune)`;
 
 // ---------------------------------------------------------------------------
 // CHOIX D'UNE OPTION DE VARIATION

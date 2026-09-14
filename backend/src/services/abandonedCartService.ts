@@ -12,6 +12,8 @@ import { db } from './dbService';
  */
 
 const ABANDONED_CART_THRESHOLD_MINUTES = 30;
+/** Paniers relancés : adresse attendue, ou récapitulatif envoyé sans « oui ». */
+const REMINDABLE_STATES = new Set<string>(['WAITING_FOR_ADDRESS', 'WAITING_FOR_CONFIRMATION']);
 let checking = false;
 
 /**
@@ -30,7 +32,7 @@ export const checkAbandonedCarts = async () => {
 
         for (const session of allSessions) {
             // Vérifier si la session est en attente d'adresse
-            if (session.state !== 'WAITING_FOR_ADDRESS') continue;
+            if (!REMINDABLE_STATES.has(session.state)) continue;
             if (session.autopilotEnabled === false) continue;
 
             // Skip si une relance a déjà été envoyée pour cette session
@@ -75,7 +77,7 @@ export const checkAbandonedCarts = async () => {
 const sendAbandonedCartReminder = async (tenantId: string, userId: string, tempOrder: any): Promise<boolean> => {
     try {
         const conversation = await getSession(tenantId, userId);
-        if (conversation.autopilotEnabled === false || conversation.reminderSent || conversation.state !== 'WAITING_FOR_ADDRESS') return false;
+        if (conversation.autopilotEnabled === false || conversation.reminderSent || !REMINDABLE_STATES.has(conversation.state)) return false;
         // INTERRUPTEUR GLOBAL : bot en pause → pas de relance automatique
         const settings = await db.getSettings(tenantId);
         if (settings.botActive === false) {
@@ -108,22 +110,31 @@ const sendAbandonedCartReminder = async (tenantId: string, userId: string, tempO
         message += 'Je remarque que vous n\'avez pas terminé votre commande.\n\n';
 
         if (tempOrder?.summary) {
-            message += `Vous aviez choisi : **${tempOrder.summary}**\n`;
+            message += `Vous aviez choisi : *${tempOrder.summary}*\n`;
         }
 
         if (tempOrder?.total) {
-            message += `Total : **${tempOrder.total} FCFA**\n\n`;
+            message += `Sous-total : *${Number(tempOrder.total).toLocaleString('fr-FR')} FCFA*\n\n`;
         }
 
         message += '💬 Vous avez besoin d\'aide pour finaliser ?\n';
         message += 'Je suis toujours là pour vous assister ! 😊\n\n';
-        message += 'Si vous voulez reprendre, envoyez simplement votre adresse de livraison.';
+        message += conversation.state === 'WAITING_FOR_CONFIRMATION'
+            ? 'Si c\'est toujours bon pour vous, répondez *OUI* : je vous remontre le récapitulatif à valider.'
+            : 'Si vous voulez reprendre, envoyez simplement votre adresse de livraison.';
 
         // Envoyer le message
         await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
         const latest = await getSession(tenantId, userId);
-        if (latest.autopilotEnabled === false || latest.reminderSent || latest.state !== 'WAITING_FOR_ADDRESS') return false;
+        if (latest.autopilotEnabled === false || latest.reminderSent || latest.state !== conversation.state) return false;
         await sock.sendMessage(remoteJid, { text: message });
+
+        // Le prochain « oui » répond à la relance, pas au récapitulatif d'il y a
+        // plus de 30 minutes : il doit d'abord faire revoir le récapitulatif à jour.
+        if (latest.state === 'WAITING_FOR_CONFIRMATION' && latest.tempOrder) {
+            const { updateSession } = await import('./sessionService');
+            await updateSession(tenantId, userId, { tempOrder: { ...latest.tempOrder, recapShown: false } });
+        }
 
         console.log(`[AbandonedCart] 📤 Reminder sent to ${userId}`);
         return true;

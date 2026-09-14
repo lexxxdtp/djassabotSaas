@@ -337,8 +337,21 @@ export const handlePaystackWebhook = async (event: string, data: any) => {
                 return { received: true };
             }
 
-            const updated = await db.updateOrderStatus(tenantId, order.id, 'PAID');
-            if (!updated) throw new Error(`Commande ${order.id} non marquée payée`);
+            // Seule une commande encore à payer passe à PAID : un paiement arrivé après
+            // la livraison ou l'annulation ne fait pas reculer son statut, et ne
+            // reprend pas le stock d'une commande annulée.
+            const transition = await db.transitionOrderStatus(tenantId, order.id, 'PAID', { allowedFrom: ['PENDING', 'CONFIRMED'] });
+            if (transition.status === 'not_allowed') {
+                const labels: Record<string, string> = { CANCELLED: 'annulée', DELIVERED: 'livrée', SHIPPING: 'en livraison', SHIPPED: 'en livraison' };
+                await db.logActivity(tenantId, 'warning',
+                    `Paiement Paystack reçu pour la commande ${String(order.id).split('-')[1] ?? order.id}, déjà ${labels[transition.from] ?? transition.from}. Statut conservé${transition.from === 'CANCELLED' ? ' : remboursement ou reprise de la commande à décider' : ''}.`,
+                    { paystackReference: reference, orderId: order.id, from: transition.from });
+                await db.completePaystackEvent(tenantId, reference);
+                return { received: true };
+            }
+            if (transition.status !== 'updated' && transition.status !== 'unchanged') {
+                throw new Error(`Commande ${order.id} non marquée payée (${transition.status})`);
+            }
             await db.completePaystackEvent(tenantId, reference);
             await db.logActivity(tenantId, 'action', `Commande ${String(order.id).split('-')[1] ?? order.id} payée par Paystack`, { paystackReference: reference, orderId: order.id });
             return { received: true };

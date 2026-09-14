@@ -121,7 +121,7 @@ function loadPaystack(overrides: Record<string, unknown>) {
             completePaystackEvent: async (_tenantId: string, reference: string) => { calls.completed.push(reference); },
             failPaystackEvent: async (_tenantId: string, reference: string) => { calls.failed.push(reference); },
             createSubscription: async (value: unknown) => { calls.subscriptions.push(value); },
-            updateOrderStatus: async (...args: unknown[]) => { calls.statuses.push(args); return { id: 'ORD-1', status: 'PAID' }; },
+            transitionOrderStatus: async (...args: unknown[]) => { calls.statuses.push(args); return { status: 'updated', from: 'PENDING', order: { id: 'ORD-1', status: 'PAID' } }; },
             logActivity: async (...args: unknown[]) => { calls.logs.push(args); },
             getOrderById: async () => ({ id: 'ORD-1', total: 5000 }),
             ...overrides,
@@ -190,13 +190,31 @@ test('paystack : un sous-paiement ne marque pas la commande payée', async () =>
 });
 
 test('paystack : une commande non mise à jour fait échouer le webhook', async () => {
-    const { service, calls } = loadPaystack({ updateOrderStatus: async () => null });
+    const { service, calls } = loadPaystack({ transitionOrderStatus: async () => ({ status: 'not_found' }) });
     await assert.rejects(() => service.handlePaystackWebhook('charge.success', {
         reference: 'ref-order-fail', currency: 'XOF', amount: 5000 * 100,
         metadata: { type: 'order', tenantId: 'tenant', orderId: 'ORD-1' },
     }), /non marquée payée/);
     assert.deepEqual(calls.completed, []);
     assert.deepEqual(calls.failed, ['ref-order-fail']);
+});
+
+test('paystack : un paiement tardif ne fait pas reculer une commande livrée', async () => {
+    const { service, calls } = loadPaystack({
+        transitionOrderStatus: async (...args: unknown[]) => {
+            calls.statuses.push(args);
+            return { status: 'not_allowed', from: 'DELIVERED', order: { id: 'ORD-1', status: 'DELIVERED' } };
+        },
+    });
+    await service.handlePaystackWebhook('charge.success', {
+        reference: 'ref-late', currency: 'XOF', amount: 5000 * 100,
+        metadata: { type: 'order', tenantId: 'tenant', orderId: 'ORD-1' },
+    });
+    // Seule une commande encore à payer peut passer à PAID.
+    assert.deepEqual((calls.statuses[0] as unknown[]).slice(2), ['PAID', { allowedFrom: ['PENDING', 'CONFIRMED'] }]);
+    assert.equal(calls.logs[0][1], 'warning');
+    assert.match(String(calls.logs[0][2]), /livrée/);
+    assert.deepEqual(calls.completed, ['ref-late']);
 });
 
 // --- Fiabilité WhatsApp : ne pas ouvrir de socket en trop, ni répondre deux fois ---

@@ -39,6 +39,86 @@ const warnIdempotencyUnavailable = () => {
     console.warn('[DB] Colonne idempotency_key absente : protection anti-doublon de commande INACTIVE. Appliquer database/migrations/add_order_idempotency_key.sql.');
 };
 
+// --- Commande, stock et statut en une transaction (migration add_place_order_rpc.sql) ---
+
+/** Résultat de place_order : commande créée, déjà existante pour ce panier, ou stock manquant. */
+export type PlaceOrderResult =
+    | { status: 'created' | 'existing'; order: Order; recovered?: boolean }
+    | { status: 'insufficient_stock'; failures: StockFailure[] };
+
+/** Résultat d'un changement de statut de commande. */
+export type TransitionResult =
+    | { status: 'updated' | 'unchanged' | 'not_allowed'; from: string; order: Order }
+    | { status: 'insufficient_stock'; from: string; failures: StockFailure[] }
+    | { status: 'not_found' };
+
+/** La commande n'a pas été enregistrée : une nouvelle tentative avec la même clé est sûre. */
+export class OrderNotPlacedError extends Error {
+    readonly code = 'ORDER_NOT_PLACED';
+}
+
+/** Fonction SQL absente : PGRST202 côté PostgREST, 42883 côté Postgres. */
+const isMissingFunction = (error: { code?: string } | null | undefined): boolean =>
+    error?.code === 'PGRST202' || error?.code === '42883';
+
+const warnedMissingFunctions = new Set<string>();
+const warnMissingFunction = (name: string) => {
+    if (warnedMissingFunctions.has(name)) return;
+    warnedMissingFunctions.add(name);
+    console.warn(`[DB] Fonction SQL ${name} absente : chemin de secours SANS transaction. Appliquer database/migrations/add_place_order_rpc.sql.`);
+};
+
+const shortOrderId = (orderId: string) => String(orderId).split('-')[1] ?? orderId;
+
+const mapOrderRow = (row: any): Order => ({
+    id: row.id,
+    tenantId: row.tenant_id,
+    userId: row.user_id,
+    items: row.items,
+    total: row.total,
+    status: row.status,
+    address: row.address,
+    createdAt: new Date(row.created_at),
+} as Order);
+
+const mapStockFailures = (raw: unknown): StockFailure[] => (Array.isArray(raw) ? raw : []).map((f: any) => ({
+    productId: String(f?.productId ?? ''),
+    productName: String(f?.productName ?? ''),
+    requested: Number(f?.requested),
+    available: f?.available === null || f?.available === undefined ? undefined : Number(f.available),
+}));
+
+const parseTransition = (data: any): TransitionResult => {
+    switch (data?.status) {
+        case 'updated':
+        case 'unchanged':
+        case 'not_allowed':
+            if (data.order?.id) return { status: data.status, from: String(data.from ?? data.order.status), order: mapOrderRow(data.order) };
+            break;
+        case 'insufficient_stock':
+            return { status: 'insufficient_stock', from: String(data.from), failures: mapStockFailures(data.failures) };
+        case 'not_found':
+            return { status: 'not_found' };
+    }
+    throw new Error(`Réponse transition_order_status inattendue : ${JSON.stringify(data)}`);
+};
+
+/** Journal « vente » best-effort : ne doit jamais faire échouer une commande enregistrée. */
+const logSale = async (tenantId: string, userId: string, order: Order) => {
+    if (!supabase) return;
+    try {
+        const { error } = await supabase.from('activity_logs').insert([{
+            tenant_id: tenantId,
+            type: 'sale',
+            message: `Nouvelle commande de ${Number(order.total).toLocaleString()} FCFA par ${userId.split('@')[0]}`,
+            metadata: { orderId: order.id, total: order.total },
+        }]);
+        if (error) throw error;
+    } catch (e) {
+        console.warn('[DB] Journal de vente non écrit (non bloquant):', e);
+    }
+};
+
 /**
  * Ajuste le stock d'un article (delta négatif = commande, positif = restock).
  * Essaie la fonction SQL atomique `adjust_stock` (migration
@@ -467,66 +547,169 @@ export const db = {
     },
 
 
-    updateOrderStatus: async (tenantId: string, orderId: string, status: string): Promise<any> => {
-        if (isSupabaseEnabled && supabase) {
+    /**
+     * Enregistre la commande et réserve son stock en UNE transaction SQL
+     * (place_order). Rejouable : la même clé d'idempotence rend la commande
+     * existante sans second débit.
+     *
+     * Erreur ou réponse perdue : la transaction a pu être validée. On cherche
+     * la commande par sa clé AVANT de conclure — trouvée, c'est un succès ;
+     * absente, rien n'a été écrit (OrderNotPlacedError) ; recherche impossible,
+     * l'erreur remonte et le client peut retenter sans risque de doublon.
+     */
+    placeOrder: async (tenantId: string, userId: string, items: CartItem[], total: number, address: string, idempotencyKey: string): Promise<PlaceOrderResult> => {
+        if (!isSupabaseEnabled || !supabase) throw new Error('Commandes indisponibles : base non configurée');
+        const orderId = `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+        let rpc: { data: any; error: any } | undefined;
+        let failure: unknown;
+        try {
+            rpc = await supabase.rpc('place_order', {
+                p_tenant_id: tenantId,
+                p_order_id: orderId,
+                p_user_id: userId,
+                p_items: items,
+                p_total: total,
+                p_address: address,
+                p_idempotency_key: idempotencyKey,
+            });
+        } catch (e) {
+            failure = e;
+        }
+
+        if (rpc?.error && isMissingFunction(rpc.error)) {
+            warnMissingFunction('place_order');
+            return db.placeOrderWithoutTransaction(tenantId, userId, items, total, address, idempotencyKey);
+        }
+
+        if (rpc && !rpc.error) {
+            const { data } = rpc;
+            if ((data?.status === 'created' || data?.status === 'existing') && data.order?.id) {
+                const order = mapOrderRow(data.order);
+                if (data.status === 'created') await logSale(tenantId, userId, order);
+                return { status: data.status, order };
+            }
+            if (data?.status === 'insufficient_stock') {
+                return { status: 'insufficient_stock', failures: mapStockFailures(data.failures) };
+            }
+            failure = new Error(`Réponse place_order inattendue : ${JSON.stringify(data)}`);
+        } else if (rpc?.error) {
+            failure = rpc.error;
+        }
+
+        console.error('[DB] placeOrder sans confirmation, vérification par la clé', failure);
+        const existing = await db.findOrderByIdempotencyKey(tenantId, idempotencyKey);
+        if (existing) {
+            await logSale(tenantId, userId, existing);
+            return { status: 'created', order: existing, recovered: true };
+        }
+        throw new OrderNotPlacedError(`Commande non enregistrée : ${failure instanceof Error ? failure.message : JSON.stringify(failure)}`);
+    },
+
+    /** Secours sans place_order : mêmes règles, sans garantie transactionnelle. */
+    placeOrderWithoutTransaction: async (tenantId: string, userId: string, items: CartItem[], total: number, address: string, idempotencyKey: string): Promise<PlaceOrderResult> => {
+        const already = await db.findOrderByIdempotencyKey(tenantId, idempotencyKey);
+        if (already) return { status: 'existing', order: already };
+
+        const productItems = items.filter(i => i.productId !== DELIVERY_ITEM_ID);
+        const stock = await db.decrementStockForItems(tenantId, productItems);
+        if (!stock.ok) return { status: 'insufficient_stock', failures: stock.failures };
+
+        try {
+            const order = await db.createOrder(tenantId, userId, items, total, address, new Date(), idempotencyKey);
+            if (order.alreadyExisted) {
+                // Validation simultanée : l'autre passage a pris son stock, on rend le nôtre.
+                await db.restockItems(tenantId, productItems);
+                return { status: 'existing', order };
+            }
+            return { status: 'created', order };
+        } catch (error) {
+            // Réponse perdue possible : ne rendre le stock que si la commande n'existe
+            // vraiment pas. Si la vérification échoue aussi, le stock reste pris.
+            const existing = await db.findOrderByIdempotencyKey(tenantId, idempotencyKey);
+            if (existing) return { status: 'created', order: existing, recovered: true };
+            await db.restockItems(tenantId, productItems);
+            throw new OrderNotPlacedError(`Commande non enregistrée : ${error instanceof Error ? error.message : String(error)}`);
+        }
+    },
+
+    /**
+     * Change le statut d'une commande et ajuste son stock en UNE transaction
+     * (transition_order_status) : deux annulations simultanées ne rendent le
+     * stock qu'une fois, une réactivation sans stock est refusée, et
+     * `allowedFrom` empêche un paiement tardif de faire reculer une commande
+     * livrée ou annulée.
+     */
+    transitionOrderStatus: async (tenantId: string, orderId: string, status: string, { allowedFrom }: { allowedFrom?: string[] } = {}): Promise<TransitionResult> => {
+        if (!isSupabaseEnabled || !supabase) throw new Error('Commandes indisponibles : base non configurée');
+        const { data, error } = await supabase.rpc('transition_order_status', {
+            p_tenant_id: tenantId,
+            p_order_id: orderId,
+            p_status: status,
+            p_allowed_from: allowedFrom ?? null,
+        });
+
+        let result: TransitionResult;
+        if (error && isMissingFunction(error)) {
+            warnMissingFunction('transition_order_status');
+            result = await db.transitionOrderStatusWithoutTransaction(tenantId, orderId, status, allowedFrom);
+        } else if (error) {
+            throw new Error(`Changement de statut impossible : ${error.message}`);
+        } else {
+            result = parseTransition(data);
+        }
+
+        if (result.status === 'updated') {
+            await db.logActivity(tenantId, 'action', `Commande ${shortOrderId(orderId)} passée à ${status}`, { orderId, status, from: result.from });
+        }
+        return result;
+    },
+
+    /** Secours sans transition_order_status : écriture conditionnée au statut lu. */
+    transitionOrderStatusWithoutTransaction: async (tenantId: string, orderId: string, status: string, allowedFrom?: string[]): Promise<TransitionResult> => {
+        const previous = await db.getOrderById(tenantId, orderId);
+        if (!previous) return { status: 'not_found' };
+        const from = previous.status || 'PENDING';
+        if (from === status) return { status: 'unchanged', from, order: previous };
+        if (allowedFrom && !allowedFrom.includes(from)) return { status: 'not_allowed', from, order: previous };
+
+        const items = Array.isArray(previous.items) ? previous.items : [];
+        const reactivating = from === 'CANCELLED';
+        if (reactivating) {
+            const stock = await db.decrementStockForItems(tenantId, items);
+            if (!stock.ok) return { status: 'insufficient_stock', from, failures: stock.failures };
+        }
+
+        // N'écrit que si le statut n'a pas bougé depuis la lecture : la seconde de
+        // deux annulations simultanées ne trouve plus rien à modifier.
+        const { data, error } = await supabase!
+            .from('orders')
+            .update({ status })
+            .eq('id', orderId)
+            .eq('tenant_id', tenantId)
+            .eq('status', from)
+            .select()
+            .maybeSingle();
+
+        if (error || !data) {
+            if (reactivating) await db.restockItems(tenantId, items);
+            if (error) throw new Error(`Changement de statut impossible : ${error.message}`);
+            const latest = await db.getOrderById(tenantId, orderId);
+            if (latest && latest.status === status) return { status: 'unchanged', from: latest.status, order: latest };
+            return { status: 'not_allowed', from: latest?.status ?? from, order: latest ?? previous };
+        }
+
+        if (status === 'CANCELLED') {
             try {
-                // Statut précédent (pour la gestion du stock à l'annulation/réactivation)
-                const previous = await db.getOrderById(tenantId, orderId);
-
-                const { data, error } = await supabase
-                    .from('orders')
-                    .update({ status })
-                    .eq('id', orderId)
-                    .eq('tenant_id', tenantId) // Security check
-                    .select()
-                    .single();
-                if (error) throw error;
-
-                // Le changement de statut est acquis ici. Le stock et les journaux sont
-                // des effets secondaires : leur échec ne doit pas faire croire au vendeur
-                // que la transition a échoué, mais doit rester visible.
-                try {
-                    // Stock : annulation → on rend ; réactivation d'une annulée → on reprend
-                    if (previous && Array.isArray(previous.items)) {
-                        if (status === 'CANCELLED' && previous.status !== 'CANCELLED') {
-                            await db.restockItems(tenantId, previous.items);
-                        } else if (previous.status === 'CANCELLED' && status !== 'CANCELLED') {
-                            const result = await db.decrementStockForItems(tenantId, previous.items);
-                            if (!result.ok) {
-                                // On ne bloque pas la réactivation, mais le vendeur doit savoir
-                                await db.logActivity(tenantId, 'warning',
-                                    `Commande ${orderId.split('-')[1]} réactivée mais stock insuffisant pour certains articles`,
-                                    { orderId, failures: result.failures });
-                            }
-                        }
-                    }
-                } catch (stockError) {
-                    console.error('[DB] Stock adjustment failed after status change', stockError);
-                    await db.logActivity(tenantId, 'warning',
-                        `Commande ${orderId.split('-')[1]} passée à ${status}, mais le stock n'a pas pu être ajusté. Vérifiez les quantités.`,
-                        { orderId, status, error: String(stockError) }
-                    ).catch(() => { });
-                }
-
-                // Log the status change
-                try {
-                    await supabase.from('activity_logs').insert([{
-                        tenant_id: tenantId,
-                        type: 'action',
-                        message: `Commande ${orderId.split('-')[1]} passée à ${status}`,
-                        metadata: { orderId, status }
-                    }]);
-                } catch (logError) {
-                    console.error('[DB] Activity log failed after status change', logError);
-                }
-
-                return data;
-            } catch (e) {
-                console.error('[DB] Update Order Status failed', e);
-                return null;
+                await db.restockItems(tenantId, items);
+            } catch (stockError) {
+                console.error('[DB] Stock non rendu après annulation', stockError);
+                await db.logActivity(tenantId, 'warning',
+                    `Commande ${shortOrderId(orderId)} annulée, mais le stock n'a pas pu être rendu. Vérifiez les quantités.`,
+                    { orderId, status, error: String(stockError) });
             }
         }
-        return null; // Fallback mock not implemented for complexity
+        return { status: 'updated', from, order: mapOrderRow(data) };
     },
 
     getProducts: async (tenantId: string): Promise<Product[]> => {

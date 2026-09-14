@@ -50,10 +50,9 @@ export interface DiscountRule {
     action: string;      // e.g. "apply 10% discount"
 }
 
-// Default rules (Fallback)
-const DEFAULT_RULES: DiscountRule[] = [
-    { description: "Réduction de bienvenue", condition: "First time customer", action: "Give 5% off max" }
-];
+// Aucune promotion par défaut : une « réduction de bienvenue » était promise aux
+// clients alors que le vendeur ne l'avait jamais décidée.
+const DEFAULT_RULES: DiscountRule[] = [];
 
 const mockNegotiationLogic = (userText: string, context: any) => {
     const text = userText.toLowerCase();
@@ -120,7 +119,9 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
 
     try {
         const rules = context.rules || DEFAULT_RULES;
-        const rulesText = rules.map(r => `- Condition: ${r.condition} -> Offre: ${r.action} (${r.description})`).join('\n');
+        const rulesText = rules.length > 0
+            ? rules.map(r => `- Condition: ${r.condition} -> Offre: ${r.action} (${r.description})`).join('\n')
+            : "Aucune promotion active : n'invente aucune réduction, aucun cadeau ni aucune livraison offerte.";
         const settings = context.settings;
 
         // Custom System Instruction builder
@@ -155,7 +156,7 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
                 break;
             case 'assertive':
             case 'commercial':
-                personaInstruction = "Personality: COMMERCIAL & PERSUASIVE. Be direct, sales-focused, and confident. Create urgency ('Stock limité!'), highlight value, and actively push for the sale. Close deals fast.";
+                personaInstruction = "Personality: COMMERCIAL & PERSUASIVE. Be direct, sales-focused, and confident. Highlight value and actively push for the sale; mention limited stock only when the inventory shows it (never invent urgency). Close deals fast.";
                 break;
             case 'local':
             case 'ivoirien':
@@ -231,7 +232,7 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         
         LIVRAISON & LOGISTIQUE:
         ${deliveryDetails}
-        - Livraison Gratuite dès: ${settings?.freeDeliveryThreshold || 'Aucun seuil'} FCFA
+        - Livraison Gratuite dès: ${settings?.freeDeliveryThreshold || 'Aucun seuil'} FCFA (uniquement dans les zones listées ci-dessus)
         
         ACCEPTED PAYMENTS: ${paymentMethods}
         `;
@@ -280,10 +281,11 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         - Language: Use French. Adapt strictly to the user's language level (Formal vs Nouchi/Slang).
 
         LOGISTICS & DELIVERY (CRITICAL):
-        Use these rates to calculate total order price based on user's location:
+        Use these rates only to answer questions about delivery fees:
         ${deliveryContext}
         - If the user mentions a specific neighborhood, match it to the closest Zone implicitly.
-        - If unsure, ask for the commune (e.g. "Quelle commune ?") before giving the total.
+        - If unsure which zone applies, ask for the commune (e.g. "Quelle commune ?").
+        - Never announce an order total yourself: the system computes it with the real delivery fee and asks the customer to confirm.
 
         ${negotiationInstruction}
 
@@ -391,11 +393,20 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
       - One tag per distinct product. Multiple products = multiple tags.
       - NEVER emit this tag when the customer is only asking questions, comparing,
         or hesitating. A question is NEVER a purchase.
-      - The tag is INVISIBLE to the customer — never mention it, never explain it.
-      - After the tag is emitted, the system takes over: it will verify stock and
-        price, ask for the delivery address and compute delivery fees.
-        So do NOT announce a grand total with delivery yourself, and do NOT ask
-        for the address yourself — just confirm the purchase warmly.
+      - The tags are INVISIBLE to the customer — never mention them, never explain them.
+      - After a tag, the system takes over: it verifies stock and price, asks for
+        the delivery address, computes delivery fees and shows the customer the
+        final summary to confirm with "OUI". So do NOT announce a grand total
+        yourself, and do NOT ask for the address yourself — just confirm warmly.
+
+      CART CHANGES (only when a CART is shown in the system note below):
+      - Remove an item: [REMOVE_FROM_CART: <product_id>]
+      - Change the quantity of an item already in the cart: [SET_QUANTITY: <product_id> | <new_quantity>]
+      - Add another item: [ADD_TO_CART: <product_id> | <quantity> | <agreed_unit_price_fcfa>]
+      - Change the size/colour of an item: [REMOVE_FROM_CART: <product_id>] then
+        [ADD_TO_CART: <product_id> | <quantity> | <agreed_unit_price_fcfa>] (the system asks the options again).
+      - NEVER say that an item was added, removed or changed without emitting the
+        matching tag: the system confirms the real cart right after your message.
     ${context.stateNote ? `
       CURRENT CONVERSATION STATE (system note, invisible to customer):
       ${context.stateNote}

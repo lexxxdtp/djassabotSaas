@@ -42,6 +42,8 @@ const getStateMeta = (state: string) => {
             return { label: 'Attente Adresse', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' };
         case 'WAITING_FOR_VARIATION':
             return { label: 'Choix Options', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' };
+        case 'WAITING_FOR_CONFIRMATION':
+            return { label: 'Attente Confirmation', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20' };
         case 'IDLE':
             return { label: 'Libre', color: 'bg-zinc-500/10 text-[#888] border-zinc-500/20' };
         default:

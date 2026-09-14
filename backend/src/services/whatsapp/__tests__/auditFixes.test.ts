@@ -103,25 +103,29 @@ for (const tag of ['robe | 1 | 1000', 'red | 1.5 | 1000', 'red | 99999 | 1000'])
     });
 }
 
+// Récapitulatif déjà accepté-able : la commande ne s'écrit qu'au « oui ».
+const confirmedCart = () => ({ state: 'WAITING_FOR_CONFIRMATION', autopilotEnabled: true, history: [],
+    tempOrder: { items: [{ productId: 'p', productName: 'robe', price: 1000, quantity: 1 }], total: 1000, idempotencyKey: 'cle-panier',
+        address: 'Cocody', quotedTotal: 1000, quotedDeliveryKnown: true, recapShown: true } });
+const robeCatalogue = async () => [{ id: 'p', name: 'robe', price: 1000 }];
+
 for (const failure of ['none', 'customer', 'merchant']) {
-    test(`commande créée : panier fermé avant envoi, échec ${failure} sans revalidation`, async () => {
+    test(`commande confirmée : panier fermé avant envoi, échec ${failure} sans revalidation`, async () => {
         const events: string[] = [];
-        let session: any = { state: 'WAITING_FOR_ADDRESS', autopilotEnabled: true, history: [],
-            tempOrder: { items: [{ productId: 'p', productName: 'robe', price: 1000, quantity: 1 }], total: 1000 } };
+        let session: any = confirmedCart();
         const service = load('backend/src/services/whatsapp/flowHandler.ts', {
-            '../dbService': { db: { getSettings: async () => ({ deliveryEnabled: false }), getProducts: async () => [],
-                decrementStockForItems: async () => { events.push('stock'); return { ok: true }; },
-                createOrder: async () => { events.push('order'); return { id: 'fixture' }; } } },
+            '../dbService': { db: { getSettings: async () => ({ deliveryEnabled: false }), getProducts: robeCatalogue,
+                placeOrder: async () => { events.push('order'); return { status: 'created', order: { id: 'fixture', total: 1000 } }; } } },
             '../sessionService': { getSession: async () => session,
                 updateSession: async (_tenant: string, _jid: string, updates: unknown) => { session = { ...session, ...updates as object }; events.push('clear'); }, addToHistory: async () => {} },
             '../aiService': {}, './salesEngine': load('backend/src/services/whatsapp/salesEngine.ts'), '../../utils/logger': { logger: quiet },
             './notificationService': { sendOrderNotification: async () => { events.push('merchant'); if (failure === 'merchant') throw new Error('offline'); } }
         });
-        await service.handleFlow('owner', 'client', 'Cocody', { sendMessage: async () => {
+        await service.handleFlow('owner', 'client', 'oui', { sendMessage: async () => {
             assert.equal(session.state, 'IDLE'); assert.equal(session.tempOrder, undefined);
             events.push('customer'); if (failure === 'customer') throw new Error('offline');
         } });
-        assert.deepEqual(events, ['stock', 'order', 'clear', 'customer', 'merchant']);
+        assert.deepEqual(events, ['order', 'clear', 'customer', 'merchant']);
     });
 }
 
@@ -129,12 +133,10 @@ test('panier impossible à fermer : le client est prévenu de ne pas revalider',
     const events: string[] = [];
     const messages: string[] = [];
     const warnings: unknown[][] = [];
-    const session: any = { state: 'WAITING_FOR_ADDRESS', autopilotEnabled: true, history: [],
-        tempOrder: { items: [{ productId: 'p', productName: 'robe', price: 1000, quantity: 1 }], total: 1000 } };
+    const session: any = confirmedCart();
     const service = load('backend/src/services/whatsapp/flowHandler.ts', {
-        '../dbService': { db: { getSettings: async () => ({ deliveryEnabled: false }), getProducts: async () => [],
-            decrementStockForItems: async () => { events.push('stock'); return { ok: true }; },
-            createOrder: async () => { events.push('order'); return { id: 'cmd-4242' }; },
+        '../dbService': { db: { getSettings: async () => ({ deliveryEnabled: false }), getProducts: robeCatalogue,
+            placeOrder: async () => { events.push('order'); return { status: 'created', order: { id: 'cmd-4242', total: 1000 } }; },
             restockItems: async () => { events.push('restock'); },
             logActivity: async (...args: unknown[]) => { warnings.push(args); } } },
         '../sessionService': { getSession: async () => session, addToHistory: async () => {},
@@ -142,58 +144,46 @@ test('panier impossible à fermer : le client est prévenu de ne pas revalider',
         '../aiService': {}, './salesEngine': load('backend/src/services/whatsapp/salesEngine.ts'), '../../utils/logger': { logger: quiet },
         './notificationService': { sendOrderNotification: async () => { events.push('merchant'); } }
     });
-    await service.handleFlow('owner', 'client', 'Cocody', { sendMessage: async (_jid: string, message: { text: string }) => { messages.push(message.text); } });
+    await service.handleFlow('owner', 'client', 'oui', { sendMessage: async (_jid: string, message: { text: string }) => { messages.push(message.text); } });
     // La commande existe et le stock est pris : ne surtout pas rendre le stock ni rejouer.
-    assert.deepEqual(events, ['stock', 'order', 'clear']);
+    assert.deepEqual(events, ['order', 'clear']);
     assert.match(messages[0], /bien enregistrée/);
-    assert.match(messages[0], /Ne renvoyez pas votre adresse/);
+    assert.match(messages[0], /deuxième fois/);
     assert.equal(warnings[0][1], 'warning');
     assert.match(String(warnings[0][2]), /deux fois/);
 });
 
-test('panier déjà commandé : ni stock repris, ni deuxième commande', async () => {
+test('panier déjà commandé : aucune deuxième commande ni notification', async () => {
     const events: string[] = [];
     const messages: string[] = [];
-    const session: any = { state: 'WAITING_FOR_ADDRESS', autopilotEnabled: true, history: [],
-        tempOrder: { items: [{ productId: 'p', productName: 'robe', price: 1000, quantity: 1 }], total: 1000, idempotencyKey: 'cle-panier' } };
+    const session: any = confirmedCart();
     const service = load('backend/src/services/whatsapp/flowHandler.ts', {
-        '../dbService': { db: { getSettings: async () => ({ deliveryEnabled: false }), getProducts: async () => [],
-            findOrderByIdempotencyKey: async (_t: string, key: string) => {
-                events.push('lookup'); return key === 'cle-panier' ? { id: 'cmd-1', total: 1000 } : null;
-            },
-            decrementStockForItems: async () => { events.push('stock'); return { ok: true }; },
-            createOrder: async () => { events.push('order'); return { id: 'cmd-2' }; },
-            restockItems: async () => { events.push('restock'); }, logActivity: async () => {} } },
+        '../dbService': { db: { getSettings: async () => ({ deliveryEnabled: false }), getProducts: robeCatalogue,
+            placeOrder: async (...args: unknown[]) => { events.push(`order:${args[5]}`); return { status: 'existing', order: { id: 'cmd-1', total: 1000 } }; },
+            logActivity: async () => {} } },
         '../sessionService': { getSession: async () => session, addToHistory: async () => {},
             updateSession: async () => { events.push('clear'); } },
         '../aiService': {}, './salesEngine': load('backend/src/services/whatsapp/salesEngine.ts'), '../../utils/logger': { logger: quiet },
         './notificationService': { sendOrderNotification: async () => { events.push('merchant'); } }
     });
-    await service.handleFlow('owner', 'client', 'Cocody', { sendMessage: async (_jid: string, message: { text: string }) => { messages.push(message.text); } });
-    // La vérification précède le stock : rien n'est décrémenté pour être rendu ensuite.
-    assert.deepEqual(events, ['lookup', 'clear']);
+    await service.handleFlow('owner', 'client', 'oui', { sendMessage: async (_jid: string, message: { text: string }) => { messages.push(message.text); } });
+    // La même clé rend la commande existante : ni second débit, ni seconde alerte vendeur.
+    assert.deepEqual(events, ['order:cle-panier', 'clear']);
     assert.match(messages[0], /déjà enregistrée/);
     assert.match(messages[0], /pas été comptée deux fois/);
 });
 
-test('course perdue à la création : la commande existante gagne et le stock est rendu', async () => {
+test('course perdue sans la fonction SQL : la commande existante gagne et le stock est rendu', async () => {
     const events: string[] = [];
-    const session: any = { state: 'WAITING_FOR_ADDRESS', autopilotEnabled: true, history: [],
-        tempOrder: { items: [{ productId: 'p', productName: 'robe', price: 1000, quantity: 1 }], total: 1000, idempotencyKey: 'cle-panier' } };
-    const service = load('backend/src/services/whatsapp/flowHandler.ts', {
-        '../dbService': { db: { getSettings: async () => ({ deliveryEnabled: false }), getProducts: async () => [],
-            findOrderByIdempotencyKey: async () => { events.push('lookup'); return null; },
-            decrementStockForItems: async () => { events.push('stock'); return { ok: true }; },
-            createOrder: async () => { events.push('order'); return { id: 'cmd-1', total: 1000, alreadyExisted: true }; },
-            restockItems: async () => { events.push('restock'); }, logActivity: async () => {} } },
-        '../sessionService': { getSession: async () => session, addToHistory: async () => {},
-            updateSession: async () => { events.push('clear'); } },
-        '../aiService': {}, './salesEngine': load('backend/src/services/whatsapp/salesEngine.ts'), '../../utils/logger': { logger: quiet },
-        './notificationService': { sendOrderNotification: async () => { events.push('merchant'); } }
-    });
-    await service.handleFlow('owner', 'client', 'Cocody', { sendMessage: async () => {} });
+    const db = loadDb({ rpc: async () => ({ data: null, error: { code: 'PGRST202', message: 'function place_order not found' } }) });
+    db.findOrderByIdempotencyKey = async () => { events.push('lookup'); return null; };
+    db.decrementStockForItems = async () => { events.push('stock'); return { ok: true }; };
+    db.createOrder = async () => { events.push('order'); return { id: 'cmd-1', total: 1000, alreadyExisted: true }; };
+    db.restockItems = async () => { events.push('restock'); };
+    const result = await db.placeOrder('owner', 'client', [{ productId: 'p', productName: 'robe', price: 1000, quantity: 1 }], 1000, 'Cocody', 'cle-panier');
     // Le stock pris par ce passage est rendu : l'autre validation a déjà pris le sien.
-    assert.deepEqual(events, ['lookup', 'stock', 'order', 'restock', 'clear', 'merchant']);
+    assert.equal(result.status, 'existing');
+    assert.deepEqual(events, ['lookup', 'stock', 'order', 'restock']);
 });
 
 test('idempotence : clé posée au premier article et conservée ensuite', async () => {
@@ -370,7 +360,7 @@ test('simulation : achat complet et remise à zéro sans écriture métier', asy
     const flow = load('backend/src/services/whatsapp/flowHandler.ts', {
         '../sessionService': sessions,
         '../dbService': { db: { getSettings: async () => ({ deliveryEnabled: false, negotiationEnabled: false }),
-            getProducts: async () => [{ id: 'p', name: 'Robe', price: 1000 }], createOrder: deny, decrementStockForItems: deny, logActivity: deny } },
+            getProducts: async () => [{ id: 'p', name: 'Robe', price: 1000 }], placeOrder: deny, createOrder: deny, decrementStockForItems: deny, logActivity: deny } },
         '../aiService': { generateAIResponse: async (text: string) => text === 'inconnu' ? '[ADD_TO_CART: absent | 1 | 1000]' : '[ADD_TO_CART: p | 1 | 1000]' },
         './salesEngine': load('backend/src/services/whatsapp/salesEngine.ts'), './notificationService': { sendOrderNotification: deny }, '../../utils/logger': { logger: quiet }
     });
@@ -380,6 +370,10 @@ test('simulation : achat complet et remise à zéro sans écriture métier', asy
         await flow.handleFlow('flow-owner', simulation.SIMULATION_USER_ID, 'je prends la robe', sock, { dryRun: true });
         assert.equal((await sessions.getSession('flow-owner', simulation.SIMULATION_USER_ID)).state, 'WAITING_FOR_ADDRESS');
         await flow.handleFlow('flow-owner', simulation.SIMULATION_USER_ID, 'Cocody', sock, { dryRun: true });
+        // L'adresse ne commande rien : le client doit d'abord accepter le récapitulatif.
+        assert.equal((await sessions.getSession('flow-owner', simulation.SIMULATION_USER_ID)).state, 'WAITING_FOR_CONFIRMATION');
+        assert.match(responses[responses.length - 1], /Répondez \*OUI\*/);
+        await flow.handleFlow('flow-owner', simulation.SIMULATION_USER_ID, 'oui', sock, { dryRun: true });
         assert.equal((await sessions.getSession('flow-owner', simulation.SIMULATION_USER_ID)).state, 'IDLE');
         assert.match(responses.join(' '), /aucune commande réelle créée/);
         await sessions.clearHistory('flow-owner', simulation.SIMULATION_USER_ID);
@@ -623,9 +617,14 @@ test('création lien Paystack : montant, téléphone et résumé viennent de la 
 });
 
 test('finalisation : une livraison connue à zéro reste identifiable dans la commande', () => {
+    const sales = load('backend/src/services/whatsapp/salesEngine.ts');
+    const items = [{ productId: 'p', productName: 'robe', price: 1000, quantity: 1 }];
+    const offered = JSON.parse(JSON.stringify(sales.buildOrderLines(items, { known: true, fee: 0, label: 'Livraison offerte' })));
+    assert.deepEqual(offered.map((i: { productId: string; price: number }) => [i.productId, i.price]), [['p', 1000], ['_delivery', 0]]);
+    // Zone inconnue : aucune ligne, pour ne pas faire passer « à confirmer » pour « offert ».
+    assert.equal(sales.buildOrderLines(items, { known: false, fee: 0, label: 'Livraison à confirmer' }).length, 1);
     const source = fs.readFileSync(path.join(root, 'backend/src/services/whatsapp/flowHandler.ts'), 'utf8');
-    assert.match(source, /const orderItems: CartItem\[\] = quote\.known\s*\? \[\.\.\.productItems, buildDeliveryItem\(quote\)\]/);
-    assert.doesNotMatch(source, /const orderItems: CartItem\[\] = quote\.fee > 0/);
+    assert.match(source, /buildOrderLines\(current, quote\)/);
 });
 
 test('vérification Paystack : une référence d’une autre boutique reste invisible', () => {

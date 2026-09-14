@@ -8,7 +8,7 @@ export interface Session {
     userId: string;
     tenantId: string;
     history: { role: 'user' | 'model'; parts: { text: string }[] }[];
-    state: 'IDLE' | 'WAITING_FOR_ADDRESS' | 'WAITING_FOR_NAME' | 'WAITING_FOR_VARIATION';
+    state: 'IDLE' | 'WAITING_FOR_ADDRESS' | 'WAITING_FOR_CONFIRMATION' | 'WAITING_FOR_NAME' | 'WAITING_FOR_VARIATION';
     tempOrder?: {
         items: CartItem[];
         total: number;
@@ -206,6 +206,14 @@ const saveSessionToDb = async (session: Session, { critical = true }: { critical
 
 // --- Cart Management Helpers ---
 
+/** Résumé texte du panier stocké avec la session (relances, contexte). */
+const summarizeCart = (items: CartItem[]): string => items.map(i => {
+    const vars = i.selectedVariations && i.selectedVariations.length > 0
+        ? `(${i.selectedVariations.map(v => v.value).join(', ')})`
+        : '';
+    return `${i.quantity}x ${i.productName} ${vars}`;
+}).join('\n');
+
 const areVariationsEqual = (v1?: SelectedVariation[], v2?: SelectedVariation[]): boolean => {
     if (!v1 && !v2) return true;
     if (!v1 || !v2) return false;
@@ -246,13 +254,7 @@ export const addItemToSessionCart = async (tenantId: string, userId: string, new
     // Calculate new total
     const total = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    // Generate Summary
-    const summary = updatedItems.map(i => {
-        const vars = i.selectedVariations && i.selectedVariations.length > 0
-            ? `(${i.selectedVariations.map(v => v.value).join(', ')})`
-            : '';
-        return `${i.quantity}x ${i.productName} ${vars}`;
-    }).join('\n');
+    const summary = summarizeCart(updatedItems);
 
     const tempOrder = {
         ...session.tempOrder, // Keep other temp props if any
@@ -271,5 +273,23 @@ export const addItemToSessionCart = async (tenantId: string, userId: string, new
         tempOrder
     });
 
+    return tempOrder;
+};
+
+/**
+ * Remplace les articles du panier (retrait, quantité modifiée, prix revalidé)
+ * en gardant son identité : même clé d'idempotence, mêmes informations de
+ * livraison. Total et résumé sont recalculés depuis les lignes réelles.
+ */
+export const replaceSessionCart = async (tenantId: string, userId: string, items: CartItem[]) => {
+    const session = await getSession(tenantId, userId);
+    const tempOrder = {
+        ...session.tempOrder,
+        items,
+        total: items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+        summary: summarizeCart(items),
+        idempotencyKey: session.tempOrder?.idempotencyKey ?? randomUUID(),
+    };
+    await updateSession(tenantId, userId, { tempOrder });
     return tempOrder;
 };

@@ -104,8 +104,10 @@ router.post('/:jid/send', async (req: any, res) => {
             return res.status(503).json({ error: 'WhatsApp not connected' });
         }
 
-        // Check if JID is valid (append server domain if missing)
-        const remoteJid = decodedJid.includes('@s.whatsapp.net') ? decodedJid : `${decodedJid}@s.whatsapp.net`;
+        // Un identifiant complet (@s.whatsapp.net, @lid…) est gardé tel quel : lui
+        // ajouter un domaine produisait « 123@lid@s.whatsapp.net » et le message
+        // ne partait jamais. Seul un numéro nu reçoit le domaine par défaut.
+        const remoteJid = decodedJid.includes('@') ? decodedJid : `${decodedJid}@s.whatsapp.net`;
 
         // Send Message
         await waSession.sock.sendMessage(remoteJid, { text });

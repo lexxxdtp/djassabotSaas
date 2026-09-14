@@ -190,9 +190,34 @@ app.put('/api/orders/:id/status', authenticateTenant, checkSubscription, async (
     }
     const canonicalStatus = status === 'SHIPPED' ? 'SHIPPING' : status;
     const orderId = req.params.id as string;
-    const updated = await db.updateOrderStatus(req.tenantId!, orderId, canonicalStatus);
-    if (updated) res.json(updated);
-    else res.status(400).json({ error: 'Failed to update status' });
+    try {
+        // Statut et stock changent ensemble ou pas du tout : deux clics simultanés
+        // sur « Annuler » ne rendent plus le stock deux fois.
+        const result = await db.transitionOrderStatus(req.tenantId!, orderId, canonicalStatus);
+        switch (result.status) {
+            case 'updated':
+            case 'unchanged':
+                res.json(result.order);
+                return;
+            case 'not_found':
+                res.status(404).json({ error: 'Commande introuvable.' });
+                return;
+            case 'insufficient_stock':
+                res.status(409).json({
+                    error: `Stock insuffisant pour réactiver cette commande : ${result.failures
+                        .map(f => `${f.productName} (${f.available ?? 0} disponible${(f.available ?? 0) > 1 ? 's' : ''})`)
+                        .join(', ')}.`,
+                    code: 'INSUFFICIENT_STOCK',
+                });
+                return;
+            case 'not_allowed':
+                res.status(409).json({ error: 'Le statut de cette commande a changé entre-temps. Rechargez la page.' });
+                return;
+        }
+    } catch (e) {
+        logger.error({ err: e, tenantId: req.tenantId, orderId }, 'Order status transition error');
+        res.status(503).json({ error: 'Statut non enregistré. Réessayez dans un instant.' });
+    }
 });
 
 // Dashboard
@@ -237,14 +262,16 @@ app.post('/api/products/upload', authenticateTenant, checkSubscription, upload.s
             return res.status(400).json({ error: 'Extension de fichier non autorisée.' });
         }
 
-        const fileName = `product-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+        // Rangé par boutique, jamais écrasé : un nom déjà pris échoue au lieu de
+        // remplacer silencieusement la photo d'un autre produit.
+        const fileName = `${req.tenantId}/product-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
 
         // Televersement vers Supabase Storage dans le bucket 'product-images'
         const { data, error } = await supabase.storage
             .from('product-images')
             .upload(fileName, file.buffer, {
                 contentType: file.mimetype,
-                upsert: true
+                upsert: false
             });
 
         if (error) {
@@ -312,7 +339,11 @@ app.post('/api/products', authenticateTenant, checkSubscription, async (req, res
 app.put('/api/products/:id', authenticateTenant, checkSubscription, async (req, res) => {
     try {
         const productId = req.params.id as string;
-        const invalid = validateProductInput(req.body);
+        // Mise à jour partielle : prix, plancher et suppléments sont contrôlés
+        // ensemble, avec les valeurs déjà enregistrées pour les champs absents.
+        const touchesPricing = ['price', 'minPrice', 'variations'].some(key => req.body?.[key] !== undefined);
+        const current = touchesPricing ? await db.getProductById(req.tenantId!, productId) : undefined;
+        const invalid = validateProductInput(req.body, { current });
         if (invalid) {
             return res.status(400).json({ error: invalid });
         }

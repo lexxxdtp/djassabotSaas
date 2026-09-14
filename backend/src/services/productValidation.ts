@@ -31,13 +31,25 @@ export interface ProductInput {
     variations?: unknown;
 }
 
+/** Valeurs déjà enregistrées, pour contrôler une mise à jour partielle comme un tout. */
+export interface CurrentProduct {
+    price?: unknown;
+    minPrice?: unknown;
+    variations?: unknown;
+}
+
 /**
  * Retourne un message d'erreur en français, ou null si l'entrée est acceptable.
  *
  * `requireName` distingue la création (le nom est obligatoire) de la mise à
- * jour partielle (seuls les champs présents sont vérifiés).
+ * jour partielle (seuls les champs présents sont vérifiés). `current` fournit
+ * les valeurs enregistrées : prix, plancher et suppléments sont alors
+ * contrôlés ensemble même si la requête n'en envoie qu'un.
  */
-export function validateProductInput(input: ProductInput, { requireName = false } = {}): string | null {
+export function validateProductInput(
+    input: ProductInput,
+    { requireName = false, current }: { requireName?: boolean; current?: CurrentProduct } = {},
+): string | null {
     const { name, price, minPrice, stock, variations } = input;
 
     if (requireName || name !== undefined) {
@@ -56,11 +68,6 @@ export function validateProductInput(input: ProductInput, { requireName = false 
     if (minPrice !== undefined && minPrice !== null) {
         if (!isPositiveAmount(minPrice)) {
             return 'Prix minimum invalide';
-        }
-        // Un plancher au-dessus du prix public ne veut rien dire : le moteur de
-        // vente refuserait alors toute vente au prix affiché.
-        if (isPositiveAmount(price) && minPrice > price) {
-            return 'Le prix minimum ne peut pas dépasser le prix de vente';
         }
     }
 
@@ -100,6 +107,36 @@ export function validateProductInput(input: ProductInput, { requireName = false 
                 if (priceModifier !== undefined && priceModifier !== null && !isUsableNumber(priceModifier)) {
                     return `Supplément invalide pour l'option "${value}"`;
                 }
+            }
+        }
+    }
+
+    // Cohérence des montants, avec les valeurs enregistrées pour les champs absents.
+    if (price !== undefined || minPrice !== undefined || variations !== undefined) {
+        const effectivePrice = price !== undefined ? price : current?.price;
+        const effectiveMin = minPrice !== undefined ? minPrice : current?.minPrice;
+        const effectiveVariations = variations !== undefined ? variations : current?.variations;
+
+        // Un plancher au-dessus du prix public ne veut rien dire : le moteur de
+        // vente refuserait alors toute vente au prix affiché.
+        if (isPositiveAmount(effectivePrice) && isPositiveAmount(effectiveMin) && effectiveMin > effectivePrice) {
+            return 'Le prix minimum ne peut pas dépasser le prix de vente';
+        }
+
+        // Des remises d'options cumulées ne doivent jamais rendre un prix négatif :
+        // 1 000 FCFA avec deux options à −800 donnait −600 FCFA au panier.
+        if (isPositiveAmount(effectivePrice) && Array.isArray(effectiveVariations) && effectiveVariations.length > 0) {
+            let lowest = isPositiveAmount(effectiveMin) && effectiveMin > 0 ? effectiveMin : effectivePrice;
+            for (const variation of effectiveVariations) {
+                const options = (variation as { options?: unknown } | null)?.options;
+                const modifiers = (Array.isArray(options) ? options : []).map(option => {
+                    const modifier = (option as { priceModifier?: unknown } | null)?.priceModifier;
+                    return isUsableNumber(modifier) ? modifier : 0;
+                });
+                if (modifiers.length > 0) lowest += Math.min(...modifiers);
+            }
+            if (lowest < 0) {
+                return `Une combinaison d'options reviendrait à ${Math.round(lowest)} FCFA : réduisez les remises des options pour que le prix reste positif.`;
             }
         }
     }
