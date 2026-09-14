@@ -1,6 +1,13 @@
 # DjassaBot — Briefing IA (Claude, Gemini/Antigravity, Cursor…)
 
-> **État courant — 12 septembre 2026 :** lire [PASSATION_AGENT.md](PASSATION_AGENT.md), [VIABILITE.md](VIABILITE.md) et [DESIGN.md](DESIGN.md) avant toute reprise. Le `main` intègre les compléments de Claude et le durcissement Paystack/livraison ; 127 tests backend, TypeScript, build et ESLint frontend passent. Le projet Supabase a été restauré et les migrations stock atomique, anti-doublon commande, registre Paystack et permissions associées ont été appliquées puis vérifiées. VPS arrêté, RLS globale non appliquée et aucune validation production. Les affirmations de complétude historiques ne remplacent pas cette passation.
+> **État courant — 14 septembre 2026 :** une seule copie locale fait foi, `~/djassabotSaas` (les autres clones ont été supprimés). L'[audit du 14 septembre](AUDIT_VIABILITE_2026-09-14.md) est traité pour ses lots 0 à 2 (commits `3858d91` et `adee3f9`, 164 tests backend, lint et build frontend OK) :
+> - **Parcours de vente** : adresse → zone reconnue (sinon demandée une fois) → récapitulatif articles + livraison + total → le client répond « OUI » (état `WAITING_FOR_CONFIRMATION`) → alors seulement commande et stock. Panier modifiable jusqu'au « oui » (tags `REMOVE_FROM_CART` / `SET_QUANTITY`) et revalidé contre le catalogue actuel.
+> - **Commande, stock et statut en une transaction SQL** (`place_order`, `transition_order_status`) ; un paiement tardif ne fait plus reculer une commande livrée ou annulée.
+> - **Plafond IA** (`aiUsage.ts`) : `AI_DAILY_CALLS_PER_TENANT` (300), `AI_DAILY_CALLS_GLOBAL` (2000), `GEMINI_MODEL`, `GEMINI_TIMEOUT_MS`, `GEMINI_MAX_OUTPUT_TOKENS`, `GEMINI_THINKING_BUDGET`.
+> - ⚠️ **Migrations à appliquer sur Supabase** : `lock_product_images_storage.sql` (plus d'écriture anonyme sur les photos) puis `add_place_order_rpc.sql` (recette PGlite 15/15). Sans la seconde, le backend passe par un chemin de secours non transactionnel.
+> - Restent ouverts : lots 3 à 5 de l'audit (paiements et abonnements A08–A12, compte A14–A21, exploitation A23–A24) ; VPS arrêté.
+
+> **État au 12 septembre 2026 :** lire [PASSATION_AGENT.md](PASSATION_AGENT.md), [VIABILITE.md](VIABILITE.md) et [DESIGN.md](DESIGN.md) avant toute reprise. Le `main` intègre les compléments de Claude et le durcissement Paystack/livraison ; 127 tests backend, TypeScript, build et ESLint frontend passent. Le projet Supabase a été restauré et les migrations stock atomique, anti-doublon commande, registre Paystack et permissions associées ont été appliquées puis vérifiées. VPS arrêté, RLS globale non appliquée et aucune validation production. Les affirmations de complétude historiques ne remplacent pas cette passation.
 
 > Document de mise au courant rapide pour toute session IA future.
 > Donne le contexte produit, technique et l'historique des décisions clés
