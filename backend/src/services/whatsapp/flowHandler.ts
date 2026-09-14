@@ -616,6 +616,7 @@ async function answerWithAI(ctx: FlowContext, text: string, answer: AnswerOption
         settings,
         history,
         stateNote: answer.stateNote,
+        tenantId,
     });
 
     // L'appel IA dure plusieurs secondes. Le vendeur a pu, pendant ce temps,

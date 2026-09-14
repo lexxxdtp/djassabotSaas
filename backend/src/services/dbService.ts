@@ -1076,19 +1076,19 @@ export const db = {
                     .eq('tenant_id', tenantId)
                     .maybeSingle();
 
+                // Une panne n'est pas une boutique sans réglages. Rendre les valeurs
+                // par défaut faisait chiffrer des zones de livraison inventées, et un
+                // vendeur qui enregistrait l'écran écrasait ses vrais réglages.
                 if (error) {
                     console.error('[DB] getSettings Error:', error.message);
-                    return { ...DEFAULT_SETTINGS };
+                    throw new Error('Réglages temporairement indisponibles');
                 }
 
-                if (data) {
-                    return mapDbSettingsToSettings(data);
-                } else {
-                    return { ...DEFAULT_SETTINGS };
-                }
+                // Aucune ligne : boutique réellement pas encore configurée.
+                return data ? mapDbSettingsToSettings(data) : { ...DEFAULT_SETTINGS };
             } catch (e: any) {
                 console.error('[DB] getSettings Exception:', e);
-                return { ...DEFAULT_SETTINGS };
+                throw new Error('Réglages temporairement indisponibles');
             }
         }
         return localData.settings;

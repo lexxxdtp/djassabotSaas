@@ -150,12 +150,20 @@ export default function Settings() {
         settlementAccount: '',
     });
 
+    // Réglages non chargés (panne serveur) : l'écran affiche des valeurs par défaut.
+    // Les enregistrer remplacerait les vrais réglages du vendeur.
+    const [settingsUnavailable, setSettingsUnavailable] = useState(false);
+
     useEffect(() => {
         if (!token) return;
 
         const fetchSettings = async () => {
             try {
                 const res = await apiClient('/settings');
+                setSettingsUnavailable(!res.ok);
+                if (!res.ok) {
+                    toast.error('Réglages indisponibles pour le moment. Rechargez la page avant de modifier quoi que ce soit.');
+                }
                 if (res.ok) {
                     const data = await res.json();
                     setConfig(prev => ({
@@ -172,6 +180,8 @@ export default function Settings() {
                 }
             } catch (error) {
                 console.error('Failed to fetch settings', error);
+                setSettingsUnavailable(true);
+                toast.error('Réglages indisponibles pour le moment. Rechargez la page avant de modifier quoi que ce soit.');
             }
         };
 
@@ -237,6 +247,10 @@ export default function Settings() {
                     toast.error(err.error || 'Erreur lors de la mise à jour.');
                 }
             } else {
+                if (settingsUnavailable) {
+                    toast.error("Vos réglages n'ont pas pu être chargés : rechargez la page avant d'enregistrer, sinon ils seraient remplacés.");
+                    return;
+                }
                 const res = await apiClient('/settings', {
                     method: 'POST',
                     body: JSON.stringify(config)
@@ -279,6 +293,10 @@ export default function Settings() {
     const handleSetupVendor = async () => {
         if (!token || !config.settlementBank || !config.settlementAccount) {
             toast.error('Veuillez remplir les informations bancaires');
+            return;
+        }
+        if (settingsUnavailable) {
+            toast.error("Vos réglages n'ont pas pu être chargés : rechargez la page avant de continuer.");
             return;
         }
         setLoadingVendor(true);

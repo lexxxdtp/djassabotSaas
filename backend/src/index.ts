@@ -143,8 +143,14 @@ app.use('/api', authenticateTenant, checkSubscription, variationTemplateRoutes);
 
 // Settings (Protected by JWT)
 app.get('/api/settings', authenticateTenant, async (req, res) => {
-    const settings = await db.getSettings(req.tenantId!);
-    res.json(settings);
+    try {
+        const settings = await db.getSettings(req.tenantId!);
+        res.json(settings);
+    } catch {
+        // Surtout pas des réglages par défaut : l'écran les afficherait et une
+        // sauvegarde les écrirait à la place des vrais.
+        res.status(503).json({ error: 'Réglages temporairement indisponibles. Réessayez dans un instant.' });
+    }
 });
 
 app.post('/api/settings', authenticateTenant, checkSubscription, async (req, res) => {
@@ -296,16 +302,21 @@ app.post('/api/products/upload', authenticateTenant, checkSubscription, upload.s
 app.get('/api/products', authenticateTenant, checkSubscription, async (req, res) => {
     const stripMinPrice = ({ minPrice: _mp, ...p }: any) => p;
     const { page, limit } = req.query;
-    if (page || limit) {
-        const p = Math.max(1, parseInt(page as string) || 1);
-        const l = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
-        const { items, total } = await db.getProductsPaged(req.tenantId!, p, l);
-        res.json({ items: items.map(stripMinPrice), total, page: p, limit: l, totalPages: Math.ceil(total / l) });
-        return;
+    try {
+        if (page || limit) {
+            const p = Math.max(1, parseInt(page as string) || 1);
+            const l = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
+            const { items, total } = await db.getProductsPaged(req.tenantId!, p, l);
+            res.json({ items: items.map(stripMinPrice), total, page: p, limit: l, totalPages: Math.ceil(total / l) });
+            return;
+        }
+        const products = await db.getProducts(req.tenantId!);
+        // Never expose minPrice to the frontend (used only by AI internally)
+        res.json(products.map(stripMinPrice));
+    } catch {
+        // Une panne ne doit pas ressembler à un catalogue vide.
+        res.status(503).json({ error: 'Catalogue temporairement indisponible. Réessayez dans un instant.' });
     }
-    const products = await db.getProducts(req.tenantId!);
-    // Never expose minPrice to the frontend (used only by AI internally)
-    res.json(products.map(stripMinPrice));
 });
 
 app.post('/api/products', authenticateTenant, checkSubscription, async (req, res) => {

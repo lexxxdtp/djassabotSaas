@@ -23,6 +23,32 @@ export interface SessionData {
     retryCount: number;
 }
 
+/** Au-delà, un message livré en direct est enregistré sans réponse automatique. */
+const MAX_REPLY_AGE_SECONDS = 10 * 60;
+/** Au-delà, le message relève de l'historique WhatsApp : ni réponse ni enregistrement. */
+const MAX_RECORD_AGE_SECONDS = 24 * 60 * 60;
+
+export type IncomingDecision = 'reply' | 'history' | 'skip';
+
+/**
+ * Que faire d'un message reçu ? L'âge est mesuré à l'arrivée du LOT, pas quand
+ * vient son tour : le temps passé à répondre au premier message faisait vieillir
+ * les suivants au-delà de 10 secondes, et ils ne recevaient jamais de réponse.
+ *
+ * - 'notify' (livré en direct, y compris juste après une coupure) : réponse
+ *   jusqu'à 10 minutes, simple enregistrement ensuite ;
+ * - 'append' (synchronisation d'historique) : jamais de réponse.
+ */
+export const classifyIncoming = (type: string, messageTimestamp: number, receivedAt: number): IncomingDecision => {
+    const age = receivedAt - messageTimestamp;
+    if (age > MAX_RECORD_AGE_SECONDS) return 'skip';
+    if (type !== 'notify') return 'history';
+    return age <= MAX_REPLY_AGE_SECONDS ? 'reply' : 'history';
+};
+
+const isIndividualChat = (jid: string | null | undefined) =>
+    Boolean(jid) && !/@(?:g\.us|broadcast|newsletter)$/.test(String(jid));
+
 export class SessionManager {
     private sessions: Map<string, SessionData> = new Map();
     private MAX_RETRIES = 5;
@@ -199,17 +225,25 @@ export class SessionManager {
             // Même garde que connection.update : un socket remplacé ne répond plus.
             if (this.sessions.get(tenantId)?.sock !== sock) return;
             console.log(`[Manager] 📨 Messages reçus pour ${tenantId} - Count: ${m.messages.length}`);
+            const receivedAt = Math.floor(Date.now() / 1000);
+            let lateUnanswered = 0;
             for (const msg of m.messages) {
-                try {
-                    const msgTimestamp = (typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : (msg.messageTimestamp as any)?.toNumber?.() || Math.floor(Date.now() / 1000));
-                    const secondsAgo = Math.floor(Date.now() / 1000) - msgTimestamp;
-                    if (secondsAgo > 60) continue; // Skip old
-
-                    const isHistory = m.type === 'append' || secondsAgo > 10;
-                    await handleMessage(tenantId, sock, msg, isHistory);
-                } catch (e) {
-                    console.error('Error handling message', e);
+                const raw = msg.messageTimestamp;
+                const timestamp = typeof raw === 'number' ? raw : (raw as any)?.toNumber?.() || receivedAt;
+                const decision = classifyIncoming(m.type, timestamp, receivedAt);
+                if (decision === 'skip') continue;
+                if (decision === 'history' && m.type === 'notify' && !msg.key?.fromMe && isIndividualChat(msg.key?.remoteJid)) {
+                    lateUnanswered++;
                 }
+                // Pas d'await : les conversations avancent en parallèle. L'ordre des
+                // messages d'un même client reste garanti par la file de messageHandler.
+                handleMessage(tenantId, sock, msg, decision === 'history')
+                    .catch(e => console.error('Error handling message', e));
+            }
+            if (lateUnanswered > 0) {
+                await db.logActivity(tenantId, 'warning',
+                    `${lateUnanswered} message(s) arrivé(s) avec plus de 10 minutes de retard (coupure ?) : pas de réponse automatique. Répondez depuis les Conversations.`,
+                    { count: lateUnanswered });
             }
         });
 

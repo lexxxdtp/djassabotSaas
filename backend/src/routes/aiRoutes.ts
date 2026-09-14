@@ -17,6 +17,10 @@ const photoUpload = multer({
 // Toutes les routes IA nécessitent une auth
 router.use(authenticateTenant);
 
+/** Plafond IA du jour atteint (aiUsage) : une limite n'est pas une panne. */
+const isAiQuotaError = (error: unknown) => (error as { code?: string } | null)?.code === 'AI_QUOTA_EXCEEDED';
+const AI_QUOTA_REPLY = { error: "Limite quotidienne d'utilisation de l'IA atteinte pour aujourd'hui. Réessayez demain." };
+
 /**
  * "Photo d'abord" : le vendeur envoie la photo de son produit,
  * l'IA propose nom + description pour pré-remplir le formulaire.
@@ -28,9 +32,13 @@ router.post('/analyze-product-photo', photoUpload.single('file'), async (req: an
             res.status(400).json({ error: 'Photo requise' });
             return;
         }
-        const suggestion = await analyzeProductPhoto(req.file.buffer, req.file.mimetype || 'image/jpeg');
+        const suggestion = await analyzeProductPhoto(req.file.buffer, req.file.mimetype || 'image/jpeg', req.tenantId);
         res.json(suggestion);
     } catch (e) {
+        if (isAiQuotaError(e)) {
+            res.status(429).json(AI_QUOTA_REPLY);
+            return;
+        }
         console.error('[AI] analyze-product-photo error:', e);
         res.status(500).json({ error: "Impossible d'analyser la photo" });
     }
@@ -79,6 +87,10 @@ router.post('/simulate', async (req: Request, res: Response): Promise<void> => {
             images: outgoing.images,
         });
     } catch (error: any) {
+        if (isAiQuotaError(error)) {
+            res.status(429).json(AI_QUOTA_REPLY);
+            return;
+        }
         console.error('Erreur simulation IA:', error);
         res.status(error instanceof SimulationBusyError ? 409 : 500).json({ error: error instanceof SimulationBusyError
             ? 'Un test est en cours. Attendez sa réponse avant de réessayer.'
@@ -107,9 +119,13 @@ router.post('/reset', async (req: Request, res: Response) => {
 router.post('/summarize-identity', async (req: Request, res: Response) => {
     try {
         const dummySettings = req.body; // Settings envoyés par le client (draft)
-        const summary = await generateIdentitySummary(dummySettings as any);
+        const summary = await generateIdentitySummary(dummySettings as any, req.tenantId);
         res.json({ summary });
     } catch (e: any) {
+        if (isAiQuotaError(e)) {
+            res.status(429).json(AI_QUOTA_REPLY);
+            return;
+        }
         console.error('[AI] summarize-identity error:', e);
         res.status(500).json({ error: 'Impossible de générer la synthèse pour le moment.' });
     }
@@ -127,9 +143,13 @@ router.post('/parse-personality', async (req: Request, res: Response) => {
             return;
         }
 
-        const config = await parsePersonalityFromDescription(description);
+        const config = await parsePersonalityFromDescription(description, req.tenantId);
         res.json(config);
     } catch (e: any) {
+        if (isAiQuotaError(e)) {
+            res.status(429).json(AI_QUOTA_REPLY);
+            return;
+        }
         console.error('[AI] parse-personality error:', e);
         res.status(500).json({ error: 'Erreur lors de l\'analyse de la description.' });
     }

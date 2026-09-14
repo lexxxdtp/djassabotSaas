@@ -61,6 +61,36 @@ const alreadySeen = (key: string): boolean => {
     return false;
 };
 
+/**
+ * Plafond IA du jour atteint (aiUsage) : le client reçoit UNE réponse d'attente
+ * par jour — surtout pas « renvoyez votre message », chaque renvoi serait un
+ * appel refusé de plus — et le vendeur UNE alerte par jour.
+ */
+const quotaNotices = new Set<string>();
+
+async function handleAiQuotaExceeded(tenantId: string, remoteJid: string, sock: WASocket, { silent, recorded }: { silent: boolean; recorded: boolean }) {
+    const day = new Date().toISOString().slice(0, 10);
+    if (quotaNotices.size > DEDUP_MAX) quotaNotices.clear();
+
+    const tenantKey = `${day}|${tenantId}`;
+    if (!quotaNotices.has(tenantKey)) {
+        quotaNotices.add(tenantKey);
+        await db.logActivity(tenantId, 'warning',
+            "Limite quotidienne de réponses automatiques atteinte : le bot ne traite plus les nouveaux messages aujourd'hui. Répondez depuis les Conversations.",
+            { day });
+    }
+
+    try {
+        // Un média non analysé reste visible dans l'Inbox.
+        if (!recorded) await addToHistory(tenantId, remoteJid, 'user', '[Message reçu — non traité : limite IA du jour atteinte]');
+
+        const customerKey = `${tenantKey}|${remoteJid}`;
+        if (silent || quotaNotices.has(customerKey)) return;
+        quotaNotices.add(customerKey);
+        await sock.sendMessage(remoteJid, { text: 'Merci pour votre message 🙏 Le vendeur vous répond personnellement dès que possible.' });
+    } catch { /* la connexion est peut-être la cause — on ne boucle pas */ }
+}
+
 export async function handleMessage(tenantId: string, sock: WASocket, msg: proto.IWebMessageInfo, isHistory: boolean = false) {
     if (!msg.key || !msg.key.remoteJid) return;
     const remoteJid = msg.key.remoteJid;
@@ -78,6 +108,7 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
     // Réutilisés par handleFlow pour éviter de refaire les mêmes lectures Supabase
     // (settings est déjà lu ici pour botActive/abonnement ; products si l'image en a eu besoin).
     let preloadedProducts: Product[] | undefined;
+    let recorded = false; // message client déjà visible dans l'Inbox
 
     try {
         let text = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
@@ -122,7 +153,7 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
             if (!isHistory && !botPaused && voiceAllowed && !tooLong) {
                 const buffer = await downloadMediaMessage(msg as any, 'buffer', {});
                 const mimeType = msg.message.audioMessage.mimetype || 'audio/ogg';
-                const transcription = buffer instanceof Buffer ? await transcribeAudio(buffer, mimeType) : '';
+                const transcription = buffer instanceof Buffer ? await transcribeAudio(buffer, mimeType, tenantId) : '';
                 if (!transcription?.trim()) {
                     await addToHistory(tenantId, remoteJid, 'user', '[Message vocal non transcrit]');
                     throw new Error('Transcription vocale indisponible');
@@ -152,7 +183,7 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
                 // Try to validate as a payment receipt first (jamais quand le bot est en pause :
                 // processReceiptValidation envoie des messages au client)
                 if (!botPaused) {
-                    const receiptAnalysis = await analyzePaymentReceipt(buffer as Buffer, mimeType);
+                    const receiptAnalysis = await analyzePaymentReceipt(buffer as Buffer, mimeType, tenantId);
                     if (receiptAnalysis.isReceipt) {
                         const validated = await processReceiptValidation(tenantId, remoteJid, receiptAnalysis, sock);
                         if (validated) {
@@ -165,7 +196,7 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
                 // Get inventory context for image analysis
                 preloadedProducts = await db.getProducts(tenantId);
                 const inventoryContext = preloadedProducts.map((p: any) => `- ${p.name}`).join('\n'); // Simplified context for image
-                const description = await analyzeImage(buffer as Buffer, mimeType, caption, inventoryContext);
+                const description = await analyzeImage(buffer as Buffer, mimeType, caption, inventoryContext, tenantId);
                 text = `[User sent an Image] Description: ${description}. Caption: ${caption}`;
             }
         }
@@ -174,6 +205,7 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
 
         // Add User Message to History
         await addToHistory(tenantId, remoteJid, 'user', text);
+        recorded = true;
 
         if (isHistory) return;
 
@@ -192,6 +224,10 @@ async function processMessage(tenantId: string, sock: WASocket, msg: proto.IWebM
         await handleFlow(tenantId, remoteJid, text, sock, {}, { settings, products: preloadedProducts });
 
     } catch (e) {
+        if ((e as { code?: string } | null)?.code === 'AI_QUOTA_EXCEEDED') {
+            await handleAiQuotaExceeded(tenantId, remoteJid, sock, { silent: isHistory || !!msg.key?.fromMe || botPaused, recorded });
+            return;
+        }
         console.error('Error in messageHandler:', e);
         // Le client ne doit pas rester sans réponse sur un crash technique
         if (!isHistory && !msg.key?.fromMe && !botPaused) {

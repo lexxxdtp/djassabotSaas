@@ -1,7 +1,8 @@
-import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import { GoogleGenerativeAI, GenerativeModel, GenerationConfig } from '@google/generative-ai';
 import axios from 'axios';
 import { Settings } from '../types';
 import { logger } from '../utils/logger';
+import { reserveAiCall, recordAiUsage } from './aiUsage';
 
 // Lazy initialization to ensure env is loaded before API key is read
 let genAI: GoogleGenerativeAI | null = null;
@@ -25,6 +26,11 @@ const requireModelInProduction = (usage: string): void => {
     }
 };
 
+const readInt = (name: string, fallback: number, min: number): number => {
+    const value = Number(process.env[name]);
+    return Number.isSafeInteger(value) && value >= min ? value : fallback;
+};
+
 const getModel = (): GenerativeModel | null => {
     const apiKey = process.env.GEMINI_API_KEY;
 
@@ -34,10 +40,20 @@ const getModel = (): GenerativeModel | null => {
     }
 
     if (!model) {
-        logger.info({ keyPrefix: apiKey.substring(0, 10) }, 'Initializing Gemini');
+        // Modèle configurable (GEMINI_MODEL) pour comparer Flash et Flash-Lite sans
+        // toucher au code. Sortie et réflexion bornées : coût par réponse plafonné ;
+        // délai maximal par appel : un Gemini lent ne bloque pas la conversation.
+        const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        logger.info({ model: modelName }, 'Initializing Gemini');
         genAI = new GoogleGenerativeAI(apiKey);
-        // Using Gemini 2.5 Flash (available for this account)
-        model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        model = genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+                maxOutputTokens: readInt('GEMINI_MAX_OUTPUT_TOKENS', 2048, 256),
+                // Absent des types de ce SDK, transmis tel quel à l'API Gemini.
+                thinkingConfig: { thinkingBudget: readInt('GEMINI_THINKING_BUDGET', 512, 0) },
+            } as GenerationConfig,
+        }, { timeout: readInt('GEMINI_TIMEOUT_MS', 25000, 1000) });
     }
 
     return model;
@@ -107,7 +123,7 @@ const mockNegotiationLogic = (userText: string, context: any) => {
     return "[SIMULATED AI] Je suis en mode test (pas de clé API). Je réponds basiquement aux 'Bonjour', 'Combien', et aux offres chiffrées sur les produits du contexte.";
 };
 
-export const generateAIResponse = async (userText: string, context: { rules?: DiscountRule[], inventoryContext?: string, history?: any[], settings?: Settings, stateNote?: string } = {}) => {
+export const generateAIResponse = async (userText: string, context: { rules?: DiscountRule[], inventoryContext?: string, history?: any[], settings?: Settings, stateNote?: string, tenantId?: string } = {}) => {
     // Get model with lazy initialization
     const currentModel = getModel();
 
@@ -116,6 +132,9 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
         console.warn('[AI] No Valid API Key found. Using Mock Logic.');
         return mockNegotiationLogic(userText, context);
     }
+
+    // Hors du try : un plafond atteint arrête la conversation, il ne devient pas une réponse.
+    reserveAiCall(context.tenantId, 'reply');
 
     try {
         const rules = context.rules || DEFAULT_RULES;
@@ -433,25 +452,18 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
 
         const result = await chat.sendMessage(userText);
         const response = await result.response;
+        recordAiUsage(context.tenantId, 'reply', response.usageMetadata);
         return response.text();
     } catch (error: any) {
-        logger.error({ err: error }, 'AI response generation error');
-
-        if (error.message?.includes('429') || error.status === 429 || error.message?.includes('quota')) {
-            return "⏳ (Quota IA) Je reçois trop de demandes ! Attendez quelques secondes svp.";
-        }
-
-        // Handle Safety Blocks
-        if (error.message?.includes('safety') || error.message?.includes('blocked')) {
-            return "⚠️ (Sécurité) Ma réponse a été bloquée par le filtre de sécurité.";
-        }
-
-        // Other Errors
-        return "⚠️ Une erreur est survenue. Veuillez réessayer.";
+        // Ces erreurs étaient renvoyées comme si c'était la réponse du bot : le
+        // client recevait « ⏳ (Quota IA) Je reçois trop de demandes ! ». L'appelant
+        // répond désormais lui-même, poliment et sans jargon technique.
+        logger.error({ err: error, status: error?.status, tenantId: context.tenantId }, 'AI response generation error');
+        throw error;
     }
 };
 
-export const analyzeImage = async (imageInput: string | Buffer, mimeType: string = 'image/jpeg', caption?: string, inventoryContext: string = '') => {
+export const analyzeImage = async (imageInput: string | Buffer, mimeType: string = 'image/jpeg', caption?: string, inventoryContext: string = '', tenantId?: string) => {
     // Get model with lazy initialization
     const currentModel = getModel();
 
@@ -461,6 +473,8 @@ export const analyzeImage = async (imageInput: string | Buffer, mimeType: string
         if (caption && caption.toLowerCase().includes('robe')) return "C'est une belle robe rouge. (Mock Analysis)";
         return "Je vois un produit de mode intéressant. (Mock Analysis)";
     }
+
+    reserveAiCall(tenantId, 'image');
 
     try {
         let imageData: string;
@@ -499,6 +513,7 @@ export const analyzeImage = async (imageInput: string | Buffer, mimeType: string
                 },
             },
         ]);
+        recordAiUsage(tenantId, 'image', result.response.usageMetadata);
         return result.response.text();
     } catch (error) {
         logger.error({ err: error }, 'Image analysis error');
@@ -520,7 +535,8 @@ export interface ReceiptAnalysis {
 
 export const analyzePaymentReceipt = async (
     imageInput: string | Buffer,
-    mimeType: string = 'image/jpeg'
+    mimeType: string = 'image/jpeg',
+    tenantId?: string
 ): Promise<ReceiptAnalysis> => {
     const currentModel = getModel();
 
@@ -528,6 +544,8 @@ export const analyzePaymentReceipt = async (
         console.warn('[AI] No Valid API Key found. Using Mock Receipt Analysis.');
         return { isReceipt: false };
     }
+
+    reserveAiCall(tenantId, 'receipt');
 
     try {
         let imageData: string;
@@ -599,13 +617,16 @@ export interface ProductPhotoAnalysis {
  */
 export const analyzeProductPhoto = async (
     imageBuffer: Buffer,
-    mimeType: string = 'image/jpeg'
+    mimeType: string = 'image/jpeg',
+    tenantId?: string
 ): Promise<ProductPhotoAnalysis> => {
     const currentModel = getModel();
     if (!currentModel) {
         logger.warn('[AI] No Valid API Key — analyzeProductPhoto unavailable');
         return {};
     }
+
+    reserveAiCall(tenantId, 'dashboard');
 
     try {
         const prompt = `
@@ -648,12 +669,14 @@ export const analyzeProductPhoto = async (
     }
 };
 
-export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "audio/ogg"): Promise<string> => {
+export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "audio/ogg", tenantId?: string): Promise<string> => {
     const currentModel = getModel();
     if (!currentModel) {
         console.warn('[AI] No Valid API Key found. Cannot transcribe audio.');
         return "";
     }
+
+    reserveAiCall(tenantId, 'voice');
 
     try {
         const audioData = audioBuffer.toString('base64');
@@ -668,7 +691,9 @@ export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "a
                     mimeType: mimeType,
                 },
             },
-        ]);
+        // Un vocal de trois minutes peut dépasser le délai d'une réponse texte.
+        ], { timeout: readInt('GEMINI_AUDIO_TIMEOUT_MS', 60000, 1000) });
+        recordAiUsage(tenantId, 'voice', result.response.usageMetadata);
         return result.response.text();
     } catch (error) {
         logger.error({ err: error }, 'Audio transcription error');
@@ -676,9 +701,10 @@ export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "a
     }
 };
 
-export const generateIdentitySummary = async (settings: Settings) => {
+export const generateIdentitySummary = async (settings: Settings, tenantId?: string) => {
     const currentModel = getModel();
     if (!currentModel) return "Impossible de générer le résumé (Pas de clé API configurée).";
+    reserveAiCall(tenantId, 'dashboard');
 
     const prompt = `
     Agis comme le bot défini par ces paramètres. Fais une courte présentation (introspective) de qui tu es, ta mission, ton ton, et tes règles principales.
@@ -703,11 +729,12 @@ export const generateIdentitySummary = async (settings: Settings) => {
     }
 };
 
-export const parsePersonalityFromDescription = async (description: string) => {
+export const parsePersonalityFromDescription = async (description: string, tenantId?: string) => {
     const currentModel = getModel();
     if (!currentModel) {
         throw new Error("Clé API Gemini manquante ou invalide");
     }
+    reserveAiCall(tenantId, 'dashboard');
 
     const prompt = `
     Agis comme un expert en conception de chatbots de vente WhatsApp pour l'Afrique de l'Ouest (surtout Abidjan, Côte d'Ivoire).
