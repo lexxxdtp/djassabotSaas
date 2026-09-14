@@ -1,0 +1,167 @@
+
+> backend@1.0.0 test
+> node --require ts-node/register --test src/services/whatsapp/__tests__/*.test.ts
+
+✔ statistiques : annulations exclues, montant des commandes distinct de l’encaissement (13.026ms)
+✔ statistiques : sept jours calendaires cohérents avec le graphique et dates invalides exclues (5.2085ms)
+✔ statistiques : minuit Abidjan et absence de commandes (6.128583ms)
+✔ lecture commandes error : absence distinguée de la panne (41.954292ms)
+✔ lecture commandes null : absence distinguée de la panne (41.735666ms)
+✔ lecture commandes empty : absence distinguée de la panne (22.977542ms)
+✔ lecture paginée : un rejet de base ne renvoie pas un catalogue local vide (24.476125ms)
+✔ route commandes : panne signalée HTTP 503 pour les deux modes de lecture (4.483708ms)
+✔ clarification sans mutation ni promesse IA : robe | 1 | 1000 (32.306666ms)
+✔ clarification sans mutation ni promesse IA : red | 1.5 | 1000 (28.021667ms)
+✔ clarification sans mutation ni promesse IA : red | 99999 | 1000 (28.666ms)
+✔ commande créée : panier fermé avant envoi, échec none sans revalidation (38.249042ms)
+✔ commande créée : panier fermé avant envoi, échec customer sans revalidation (22.265916ms)
+✔ commande créée : panier fermé avant envoi, échec merchant sans revalidation (20.279791ms)
+✔ panier impossible à fermer : le client est prévenu de ne pas revalider (18.103625ms)
+✔ panier déjà commandé : ni stock repris, ni deuxième commande (22.323083ms)
+✔ course perdue à la création : la commande existante gagne et le stock est rendu (39.013959ms)
+✔ idempotence : clé posée au premier article et conservée ensuite (11.876583ms)
+✔ idempotence : colonne absente, la commande passe quand même (25.38975ms)
+✔ session : effacement du panier envoyé comme null explicite à la base (6.231041ms)
+✔ produit : colonnes autorisées uniquement et filtres des deux identifiants (19.446917ms)
+✔ stock RPC network : refus technique sans écriture de secours (19.949708ms)
+✔ stock RPC empty : refus technique sans écriture de secours (39.614583ms)
+✔ stock RPC rejected : refus technique sans écriture de secours (25.27475ms)
+✔ stock : une compensation connue est tentée après échec du deuxième article (26.935125ms)
+✔ stock : une mise à jour de secours nulle ne valide pas la vente (24.506625ms)
+✔ stock : succès explicite et rupture ne sont pas confondus avec une panne (35.51025ms)
+✔ simulation : historique/panier séparés du vrai client même avec le même identifiant (5.567708ms)
+✔ simulation : boutiques isolées et requête simultanée refusée sans perdre la mémoire (0.211791ms)
+✔ simulation : achat complet et remise à zéro sans écriture métier (29.778667ms)
+✔ routes de simulation : identifiant client ignoré et messages invalides refusés (4.492792ms)
+✔ emails : résultat accepted pour les quatre envois (4.017ms)
+✔ emails : résultat rejected pour les quatre envois (4.068167ms)
+✔ emails : résultat empty pour les quatre envois (2.823959ms)
+✔ emails : résultat throws pour les quatre envois (2.754041ms)
+✔ audioMessage : aucun média ni IA en mode global (6.10725ms)
+✔ imageMessage : aucun média ni IA en mode global (5.183542ms)
+✔ audioMessage : aucun média ni IA en mode manual (5.374333ms)
+✔ imageMessage : aucun média ni IA en mode manual (5.88675ms)
+✔ audioMessage : aucun média ni IA en mode expired (5.9105ms)
+✔ imageMessage : aucun média ni IA en mode expired (4.53625ms)
+✔ audioMessage : aucun média ni IA en mode history (16.752291ms)
+✔ imageMessage : aucun média ni IA en mode history (4.649959ms)
+✔ groupes, broadcasts et chaînes ignorés avant toute lecture métier (6.433791ms)
+✔ audioMessage actif : analyse et transmission au moteur conservées (4.732458ms)
+✔ imageMessage actif : analyse et transmission au moteur conservées (4.633417ms)
+✔ fermeture : état déconnecté, une seule relance, ancien socket ignoré (19.677417ms)
+✔ contrat de saisie : les deux parcours ivoiriens conservent les dix chiffres (2.850042ms)
+✔ statuts : une commande expédiée n'apparaît pas comme annulée (3.653708ms)
+✔ statuts : un statut inconnu revient à traiter, il n'est pas annulé (3.614125ms)
+✔ fiche livreur : montre le reste à encaisser, pas l’identifiant WhatsApp brut (3.126083ms)
+✔ fiche livreur : articles et livraison séparés, frais nuls explicites (3.0835ms)
+✔ fiche livreur : une zone inconnue n’est jamais présentée comme offerte (2.800375ms)
+✔ création lien Paystack : montant, téléphone et résumé viennent de la commande (0.408042ms)
+✔ finalisation : une livraison connue à zéro reste identifiable dans la commande (0.18275ms)
+✔ vérification Paystack : une référence d’une autre boutique reste invisible (0.087708ms)
+✔ fiche livreur : ce qui manque est dit, jamais deviné (2.84575ms)
+✔ fiche livreur : aucune marge ni prix minimum ne fuit vers le livreur (3.817292ms)
+✔ paiement : les adresses bouche-trou sont refusées comme destinataire du reçu (2.905375ms)
+✔ plus de trois articles : le dépassement est annoncé, pas jeté (19.448792ms)
+✔ pause pendant la réflexion IA (global) : la réponse est abandonnée (19.938625ms)
+✔ pause pendant la réflexion IA (conversation) : la réponse est abandonnée (19.635166ms)
+✔ pause pendant la réflexion IA (lecture-impossible) : la réponse est abandonnée (51.642084ms)
+✔ produit : NaN et Infinity refusés comme montants (0.571708ms)
+✔ produit : plancher de négociation cohérent avec le prix affiché (0.091959ms)
+✔ produit : stock entier, jamais fractionnaire ni négatif (0.082084ms)
+✔ produit : nom exigé à la création, facultatif en mise à jour partielle (0.06725ms)
+✔ produit : variantes et options vérifiées (0.108709ms)
+[Session] Error saving to DB: { message: 'écriture refusée' }
+[Session] Error saving to DB: { message: 'écriture refusée' }
+[Paystack Webhook] Event: charge.success
+[Paystack] Montant inattendu pour tenant : 10000 XOF au lieu de 1500000 XOF
+[Paystack Webhook] Event: charge.success
+[Paystack] Référence ref-1 déjà traitée — ignorée
+[Paystack Webhook] Event: charge.success
+[Paystack Webhook] Event: charge.success
+[Paystack Webhook] Event: charge.success
+[Paystack] ✅ Tenant tenant subscription activated.
+[Paystack Webhook] Event: charge.success
+[Paystack] Paiement insuffisant sur ORD-1 : 100000 XOF pour 500000 XOF attendus
+[Paystack Webhook] Event: charge.success
+✔ un reçu correspondant ne marque jamais la commande payée (514.972334ms)
+✔ le marqueur de relance et la pause survivent aux lectures de session (198.268833ms)
+✔ une lecture de session en échec ne fabrique pas un panier vide (5.355459ms)
+✔ un panier non sauvegardé remonte, un historique non sauvegardé non (7.315959ms)
+✔ une conversation en pause ne déclenche ni validation de reçu ni réponse (61.338ms)
+✔ paystack : un montant insuffisant n’active aucun abonnement (79.673417ms)
+✔ paystack : un événement déjà traité ne prolonge pas une deuxième fois (5.576542ms)
+✔ paystack : un événement traité simultanément n’est jamais acquitté trop tôt (5.189083ms)
+✔ paystack : une activation ratée remonte au lieu d’être acquittée (5.862167ms)
+✔ paystack : un montant exact active bien l’abonnement (10.469833ms)
+✔ paystack : un sous-paiement ne marque pas la commande payée (20.729834ms)
+✔ paystack : une commande non mise à jour fait échouer le webhook (6.043083ms)
+[dotenv@17.2.3] injecting env (15) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+[Config] ⏳ Attempting connection to Supabase at https://dnglgyviycbpoerywanc.supabase.co...
+[Config] ✅ Supabase Client Initialized successfully.
+✔ un message relivré ne déclenche pas une deuxième réponse (1025.712667ms)
+✔ lire le statut ne rallume pas un bot volontairement éteint (66.035541ms)
+✔ production sans clé IA : aucune réponse factice n’est envoyée au client (84.686542ms)
+✔ mot de passe : un enregistrement raté ne consomme pas le lien (295.157667ms)
+✔ compte suspendu : l’accès est coupé même avec un jeton encore valide (11.727375ms)
+✔ compte actif : rien ne change (3.456458ms)
+✔ marketing : impayées et annulées ne font pas d’un client un VIP (189.159583ms)
+✔ ne transforme pas un remerciement ou une modification de panier en adresse (2.200791ms)
+✔ ne confond pas une négation ou une demande supplémentaire avec une annulation (0.131708ms)
+▶ parseAIResponse
+  ✔ montants abrégés décimaux et milliers cohérents (0.51025ms)
+  ✔ balises mal formées retirées sans inventer de prix ou quantité (0.133834ms)
+  ✔ extrait un tag ADD_TO_CART et nettoie le texte (1.056167ms)
+  ✔ tolère les espaces et séparateurs de milliers ("15 000", "15.000") (0.093959ms)
+  ✔ tolère le format "13k" (0.055208ms)
+  ✔ extrait les tags IMAGE séparément (0.081917ms)
+  ✔ réponse sans tag → aucun deal, texte intact (0.070375ms)
+✔ parseAIResponse (2.266875ms)
+▶ findProduct
+  ✔ ambiguïté refusée indépendamment de l’ordre du catalogue (0.240209ms)
+  ✔ noms identiques nécessitent un identifiant et mots manquants ne sont pas ignorés (0.119667ms)
+  ✔ trouve par id exact (0.0455ms)
+  ✔ fuzzy : "bazin bleu" matche "Bazin Riche Bleu" (0.055875ms)
+  ✔ fuzzy : accents et pluriels ("meches humaines") (0.051083ms)
+  ✔ introuvable → undefined (0.064ms)
+✔ findProduct (0.702333ms)
+▶ validateDeal (négociation)
+  ✔ prix négocié valide (>= minPrice) → accepté au prix négocié (0.166792ms)
+  ✔ prix sous le minPrice → REFUSÉ avec le plancher (jailbreak bloqué) (0.054084ms)
+  ✔ prix au-dessus du prix public → clampé au prix public (pas de surfacturation) (0.038083ms)
+  ✔ sans minPrice → plancher = marge globale (10% de 10000 = 9000) (0.048417ms)
+  ✔ négociation désactivée → seul le prix public passe (0.046958ms)
+✔ validateDeal (négociation) (0.423875ms)
+▶ validateDeal (stock & quantités)
+  ✔ une quantité fractionnaire est refusée et non arrondie (0.058958ms)
+  ✔ stock insuffisant → INSUFFICIENT_STOCK avec le disponible (0.041334ms)
+  ✔ rupture de stock → OUT_OF_STOCK (0.0395ms)
+  ✔ stock non géré (sur commande) → quantité libre (0.044208ms)
+  ✔ quantité aberrante (hallucination) → BAD_QUANTITY (0.059625ms)
+  ✔ produit inconnu → UNKNOWN_PRODUCT (0.077834ms)
+✔ validateDeal (stock & quantités) (0.414542ms)
+▶ livraison
+  ✔ "Cocody Angré, près de la pharmacie" → zone Cocody (1500 F) (0.124083ms)
+  ✔ zone avec accents/casse ("YOPOUGON bel air") (0.041458ms)
+  ✔ seuil de livraison offerte atteint → 0 F (0.104291ms)
+  ✔ zone inconnue → frais à confirmer (known=false, jamais un total inventé) (0.040834ms)
+  ✔ livraison désactivée → 0, connu (0.030292ms)
+  ✔ la ligne livraison est identifiable et séparable (0.068083ms)
+✔ livraison (0.482042ms)
+▶ intentions client
+  ✔ annulations reconnues (0.059916ms)
+  ✔ une adresse n'est pas une annulation (0.035333ms)
+  ✔ questions reconnues (le piège "attends c'est combien ?" ne devient plus une adresse) (0.046916ms)
+  ✔ vraie adresse acceptée (0.0755ms)
+  ✔ messages trop courts ou sans lettres refusés comme adresse (0.070333ms)
+✔ intentions client (0.344125ms)
+✔ variantes : « S » ne vend pas du XS, « L » pas du XL (0.093ms)
+✔ variantes : le rang dans la liste reste utilisable (0.04225ms)
+✔ variantes : une saisie ambiguë fait demander, jamais deviner (0.046583ms)
+ℹ tests 127
+ℹ suites 6
+ℹ pass 127
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3800.403875

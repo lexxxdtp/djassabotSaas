@@ -1,0 +1,29 @@
+REPRODUIT : Ajout demandé pendant attente adresse : promesse IA transmise sans ajout
+REPRODUIT : Adresse reçue : commande et stock engagés avant accord sur total livraison comprise
+REPRODUIT : Phrase refusant une zone interprétée comme adresse
+REPRODUIT : Livraison offerte hors zone dès seuil dépassé
+REPRODUIT : Variantes : suppléments cumulés autorisent un prix final négatif
+REPRODUIT : Deux annulations concurrentes rendent deux fois le stock
+REPRODUIT : Réponse insertion perdue : remise en stock malgré commande déjà écrite
+REPRODUIT : Paiement tardif : une commande livrée repasse payée
+REPRODUIT : Abonnement Pro : aucun changement du forfait effectif lu par le catalogue
+REPRODUIT : Mot de passe oublié : succès affiché malgré refus email
+REPRODUIT : Inbox : identifiant @lid altéré pour envoi manuel
+REPRODUIT : Historique vendeur : le 21e message efface le premier
+{
+  "reproduced": 12,
+  "probes": [
+    "Ajout demandé pendant attente adresse : promesse IA transmise sans ajout",
+    "Adresse reçue : commande et stock engagés avant accord sur total livraison comprise",
+    "Phrase refusant une zone interprétée comme adresse",
+    "Livraison offerte hors zone dès seuil dépassé",
+    "Variantes : suppléments cumulés autorisent un prix final négatif",
+    "Deux annulations concurrentes rendent deux fois le stock",
+    "Réponse insertion perdue : remise en stock malgré commande déjà écrite",
+    "Paiement tardif : une commande livrée repasse payée",
+    "Abonnement Pro : aucun changement du forfait effectif lu par le catalogue",
+    "Mot de passe oublié : succès affiché malgré refus email",
+    "Inbox : identifiant @lid altéré pour envoi manuel",
+    "Historique vendeur : le 21e message efface le premier"
+  ]
+}

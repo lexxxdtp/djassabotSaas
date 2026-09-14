@@ -1,6 +1,6 @@
 # ✅ DjassaBot — Checklist de viabilité produit
 
-> **Passation actualisée le 12 septembre :** [PASSATION_AGENT.md](PASSATION_AGENT.md) donne l'état et les validations exactes. Lire aussi [DESIGN.md](DESIGN.md) pour la future refonte. Le `main` local intègre les compléments de Claude et le durcissement Paystack/livraison. Les grandes cases restent ouvertes tant que les migrations et la recette réelle n'ont pas été validées.
+> **Passation actualisée le 12 septembre :** [PASSATION_AGENT.md](PASSATION_AGENT.md) donne l'état et les validations exactes. Lire aussi [DESIGN.md](DESIGN.md) pour la future refonte. Le `main` intègre les compléments de Claude et le durcissement Paystack/livraison. Les migrations stock, anti-doublon et Paystack sont appliquées et vérifiées sur Supabase ; la RLS globale et la recette réelle restent ouvertes.
 
 > **Mise à jour du 11 septembre 2026 : les cases historiques ci-dessous ne constituent pas une validation actuelle.** L'audit hors ligne sur `308ed0e` reproduit dix défauts, dont la reconnexion bloquée et un succès de stock malgré une erreur. Le VPS est arrêté selon Alex. La référence actuelle est [l'audit consolidé](AUDIT_VIABILITE_2026-09-11.md), avec preuves, limites et ordre proposé. Pas de feu vert pour des clients payants à ce stade.
 

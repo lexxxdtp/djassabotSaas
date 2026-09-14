@@ -1,6 +1,6 @@
 # DjassaBot — Briefing IA (Claude, Gemini/Antigravity, Cursor…)
 
-> **État courant — 12 septembre 2026 :** lire [PASSATION_AGENT.md](PASSATION_AGENT.md), [VIABILITE.md](VIABILITE.md) et [DESIGN.md](DESIGN.md) avant toute reprise. Le `main` local intègre les compléments de Claude et le durcissement Paystack/livraison ; 127 tests backend, TypeScript, build et ESLint frontend passent. VPS arrêté, migrations distantes non appliquées et aucune validation production. Les affirmations de complétude historiques ne remplacent pas cette passation.
+> **État courant — 12 septembre 2026 :** lire [PASSATION_AGENT.md](PASSATION_AGENT.md), [VIABILITE.md](VIABILITE.md) et [DESIGN.md](DESIGN.md) avant toute reprise. Le `main` intègre les compléments de Claude et le durcissement Paystack/livraison ; 127 tests backend, TypeScript, build et ESLint frontend passent. Le projet Supabase a été restauré et les migrations stock atomique, anti-doublon commande, registre Paystack et permissions associées ont été appliquées puis vérifiées. VPS arrêté, RLS globale non appliquée et aucune validation production. Les affirmations de complétude historiques ne remplacent pas cette passation.
 
 > Document de mise au courant rapide pour toute session IA future.
 > Donne le contexte produit, technique et l'historique des décisions clés

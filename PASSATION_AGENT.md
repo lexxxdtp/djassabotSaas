@@ -6,7 +6,7 @@ Alex suspend le travail par manque de crédits et demande une transmission, pas 
 
 Lire les instructions `AGENTS.md`, le contexte `CLAUDE.md`, puis le TODO officiel `VIABILITE.md`, cette passation, la direction `DESIGN.md`, l'audit consolidé `AUDIT_VIABILITE_2026-09-11.md` et le journal `CLAUDE_ROADMAP.md`. Cette passation précise l'état courant ; les affirmations historiques « tout est corrigé » ne font pas foi. L'audit global du 10 septembre est préliminaire ; les constats détaillés des audits décrivent parfois l'état AVANT les cinq lots ci-dessous.
 
-**État de livraison vérifié le 12 septembre 2026 :** le `main` local intègre les compléments de Claude (`01aceab`), le durcissement Paystack/livraison (`6650823`) et la documentation de refonte. Validation sur le résultat fusionné : 127 tests backend, TypeScript backend, build et ESLint frontend réussis. Vérifier `origin/main` avant reprise pour savoir si le push a déjà eu lieu. La migration `add_paystack_event_ledger.sql` doit impérativement être appliquée avant de déployer ce code. Aucune recette Supabase, Paystack ou WhatsApp réelle n'a été faite puisque le VPS reste arrêté.
+**État de livraison vérifié le 12 septembre 2026 :** `main` et `origin/main` intègrent les compléments de Claude (`01aceab`), le durcissement Paystack/livraison (`6650823`) et la documentation de refonte. Validation : 127 tests backend, TypeScript backend, build et ESLint frontend réussis. Le projet Supabase a été restauré ; les migrations stock atomique, anti-doublon commande, registre Paystack et durcissement des permissions ont été appliquées. Les fonctions, colonnes, index et l'accès Paystack réservé au `service_role` ont été vérifiés par requête. La RLS globale n'a volontairement pas été appliquée : le contrôle Supabase signale encore l'exposition historique des tables et `carts` sans RLS, à traiter seulement lorsque le VPS permettra un test immédiat. Aucune recette Paystack ou WhatsApp réelle n'a été faite.
 
 Ne pas embarquer `.env`, clés Firebase, identifiants WhatsApp, `node_modules` ou archives non examinées. `backend.zip` préexistait : laissé intact, pas un livrable validé. Cette archive de 36 Mo contient `backend/.env` et `firebase-admin-key.json` : elle est exclue par `.gitignore`. Ne jamais la committer, la joindre à un transfert ni l'extraire dans un dépôt partagé ; vérifier `git status` avant tout `git add`.
 
@@ -37,7 +37,7 @@ Les cases suivantes sont ouvertes. Les détails et preuves initiales restent dan
 
 ### 1. Intégrité commande/stock et reprise après panne — prioritaire
 
-- [~] **Clé d'idempotence faite le 11 septembre ; transaction durable toujours ouverte.** Le panier porte une clé posée à son premier article : deux validations du même panier ne peuvent plus produire deux commandes ni deux décréments. `finalizeOrder` consulte la clé AVANT de toucher au stock, et rend le stock quand une course concurrente est perdue. Migration `add_order_idempotency_key.sql` À APPLIQUER : sans elle, le code détecte la colonne absente, avertit une fois et crée la commande sans protection. Restent ouverts : la transaction durable commande + stock + état, et le secours stock non atomique quand la RPC `adjust_stock` n'est pas déployée.
+- [~] **Clé d'idempotence et stock atomique déployés le 12 septembre ; transaction globale toujours ouverte.** Le panier porte une clé posée à son premier article ; les migrations de clé unique et la RPC `adjust_stock` sont appliquées et vérifiées sur Supabase. Restent ouverts : la transaction durable commande + stock + état, les réponses réseau perdues et les tests concurrents sur une base isolée.
 - [ ] Traiter les réponses de base perdues : une écriture peut avoir réussi malgré une erreur réseau. Pas de nouvelle commande ni restitution de stock aveugle.
 - [x] **Fait le 11 septembre — échecs critiques de sauvegarde de session.** `saveSessionToDb` distingue désormais l'écriture critique (panier, état) de l'historique : la première remonte l'erreur, la seconde se contente d'un journal. `getSession` lève au lieu de fabriquer une session vide après une lecture en échec, ce qui effaçait le panier d'un client en pleine commande. `finalizeOrder` traite le cas où le panier ne peut pas être fermé après création de la commande : le client est explicitement prié de ne pas renvoyer son adresse et le vendeur reçoit un avertissement, au lieu d'un doublon silencieux. Reste ouvert dans cette ligne : l'écrasement concurrent lecture-modification-écriture hors file de conversation (relances, tableau de bord) et la revérification du filtrage boutique partout.
 - [ ] File persistante de notifications avec reprises et échecs visibles, pas seulement logs. Fermer le panier avant envoi ne couvre pas un crash entre écritures.
@@ -166,14 +166,11 @@ une vraie connexion WhatsApp, une vraie clé IA, Firebase, Resend ou Paystack. L
 corrections de paiement sont validées par des tests à dépendances remplacées, pas
 par un paiement réel. Aucune recette visuelle n'a été faite.
 
-**Deux points demandent une action humaine avant la remise en ligne :**
+**État actualisé après cette session :**
 
-1. **Appliquer `database/migrations/add_order_idempotency_key.sql`** dans Supabase.
-   Sans elle, la protection anti-doublon de commande est INACTIVE : le code
-   détecte la colonne absente, journalise un avertissement une fois, et crée la
-   commande comme avant. La même remarque vaut toujours pour
-   `add_adjust_stock_rpc.sql`, jamais appliquée.
-2. **Vérifier Baileys manuellement.** Il est passé de rc.9 à rc14 dans la plage
+1. **Migrations appliquées.** Stock atomique, anti-doublon commande, registre
+   Paystack et permissions réservées au backend sont présents et vérifiés.
+2. **Vérifier Baileys manuellement à la remise en ligne.** Il est passé de rc.9 à rc14 dans la plage
    déjà déclarée. Jumelage, réception d'un message, envoi d'une image : à
    éprouver sur un vrai numéro avant d'ouvrir aux vendeurs.
 

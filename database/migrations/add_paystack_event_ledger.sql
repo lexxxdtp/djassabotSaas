@@ -107,6 +107,12 @@ $$;
 revoke all on function claim_paystack_event(uuid, text, text, jsonb) from public;
 revoke all on function complete_paystack_event(uuid, text) from public;
 revoke all on function fail_paystack_event(uuid, text, text) from public;
+revoke all on function claim_paystack_event(uuid, text, text, jsonb) from anon, authenticated;
+revoke all on function complete_paystack_event(uuid, text) from anon, authenticated;
+revoke all on function fail_paystack_event(uuid, text, text) from anon, authenticated;
+revoke all on table payment_events from anon, authenticated;
 grant execute on function claim_paystack_event(uuid, text, text, jsonb) to service_role;
 grant execute on function complete_paystack_event(uuid, text) to service_role;
 grant execute on function fail_paystack_event(uuid, text, text) to service_role;
+
+create index if not exists payment_events_tenant_id_idx on payment_events(tenant_id);

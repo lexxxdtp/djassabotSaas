@@ -1,0 +1,87 @@
+{
+  "date": "2026-09-14",
+  "mode": "read_only_metadata_no_customer_rows",
+  "db_bytes": 13405331,
+  "public_rls": [
+    {
+      "rls": true,
+      "table": "orders"
+    },
+    {
+      "rls": true,
+      "table": "payment_events"
+    },
+    {
+      "rls": true,
+      "table": "settings"
+    },
+    {
+      "rls": true,
+      "table": "activity_logs"
+    },
+    {
+      "rls": true,
+      "table": "variation_templates"
+    },
+    {
+      "rls": true,
+      "table": "auth_tokens"
+    },
+    {
+      "rls": true,
+      "table": "sessions"
+    },
+    {
+      "rls": true,
+      "table": "tenants"
+    },
+    {
+      "rls": true,
+      "table": "users"
+    },
+    {
+      "rls": true,
+      "table": "products"
+    },
+    {
+      "rls": true,
+      "table": "subscriptions"
+    }
+  ],
+  "product_bucket": {
+    "public": true,
+    "file_size_limit": null,
+    "allowed_mime_types": null
+  },
+  "storage_policies": [
+    {
+      "cmd": "SELECT",
+      "name": "Public Access",
+      "check": null,
+      "roles": [
+        "public"
+      ],
+      "using": "(bucket_id = 'product-images'::text)"
+    },
+    {
+      "cmd": "INSERT",
+      "name": "Public Upload",
+      "check": "(bucket_id = 'product-images'::text)",
+      "roles": [
+        "public"
+      ],
+      "using": null
+    },
+    {
+      "cmd": "UPDATE",
+      "name": "Public Update",
+      "check": null,
+      "roles": [
+        "public"
+      ],
+      "using": "(bucket_id = 'product-images'::text)"
+    }
+  ],
+  "activity_constraint": "CHECK ((type = ANY (ARRAY['info'::text, 'sale'::text, 'warning'::text, 'action'::text])))",
+  "subaccount_column_exists": false
+}

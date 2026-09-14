@@ -27,6 +27,7 @@ CREATE OR REPLACE FUNCTION adjust_stock(
 )
 RETURNS TABLE(success BOOLEAN, available INT)
 LANGUAGE plpgsql
+SET search_path = public
 AS $$
 DECLARE
     v_stock INT;
