@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --require ts-node/register --test src/services/whatsapp/__tests__/*.test.ts",
+    "test": "node --require ts-node/register --test src/services/whatsapp/__tests__/*.test.ts src/__tests__/*.test.ts",
     "dev": "nodemon src/index.ts",
     "start": "node dist/index.js",
     "build": "rimraf dist && tsc",

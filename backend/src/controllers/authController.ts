@@ -7,6 +7,7 @@ import { sendOtpEmail, sendPasswordResetEmail } from '../services/resendService'
 import { verifyPhoneToken, isFirebaseAdminConfigured } from '../services/firebaseAdminService';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
+import { empreinteMotDePasse } from '../utils/sessionFreshness';
 
 export const signup = async (req: Request, res: Response) => {
     try {
@@ -86,7 +87,9 @@ export const signup = async (req: Request, res: Response) => {
         const token = generateToken({
             tenantId: tenant.id,
             userId: user.id,
-            email: user.email || user.phone || ''
+            email: user.email || user.phone || '',
+            // Empreinte du mot de passe : en changer invalide les sessions ouvertes.
+            pwd: empreinteMotDePasse(user.passwordHash)
         });
 
         res.status(201).json({
@@ -161,7 +164,9 @@ export const login = async (req: Request, res: Response) => {
         const token = generateToken({
             tenantId: tenant.id,
             userId: user.id,
-            email: user.email || user.phone || ''
+            email: user.email || user.phone || '',
+            // Empreinte du mot de passe : en changer invalide les sessions ouvertes.
+            pwd: empreinteMotDePasse(user.passwordHash)
         });
 
         res.json({
@@ -489,8 +494,12 @@ export const forgotPassword = async (req: Request, res: Response) => {
         const normalizedEmail = email.toLowerCase().trim();
         const user = await db.getUserByEmail(normalizedEmail);
 
+        // Une seule et même phrase, que l'adresse existe ou non : deux réponses
+        // différentes permettaient de savoir qui a un compte chez nous.
+        const REPONSE_NEUTRE = { success: true, message: 'Si cette adresse correspond à un compte, un lien de réinitialisation vient d\'être envoyé.' };
+
         if (!user) {
-            res.json({ success: true, message: 'Un lien de réinitialisation a été envoyé si l\'adresse existe.' });
+            res.json(REPONSE_NEUTRE);
             return;
         }
 
@@ -500,45 +509,29 @@ export const forgotPassword = async (req: Request, res: Response) => {
         await db.storeAuthToken(user.id, 'PASSWORD_RESET', resetToken, expiresAt);
         const result = await sendPasswordResetEmail(normalizedEmail, resetToken);
 
+        // L'ancienne version annonçait « un lien a été envoyé » même quand Resend
+        // avait refusé : le vendeur attendait un email qui ne partirait jamais.
+        // On garde la réponse neutre (ne rien révéler), mais l'échec devient un
+        // incident visible dans les journaux, avec un marqueur cherchable.
         if (!result.success) {
-            logger.error('Forgot password: email send failed');
+            logger.error({ alerte: 'RESET_EMAIL_NON_ENVOYE', userId: user.id }, 'Réinitialisation : le service email a refusé le message');
         }
 
-        res.json({ success: true, message: 'Un lien de réinitialisation a été envoyé.' });
+        res.json(REPONSE_NEUTRE);
     } catch (error: any) {
         logger.error({ err: error }, 'Forgot password error');
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };
 
-export const verifyPhoneReset = async (req: Request, res: Response) => {
-    try {
-        const { phone } = req.body;
-        if (!phone) {
-            res.status(400).json({ error: 'Numéro de téléphone requis' });
-            return;
-        }
-
-        const user = await db.getUserByPhone(phone);
-        // Return the same response whether the user exists or not (prevents enumeration)
-        if (!user) {
-            res.json({ success: true, message: 'Si ce numéro est enregistré, vous recevrez un code.' });
-            return;
-        }
-
-        const resetToken = uuidv4();
-        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-
-        await db.storeAuthToken(user.id, 'PASSWORD_RESET', resetToken, expiresAt);
-
-        // Token must be delivered out-of-band (SMS), never returned directly in the response
-        logger.info({ userId: user.id }, 'Phone reset token generated');
-        res.json({ success: true, message: 'Si ce numéro est enregistré, vous recevrez un code.' });
-    } catch (error: any) {
-        logger.error({ err: error }, 'Verify phone reset error');
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-};
+// `verifyPhoneReset` a été retirée le 20 septembre 2026.
+//
+// Elle répondait « vous recevrez un code » alors qu'aucun SMS n'était jamais
+// envoyé — le backend n'a pas de fournisseur SMS, la vérification téléphone
+// passe par Firebase côté navigateur. Pire : elle fabriquait un jeton de
+// réinitialisation valable quinze minutes pour n'importe quel numéro connu,
+// sans authentification et sans destinataire. Le parcours réel est
+// `forgotPasswordPhone`, qui exige un jeton Firebase vérifié côté serveur.
 
 export const resetPassword = async (req: Request, res: Response) => {
     try {

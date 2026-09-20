@@ -386,6 +386,7 @@ function loadDb(client: unknown) {
         './tenantService': {}, '../types': {},
         '../config/supabase': { isSupabaseEnabled: true, supabase: client },
         './whatsapp/salesEngine': { DELIVERY_ITEM_ID: '_delivery' },
+        '../utils/authTokens': require('../../../utils/authTokens'),
     }).db;
 }
 

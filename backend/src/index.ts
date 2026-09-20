@@ -71,7 +71,6 @@ app.use(cors({
             allowedOrigins.includes(cleanOrigin) ||
             allowedOrigins.includes(origin) ||
             cleanOrigin === 'https://djassabot-saas.vercel.app' ||
-            cleanOrigin === 'https://187-77-171-44.nip.io' ||
             isCapacitorApp ||
             isLocalDevServer;
 
@@ -125,6 +124,7 @@ app.use('/api/auth/verify-phone-otp', otpLimiter);
 app.use('/api/auth/forgot-password', otpLimiter);
 app.use('/api/auth/forgot-password-phone', otpLimiter);
 app.use('/api/auth/check-phone', authLimiter);
+app.use('/api/auth/reset-password', otpLimiter);
 app.use('/api/auth', authRoutes);
 
 // Paystack Payment Routes — monté AVANT le middleware générique '/api' ci-dessous.

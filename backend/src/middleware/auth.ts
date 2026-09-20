@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
 import { db } from '../services/dbService';
+import { sessionPerimee, empreinteMotDePasse } from '../utils/sessionFreshness';
 
 // Lazy getter to ensure dotenv.config() has been called before reading JWT_SECRET
 let _jwtSecret: string | undefined;
@@ -29,17 +30,49 @@ interface JWTPayload {
     tenantId: string;
     userId: string;
     email: string;
+    /** Empreinte du mot de passe au moment de la connexion (cf. sessionFreshness). */
+    pwd?: string;
 }
+
+/**
+ * Petit cache des empreintes : l'ouverture du tableau de bord déclenche cinq
+ * requêtes en parallèle, on ne relit pas l'utilisateur cinq fois. Dix secondes
+ * suffisent à absorber ces rafales ; c'est aussi le délai maximal avant qu'un
+ * changement de mot de passe ne ferme les autres sessions.
+ */
+const empreintesConnues = new Map<string, { empreinte: string | null; expire: number }>();
+const DUREE_CACHE_MS = 10_000;
+
+const empreinteActuelle = async (userId: string): Promise<string | null> => {
+    const connue = empreintesConnues.get(userId);
+    if (connue && connue.expire > Date.now()) return connue.empreinte;
+
+    let empreinte: string | null = null;
+    try {
+        const user = await db.getUserById(userId);
+        empreinte = user?.passwordHash ? empreinteMotDePasse(user.passwordHash) : null;
+    } catch (error) {
+        // Une panne de lecture ne doit pas déconnecter un vendeur légitime.
+        logger.warn({ err: error, userId }, 'Impossible de vérifier la fraîcheur de la session');
+        return null;
+    }
+
+    empreintesConnues.set(userId, { empreinte, expire: Date.now() + DUREE_CACHE_MS });
+    return empreinte;
+};
+
+/** Réservé aux tests : vide le cache des empreintes. */
+export const oublierEmpreintes = (): void => empreintesConnues.clear();
 
 /**
  * Middleware d'authentification
  * Vérifie le JWT et injecte tenantId et userId dans req
  */
-export const authenticateTenant = (
+export const authenticateTenant = async (
     req: Request,
     res: Response,
     next: NextFunction
-): void => {
+): Promise<void> => {
     try {
         // Extraire le token du header Authorization
         const authHeader = req.headers.authorization;
@@ -61,6 +94,18 @@ export const authenticateTenant = (
 
         req.tenantId = decoded.tenantId;
         req.userId = decoded.userId;
+
+        // Un jeton vaut sept jours. Si le mot de passe a changé depuis son
+        // émission — typiquement parce que le vendeur se croyait piraté — la
+        // session ouverte avec l'ancien n'a plus lieu d'être.
+        if (sessionPerimee(decoded.pwd, await empreinteActuelle(decoded.userId))) {
+            logger.info({ userId: decoded.userId }, 'Session fermée : le mot de passe a changé');
+            res.status(401).json({
+                error: 'Votre mot de passe a changé. Reconnectez-vous.',
+                code: 'SESSION_REVOKED',
+            });
+            return;
+        }
 
         logger.debug({ tenantId: decoded.tenantId }, 'Tenant authenticated');
 

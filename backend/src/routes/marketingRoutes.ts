@@ -5,6 +5,7 @@ import { whatsappManager } from '../services/baileysManager';
 import { db } from '../services/dbService';
 import { supabase, isSupabaseEnabled } from '../config/supabase';
 import { logger } from '../utils/logger';
+import { reserverCampagne, libererCampagne, CAMPAGNES_PAR_JOUR } from '../services/broadcastLock';
 
 const router = Router();
 router.use(authenticateTenant);
@@ -142,10 +143,28 @@ router.post('/broadcast', async (req: any, res) => {
 
         const text = message.trim();
 
+        // Deux campagnes simultanées, c'est le double de messages pour le client
+        // et un délai anti-ban divisé par deux : le meilleur moyen de faire
+        // bannir le numéro WhatsApp du vendeur.
+        const refus = reserverCampagne(tenantId);
+        if (refus === 'EN_COURS') {
+            return res.status(409).json({
+                error: 'Une campagne est déjà en cours. Attendez qu\'elle se termine.',
+                code: 'CAMPAGNE_EN_COURS',
+            });
+        }
+        if (refus === 'PLAFOND_QUOTIDIEN') {
+            return res.status(429).json({
+                error: `Vous avez atteint la limite de ${CAMPAGNES_PAR_JOUR} campagnes pour aujourd'hui. Trop de messages d'un coup font bloquer un numéro WhatsApp.`,
+                code: 'PLAFOND_CAMPAGNES',
+            });
+        }
+
         // Répondre tout de suite, puis envoyer en arrière-plan
         res.json({ success: true, queued: jids.length });
 
         (async () => {
+          try {
             let sent = 0;
             let failed = 0;
             for (const jid of jids) {
@@ -170,17 +189,22 @@ router.post('/broadcast', async (req: any, res) => {
             logger.info({ tenantId, sent, failed, audience }, '[Broadcast] campagne terminée');
 
             if (isSupabaseEnabled && supabase) {
-                try {
-                    await supabase.from('activity_logs').insert([{
-                        tenant_id: tenantId,
-                        type: 'campaign',
-                        message: `Campagne envoyée à ${sent} client(s)${failed ? ` (${failed} échec(s))` : ''}`,
-                        metadata: { audience, sent, failed, preview: text.slice(0, 120) }
-                    }]);
-                } catch (e) {
-                    logger.warn({ err: e }, '[Broadcast] log activité échoué');
-                }
+                // Le type 'campaign' était refusé par la contrainte de la table
+                // (info/sale/warning/action) : la trace des campagnes n'a jamais
+                // été écrite. 'action' passe, et metadata garde la nature exacte.
+                const { error } = await supabase.from('activity_logs').insert([{
+                    tenant_id: tenantId,
+                    type: 'action',
+                    message: `Campagne envoyée à ${sent} client(s)${failed ? ` (${failed} échec(s))` : ''}`,
+                    metadata: { kind: 'campaign', audience, sent, failed, preview: text.slice(0, 120) }
+                }]);
+                if (error) logger.warn({ err: error, tenantId }, '[Broadcast] log activité refusé par la base');
             }
+          } finally {
+            // Sans ce relâchement, un échec en cours de route interdisait
+            // définitivement les campagnes jusqu'au prochain redémarrage.
+            libererCampagne(tenantId);
+          }
         })();
     } catch (error) {
         logger.error({ err: error }, '[Marketing] broadcast error');

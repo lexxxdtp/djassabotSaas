@@ -13,7 +13,6 @@ router.post('/verify-email-otp', authController.verifyEmailOtp);
 router.post('/verify-phone-otp', authController.verifyPhoneOtp);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/forgot-password-phone', authController.forgotPasswordPhone);
-router.post('/verify-phone-reset', authController.verifyPhoneReset);
 router.post('/reset-password', authController.resetPassword);
 
 // Protected Routes

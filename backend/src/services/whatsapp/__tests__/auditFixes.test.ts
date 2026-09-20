@@ -234,7 +234,8 @@ function loadDb(client: unknown) {
         fs: { existsSync: () => false, mkdirSync() {}, writeFileSync() {} }, path,
         './tenantService': {}, '../types': {},
         '../config/supabase': { isSupabaseEnabled: true, supabase: client },
-        './whatsapp/salesEngine': { DELIVERY_ITEM_ID: '_delivery' }
+        './whatsapp/salesEngine': { DELIVERY_ITEM_ID: '_delivery' },
+        '../utils/authTokens': require('../../../utils/authTokens')
     }).db;
 }
 

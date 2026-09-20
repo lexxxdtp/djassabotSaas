@@ -221,6 +221,7 @@ test('A18 réglages : une lecture en panne lève, une boutique non configurée g
         './tenantService': {}, '../types': {},
         '../config/supabase': { isSupabaseEnabled: true, supabase: { from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: async () => result }) } },
         './whatsapp/salesEngine': { DELIVERY_ITEM_ID: '_delivery' },
+        '../utils/authTokens': require('../../../utils/authTokens'),
     }).db;
     await assert.rejects(dbFor({ data: null, error: { message: 'offline' } }).getSettings('owner'), /indisponibles/);
     const fresh = await dbFor({ data: null, error: null }).getSettings('owner');

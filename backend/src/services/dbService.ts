@@ -7,6 +7,7 @@ import {
     Tenant, User, Subscription
 } from '../types';
 import { DELIVERY_ITEM_ID } from './whatsapp/salesEngine';
+import { hashAuthToken, candidatsJeton } from '../utils/authTokens';
 
 // Export types for compatibility with existing imports in other files
 export { Product, CartItem, Order, Settings, Tenant, User, Subscription };
@@ -1396,12 +1397,23 @@ export const db = {
 
     // Auth Tokens (OTP / Resets)
     storeAuthToken: async (identifier: string, tokenType: 'EMAIL_OTP' | 'PASSWORD_RESET', tokenValue: string, expiresAt: Date) => {
+        // Ce qui est stocké est l'empreinte, jamais le code envoyé au vendeur.
+        const empreinte = hashAuthToken(tokenValue);
+
         if (isSupabaseEnabled && supabase) {
             try {
+                // Les jetons précédents du même identifiant sont effacés : sans
+                // cela, cinq demandes de code laissaient cinq codes valables en
+                // même temps, et multipliaient d'autant les chances d'une
+                // recherche par force brute.
+                await supabase.from('auth_tokens').delete()
+                    .eq('identifier', identifier)
+                    .eq('token_type', tokenType);
+
                 const { error } = await supabase.from('auth_tokens').insert([{
                     identifier,
                     token_type: tokenType,
-                    token_value: tokenValue,
+                    token_value: empreinte,
                     expires_at: expiresAt.toISOString()
                 }]);
                 if (error) throw error;
@@ -1414,7 +1426,7 @@ export const db = {
         // Remove existing tokens for this identifier+type to prevent clutter
         localData.authTokens = localData.authTokens.filter(t => !(t.identifier === identifier && t.tokenType === tokenType));
         localData.authTokens.push({
-            identifier, tokenType, tokenValue, expiresAt: expiresAt.toISOString()
+            identifier, tokenType, tokenValue: empreinte, expiresAt: expiresAt.toISOString()
         });
         saveData();
     },
@@ -1428,10 +1440,10 @@ export const db = {
 
                 if (tokenType === 'EMAIL_OTP') {
                     // For OTP, we check by identifier (email) and match the value
-                    query = query.eq('identifier', identifierOrTokenValue).eq('token_value', valueToMatch);
+                    query = query.eq('identifier', identifierOrTokenValue).in('token_value', candidatsJeton(valueToMatch || ''));
                 } else {
                     // For Password Reset, we check by the token value itself
-                    query = query.eq('token_value', identifierOrTokenValue);
+                    query = query.in('token_value', candidatsJeton(identifierOrTokenValue));
                 }
 
                 const { data, error } = await query.single();
@@ -1449,9 +1461,9 @@ export const db = {
         const token = localData.authTokens.find(t => {
             if (t.tokenType !== tokenType || t.expiresAt <= now) return false;
             if (tokenType === 'EMAIL_OTP') {
-                return t.identifier === identifierOrTokenValue && t.tokenValue === valueToMatch;
+                return t.identifier === identifierOrTokenValue && candidatsJeton(valueToMatch || '').includes(t.tokenValue);
             } else {
-                return t.tokenValue === identifierOrTokenValue; // Reset token
+                return candidatsJeton(identifierOrTokenValue).includes(t.tokenValue); // Reset token
             }
         });
 
@@ -1466,7 +1478,7 @@ export const db = {
                 if (tokenType === 'EMAIL_OTP') {
                     query = query.eq('identifier', identifierOrTokenValue);
                 } else {
-                    query = query.eq('token_value', identifierOrTokenValue);
+                    query = query.in('token_value', candidatsJeton(identifierOrTokenValue));
                 }
                 await query;
             } catch (e) {
@@ -1477,7 +1489,7 @@ export const db = {
         localData.authTokens = localData.authTokens.filter(t => {
             if (t.tokenType !== tokenType) return true; // KEEP
             if (tokenType === 'EMAIL_OTP') return t.identifier !== identifierOrTokenValue;
-            return t.tokenValue !== identifierOrTokenValue;
+            return !candidatsJeton(identifierOrTokenValue).includes(t.tokenValue);
         });
         saveData();
     }
