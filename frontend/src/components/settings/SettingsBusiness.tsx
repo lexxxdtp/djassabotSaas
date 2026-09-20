@@ -10,13 +10,13 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
     return (
         <div className="space-y-6">
             {/* 1. Infos Boutique & Social */}
-            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-8">
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 md:p-8">
                 <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                    <span className="w-2 h-2 rounded-full bg-blue-500"></span> Informations Boutique
+                    <span className="w-2 h-2 rounded-full bg-[#00D97E]"></span> Informations Boutique
                 </h2>
                 <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Nom de la Boutique</label>
+                        <label className="block text-xs font-semibold text-[var(--color-muted)] mb-2 uppercase tracking-wide">Nom de la Boutique</label>
                         <input
                             type="text"
                             value={config.storeName}
@@ -26,7 +26,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Numéro de Téléphone (Public)</label>
+                        <label className="block text-xs font-semibold text-[var(--color-muted)] mb-2 uppercase tracking-wide">Numéro de Téléphone (Public)</label>
                         <input
                             type="text"
                             value={config.phone}
@@ -36,7 +36,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                         />
                     </div>
                     <div className="md:col-span-2">
-                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Type d'Activité</label>
+                        <label className="block text-xs font-semibold text-[var(--color-muted)] mb-2 uppercase tracking-wide">Type d'Activité</label>
                         <input
                             type="text"
                             value={config.businessType || ''}
@@ -52,7 +52,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                     <h3 className="text-sm font-bold text-[var(--color-muted)] mb-4 uppercase tracking-wide">Réseaux Sociaux</h3>
                     <div className="grid md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Facebook URL</label>
+                            <label className="block text-xs font-semibold text-[var(--color-muted)] mb-2 uppercase tracking-wide">Facebook URL</label>
                             <input
                                 type="text"
                                 value={config.socialMedia?.facebook || ''}
@@ -62,7 +62,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Instagram URL</label>
+                            <label className="block text-xs font-semibold text-[var(--color-muted)] mb-2 uppercase tracking-wide">Instagram URL</label>
                             <input
                                 type="text"
                                 value={config.socialMedia?.instagram || ''}
@@ -72,7 +72,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Site Web</label>
+                            <label className="block text-xs font-semibold text-[var(--color-muted)] mb-2 uppercase tracking-wide">Site Web</label>
                             <input
                                 type="text"
                                 value={config.socialMedia?.website || ''}
@@ -82,7 +82,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">TikTok URL</label>
+                            <label className="block text-xs font-semibold text-[var(--color-muted)] mb-2 uppercase tracking-wide">TikTok URL</label>
                             <input
                                 type="text"
                                 value={config.socialMedia?.tiktok || ''}
@@ -96,13 +96,13 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
             </div>
 
             {/* 2. Localisation */}
-            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-8">
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 md:p-8">
                 <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                    <span className="w-2 h-2 rounded-full bg-blue-500"></span> Localisation
+                    <span className="w-2 h-2 rounded-full bg-[#00D97E]"></span> Localisation
                 </h2>
                 <div className="space-y-6">
                     <div>
-                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Adresse Physique</label>
+                        <label className="block text-xs font-semibold text-[var(--color-muted)] mb-2 uppercase tracking-wide">Adresse Physique</label>
                         <div className="relative">
                             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] w-4 h-4" />
                             <input
@@ -116,7 +116,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                     </div>
                     <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Lien Google Maps</label>
+                            <label className="block text-xs font-semibold text-[var(--color-muted)] mb-2 uppercase tracking-wide">Lien Google Maps</label>
                             <input
                                 type="text"
                                 value={config.locationUrl || ''}
@@ -127,7 +127,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                         </div>
                         <div>
                             <div>
-                                <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">Coordonnées GPS</label>
+                                <label className="block text-xs font-semibold text-[var(--color-muted)] mb-2 uppercase tracking-wide">Coordonnées GPS</label>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
@@ -165,20 +165,23 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
             </div>
 
             {/* 3. Horaires & Politique */}
-            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-8">
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 md:p-8">
                 <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider text-xs">
-                    <span className="w-2 h-2 rounded-full bg-blue-500"></span> Horaires & Politique
+                    <span className="w-2 h-2 rounded-full bg-[#00D97E]"></span> Horaires & Politique
                 </h2>
                 <div className="space-y-6">
                     {/* Horaires par jour */}
                     <div>
-                        <label className="block text-xs font-semibold text-neutral-400 mb-3 uppercase tracking-wide">
+                        <label className="block text-xs font-semibold text-[var(--color-muted)] mb-3 uppercase tracking-wide">
                             <Clock className="inline w-4 h-4 mr-1" /> Horaires d'Ouverture par Jour
                         </label>
                         <div className="space-y-2">
                             {(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'] as const).map((day) => (
-                                <div key={day} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                                    <span className="w-24 text-sm text-white capitalize font-medium">{day}</span>
+                                // Sept éléments sur une seule ligne demandaient 440 px :
+                                // sur un écran de 320 px, les heures sortaient de la
+                                // carte. La ligne se replie maintenant quand il le faut.
+                                <div key={day} className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-white/5 rounded-lg p-3">
+                                    <span className="w-20 shrink-0 text-sm text-white capitalize font-medium">{day}</span>
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
@@ -195,7 +198,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                                         <span className="text-xs text-[var(--color-muted)]">Ouvert</span>
                                     </label>
                                     {!config.openingHours[day]?.closed && (
-                                        <>
+                                        <div className="flex items-center gap-2 w-full sm:w-auto">
                                             <input
                                                 type="time"
                                                 value={config.openingHours[day]?.open || '08:00'}
@@ -206,9 +209,9 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                                                         [day]: { ...config.openingHours[day], open: e.target.value }
                                                     }
                                                 })}
-                                                className="bg-white/10 border border-[var(--color-border)] rounded px-2 py-1 text-white text-sm"
+                                                className="min-w-0 flex-1 sm:flex-none bg-white/10 border border-[var(--color-border)] rounded px-2 py-1 text-white text-sm"
                                             />
-                                            <span className="text-[var(--color-muted)]">à</span>
+                                            <span className="text-[var(--color-muted)] shrink-0">à</span>
                                             <input
                                                 type="time"
                                                 value={config.openingHours[day]?.close || '20:00'}
@@ -219,9 +222,9 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
                                                         [day]: { ...config.openingHours[day], close: e.target.value }
                                                     }
                                                 })}
-                                                className="bg-white/10 border border-[var(--color-border)] rounded px-2 py-1 text-white text-sm"
+                                                className="min-w-0 flex-1 sm:flex-none bg-white/10 border border-[var(--color-border)] rounded px-2 py-1 text-white text-sm"
                                             />
-                                        </>
+                                        </div>
                                     )}
                                     {config.openingHours[day]?.closed && (
                                         <span className="text-red-400 text-sm">Fermé</span>
@@ -233,7 +236,7 @@ export default function SettingsBusiness({ config, setConfig }: SettingsBusiness
 
                     {/* Politique et fonctionnement */}
                     <div>
-                        <label className="block text-xs font-semibold text-neutral-400 mb-2 uppercase tracking-wide">
+                        <label className="block text-xs font-semibold text-[var(--color-muted)] mb-2 uppercase tracking-wide">
                             📋 Politique, Retours & Fonctionnement
                         </label>
                         <p className="text-xs text-[var(--color-muted)] mb-2">

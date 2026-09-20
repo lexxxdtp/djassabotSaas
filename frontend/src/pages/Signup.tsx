@@ -337,7 +337,7 @@ const Signup: React.FC = () => {
                             </div>
 
                             <div className="mt-3 h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                <div className={`h-full transition-all duration-300 ${passwordScore === 0 ? 'w-0' : passwordScore === 1 ? 'bg-red-500 w-1/3' : passwordScore === 2 ? 'bg-orange-500 w-2/3' : 'bg-green-500 w-full shadow-[0_0_10px_rgba(34,197,94,0.5)]'}`} />
+                                <div className={`h-full transition-all duration-300 ${passwordScore === 0 ? 'w-0' : passwordScore === 1 ? 'bg-red-500 w-1/3' : passwordScore === 2 ? 'bg-amber-500 w-2/3' : 'bg-[#00D97E] w-full'}`} />
                             </div>
                             <div className="grid grid-cols-1 gap-1 text-xs text-[var(--color-muted)] mt-2">
                                 <div className={`flex items-center gap-2 ${password.length >= 8 ? 'text-green-400' : ''}`}>

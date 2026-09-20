@@ -200,12 +200,12 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                         >
                             <div className="flex justify-between items-start mb-2">
                                 <span className="text-2xl">{style.icon}</span>
-                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isActive ? 'border-[#00D97E] bg-[#00D97E]' : 'border-zinc-700'
+                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isActive ? 'border-[#00D97E] bg-[#00D97E]' : 'border-[var(--color-border)]'
                                     }`}>
                                     {isActive && <CheckCircle size={10} className="text-black" />}
                                 </div>
                             </div>
-                            <div className="font-bold text-white text-xs">{style.name}</div>
+                            <div className="font-bold text-white text-xs break-words">{style.name}</div>
                             <div className="text-xs text-[var(--color-muted)] mt-1 line-clamp-2 leading-snug">{style.description}</div>
                         </button>
                     );
@@ -222,7 +222,7 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                 >
                     <div className="flex justify-between items-start mb-2">
                         <span className="text-2xl">⚙️</span>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isCustom ? 'border-[#00D97E] bg-[#00D97E]' : 'border-zinc-700'
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isCustom ? 'border-[#00D97E] bg-[#00D97E]' : 'border-[var(--color-border)]'
                             }`}>
                             {isCustom && <CheckCircle size={10} className="text-black" />}
                         </div>

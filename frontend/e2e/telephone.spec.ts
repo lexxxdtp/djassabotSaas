@@ -76,6 +76,39 @@ test.describe('Sur téléphone', () => {
         }
     });
 
+    // Le balayage des pages ne suffisait pas : les réglages n'affichent leur
+    // contenu qu'une fois le tiroir ouvert, et c'est là que les zones de
+    // livraison débordaient de l'écran sans que personne ne le voie.
+    for (const tiroir of ['Livraison et paiements', 'Sa façon de répondre', 'Ma boutique et ses horaires', 'Mon assistant']) {
+        test(`le tiroir « ${tiroir} » tient dans un écran de 320 px`, async ({ page }) => {
+            await page.setViewportSize({ width: 320, height: 720 });
+            await page.goto('/dashboard/settings');
+            await page.getByRole('button', { name: new RegExp(tiroir) }).first().click();
+
+            const fenetre = page.getByRole('dialog');
+            await expect(fenetre).toBeVisible();
+            // On ne regarde pas le bord droit : le tiroir défile verticalement,
+            // ce qui rend son débordement horizontal invisible à un test de
+            // position. On cherche donc le contenu plus large que sa boîte,
+            // c'est-à-dire ce qui force un défilement latéral.
+            const coupables = await page.evaluate(() => {
+                const dialogue = document.querySelector('[role=dialog]');
+                if (!dialogue) return ['aucun tiroir'];
+                // Un champ de saisie a toujours un contenu plus large que sa
+                // boîte dès que le texte dépasse : ce n'est pas un défaut de mise
+                // en page, c'est le défilement normal d'un champ.
+                const champs = ['INPUT', 'TEXTAREA', 'SELECT'];
+                return [dialogue, ...dialogue.querySelectorAll('*')]
+                    .filter(element => !champs.includes(element.tagName)
+                        && element.clientWidth > 0
+                        && element.scrollWidth > element.clientWidth + 1)
+                    .slice(0, 3)
+                    .map(element => `${element.tagName}.${String(element.className).slice(0, 45)} (${element.scrollWidth} > ${element.clientWidth})`);
+            });
+            expect(coupables, `débordement dans « ${tiroir} »`).toEqual([]);
+        });
+    }
+
     test('le tiroir d’une commande tient dans l’écran et se referme', async ({ page, api }) => {
         api.commandes = [uneCommande()];
         await page.setViewportSize({ width: 320, height: 720 });

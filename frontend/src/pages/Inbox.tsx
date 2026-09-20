@@ -45,7 +45,7 @@ const getStateMeta = (state: string) => {
         case 'WAITING_FOR_CONFIRMATION':
             return { label: 'Attente Confirmation', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20' };
         case 'IDLE':
-            return { label: 'Libre', color: 'bg-zinc-500/10 text-[var(--color-muted)] border-zinc-500/20' };
+            return { label: 'Libre', color: 'bg-white/5 text-[var(--color-muted)] border-[var(--color-border)]' };
         default:
             return { label: state, color: 'bg-[#00D97E]/10 text-[#00D97E] border-[#00D97E]/20' };
     }
@@ -295,7 +295,7 @@ const Inbox: React.FC = () => {
                                                         <Zap size={9} fill="currentColor" /> IA active
                                                     </span>
                                                 ) : (
-                                                    <span className="flex items-center gap-1 text-xs bg-zinc-500/10 text-[var(--color-muted)] font-bold px-2 py-0.5 rounded border border-zinc-500/20 uppercase tracking-wider">
+                                                    <span className="flex items-center gap-1 text-xs bg-white/5 text-[var(--color-muted)] font-bold px-2 py-0.5 rounded border border-[var(--color-border)] uppercase tracking-wider">
                                                         Manuel
                                                     </span>
                                                 )}
@@ -340,7 +340,7 @@ const Inbox: React.FC = () => {
                                 className={`flex items-center gap-2 px-3 py-2 rounded-[13px] border text-xs font-bold transition-[transform,background-color,border-color] active:scale-[0.99] duration-100 ${
                                     selectedChat.autopilotEnabled
                                         ? 'bg-[#00D97E]/10 text-[#00D97E] border-[#00D97E]/20'
-                                        : 'bg-zinc-800 text-[var(--color-muted)] border-zinc-700 hover:bg-zinc-700'
+                                        : 'bg-white/5 text-[var(--color-muted)] border-[var(--color-border)] hover:bg-white/10'
                                 }`}
                             >
                                 <Zap size={13} fill={selectedChat.autopilotEnabled ? 'currentColor' : 'none'} className={selectedChat.autopilotEnabled ? 'animate-pulse' : ''} />

@@ -11,7 +11,7 @@ export default function SettingsAdvanced({ config, setConfig }: SettingsAdvanced
         <details className="group">
             <summary className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 cursor-pointer list-none flex items-center justify-between hover:bg-[var(--color-surface)] transition-all">
                 <div className="flex items-center gap-3">
-                    <span className="w-2 h-2 rounded-full bg-zinc-500"></span>
+                    <span className="w-2 h-2 rounded-full bg-[#00D97E]"></span>
                     <span className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider">Options Avancées</span>
                 </div>
                 <span className="text-[var(--color-muted)] group-open:rotate-180 transition-transform">▼</span>
@@ -19,7 +19,7 @@ export default function SettingsAdvanced({ config, setConfig }: SettingsAdvanced
 
             <div className="mt-4 space-y-6">
                 {/* Instructions Personnalisées */}
-                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-8">
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 md:p-8">
                     <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
                         <Bot size={16} className="text-[var(--color-muted)]" /> Instructions Personnalisées
                     </h3>
@@ -34,9 +34,9 @@ export default function SettingsAdvanced({ config, setConfig }: SettingsAdvanced
                 </div>
 
                 {/* Training Examples */}
-                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-8">
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 md:p-8">
                     <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-500"></span> Questions d'Entraînement
+                        <span className="w-2 h-2 rounded-full bg-[#00D97E]"></span> Questions d'Entraînement
                     </h3>
                     <p className="text-xs text-[var(--color-muted)] mb-6">Ajoutez des exemples de questions/réponses pour aider l'IA à comprendre votre style.</p>
 
@@ -67,7 +67,7 @@ export default function SettingsAdvanced({ config, setConfig }: SettingsAdvanced
                                                 newExamples[index].question = e.target.value;
                                                 setConfig({ ...config, trainingExamples: newExamples });
                                             }}
-                                            className="w-full bg-black/20 border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-sm text-zinc-200 focus:border-blue-500 outline-none placeholder:text-[var(--color-muted)]"
+                                            className="w-full bg-black/20 border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#00D97E] outline-none placeholder:text-[var(--color-muted)]"
                                             placeholder={ph.q}
                                         />
                                     </div>
@@ -80,7 +80,7 @@ export default function SettingsAdvanced({ config, setConfig }: SettingsAdvanced
                                                 newExamples[index].answer = e.target.value;
                                                 setConfig({ ...config, trainingExamples: newExamples });
                                             }}
-                                            className="w-full bg-black/20 border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-sm text-zinc-200 focus:border-blue-500 outline-none placeholder:text-[var(--color-muted)]"
+                                            className="w-full bg-black/20 border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#00D97E] outline-none placeholder:text-[var(--color-muted)]"
                                             placeholder={ph.a}
                                         />
                                     </div>
@@ -102,7 +102,7 @@ export default function SettingsAdvanced({ config, setConfig }: SettingsAdvanced
                                 ...config,
                                 trainingExamples: [...(config.trainingExamples || []), { question: '', answer: '' }]
                             })}
-                            className="w-full py-3 border border-dashed border-zinc-700 hover:border-blue-500 hover:text-blue-400 text-[var(--color-muted)] text-sm font-medium rounded-lg transition-all border-2"
+                            className="w-full py-3 border border-dashed border-[var(--color-border)] hover:border-[#00D97E] hover:text-[#00D97E] text-[var(--color-muted)] text-sm font-medium rounded-lg transition-all border-2"
                         >
                             + Ajouter un exemple
                         </button>

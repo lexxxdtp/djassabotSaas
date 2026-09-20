@@ -206,7 +206,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         <div className="space-y-3">
                             {logs.slice(0, 8).map(log => (
                                 <div key={log.id} className="flex items-start gap-3 text-xs">
-                                    <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${log.type === 'sale' ? 'bg-emerald-500' : log.type === 'warning' ? 'bg-amber-500' : log.type === 'action' ? 'bg-[#00D97E]' : 'bg-[#0EA5E9]'}`} />
+                                    <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${log.type === 'sale' ? 'bg-[#00D97E]' : log.type === 'warning' ? 'bg-amber-500' : 'bg-[var(--color-muted)]'}`} />
                                     <p className="text-[var(--color-muted)] leading-relaxed flex-1">{log.message}</p>
                                     <span className="text-[var(--color-muted)] tabular-nums shrink-0">
                                         {new Date(log.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
