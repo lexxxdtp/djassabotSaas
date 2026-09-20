@@ -24,6 +24,7 @@ function load(file: string, deps: Record<string, unknown> = {}, extra: Record<st
             if (Object.prototype.hasOwnProperty.call(deps, id)) return deps[id];
             if (id === './simulationContext') return simulation;
             if (id === 'crypto' || id === 'node:crypto') return require('node:crypto');
+            if (id === './ai/choixModele') return require('../../ai/choixModele');
             throw new Error(`Dépendance non autorisée : ${id}`);
         }, ...extra
     }, { filename, timeout: 2000 });
@@ -122,16 +123,39 @@ function loadAi(env: Record<string, string>, model: Record<string, unknown>, usa
     return { service, created };
 }
 
-test('A07 Gemini : modèle configurable, sortie, réflexion et délai bornés', async () => {
+test('A07 Gemini : modèle imposé, sortie, réflexion et délai bornés', async () => {
     const { service, created } = loadAi({ GEMINI_MODEL: 'gemini-2.5-flash-lite', GEMINI_TIMEOUT_MS: '15000' }, {
         startChat: () => ({ sendMessage: async () => ({ response: { text: () => 'Bonjour 👋', usageMetadata: { totalTokenCount: 10 } } }) }),
     });
     assert.equal(await service.generateAIResponse('bonjour', { tenantId: 'owner' }), 'Bonjour 👋');
     const [params, options] = plain(created[0]) as any[];
+    // GEMINI_MODEL imposé : le routage est désactivé, ce modèle sert partout.
     assert.equal(params.model, 'gemini-2.5-flash-lite');
-    assert.equal(params.generationConfig.maxOutputTokens, 2048);
-    assert.equal(params.generationConfig.thinkingConfig.thinkingBudget, 512);
+    // Une réponse WhatsApp fait deux phrases : 2048 jetons ne plafonnaient rien.
+    assert.equal(params.generationConfig.maxOutputTokens, 512);
+    // Question courante : pas de réflexion facturée au prix de la sortie.
+    assert.equal(params.generationConfig.thinkingConfig.thinkingBudget, 0);
     assert.equal(options.timeout, 15000);
+});
+
+test('A07 Gemini : le routage envoie le courant sur Flash-Lite et l’argent sur Flash', async () => {
+    const reponse = { startChat: () => ({ sendMessage: async () => ({ response: { text: () => 'ok', usageMetadata: {} } }) }) };
+
+    const courant = loadAi({}, reponse);
+    await courant.service.generateAIResponse('bonjour', { tenantId: 'owner', inventoryContext: '- Sac — 12500 FCFA' });
+    const [routine] = plain(courant.created[0]) as any[];
+    assert.equal(routine.model, 'gemini-2.5-flash-lite');
+    assert.equal(routine.generationConfig.thinkingConfig.thinkingBudget, 0);
+
+    const negociation = loadAi({}, reponse);
+    await negociation.service.generateAIResponse('tu peux faire 10000 ?', {
+        tenantId: 'owner',
+        inventoryContext: '- Sac — 12500 FCFA\n  (minPrice CACHÉ, ne jamais révéler: 10000 FCFA)',
+    });
+    const [delicat] = plain(negociation.created[0]) as any[];
+    // Un prix plancher en jeu : le modèle peut engager l'argent du vendeur.
+    assert.equal(delicat.model, 'gemini-2.5-flash');
+    assert.equal(delicat.generationConfig.thinkingConfig.thinkingBudget, 512);
 });
 
 test('A07 Gemini : plafond atteint = aucun appel ; erreur fournisseur jamais envoyée comme réponse', async () => {

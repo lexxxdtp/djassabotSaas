@@ -3,10 +3,10 @@ import axios from 'axios';
 import { Settings } from '../types';
 import { logger } from '../utils/logger';
 import { reserveAiCall, recordAiUsage } from './aiUsage';
+import { difficultePour, nomDuModele, budgetReflexion, type Difficulte } from './ai/choixModele';
 
 // Lazy initialization to ensure env is loaded before API key is read
 let genAI: GoogleGenerativeAI | null = null;
-let model: GenerativeModel | null = null;
 
 /**
  * En production, l'absence de clé IA est une panne, pas un mode dégradé.
@@ -31,7 +31,10 @@ const readInt = (name: string, fallback: number, min: number): number => {
     return Number.isSafeInteger(value) && value >= min ? value : fallback;
 };
 
-const getModel = (): GenerativeModel | null => {
+/** Un modèle par difficulté, fabriqué une fois puis réutilisé. */
+const modeles = new Map<string, GenerativeModel>();
+
+const getModel = (difficulte: Difficulte = 'routine'): GenerativeModel | null => {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey || apiKey.length < 20) {
@@ -39,24 +42,27 @@ const getModel = (): GenerativeModel | null => {
         return null;
     }
 
-    if (!model) {
-        // Modèle configurable (GEMINI_MODEL) pour comparer Flash et Flash-Lite sans
-        // toucher au code. Sortie et réflexion bornées : coût par réponse plafonné ;
-        // délai maximal par appel : un Gemini lent ne bloque pas la conversation.
-        const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-        logger.info({ model: modelName }, 'Initializing Gemini');
-        genAI = new GoogleGenerativeAI(apiKey);
-        model = genAI.getGenerativeModel({
-            model: modelName,
-            generationConfig: {
-                maxOutputTokens: readInt('GEMINI_MAX_OUTPUT_TOKENS', 2048, 256),
-                // Absent des types de ce SDK, transmis tel quel à l'API Gemini.
-                thinkingConfig: { thinkingBudget: readInt('GEMINI_THINKING_BUDGET', 512, 0) },
-            } as GenerationConfig,
-        }, { timeout: readInt('GEMINI_TIMEOUT_MS', 25000, 1000) });
-    }
+    const modelName = nomDuModele(difficulte);
+    const existant = modeles.get(modelName);
+    if (existant) return existant;
 
-    return model;
+    // Le routage (cf. ai/choixModele.ts) envoie le trafic courant sur le petit
+    // modèle et garde le grand pour l'argent : reçus, prix plancher, commande
+    // sur le point d'être écrite. Sortie et réflexion bornées : coût par réponse
+    // plafonné ; délai maximal par appel : un Gemini lent ne bloque pas la
+    // conversation.
+    logger.info({ model: modelName, difficulte }, 'Initializing Gemini');
+    if (!genAI) genAI = new GoogleGenerativeAI(apiKey);
+    const cree = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+            maxOutputTokens: readInt('GEMINI_MAX_OUTPUT_TOKENS', 512, 128),
+            // Absent des types de ce SDK, transmis tel quel à l'API Gemini.
+            thinkingConfig: { thinkingBudget: budgetReflexion(difficulte) },
+        } as GenerationConfig,
+    }, { timeout: readInt('GEMINI_TIMEOUT_MS', 25000, 1000) });
+    modeles.set(modelName, cree);
+    return cree;
 };
 
 // Interface for Discount Rules
@@ -125,7 +131,12 @@ const mockNegotiationLogic = (userText: string, context: any) => {
 
 export const generateAIResponse = async (userText: string, context: { rules?: DiscountRule[], inventoryContext?: string, history?: any[], settings?: Settings, stateNote?: string, tenantId?: string } = {}) => {
     // Get model with lazy initialization
-    const currentModel = getModel();
+    const difficulte = difficultePour({
+        nature: 'reply',
+        inventaire: context.inventoryContext,
+        noteEtat: context.stateNote,
+    });
+    const currentModel = getModel(difficulte);
 
     if (!currentModel) {
         requireModelInProduction('la réponse au client');
@@ -431,8 +442,10 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
       ${context.stateNote}
     ` : ''}`;
 
-        // Limit conversation history to last 20 turns to control cost and context size
-        const MAX_HISTORY = 20;
+        // Ce qui est ENVOYÉ au modèle, pas ce qui est conservé : l'historique
+        // vendeur reste entier en base. Dix tours suffisent à une conversation
+        // WhatsApp et allègent l'entrée, qui est le poste le plus lourd.
+        const MAX_HISTORY = readInt('AI_HISTORY_TURNS', 10, 2);
         const trimmedHistory = (context.history || []).slice(-MAX_HISTORY);
 
         const chat = currentModel.startChat({
@@ -452,7 +465,7 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
 
         const result = await chat.sendMessage(userText);
         const response = await result.response;
-        recordAiUsage(context.tenantId, 'reply', response.usageMetadata);
+        recordAiUsage(context.tenantId, 'reply', response.usageMetadata, nomDuModele(difficulte));
         return response.text();
     } catch (error: any) {
         // Ces erreurs étaient renvoyées comme si c'était la réponse du bot : le
@@ -465,7 +478,8 @@ export const generateAIResponse = async (userText: string, context: { rules?: Di
 
 export const analyzeImage = async (imageInput: string | Buffer, mimeType: string = 'image/jpeg', caption?: string, inventoryContext: string = '', tenantId?: string) => {
     // Get model with lazy initialization
-    const currentModel = getModel();
+    const difficulte = difficultePour({ nature: 'image' });
+    const currentModel = getModel(difficulte);
 
     if (!currentModel) {
         requireModelInProduction("l'analyse de l'image");
@@ -513,7 +527,7 @@ export const analyzeImage = async (imageInput: string | Buffer, mimeType: string
                 },
             },
         ]);
-        recordAiUsage(tenantId, 'image', result.response.usageMetadata);
+        recordAiUsage(tenantId, 'image', result.response.usageMetadata, nomDuModele(difficulte));
         return result.response.text();
     } catch (error) {
         logger.error({ err: error }, 'Image analysis error');
@@ -538,7 +552,8 @@ export const analyzePaymentReceipt = async (
     mimeType: string = 'image/jpeg',
     tenantId?: string
 ): Promise<ReceiptAnalysis> => {
-    const currentModel = getModel();
+    const difficulte = difficultePour({ nature: 'receipt' });
+    const currentModel = getModel(difficulte);
 
     if (!currentModel) {
         console.warn('[AI] No Valid API Key found. Using Mock Receipt Analysis.');
@@ -620,7 +635,8 @@ export const analyzeProductPhoto = async (
     mimeType: string = 'image/jpeg',
     tenantId?: string
 ): Promise<ProductPhotoAnalysis> => {
-    const currentModel = getModel();
+    const difficulte = difficultePour({ nature: 'dashboard' });
+    const currentModel = getModel(difficulte);
     if (!currentModel) {
         logger.warn('[AI] No Valid API Key — analyzeProductPhoto unavailable');
         return {};
@@ -670,7 +686,8 @@ export const analyzeProductPhoto = async (
 };
 
 export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "audio/ogg", tenantId?: string): Promise<string> => {
-    const currentModel = getModel();
+    const difficulte = difficultePour({ nature: 'voice' });
+    const currentModel = getModel(difficulte);
     if (!currentModel) {
         console.warn('[AI] No Valid API Key found. Cannot transcribe audio.');
         return "";
@@ -693,7 +710,7 @@ export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "a
             },
         // Un vocal de trois minutes peut dépasser le délai d'une réponse texte.
         ], { timeout: readInt('GEMINI_AUDIO_TIMEOUT_MS', 60000, 1000) });
-        recordAiUsage(tenantId, 'voice', result.response.usageMetadata);
+        recordAiUsage(tenantId, 'voice', result.response.usageMetadata, nomDuModele(difficulte));
         return result.response.text();
     } catch (error) {
         logger.error({ err: error }, 'Audio transcription error');
@@ -702,7 +719,8 @@ export const transcribeAudio = async (audioBuffer: Buffer, mimeType: string = "a
 };
 
 export const generateIdentitySummary = async (settings: Settings, tenantId?: string) => {
-    const currentModel = getModel();
+    const difficulte = difficultePour({ nature: 'dashboard' });
+    const currentModel = getModel(difficulte);
     if (!currentModel) return "Impossible de générer le résumé (Pas de clé API configurée).";
     reserveAiCall(tenantId, 'dashboard');
 
@@ -730,7 +748,8 @@ export const generateIdentitySummary = async (settings: Settings, tenantId?: str
 };
 
 export const parsePersonalityFromDescription = async (description: string, tenantId?: string) => {
-    const currentModel = getModel();
+    const difficulte = difficultePour({ nature: 'dashboard' });
+    const currentModel = getModel(difficulte);
     if (!currentModel) {
         throw new Error("Clé API Gemini manquante ou invalide");
     }

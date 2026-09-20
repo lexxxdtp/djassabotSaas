@@ -71,12 +71,19 @@ export const recordAiUsage = (
     tenantId: string | undefined,
     kind: AiCallKind,
     usage: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number } | undefined,
+    modele?: string,
 ): void => {
     if (!usage) return;
     logger.info({
         tenantId,
         kind,
+        modele,
         promptTokens: usage.promptTokenCount,
+        // Jetons servis par le cache implicite de Gemini : ils coûtent bien
+        // moins cher. Sans ce compteur, impossible de savoir si la remise
+        // s'applique vraiment — un simple changement d'ordre du catalogue
+        // suffirait à la faire disparaître en silence.
+        cachedTokens: (usage as { cachedContentTokenCount?: number }).cachedContentTokenCount,
         outputTokens: usage.candidatesTokenCount,
         thoughtTokens: (usage as { thoughtsTokenCount?: number }).thoughtsTokenCount,
         totalTokens: usage.totalTokenCount,
