@@ -239,7 +239,7 @@ test('campagne : le plafond quotidien protège le numéro WhatsApp', () => {
 // A14 — « mot de passe oublié » dit la même chose à tout le monde
 // ---------------------------------------------------------------------------
 
-function chargerAuth(options: { user: any; envoiReussi: boolean }) {
+function chargerAuth(options: { user: any; envoiReussi: boolean; numeroVerifie?: string | null }) {
     const journal: any[] = [];
     const jetons: any[] = [];
     const controleur: any = charger('backend/src/controllers/authController.ts', {
@@ -248,6 +248,7 @@ function chargerAuth(options: { user: any; envoiReussi: boolean }) {
         '../services/dbService': {
             db: {
                 getUserByEmail: async () => options.user,
+                getUserByPhone: async () => options.user,
                 storeAuthToken: async (...args: unknown[]) => { jetons.push(args); },
             },
         },
@@ -255,7 +256,10 @@ function chargerAuth(options: { user: any; envoiReussi: boolean }) {
             sendOtpEmail: async () => ({ success: true }),
             sendPasswordResetEmail: async () => ({ success: options.envoiReussi }),
         },
-        '../services/firebaseAdminService': { verifyPhoneToken: async () => null, isFirebaseAdminConfigured: () => false },
+        '../services/firebaseAdminService': {
+            verifyPhoneToken: async () => options.numeroVerifie ?? null,
+            isFirebaseAdminConfigured: () => options.numeroVerifie !== undefined,
+        },
         uuid: { v4: () => 'jeton-reset' },
         '../utils/logger': { logger: { info() {}, debug() {}, warn() {}, error: (...a: unknown[]) => journal.push(a) } },
         '../utils/sessionFreshness': { empreinteMotDePasse },
@@ -298,4 +302,54 @@ test('la route qui promettait un SMS jamais envoyé n’existe plus', () => {
     const routes = fs.readFileSync(path.join(root, 'backend/src/routes/authRoutes.ts'), 'utf8');
     assert.ok(!routes.includes('verify-phone-reset'), 'la route est retirée');
     assert.ok(!/export const verifyPhoneReset/.test(controleur), 'le contrôleur est retiré');
+});
+
+// ---------------------------------------------------------------------------
+// Récupération par téléphone : le code reçu par SMS doit servir à quelque chose
+// ---------------------------------------------------------------------------
+
+const VENDEUSE = { id: 'u-tel', email: 'compte-de-quelquun-dautre@test.ci', phone: '+2250544978608' };
+
+test('téléphone : un code SMS vérifié ouvre la réinitialisation, sans passer par la boîte mail', async () => {
+    const porte = chargerAuth({ user: VENDEUSE, envoiReussi: true, numeroVerifie: VENDEUSE.phone });
+    const reponse = fausseReponse();
+
+    await porte.controleur.forgotPasswordPhone(
+        { body: { phone: VENDEUSE.phone, phoneIdToken: 'jeton-firebase' } } as any,
+        reponse,
+    );
+
+    // Le défaut d'origine : la branche « cet utilisateur a un email » passait en
+    // premier, le code SMS n'était jamais vérifié et la vendeuse était renvoyée
+    // vers une adresse qu'elle ne consulte pas forcément.
+    assert.equal((reponse.corps as any).resetToken, 'jeton-reset', 'un numéro vérifié doit pouvoir reprendre la main');
+    assert.equal(porte.jetons.length, 1);
+});
+
+test('téléphone : un code invalide n’ouvre rien', async () => {
+    const porte = chargerAuth({ user: VENDEUSE, envoiReussi: true, numeroVerifie: '+2250700000000' });
+    const reponse = fausseReponse();
+
+    await porte.controleur.forgotPasswordPhone(
+        { body: { phone: VENDEUSE.phone, phoneIdToken: 'jeton-douteux' } } as any,
+        reponse,
+    );
+
+    assert.equal(reponse.code, 401);
+    assert.equal(porte.jetons.length, 0, 'aucun jeton ne doit être fabriqué sans preuve');
+});
+
+test('téléphone : sans code SMS, on n’annonce un email que s’il est vraiment parti', async () => {
+    const parti = chargerAuth({ user: VENDEUSE, envoiReussi: true, numeroVerifie: undefined });
+    const refuse = chargerAuth({ user: VENDEUSE, envoiReussi: false, numeroVerifie: undefined });
+    const r1 = fausseReponse();
+    const r2 = fausseReponse();
+
+    await parti.controleur.forgotPasswordPhone({ body: { phone: VENDEUSE.phone } } as any, r1);
+    await refuse.controleur.forgotPasswordPhone({ body: { phone: VENDEUSE.phone } } as any, r2);
+
+    assert.equal((r1.corps as any).emailEnvoye, true);
+    assert.equal((r1.corps as any).resetToken, undefined, 'sans preuve, rien n’est remis en main propre');
+    assert.equal((r2.corps as any).emailEnvoye, false);
+    assert.equal(refuse.journal[0][0].alerte, 'RESET_EMAIL_NON_ENVOYE');
 });

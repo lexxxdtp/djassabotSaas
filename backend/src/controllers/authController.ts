@@ -357,17 +357,24 @@ export const forgotPasswordPhone = async (req: Request, res: Response) => {
             return;
         }
 
-        // Si l'utilisateur a un email, on envoie un lien de reset par email (pas besoin d'OTP)
-        if (user.email) {
-            const resetToken = uuidv4();
-            const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-            await db.storeAuthToken(user.id, 'PASSWORD_RESET', resetToken, expiresAt);
-            await sendPasswordResetEmail(user.email, resetToken);
-            res.json({ success: true, hasEmail: true });
-            return;
-        }
+        const envoyerLien = async (jeton: string) => {
+            if (!user.email) return false;
+            const envoi = await sendPasswordResetEmail(user.email, jeton);
+            if (!envoi.success) {
+                logger.error({ alerte: 'RESET_EMAIL_NON_ENVOYE', userId: user.id }, 'Réinitialisation par téléphone : le service email a refusé le message');
+            }
+            return envoi.success;
+        };
 
-        // Pas d'email : verifier OBLIGATOIREMENT l'OTP Firebase server-side
+        // Un jeton Firebase vérifié prouve qu'elle détient CE numéro. C'est une
+        // preuve au moins aussi forte qu'un lien reçu par email, alors on la
+        // laisse passer tout de suite.
+        //
+        // Avant, la branche « cet utilisateur a un email » passait EN PREMIER :
+        // le code reçu par SMS n'était jamais vérifié, et la vendeuse était
+        // renvoyée vers une boîte mail qu'elle n'ouvre parfois même pas (compte
+        // créé avec l'adresse de quelqu'un d'autre). Elle restait dehors alors
+        // qu'elle venait de prouver son identité.
         if (phoneIdToken) {
             if (!isFirebaseAdminConfigured()) {
                 logger.error('[forgotPasswordPhone] Firebase Admin not configured');
@@ -383,7 +390,23 @@ export const forgotPasswordPhone = async (req: Request, res: Response) => {
             const resetToken = uuidv4();
             const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min
             await db.storeAuthToken(user.id, 'PASSWORD_RESET', resetToken, expiresAt);
-            res.json({ success: true, hasEmail: false, resetToken });
+            // Le lien part aussi par email quand il y en a un, mais l'accès n'en
+            // dépend plus.
+            const emailEnvoye = await envoyerLien(resetToken);
+            res.json({ success: true, hasEmail: !!user.email, emailEnvoye, resetToken });
+            return;
+        }
+
+        // Sans preuve de possession du numéro, rien n'est remis en main propre :
+        // le lien ne part que vers l'adresse du compte.
+        if (user.email) {
+            const resetToken = uuidv4();
+            const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+            await db.storeAuthToken(user.id, 'PASSWORD_RESET', resetToken, expiresAt);
+            const emailEnvoye = await envoyerLien(resetToken);
+            // On dit la vérité : annoncer un email qui n'est jamais parti laisse
+            // la vendeuse attendre devant une boîte vide.
+            res.json({ success: true, hasEmail: true, emailEnvoye });
             return;
         }
 

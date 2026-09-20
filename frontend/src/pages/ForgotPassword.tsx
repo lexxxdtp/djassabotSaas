@@ -71,7 +71,11 @@ const ForgotPassword: React.FC = () => {
                     const data = await response.json();
                     if (!response.ok) throw new Error(data.error || 'Erreur serveur');
 
-                    if (data.hasEmail) {
+                    if (data.hasEmail && data.emailEnvoye === false) {
+                        // Annoncer un email qui n'est pas parti laisse la vendeuse
+                        // attendre devant une boîte vide.
+                        setError("L'email de réinitialisation n'a pas pu être envoyé. Contactez le support sur WhatsApp.");
+                    } else if (data.hasEmail) {
                         setSuccess('Un lien de réinitialisation a été envoyé à l\'adresse email liée à ce numéro.');
                     } else {
                         setSuccess('Aucun email associé à ce compte. Contactez le support sur WhatsApp pour réinitialiser votre mot de passe.');
@@ -103,7 +107,12 @@ const ForgotPassword: React.FC = () => {
                     if (!response.ok) throw new Error(data.error || 'Erreur lors de la réinitialisation');
 
                     if (data.resetToken) {
+                        // Le code reçu par SMS suffit : on passe directement au
+                        // choix du nouveau mot de passe, sans dépendre d'une
+                        // boîte mail que la vendeuse n'ouvre peut-être jamais.
                         navigate(`/reset-password?token=${data.resetToken}`);
+                    } else if (data.hasEmail && data.emailEnvoye === false) {
+                        setError("L'email de réinitialisation n'a pas pu être envoyé. Contactez le support sur WhatsApp.");
                     } else {
                         setSuccess('Un lien de réinitialisation a été envoyé à l\'adresse email liée à ce numéro.');
                     }
