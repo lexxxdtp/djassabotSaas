@@ -19,17 +19,22 @@ export const empreinteMotDePasse = (hashBcrypt: string): string =>
     crypto.createHash('sha256').update(hashBcrypt).digest('hex').slice(0, 16);
 
 /**
- * Une session est périmée quand son empreinte ne correspond plus au mot de
- * passe actuel.
+ * Une session est périmée quand l'empreinte portée par son jeton ne correspond
+ * plus à celle du mot de passe actuel.
+ *
+ * Les DEUX paramètres sont des empreintes, jamais des hash : passer un hash
+ * bcrypt ici le ferait hacher une seconde fois et rejetterait toutes les
+ * sessions, y compris les bonnes. C'est exactement ce qui s'est produit à la
+ * première mise en ligne, d'où la comparaison désormais littérale.
  *
  * Deux prudences volontaires :
  * - un jeton SANS empreinte est accepté : ceux émis avant cette version
  *   expireront d'eux-mêmes en sept jours, on ne déconnecte pas tout le monde ;
- * - un mot de passe illisible (panne de lecture) n'invalide rien : une panne
- *   de base ne doit pas jeter dehors des vendeurs légitimes.
+ * - une empreinte actuelle inconnue (panne de lecture) n'invalide rien : une
+ *   panne de base ne doit pas jeter dehors des vendeurs légitimes.
  */
-export const sessionPerimee = (empreinteDuJeton: string | undefined, hashActuel: string | undefined | null): boolean => {
+export const sessionPerimee = (empreinteDuJeton: string | undefined, empreinteActuelle: string | undefined | null): boolean => {
     if (!empreinteDuJeton) return false;
-    if (!hashActuel) return false;
-    return empreinteDuJeton !== empreinteMotDePasse(hashActuel);
+    if (!empreinteActuelle) return false;
+    return empreinteDuJeton !== empreinteActuelle;
 };

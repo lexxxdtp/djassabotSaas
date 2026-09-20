@@ -20,7 +20,7 @@ const muet = { log() {}, warn() {}, error() {}, info() {}, debug() {} };
 // on compare son contenu, pas son appartenance à une réalisation JavaScript.
 const memeContenu = (a: unknown, b: unknown) => assert.equal(JSON.stringify(a), JSON.stringify(b));
 
-function charger(fichier: string, deps: Record<string, unknown> = {}) {
+function charger(fichier: string, deps: Record<string, unknown> = {}, env: Record<string, string> = {}) {
     const chemin = path.join(root, fichier);
     const js = ts.transpileModule(fs.readFileSync(chemin, 'utf8'), {
         compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true }
@@ -28,7 +28,7 @@ function charger(fichier: string, deps: Record<string, unknown> = {}) {
     const module = { exports: {} as any };
     vm.runInNewContext(js, {
         module, exports: module.exports, console: muet, Buffer, __dirname: path.dirname(chemin),
-        process: { env: {} },
+        process: { env },
         require(id: string) {
             if (Object.prototype.hasOwnProperty.call(deps, id)) return deps[id];
             if (id === 'crypto' || id === 'node:crypto') return crypto;
@@ -37,6 +37,13 @@ function charger(fichier: string, deps: Record<string, unknown> = {}) {
     });
     return module.exports;
 }
+
+const fausseReponse = () => {
+    const capture: any = { code: 200 };
+    capture.status = (c: number) => { capture.code = c; return capture; };
+    capture.json = (corps: unknown) => { capture.corps = corps; return capture; };
+    return capture;
+};
 
 // ---------------------------------------------------------------------------
 // M2 — les codes et liens ne sont plus stockés en clair
@@ -123,16 +130,81 @@ test('session : l’empreinte change avec le mot de passe et ne révèle pas le 
 });
 
 test('session : périmée après changement, valide sinon, tolérante aux pannes', () => {
-    const hash = '$2b$10$ancienhash';
-    const empreinte = empreinteMotDePasse(hash);
+    const ancien = empreinteMotDePasse('$2b$10$ancienhash');
+    const nouveau = empreinteMotDePasse('$2b$10$nouveauhash');
 
-    assert.equal(sessionPerimee(empreinte, hash), false, 'même mot de passe : la session reste ouverte');
-    assert.equal(sessionPerimee(empreinte, '$2b$10$nouveauhash'), true, 'mot de passe changé : la session tombe');
+    assert.equal(sessionPerimee(ancien, ancien), false, 'même mot de passe : la session reste ouverte');
+    assert.equal(sessionPerimee(ancien, nouveau), true, 'mot de passe changé : la session tombe');
     // Jetons émis avant cette version : on ne déconnecte pas tout le monde.
-    assert.equal(sessionPerimee(undefined, hash), false);
+    assert.equal(sessionPerimee(undefined, ancien), false);
     // Lecture impossible (panne) : une panne ne jette pas dehors un vendeur.
-    assert.equal(sessionPerimee(empreinte, null), false);
-    assert.equal(sessionPerimee(empreinte, undefined), false);
+    assert.equal(sessionPerimee(ancien, null), false);
+    assert.equal(sessionPerimee(ancien, undefined), false);
+});
+
+/**
+ * Le test précédent ne suffit pas : à la première mise en ligne, le middleware
+ * passait un hash bcrypt là où la fonction attend une empreinte, et rejetait
+ * TOUTES les sessions — y compris les bonnes. Seule la chaîne complète, du
+ * jeton émis à la décision du middleware, attrape ce genre d'erreur.
+ */
+function chargerMiddleware(utilisateur: any) {
+    let jetonDecode: any = {};
+    const middleware: any = charger('backend/src/middleware/auth.ts', {
+        express: {},
+        jsonwebtoken: {
+            verify: () => jetonDecode,
+            sign: (charge: unknown) => JSON.stringify(charge),
+            TokenExpiredError: class extends Error {},
+            JsonWebTokenError: class extends Error {},
+        },
+        '../utils/logger': { logger: { info() {}, debug() {}, warn() {}, error() {} } },
+        '../services/dbService': { db: { getUserById: async () => { if (utilisateur instanceof Error) throw utilisateur; return utilisateur; } } },
+        '../utils/sessionFreshness': { sessionPerimee, empreinteMotDePasse },
+    }, { JWT_SECRET: 'secret-de-recette' });
+    return {
+        middleware,
+        async appeler(charge: any) {
+            jetonDecode = charge;
+            middleware.oublierEmpreintes();
+            const reponse = fausseReponse();
+            let suivantAppele = false;
+            await middleware.authenticateTenant(
+                { headers: { authorization: 'Bearer jeton' } } as any,
+                reponse,
+                () => { suivantAppele = true; },
+            );
+            return { suivantAppele, code: reponse.code, corps: reponse.corps };
+        },
+    };
+}
+
+test('session : le middleware laisse passer le bon jeton et ferme celui d’un mot de passe changé', async () => {
+    const hash = '$2b$10$hashActuelDuVendeur';
+    const base = { tenantId: 't1', userId: 'u1', email: 'vendeuse@test.ci' };
+    const porte = chargerMiddleware({ id: 'u1', passwordHash: hash });
+
+    const bon = await porte.appeler({ ...base, pwd: empreinteMotDePasse(hash) });
+    assert.equal(bon.suivantAppele, true, 'une session légitime ne doit JAMAIS être fermée');
+
+    const perime = await porte.appeler({ ...base, pwd: empreinteMotDePasse('$2b$10$ancienHashOublie') });
+    assert.equal(perime.suivantAppele, false);
+    assert.equal(perime.code, 401);
+    assert.equal((perime.corps as any).code, 'SESSION_REVOKED');
+
+    // Jeton émis avant cette version : accepté jusqu'à son expiration.
+    const ancien = await porte.appeler(base);
+    assert.equal(ancien.suivantAppele, true);
+});
+
+test('session : une panne de lecture ne déconnecte personne', async () => {
+    const base = { tenantId: 't1', userId: 'u1', email: 'vendeuse@test.ci', pwd: empreinteMotDePasse('$2b$10$peu importe') };
+
+    const panne = await chargerMiddleware(new Error('base injoignable')).appeler(base);
+    assert.equal(panne.suivantAppele, true, 'une panne de base ne doit pas jeter dehors un vendeur');
+
+    const introuvable = await chargerMiddleware(null).appeler(base);
+    assert.equal(introuvable.suivantAppele, true);
 });
 
 // ---------------------------------------------------------------------------
@@ -190,13 +262,6 @@ function chargerAuth(options: { user: any; envoiReussi: boolean }) {
     });
     return { controleur, journal, jetons };
 }
-
-const fausseReponse = () => {
-    const capture: any = { code: 200 };
-    capture.status = (c: number) => { capture.code = c; return capture; };
-    capture.json = (corps: unknown) => { capture.corps = corps; return capture; };
-    return capture;
-};
 
 test('mot de passe oublié : la réponse est identique que le compte existe ou non', async () => {
     const connu = chargerAuth({ user: { id: 'u1', email: 'vendeuse@test.ci' }, envoiReussi: true });
