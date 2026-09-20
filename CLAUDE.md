@@ -1,5 +1,11 @@
 # DjassaBot — Briefing IA (Claude, Gemini/Antigravity, Cursor…)
 
+> **État courant — 20 septembre 2026 :** une seule copie locale, `~/djassabotSaas`. Backend déployé sur le VPS (`1ab30e2`, PM2 stable, API en HTTPS) et frontend Vercel à jour.
+> - **Refonte de l'espace vendeur intégrée** (`b8791c7`, produite par un agent tiers puis reprise ici) : `styles/app.css` porte l'identité en tokens, `layouts/AuthLayout.tsx` pour les écrans d'entrée, `components/ui/` (Brand, PageHeading). Toutes les pages de l'application, les réglages, les produits, les commandes et l'Inbox partagent les mêmes styles ; les pages publiques restent inchangées.
+> - **Recette navigateur** : 15 routes × 4 largeurs (320 à 1280) × 2 scénarios (avec données, catalogue vide) = 120 pages, 0 erreur JavaScript, 0 débordement horizontal ; fenêtres d'édition et tiroirs vérifiés (ouverture, `aria-modal`, fermeture par Échap). Deux défauts corrigés au passage : débordement des cartes de commande à 320 px, titre manquant sur la fiche produit.
+> - ⚠️ **WhatsApp reste à réappairer** : aucune session active (dossiers Baileys vides depuis août). Réglages → WhatsApp → code de jumelage.
+> - Restent ouverts : lots 3 à 5 de l'[audit produit](AUDIT_VIABILITE_2026-09-14.md) et les points de l'[audit de sécurité](AUDIT_SECURITE_2026-09-18.md).
+
 > **État courant — 14 septembre 2026 :** une seule copie locale fait foi, `~/djassabotSaas` (les autres clones ont été supprimés). L'[audit du 14 septembre](AUDIT_VIABILITE_2026-09-14.md) est traité pour ses lots 0 à 2 (commits `3858d91` et `adee3f9`, 164 tests backend, lint et build frontend OK) :
 > - **Parcours de vente** : adresse → zone reconnue (sinon demandée une fois) → récapitulatif articles + livraison + total → le client répond « OUI » (état `WAITING_FOR_CONFIRMATION`) → alors seulement commande et stock. Panier modifiable jusqu'au « oui » (tags `REMOVE_FROM_CART` / `SET_QUANTITY`) et revalidé contre le catalogue actuel.
 > - **Commande, stock et statut en une transaction SQL** (`place_order`, `transition_order_status`) ; un paiement tardif ne fait plus reculer une commande livrée ou annulée.
@@ -13,7 +19,7 @@
 > Donne le contexte produit, technique et l'historique des décisions clés
 > sans qu'il soit nécessaire de relire tout le code ou les anciens docs.
 
-**Dernière mise à jour :** 1er juillet 2026 — MOTEUR DE VENTE DURCI (voir §0bis)
+**Dernière mise à jour :** 20 septembre 2026 — refonte de l'espace vendeur (voir l'état courant ci-dessus ; le moteur de vente est décrit en §0bis)
 
 ---
 
