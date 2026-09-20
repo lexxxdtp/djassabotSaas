@@ -217,16 +217,16 @@ const VerifyAccount: React.FC = () => {
     const currentTarget = method === 'email' ? user?.email : user?.phone;
 
     return (
-        <div className="min-h-screen bg-black flex items-center justify-center p-4">
-            <div className="bg-[#111] border border-[#1a1a1a] p-8 rounded-3xl w-full max-w-md shadow-2xl shadow-[#00D97E]/5 backdrop-blur-sm">
+        <div className="auth-form-page min-h-screen bg-black flex items-center justify-center p-4">
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] p-8 rounded-3xl w-full max-w-md shadow-none shadow-[#00D97E]/5 backdrop-blur-sm">
                 
                 {/* Header */}
                 <div className="text-center mb-6">
-                    <div className="w-16 h-16 rounded-2xl bg-[#00D97E]/10 border border-[#00D97E]/20 flex items-center justify-center mx-auto mb-4">
+                    <div className="w-16 h-16 rounded-[13px] bg-[#00D97E]/10 border border-[#00D97E]/20 flex items-center justify-center mx-auto mb-4">
                         <ShoppingBag className="text-[#00D97E] w-8 h-8" />
                     </div>
-                    <h1 className="text-2xl font-bold text-white mb-1 tracking-tight">Vérifiez votre Compte</h1>
-                    <p className="text-[#888] text-sm">Étape requise avant de configurer votre bot IA</p>
+                    <h1 className="page-title text-2xl font-bold text-white mb-1 tracking-tight">Vérifiez votre Compte</h1>
+                    <p className="text-[var(--color-muted)] text-sm">Étape requise avant de configurer votre bot IA</p>
                 </div>
 
                 {error && (
@@ -245,18 +245,18 @@ const VerifyAccount: React.FC = () => {
 
                 {/* Tabs */}
                 {!otpSent && !isEditing && (
-                    <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-[#1a1a1a] mb-6">
+                    <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-[var(--color-border)] mb-6">
                         <button
                             type="button"
                             onClick={() => { setMethod('phone'); setError(''); setSuccess(''); }}
-                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${method === 'phone' ? 'bg-[#00D97E] text-black shadow-lg shadow-[#00D97E]/20' : 'text-[#888] hover:text-white'}`}
+                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${method === 'phone' ? 'bg-[#00D97E] text-black shadow-none shadow-[#00D97E]/20' : 'text-[var(--color-muted)] hover:text-white'}`}
                         >
                             <Phone className="w-4 h-4" /> Téléphone
                         </button>
                         <button
                             type="button"
                             onClick={() => { setMethod('email'); setError(''); setSuccess(''); }}
-                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${method === 'email' ? 'bg-[#00D97E] text-black shadow-lg shadow-[#00D97E]/20' : 'text-[#888] hover:text-white'}`}
+                            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${method === 'email' ? 'bg-[#00D97E] text-black shadow-none shadow-[#00D97E]/20' : 'text-[var(--color-muted)] hover:text-white'}`}
                         >
                             <Mail className="w-4 h-4" /> E-mail
                         </button>
@@ -268,29 +268,29 @@ const VerifyAccount: React.FC = () => {
 
                 {/* View Current Value / Edit Forms */}
                 {isEditing ? (
-                    <div className="space-y-4 mb-6 p-4 bg-white/5 rounded-2xl border border-[#1a1a1a] animate-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-4 mb-6 p-4 bg-white/5 rounded-[13px] border border-[var(--color-border)] animate-in slide-in-from-top-2 duration-300">
                         <h3 className="text-white font-bold text-sm">Modifier vos coordonnées</h3>
                         
                         {method === 'email' ? (
                             <div>
-                                <label className="block text-xs text-[#888] mb-1">Nouvel e-mail</label>
+                                <label className="block text-xs text-[var(--color-muted)] mb-1">Nouvel e-mail</label>
                                 <input
                                     type="email"
                                     value={editEmail}
                                     onChange={e => setEditEmail(e.target.value)}
                                     placeholder="exemple@mail.com"
-                                    className="w-full bg-black border border-[#1a1a1a] rounded-xl py-2 px-3 text-white focus:outline-none focus:border-[#00D97E]/50"
+                                    className="w-full bg-black border border-[var(--color-border)] rounded-xl py-2 px-3 text-white focus:outline-none focus:border-[#00D97E]/50"
                                 />
                             </div>
                         ) : (
                             <div>
-                                <label className="block text-xs text-[#888] mb-1">Nouveau WhatsApp (+225)</label>
+                                <label className="block text-xs text-[var(--color-muted)] mb-1">Nouveau WhatsApp (+225)</label>
                                 <input
                                     type="tel"
                                     value={editPhone}
                                     onChange={e => setEditPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                     placeholder="0700000000"
-                                    className="w-full bg-black border border-[#1a1a1a] rounded-xl py-2 px-3 text-white font-mono focus:outline-none focus:border-[#00D97E]/50"
+                                    className="w-full bg-black border border-[var(--color-border)] rounded-xl py-2 px-3 text-white font-mono focus:outline-none focus:border-[#00D97E]/50"
                                 />
                             </div>
                         )}
@@ -299,7 +299,7 @@ const VerifyAccount: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => setIsEditing(false)}
-                                className="px-3 py-2 bg-white/5 border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white rounded-lg text-xs font-bold transition-all"
+                                className="px-3 py-2 bg-white/5 border border-[var(--color-border)] hover:bg-[#1a1a1a] text-white rounded-lg text-xs font-bold transition-all"
                             >
                                 Annuler
                             </button>
@@ -316,9 +316,9 @@ const VerifyAccount: React.FC = () => {
                 ) : (
                     <div className="mb-6">
                         {!otpSent && (
-                            <div className="bg-white/5 p-4 rounded-2xl border border-[#1a1a1a] flex justify-between items-center">
+                            <div className="bg-white/5 p-4 rounded-[13px] border border-[var(--color-border)] flex justify-between items-center">
                                 <div>
-                                    <span className="block text-xs text-[#888] uppercase tracking-wider font-bold">
+                                    <span className="block text-xs text-[var(--color-muted)] uppercase tracking-wider font-bold">
                                         {method === 'email' ? 'Adresse E-mail' : 'Numéro WhatsApp'}
                                     </span>
                                     <span className="text-white text-base font-semibold font-mono tracking-wide">
@@ -332,7 +332,7 @@ const VerifyAccount: React.FC = () => {
                                         setEditPhone(user?.phone?.replace('+225', '') || '');
                                         setIsEditing(true);
                                     }}
-                                    className="p-2 text-[#00D97E] hover:bg-white/5 rounded-xl border border-[#1a1a1a] transition-all"
+                                    className="p-2 text-[#00D97E] hover:bg-white/5 rounded-xl border border-[var(--color-border)] transition-all"
                                 >
                                     <Edit2 className="w-4 h-4" />
                                 </button>
@@ -355,7 +355,7 @@ const VerifyAccount: React.FC = () => {
                 ) : (
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Code de validation</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Code de validation</label>
                             <input
                                 type="text"
                                 inputMode="numeric"
@@ -363,7 +363,7 @@ const VerifyAccount: React.FC = () => {
                                 onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                 placeholder="123456"
                                 maxLength={6}
-                                className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-4 px-4 text-center text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 transition-all font-mono text-2xl tracking-[0.5em]"
+                                className="w-full bg-white/5 border border-[var(--color-border)] rounded-xl py-4 px-4 text-center text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 transition-all font-mono text-2xl tracking-[0.5em]"
                             />
                         </div>
 
@@ -371,7 +371,7 @@ const VerifyAccount: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => { setOtpSent(false); setOtpCode(''); setError(''); setSuccess(''); }}
-                                className="text-xs text-[#888] hover:text-white transition-colors"
+                                className="text-xs text-[var(--color-muted)] hover:text-white transition-colors"
                             >
                                 Retour
                             </button>
@@ -399,7 +399,7 @@ const VerifyAccount: React.FC = () => {
 
                 {/* Helpful guides and fallbacks */}
                 {method === 'phone' && !otpSent && (
-                    <div className="bg-[#00D97E]/5 border border-[#00D97E]/10 rounded-2xl p-4 text-xs text-[#888] mt-6 animate-in fade-in duration-500">
+                    <div className="bg-[#00D97E]/5 border border-[#00D97E]/10 rounded-[13px] p-4 text-xs text-[var(--color-muted)] mt-6 animate-in fade-in duration-500">
                         <p className="font-bold flex items-center gap-1 mb-1.5 text-[#00D97E]">
                             <Sparkles className="w-3.5 h-3.5" /> SMS indisponible ou bloqué ?
                         </p>
@@ -418,16 +418,16 @@ const VerifyAccount: React.FC = () => {
                         localStorage.setItem('verificationSkipped', 'true');
                         navigate('/onboarding');
                     }}
-                    className="w-full mt-4 py-3 bg-white/5 hover:bg-[#1a1a1a] border border-[#1a1a1a] text-[#888] hover:text-white rounded-xl text-sm font-semibold transition-all"
+                    className="w-full mt-4 py-3 bg-white/5 hover:bg-[#1a1a1a] border border-[var(--color-border)] text-[var(--color-muted)] hover:text-white rounded-xl text-sm font-semibold transition-all"
                 >
                     Vérifier plus tard
                 </button>
 
                 {/* Logout link */}
-                <p className="mt-6 text-center text-sm text-[#888]">
+                <p className="mt-6 text-center text-sm text-[var(--color-muted)]">
                     <button
                         onClick={logout}
-                        className="text-[#888] hover:text-white underline underline-offset-4 cursor-pointer transition-colors"
+                        className="text-[var(--color-muted)] hover:text-white underline underline-offset-4 cursor-pointer transition-colors"
                     >
                         Se déconnecter du compte
                     </button>

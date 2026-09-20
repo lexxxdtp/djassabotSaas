@@ -1,3 +1,4 @@
+import PageHeading from '../components/ui/PageHeading';
 import { useEffect, useState } from 'react';
 import {
     Users,
@@ -122,30 +123,26 @@ export const MarketingView: React.FC<MarketingViewProps> = ({
 
     return (
         <div className="space-y-5 pb-4">
-            {/* HEADER */}
-            <div className={anim} style={delay(0)}>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Marketing</h1>
-                <p className="text-[#888] text-sm mt-0.5">Relancez vos clients, boostez vos ventes.</p>
-            </div>
+            <PageHeading eyebrow="Gardez le contact" title="Vos campagnes" description="Préparez un message pour les clients de votre boutique." />
 
             {/* HERO — AUDIENCE (audience forward, façon Wave) */}
-            <div className={`bg-[#111] border border-[#1a1a1a] rounded-2xl p-5 ${anim}`} style={delay(1)}>
-                <p className="text-[#888] text-sm">Votre audience</p>
+            <div className={`bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-5 ${anim}`} style={delay(1)}>
+                <p className="text-[var(--color-muted)] text-sm">Votre audience</p>
                 {counts ? (
                     <p className="text-[38px] leading-none font-bold text-white tracking-tight tabular-nums mt-2">
                         {counts.all.toLocaleString('fr-FR')}
-                        <span className="text-lg text-[#888] font-semibold ml-1.5">client{counts.all > 1 ? 's' : ''}</span>
+                        <span className="text-lg text-[var(--color-muted)] font-semibold ml-1.5">client{counts.all > 1 ? 's' : ''}</span>
                     </p>
                 ) : (
                     <div className="h-[38px] w-28 bg-[#1a1a1a] rounded-lg animate-pulse mt-2" aria-hidden="true" />
                 )}
-                <p className="text-sm text-[#888] mt-3">
+                <p className="text-sm text-[var(--color-muted)] mt-3">
                     {stats && stats.campaigns > 0 ? (
                         <>
                             <span className="text-white font-semibold">{stats.campaigns}</span> campagne{stats.campaigns > 1 ? 's' : ''}
-                            <span className="text-[#555]"> · </span>
+                            <span className="text-[var(--color-muted)]"> · </span>
                             <span className="text-white font-semibold">{stats.sent}</span> message{stats.sent > 1 ? 's' : ''} envoyé{stats.sent > 1 ? 's' : ''}
-                            {stats.lastCampaignAt && <span className="text-[#555]"> · dernière il y a {timeAgo(new Date(stats.lastCampaignAt))}</span>}
+                            {stats.lastCampaignAt && <span className="text-[var(--color-muted)]"> · dernière il y a {timeAgo(new Date(stats.lastCampaignAt))}</span>}
                         </>
                     ) : (
                         'Ce sont les clients qui ont parlé à votre bot. Envoyez-leur votre première promo.'
@@ -156,9 +153,9 @@ export const MarketingView: React.FC<MarketingViewProps> = ({
             {/* COMPOSER — ENVOYER UNE PROMO */}
             <section className={anim} style={delay(2)}>
                 <h2 className="text-[15px] font-semibold text-white mb-3">Envoyer une promo</h2>
-                <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 space-y-4">
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-4 space-y-4">
                     <div>
-                        <label htmlFor="mk-message" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre message</label>
+                        <label htmlFor="mk-message" className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Votre message</label>
                         <textarea
                             id="mk-message"
                             rows={4}
@@ -166,15 +163,15 @@ export const MarketingView: React.FC<MarketingViewProps> = ({
                             onChange={e => onMessageChange(e.target.value)}
                             maxLength={4000}
                             placeholder="Salut 👋 ! Nouvel arrivage disponible. Profitez de -10% ce weekend !"
-                            className="w-full bg-black border border-[#1a1a1a] rounded-xl p-4 text-white text-sm focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none resize-none placeholder:text-[#555] transition-colors"
+                            className="w-full bg-black border border-[var(--color-border)] rounded-xl p-4 text-white text-sm focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none resize-none placeholder:text-[var(--color-muted)] transition-colors"
                         />
                         <div className="flex justify-end mt-1">
-                            <span className="text-[11px] text-[#555] tabular-nums">{message.length}/4000</span>
+                            <span className="text-[11px] text-[var(--color-muted)] tabular-nums">{message.length}/4000</span>
                         </div>
                     </div>
 
                     <div role="radiogroup" aria-label="Choisir les destinataires">
-                        <p className="text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Qui va le recevoir ?</p>
+                        <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Qui va le recevoir ?</p>
                         <div className="space-y-2">
                             {AUDIENCE_OPTIONS.map(opt => {
                                 const selected = audience === opt.key;
@@ -186,16 +183,16 @@ export const MarketingView: React.FC<MarketingViewProps> = ({
                                         role="radio"
                                         aria-checked={selected}
                                         onClick={() => onAudienceChange(opt.key)}
-                                        className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-[transform,border-color,background-color] active:scale-[0.99] cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none ${selected ? 'bg-[#00D97E]/5 border-[#00D97E]/40' : 'bg-black border-[#1a1a1a]'}`}
+                                        className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-[transform,border-color,background-color] active:scale-[0.99] cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none ${selected ? 'bg-[#00D97E]/5 border-[#00D97E]/40' : 'bg-black border-[var(--color-border)]'}`}
                                     >
-                                        <div className={`p-2 rounded-lg shrink-0 ${selected ? 'bg-[#00D97E]/10 text-[#00D97E]' : 'bg-[#111] text-[#888]'}`}>
+                                        <div className={`p-2 rounded-lg shrink-0 ${selected ? 'bg-[#00D97E]/10 text-[#00D97E]' : 'bg-[var(--color-surface)] text-[var(--color-muted)]'}`}>
                                             <opt.icon className="w-4 h-4" aria-hidden="true" />
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <p className={`text-sm font-semibold ${selected ? 'text-white' : 'text-[#ccc]'}`}>{opt.label}</p>
-                                            <p className="text-xs text-[#888] truncate">{opt.desc}</p>
+                                            <p className="text-xs text-[var(--color-muted)] truncate">{opt.desc}</p>
                                         </div>
-                                        <span className={`shrink-0 text-xs font-bold tabular-nums px-2.5 py-1 rounded-full border ${selected ? 'bg-[#00D97E]/10 text-[#00D97E] border-[#00D97E]/20' : 'bg-[#111] text-[#888] border-[#1a1a1a]'}`}>
+                                        <span className={`shrink-0 text-xs font-bold tabular-nums px-2.5 py-1 rounded-full border ${selected ? 'bg-[#00D97E]/10 text-[#00D97E] border-[#00D97E]/20' : 'bg-[var(--color-surface)] text-[var(--color-muted)] border-[var(--color-border)]'}`}>
                                             {count ?? '—'}
                                         </span>
                                     </button>
@@ -218,12 +215,12 @@ export const MarketingView: React.FC<MarketingViewProps> = ({
                     <button
                         onClick={() => setConfirmOpen(true)}
                         disabled={!canSend}
-                        className="w-full flex items-center justify-center gap-2 bg-[#00D97E] text-black disabled:bg-[#1a1a1a] disabled:text-[#666] disabled:cursor-not-allowed px-6 py-3.5 rounded-xl font-bold text-sm transition-[transform,background-color] active:scale-[0.98] cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none"
+                        className="w-full flex items-center justify-center gap-2 bg-[#00D97E] text-black disabled:bg-[#1a1a1a] disabled:text-[var(--color-muted)] disabled:cursor-not-allowed px-6 py-3.5 rounded-xl font-bold text-sm transition-[transform,background-color] active:scale-[0.98] cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none"
                     >
                         <Send size={16} aria-hidden="true" />
                         <span>Envoyer la promo</span>
                     </button>
-                    <p className="text-xs text-[#555] text-center leading-relaxed">
+                    <p className="text-xs text-[var(--color-muted)] text-center leading-relaxed">
                         Les messages partent un par un, en douceur, pour protéger votre numéro WhatsApp.
                     </p>
                 </div>
@@ -232,7 +229,7 @@ export const MarketingView: React.FC<MarketingViewProps> = ({
             {/* RELANCE AUTOMATIQUE DES PANIERS */}
             <section className={anim} style={delay(3)}>
                 <h2 className="text-[15px] font-semibold text-white mb-3">Le bot relance tout seul</h2>
-                <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4">
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-4">
                     <div className="flex items-start gap-3">
                         <div className="p-2.5 rounded-xl bg-[#00D97E]/10 text-[#00D97E] shrink-0">
                             <ShoppingCart className="w-5 h-5" aria-hidden="true" />
@@ -242,10 +239,10 @@ export const MarketingView: React.FC<MarketingViewProps> = ({
                                 <p className="text-white text-sm font-bold">Paniers oubliés</p>
                                 <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#00D97E]/10 border border-[#00D97E]/20 shrink-0">
                                     <span className="w-1.5 h-1.5 rounded-full bg-[#00D97E] animate-pulse" />
-                                    <span className="text-[10px] font-bold text-[#00D97E]">ACTIF</span>
+                                    <span className="text-xs font-bold text-[#00D97E]">ACTIF</span>
                                 </span>
                             </div>
-                            <p className="text-xs text-[#888] leading-relaxed mt-1">
+                            <p className="text-xs text-[var(--color-muted)] leading-relaxed mt-1">
                                 Un client remplit son panier mais ne finit pas sa commande ? Le bot lui envoie un rappel amical après <strong className="text-white">30 minutes</strong>. Vous n'avez rien à faire.
                             </p>
                         </div>
@@ -259,8 +256,8 @@ export const MarketingView: React.FC<MarketingViewProps> = ({
                     <Sparkles className="w-4 h-4 text-amber-400" aria-hidden="true" />
                     Conseils qui marchent
                 </h2>
-                <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4">
-                    <ul className="text-[#888] text-sm leading-relaxed space-y-3">
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-4">
+                    <ul className="text-[var(--color-muted)] text-sm leading-relaxed space-y-3">
                         <li><span className="text-white font-medium">Une seule offre par message.</span> « Bazin à -10% ce weekend » marche mieux qu'une liste.</li>
                         <li><span className="text-white font-medium">Le bon créneau.</span> Envoyez entre 18h et 21h, quand vos clients regardent leur téléphone.</li>
                         <li><span className="text-white font-medium">Citez un produit précis.</span> Le bot enverra sa photo si le client demande à voir.</li>
@@ -282,38 +279,38 @@ export const MarketingView: React.FC<MarketingViewProps> = ({
                         aria-label="Confirmer l'envoi de la campagne"
                         tabIndex={-1}
                         onClick={e => e.stopPropagation()}
-                        className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col"
+                        className="bg-[var(--color-surface)] border-t md:border border-[var(--color-border)] rounded-t-3xl md:rounded-[13px] w-full max-w-lg shadow-none relative overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col"
                     >
-                        <div className="flex items-center justify-between p-4 border-b border-[#1a1a1a] shrink-0">
+                        <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)] shrink-0">
                             <h3 className="text-white font-bold">Confirmer l'envoi</h3>
                             <button
                                 onClick={() => { if (!sending) setConfirmOpen(false); }}
                                 aria-label="Fermer le tiroir"
-                                className="text-[#888] hover:text-white transition-colors bg-[#1a1a1a] p-1.5 rounded-full cursor-pointer"
+                                className="text-[var(--color-muted)] hover:text-white transition-colors bg-[#1a1a1a] p-1.5 rounded-full cursor-pointer"
                             >
                                 <X size={16} aria-hidden="true" />
                             </button>
                         </div>
 
                         <div className="p-4 space-y-4 overflow-y-auto">
-                            <div className="flex items-center gap-3 p-3 rounded-xl bg-black border border-[#1a1a1a]">
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-black border border-[var(--color-border)]">
                                 <div className="p-2 rounded-lg bg-[#00D97E]/10 text-[#00D97E] shrink-0">
                                     <Users className="w-4 h-4" aria-hidden="true" />
                                 </div>
-                                <p className="text-sm text-[#888]">
+                                <p className="text-sm text-[var(--color-muted)]">
                                     <span className="text-white font-bold tabular-nums">{audienceCount ?? '?'}</span> client{(audienceCount ?? 0) > 1 ? 's' : ''}
-                                    <span className="text-[#555]"> · </span>{audienceLabel}
+                                    <span className="text-[var(--color-muted)]"> · </span>{audienceLabel}
                                 </p>
                             </div>
 
                             <div>
-                                <p className="text-[10px] uppercase tracking-widest text-[#555] font-bold mb-2">Votre message</p>
-                                <div className="bg-black border border-[#1a1a1a] rounded-xl p-3.5 text-sm text-white whitespace-pre-wrap max-h-40 overflow-y-auto leading-relaxed">
+                                <p className="text-xs uppercase tracking-widest text-[var(--color-muted)] font-bold mb-2">Votre message</p>
+                                <div className="bg-black border border-[var(--color-border)] rounded-xl p-3.5 text-sm text-white whitespace-pre-wrap max-h-40 overflow-y-auto leading-relaxed">
                                     {message.trim()}
                                 </div>
                             </div>
 
-                            <p className="text-xs text-[#555] leading-relaxed">
+                            <p className="text-xs text-[var(--color-muted)] leading-relaxed">
                                 Les messages partent un par un (2 à 5 s d'écart) pour protéger votre numéro WhatsApp. Vous pouvez continuer à utiliser l'appli pendant l'envoi.
                             </p>
                         </div>
@@ -332,7 +329,7 @@ export const MarketingView: React.FC<MarketingViewProps> = ({
                             <button
                                 onClick={() => { if (!sending) setConfirmOpen(false); }}
                                 disabled={sending}
-                                className="w-full px-6 py-3 rounded-xl font-semibold text-sm text-[#888] hover:text-white transition-colors disabled:opacity-50 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none"
+                                className="w-full px-6 py-3 rounded-xl font-semibold text-sm text-[var(--color-muted)] hover:text-white transition-colors disabled:opacity-50 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none"
                             >
                                 Annuler
                             </button>

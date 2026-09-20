@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { lazy, Suspense } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AuthLayout from './layouts/AuthLayout';
 
 // Lazy load all pages for code splitting
 const Login = lazy(() => import('./pages/Login'));
@@ -26,37 +27,11 @@ const SubscriptionExpired = lazy(() => import('./pages/SubscriptionExpired'));
 const Terms = lazy(() => import('./pages/Legal').then(m => ({ default: m.Terms })));
 const Privacy = lazy(() => import('./pages/Legal').then(m => ({ default: m.Privacy })));
 
-// Loading fallback — matches landing page design (pure black, #00D97E accent)
 const PageLoader = () => (
-  <div style={{
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100vh',
-    background: '#000'
-  }}>
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: '1rem'
-    }}>
-      <div style={{
-        width: '40px',
-        height: '40px',
-        border: '3px solid #1a1a1a',
-        borderTop: '3px solid #00D97E',
-        borderRadius: '50%',
-        animation: 'spin 1s linear infinite'
-      }} />
-      <span style={{ color: '#888', fontSize: '12px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Chargement</span>
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
+  <div className="app-loader" role="status">
+    <span className="app-brand-mark" aria-hidden="true">D</span>
+    <p>Votre espace se prépare…</p>
+    <div className="app-loading-line" aria-hidden="true" />
   </div>
 );
 
@@ -66,17 +41,21 @@ function App() {
       <Router>
         <Suspense fallback={<PageLoader />}>
           <Routes>
+            <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            </Route>
             <Route path="/conditions" element={<Terms />} />
             <Route path="/confidentialite" element={<Privacy />} />
 
             <Route element={<ProtectedRoute />}>
+              <Route element={<AuthLayout />}>
               <Route path="/verify-account" element={<VerifyAccount />} />
               <Route path="/abonnement-expire" element={<SubscriptionExpired />} />
               <Route path="/onboarding" element={<Onboarding />} />
+              </Route>
               <Route path="/dashboard" element={<DashboardLayout />}>
                 {/* New home: operational dashboard */}
                 <Route index element={<Today />} />

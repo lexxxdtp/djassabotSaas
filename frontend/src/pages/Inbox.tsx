@@ -23,7 +23,7 @@ interface Message {
 
 function ChatSkeleton() {
     return (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 animate-pulse flex gap-3">
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-4 animate-pulse flex gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#222] shrink-0"></div>
             <div className="flex-1 space-y-2">
                 <div className="flex justify-between">
@@ -45,7 +45,7 @@ const getStateMeta = (state: string) => {
         case 'WAITING_FOR_CONFIRMATION':
             return { label: 'Attente Confirmation', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20' };
         case 'IDLE':
-            return { label: 'Libre', color: 'bg-zinc-500/10 text-[#888] border-zinc-500/20' };
+            return { label: 'Libre', color: 'bg-zinc-500/10 text-[var(--color-muted)] border-zinc-500/20' };
         default:
             return { label: state, color: 'bg-[#00D97E]/10 text-[#00D97E] border-[#00D97E]/20' };
     }
@@ -198,20 +198,20 @@ const Inbox: React.FC = () => {
     }, [chats, searchTerm, activeFilter]);
 
     return (
-        <div className="flex h-[calc(100vh-8.5rem)] md:h-[calc(100vh-10rem)] border border-[#1a1a1a] rounded-2xl overflow-hidden bg-black shadow-2xl animate-in fade-in duration-300">
+        <div className="inbox-workspace flex h-[calc(100vh-8.5rem)] md:h-[calc(100vh-10rem)] border border-[var(--color-border)] rounded-[13px] overflow-hidden bg-black shadow-none animate-in fade-in duration-300">
             {/* Chats list panel: visible on desktop, or on mobile when no chat is selected */}
-            <div className={`w-full md:w-80 border-r border-[#1a1a1a] flex flex-col bg-black ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
+            <div className={`w-full md:w-80 border-r border-[var(--color-border)] flex flex-col bg-black ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
                 {/* Header */}
-                <div className="p-4 border-b border-[#1a1a1a] space-y-3 shrink-0">
+                <div className="p-4 border-b border-[var(--color-border)] space-y-3 shrink-0">
                     <div className="flex justify-between items-center">
-                        <h1 className="text-xl font-bold text-white tracking-tight">Discussions</h1>
-                        <span className="text-[10px] text-[#888] font-mono bg-[#111] border border-[#1a1a1a] px-2.5 py-1 rounded-lg uppercase tracking-wider">
-                            {filteredChats.length} conv
+                        <h1 className="page-title text-xl font-bold text-white tracking-tight">Conversations</h1>
+                        <span className="text-xs text-[var(--color-muted)] font-mono bg-[var(--color-surface)] border border-[var(--color-border)] px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                            {filteredChats.length}
                         </span>
                     </div>
 
                     {/* Filter segmented buttons */}
-                    <div className="flex bg-[#111] p-1 rounded-xl border border-[#1a1a1a] w-full">
+                    <div className="flex bg-[var(--color-surface)] p-1 rounded-xl border border-[var(--color-border)] w-full">
                         {[
                             { key: 'all' as const, label: 'Tout' },
                             { key: 'auto' as const, label: 'IA active' },
@@ -222,8 +222,8 @@ const Inbox: React.FC = () => {
                                 <button
                                     key={b.key}
                                     onClick={() => setActiveFilter(b.key)}
-                                    className={`flex-1 py-1.5 text-center text-xs font-semibold rounded-lg transition-[transform,background-color,color] active:scale-95 duration-100 ${
-                                        isActive ? 'bg-[#1a1a1a] text-white border border-white/5 shadow-sm' : 'text-[#888] hover:text-white'
+                                    className={`flex-1 py-1.5 text-center text-xs font-semibold rounded-lg transition-[transform,background-color,color] active:scale-[0.99] duration-100 ${
+                                        isActive ? 'bg-[#1a1a1a] text-white border border-white/5 shadow-sm' : 'text-[var(--color-muted)] hover:text-white'
                                     }`}
                                 >
                                     {b.label}
@@ -234,13 +234,13 @@ const Inbox: React.FC = () => {
 
                     {/* Search */}
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" size={15} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]" size={15} />
                         <input
                             type="text"
                             placeholder="Rechercher par nom ou numéro…"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full bg-[#111] border border-[#1a1a1a] rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-[#00D97E]/40 transition-colors placeholder:text-[#555] outline-none"
+                            className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-[#00D97E]/40 transition-colors placeholder:text-[var(--color-muted)] outline-none"
                         />
                     </div>
                 </div>
@@ -254,7 +254,7 @@ const Inbox: React.FC = () => {
                             <ChatSkeleton />
                         </div>
                     ) : filteredChats.length === 0 ? (
-                        <div className="p-8 text-center text-[#555] text-xs">
+                        <div className="p-8 text-center text-[var(--color-muted)] text-xs">
                             Aucune discussion trouvée.
                         </div>
                     ) : (
@@ -270,10 +270,10 @@ const Inbox: React.FC = () => {
                                             // Reset unread count locally for smooth UX
                                             setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unreadCount: 0 } : c));
                                         }}
-                                        className={`w-full text-left rounded-2xl p-4 flex gap-3 border transition-[transform,border-color,background-color] active:scale-[0.99] duration-100 cursor-pointer ${
+                                        className={`w-full text-left rounded-[13px] p-4 flex gap-3 border transition-[transform,border-color,background-color] active:scale-[0.99] duration-100 cursor-pointer ${
                                             isSelected 
                                             ? 'bg-[#00D97E]/10 border-[#00D97E]/20' 
-                                            : 'bg-[#111] border-[#1a1a1a] hover:border-[#00D97E]/20'
+                                            : 'bg-[var(--color-surface)] border-[var(--color-border)] hover:border-[#00D97E]/20'
                                         }`}
                                     >
                                         <div className="w-10 h-10 rounded-xl bg-[#00D97E]/10 border border-[#00D97E]/20 text-[#00D97E] font-bold flex items-center justify-center shrink-0 text-sm">
@@ -282,24 +282,24 @@ const Inbox: React.FC = () => {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex justify-between items-baseline mb-1">
                                                 <h3 className="font-bold text-white text-sm truncate">{chat.name}</h3>
-                                                <span className="text-[10px] text-[#555] font-mono">
+                                                <span className="text-xs text-[var(--color-muted)] font-mono">
                                                     {new Date(chat.lastInteraction).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
-                                            <p className="text-xs text-[#888] truncate pr-2 leading-relaxed">
+                                            <p className="text-xs text-[var(--color-muted)] truncate pr-2 leading-relaxed">
                                                 {chat.lastMessage || <span className="italic opacity-50">Pas de message</span>}
                                             </p>
                                             <div className="flex items-center gap-2 mt-2">
                                                 {chat.autopilotEnabled ? (
-                                                    <span className="flex items-center gap-1 text-[9px] bg-emerald-500/10 text-emerald-500 font-bold px-2 py-0.5 rounded border border-emerald-500/20 uppercase tracking-wider">
+                                                    <span className="flex items-center gap-1 text-xs bg-emerald-500/10 text-emerald-500 font-bold px-2 py-0.5 rounded border border-emerald-500/20 uppercase tracking-wider">
                                                         <Zap size={9} fill="currentColor" /> IA active
                                                     </span>
                                                 ) : (
-                                                    <span className="flex items-center gap-1 text-[9px] bg-zinc-500/10 text-[#888] font-bold px-2 py-0.5 rounded border border-zinc-500/20 uppercase tracking-wider">
+                                                    <span className="flex items-center gap-1 text-xs bg-zinc-500/10 text-[var(--color-muted)] font-bold px-2 py-0.5 rounded border border-zinc-500/20 uppercase tracking-wider">
                                                         Manuel
                                                     </span>
                                                 )}
-                                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${meta.color}`}>
+                                                <span className={`text-xs font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${meta.color}`}>
                                                     {meta.label}
                                                 </span>
                                                 {chat.unreadCount > 0 && (
@@ -319,9 +319,9 @@ const Inbox: React.FC = () => {
             {selectedChat ? (
                 <div className="flex-1 flex flex-col bg-black w-full min-w-0 animate-in fade-in duration-200">
                     {/* Header */}
-                    <div className="h-16 border-b border-[#1a1a1a] flex justify-between items-center px-4 md:px-6 bg-[#111] shrink-0">
+                    <div className="h-16 border-b border-[var(--color-border)] flex justify-between items-center px-4 md:px-6 bg-[var(--color-surface)] shrink-0">
                         <div className="flex items-center gap-3 min-w-0">
-                            <button onClick={() => setSelectedChat(null)} aria-label="Retourner à la liste" className="md:hidden text-[#888] hover:text-white p-1 rounded-lg hover:bg-white/5 active:scale-90 transition-transform shrink-0">
+                            <button onClick={() => setSelectedChat(null)} aria-label="Retourner à la liste" className="md:hidden text-[var(--color-muted)] hover:text-white p-1 rounded-lg hover:bg-white/5 active:scale-[0.99] transition-transform shrink-0">
                                 <ArrowLeft size={20} aria-hidden="true" />
                             </button>
                             <div className="w-8 h-8 rounded-lg bg-[#00D97E]/10 flex items-center justify-center text-[#00D97E] font-bold text-xs shrink-0">
@@ -329,7 +329,7 @@ const Inbox: React.FC = () => {
                             </div>
                             <div className="min-w-0">
                                 <h2 className="font-bold text-white text-sm truncate leading-none">{selectedChat.name}</h2>
-                                <p className="text-[10px] text-[#555] font-mono mt-1 truncate">{selectedChat.id.split('@')[0]}</p>
+                                <p className="text-xs text-[var(--color-muted)] font-mono mt-1 truncate">{selectedChat.id.split('@')[0]}</p>
                             </div>
                         </div>
 
@@ -337,17 +337,17 @@ const Inbox: React.FC = () => {
                         <div className="flex items-center gap-3 shrink-0">
                             <button
                                 onClick={toggleAutopilot}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-2xl border text-xs font-bold transition-[transform,background-color,border-color] active:scale-95 duration-100 ${
+                                className={`flex items-center gap-2 px-3 py-2 rounded-[13px] border text-xs font-bold transition-[transform,background-color,border-color] active:scale-[0.99] duration-100 ${
                                     selectedChat.autopilotEnabled
                                         ? 'bg-[#00D97E]/10 text-[#00D97E] border-[#00D97E]/20'
-                                        : 'bg-zinc-800 text-[#888] border-zinc-700 hover:bg-zinc-700'
+                                        : 'bg-zinc-800 text-[var(--color-muted)] border-zinc-700 hover:bg-zinc-700'
                                 }`}
                             >
                                 <Zap size={13} fill={selectedChat.autopilotEnabled ? 'currentColor' : 'none'} className={selectedChat.autopilotEnabled ? 'animate-pulse' : ''} />
-                                <span className="text-[10px] tracking-wider uppercase font-bold hidden sm:inline">
+                                <span className="text-xs tracking-wider uppercase font-bold hidden sm:inline">
                                     {selectedChat.autopilotEnabled ? 'IA Active' : 'Mode Manuel'}
                                 </span>
-                                <span className="text-[10px] tracking-wider uppercase font-bold sm:hidden">
+                                <span className="text-xs tracking-wider uppercase font-bold sm:hidden">
                                     {selectedChat.autopilotEnabled ? 'IA' : 'Manuel'}
                                 </span>
                             </button>
@@ -358,10 +358,10 @@ const Inbox: React.FC = () => {
                     {(() => {
                         const meta = getStateMeta(selectedChat.state);
                         return (
-                            <div className="py-2 px-4 bg-[#111]/40 border-b border-[#1a1a1a] flex items-center gap-2 shrink-0">
+                            <div className="py-2 px-4 bg-[var(--color-surface)]/40 border-b border-[var(--color-border)] flex items-center gap-2 shrink-0">
                                 <div className="w-1.5 h-1.5 rounded-full bg-[#00D97E] animate-ping shrink-0"></div>
-                                <span className="text-[10px] text-[#555] font-medium">État du client :</span>
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${meta.color}`}>
+                                <span className="text-xs text-[var(--color-muted)] font-medium">État du client :</span>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${meta.color}`}>
                                     {meta.label}
                                 </span>
                             </div>
@@ -375,7 +375,7 @@ const Inbox: React.FC = () => {
                                 <RefreshCw className="animate-spin text-[#00D97E]" />
                             </div>
                         ) : messages.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-[#555] opacity-50 space-y-2">
+                            <div className="flex flex-col items-center justify-center h-full text-[var(--color-muted)] opacity-50 space-y-2">
                                 <MessageSquare size={40} className="text-[#333]" />
                                 <p className="text-xs">Aucun message pour l'instant</p>
                             </div>
@@ -389,9 +389,9 @@ const Inbox: React.FC = () => {
                                                 <Bot size={12} />
                                             </div>
                                         )}
-                                        <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
+                                        <div className={`max-w-[78%] rounded-[13px] px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
                                             isBot
-                                                ? 'bg-[#111] text-white border border-[#1a1a1a] rounded-tl-sm'
+                                                ? 'bg-[var(--color-surface)] text-white border border-[var(--color-border)] rounded-tl-sm'
                                                 : 'bg-[#00D97E] text-black font-medium rounded-tr-sm'
                                         }`}>
                                             <p className="whitespace-pre-wrap">{msg.parts.map(p => p.text).join('')}</p>
@@ -404,35 +404,35 @@ const Inbox: React.FC = () => {
                     </div>
 
                     {/* Input Area */}
-                    <div className="p-4 border-t border-[#1a1a1a] bg-[#111] shrink-0">
+                    <div className="p-4 border-t border-[var(--color-border)] bg-[var(--color-surface)] shrink-0">
                         <form onSubmit={handleSendMessage} className="flex gap-2">
                             <input
                                 type="text"
                                 value={newMessage}
                                 onChange={e => setNewMessage(e.target.value)}
                                 placeholder={selectedChat.autopilotEnabled ? "Désactivez l'IA pour écrire manuellement…" : "Écrivez votre message…"}
-                                className="flex-1 bg-black border border-[#1a1a1a] rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D97E]/40 focus:ring-0 transition-[border-color] placeholder:text-[#555] outline-none"
+                                className="flex-1 bg-black border border-[var(--color-border)] rounded-[13px] px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D97E]/40 focus:ring-0 transition-[border-color] placeholder:text-[var(--color-muted)] outline-none"
                                 disabled={sending}
                             />
                             <button
                                 type="submit"
                                 disabled={sending || !newMessage.trim()}
                                 aria-label="Envoyer le message"
-                                className="bg-[#00D97E] hover:bg-[#00D97E]/90 disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-2xl p-3 transition-[transform,background-color] active:scale-95 shadow-lg shadow-[#00D97E]/15 shrink-0 flex items-center justify-center w-11 h-11"
+                                className="bg-[#00D97E] hover:bg-[#00D97E]/90 disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-[13px] p-3 transition-[transform,background-color] active:scale-[0.99] shadow-none shadow-[#00D97E]/15 shrink-0 flex items-center justify-center w-11 h-11"
                             >
                                 <Send size={16} aria-hidden="true" />
                             </button>
                         </form>
                         {selectedChat.autopilotEnabled && (
-                            <p className="text-[10px] text-emerald-500/70 mt-2 flex items-center gap-1">
+                            <p className="text-xs text-emerald-500/70 mt-2 flex items-center gap-1">
                                 <Zap size={10} fill="currentColor" /> L'IA répondra automatiquement aux nouveaux messages de ce client.
                             </p>
                         )}
                     </div>
                 </div>
             ) : (
-                <div className="hidden md:flex flex-1 flex-col items-center justify-center text-[#888] space-y-4 bg-black">
-                    <div className="w-16 h-16 bg-[#111] border border-[#1a1a1a] rounded-2xl flex items-center justify-center animate-pulse">
+                <div className="hidden md:flex flex-1 flex-col items-center justify-center text-[var(--color-muted)] space-y-4 bg-black">
+                    <div className="w-16 h-16 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] flex items-center justify-center animate-pulse">
                         <MessageSquare size={30} className="text-[#00D97E]/50" />
                     </div>
                     <p className="text-xs font-semibold">Sélectionnez une discussion pour commencer</p>

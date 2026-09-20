@@ -1,3 +1,4 @@
+import PageHeading from '../components/ui/PageHeading';
 import { useState, useEffect } from 'react';
 import { Check, ShieldCheck, Loader2, Sparkles } from 'lucide-react';
 import { apiClient } from '../utils/apiClient';
@@ -125,20 +126,16 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
 
     return (
         <div className="space-y-5 pb-4">
-            {/* HEADER */}
-            <div className={anim} style={delay(0)}>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Abonnement</h1>
-                <p className="text-[#888] text-sm mt-0.5">Choisissez le plan adapté à votre volume de ventes.</p>
-            </div>
+            <PageHeading eyebrow="À chaque commerce, son rythme" title="Votre abonnement" description="Choisissez la place dont votre boutique a besoin." />
 
             {/* PLAN ACTUEL */}
             {activePlan && (
-                <div className={`flex items-center justify-between gap-3 bg-[#111] border border-[#00D97E]/30 rounded-2xl p-4 ${anim}`} style={delay(1)}>
+                <div className={`flex items-center justify-between gap-3 bg-[var(--color-surface)] border border-[#00D97E]/30 rounded-[13px] p-4 ${anim}`} style={delay(1)}>
                     <div className="min-w-0">
-                        <p className="text-xs text-[#888]">Votre plan actuel</p>
+                        <p className="text-xs text-[var(--color-muted)]">Votre plan actuel</p>
                         <p className="text-lg font-bold text-white mt-0.5">{activePlan.name}</p>
                     </div>
-                    <p className="text-sm text-[#888] shrink-0">
+                    <p className="text-sm text-[var(--color-muted)] shrink-0">
                         <span className="text-white font-bold tabular-nums">{activePlan.price.toLocaleString('fr-FR')}</span> F/mois
                     </p>
                 </div>
@@ -167,14 +164,14 @@ export const SubscriptionView: React.FC<SubscriptionViewProps> = ({
             </div>
 
             {/* PAIEMENT SÉCURISÉ */}
-            <div className={`bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 ${anim}`} style={delay(5)}>
+            <div className={`bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-4 ${anim}`} style={delay(5)}>
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 rounded-xl bg-[#00D97E]/10 text-[#00D97E] shrink-0">
                         <ShieldCheck className="w-5 h-5" aria-hidden="true" />
                     </div>
                     <div>
                         <p className="text-white text-sm font-bold">Paiement sécurisé</p>
-                        <p className="text-xs text-[#888] mt-0.5">Wave, Orange Money, MTN, Visa et Mastercard.</p>
+                        <p className="text-xs text-[var(--color-muted)] mt-0.5">Wave, Orange Money, MTN, Visa et Mastercard.</p>
                     </div>
                 </div>
             </div>
@@ -198,17 +195,17 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, recommended, isCurrent, loadi
         ? 'border-[#00D97E]'
         : recommended
             ? 'border-[#00D97E]/40'
-            : 'border-[#1a1a1a]';
+            : 'border-[var(--color-border)]';
 
     return (
-        <div className={`relative bg-[#111] border ${border} rounded-2xl p-5`}>
+        <div className={`relative bg-[var(--color-surface)] border ${border} rounded-[13px] p-5`}>
             {/* Badge */}
             {isCurrent ? (
-                <span className="absolute top-4 right-4 flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#00D97E] text-black text-[10px] font-bold">
+                <span className="absolute top-4 right-4 flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#00D97E] text-black text-xs font-bold">
                     <Check className="w-3 h-3" aria-hidden="true" /> Votre plan
                 </span>
             ) : recommended ? (
-                <span className="absolute top-4 right-4 flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#00D97E]/10 text-[#00D97E] border border-[#00D97E]/20 text-[10px] font-bold">
+                <span className="absolute top-4 right-4 flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#00D97E]/10 text-[#00D97E] border border-[#00D97E]/20 text-xs font-bold">
                     <Sparkles className="w-3 h-3" aria-hidden="true" /> Recommandé
                 </span>
             ) : null}
@@ -216,12 +213,12 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, recommended, isCurrent, loadi
             <h3 className="text-base font-bold text-white">{plan.name}</h3>
             <div className="flex items-baseline gap-1.5 mt-1.5">
                 <span className="text-3xl font-bold text-white tracking-tight tabular-nums">{plan.price.toLocaleString('fr-FR')}</span>
-                <span className="text-[#888] text-sm">FCFA/mois</span>
+                <span className="text-[var(--color-muted)] text-sm">FCFA/mois</span>
             </div>
 
             <div className="space-y-2.5 mt-4 mb-5">
                 {plan.features.map((feat, i) => (
-                    <div key={i} className="flex items-start gap-2.5 text-sm text-[#888]">
+                    <div key={i} className="flex items-start gap-2.5 text-sm text-[var(--color-muted)]">
                         <Check className="w-4 h-4 mt-0.5 text-[#00D97E] shrink-0" aria-hidden="true" />
                         <span>{feat}</span>
                     </div>
@@ -232,7 +229,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, recommended, isCurrent, loadi
                 onClick={() => !isCurrent && !loading && onUpgrade(plan.id)}
                 disabled={isCurrent || loading}
                 className={`w-full py-3 rounded-xl font-bold text-sm transition-[transform,background-color] flex items-center justify-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 ${isCurrent
-                    ? 'bg-[#1a1a1a] text-[#888] cursor-default'
+                    ? 'bg-[#1a1a1a] text-[var(--color-muted)] cursor-default'
                     : recommended
                         ? 'bg-[#00D97E] text-black active:scale-[0.98] cursor-pointer'
                         : 'bg-[#1a1a1a] text-white hover:bg-[#222] active:scale-[0.98] cursor-pointer'} ${loading && !isCurrent ? 'opacity-60' : ''}`}

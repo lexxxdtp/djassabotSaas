@@ -174,14 +174,14 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
     };
 
     return (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-5 md:p-8 space-y-6">
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-5 md:p-8 space-y-6">
             {/* Header */}
             <div>
                 <h2 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider">
                     <span className="w-2 h-2 rounded-full bg-[#00D97E] animate-pulse"></span>
                     Style & Personnalité du Bot
                 </h2>
-                <p className="text-[#888] text-xs mt-1">Configurez le ton, le langage et la manière dont votre assistant s'adresse aux clients.</p>
+                <p className="text-[var(--color-muted)] text-xs mt-1">Configurez le ton, le langage et la manière dont votre assistant s'adresse aux clients.</p>
             </div>
 
             {/* Grille de Presets */}
@@ -195,7 +195,7 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                             onClick={() => handleApplyPreset(style)}
                             className={`relative p-4 rounded-xl border text-left transition-all ${isActive
                                 ? 'bg-[#00D97E]/10 border-[#00D97E]/50 ring-2 ring-[#00D97E]/20'
-                                : 'bg-[#111] border-[#1a1a1a] hover:bg-[#1a1a1a]'
+                                : 'bg-[var(--color-surface)] border-[var(--color-border)] hover:bg-[#1a1a1a]'
                                 }`}
                         >
                             <div className="flex justify-between items-start mb-2">
@@ -206,7 +206,7 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                                 </div>
                             </div>
                             <div className="font-bold text-white text-xs">{style.name}</div>
-                            <div className="text-[10px] text-[#888] mt-1 line-clamp-2 leading-snug">{style.description}</div>
+                            <div className="text-xs text-[var(--color-muted)] mt-1 line-clamp-2 leading-snug">{style.description}</div>
                         </button>
                     );
                 })}
@@ -217,7 +217,7 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                     onClick={handleApplyCustom}
                     className={`relative p-4 rounded-xl border text-left transition-all ${isCustom
                         ? 'bg-[#00D97E]/10 border-[#00D97E]/50 ring-2 ring-[#00D97E]/20'
-                        : 'bg-[#111] border-[#1a1a1a] hover:bg-[#1a1a1a]'
+                        : 'bg-[var(--color-surface)] border-[var(--color-border)] hover:bg-[#1a1a1a]'
                         }`}
                 >
                     <div className="flex justify-between items-start mb-2">
@@ -228,19 +228,19 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                         </div>
                     </div>
                     <div className="font-bold text-white text-xs">Personnalisé</div>
-                    <div className="text-[10px] text-[#888] mt-1 line-clamp-2 leading-snug">Réglez vous-même chaque curseur.</div>
+                    <div className="text-xs text-[var(--color-muted)] mt-1 line-clamp-2 leading-snug">Réglez vous-même chaque curseur.</div>
                 </button>
             </div>
 
             {/* Assistant IA de description libre */}
-            <div className="bg-black border border-[#1a1a1a] rounded-xl p-5 space-y-4">
+            <div className="bg-black border border-[var(--color-border)] rounded-xl p-5 space-y-4">
                 <div className="flex items-center gap-2 text-white">
                     <div className="p-1.5 rounded-lg bg-[#00D97E]/10 text-[#00D97E]">
                         <Sparkles size={16} />
                     </div>
                     <div>
                         <h3 className="text-xs font-bold uppercase tracking-wider">Assistant Personnalité IA</h3>
-                        <p className="text-[10px] text-[#888]">Décrivez comment vous souhaitez que votre bot parle en texte libre.</p>
+                        <p className="text-xs text-[var(--color-muted)]">Décrivez comment vous souhaitez que votre bot parle en texte libre.</p>
                     </div>
                 </div>
 
@@ -249,7 +249,7 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                         value={aiPrompt}
                         onChange={e => setAiPrompt(e.target.value)}
                         placeholder="Ex: Je veux qu'elle parle comme une grande sœur sympa d'Abidjan, respectueuse mais décontractée, qui dit 'yako' et 'dja' quand c'est approprié, et qui écrit des messages courts..."
-                        className="w-full bg-white/5 border border-[#1a1a1a] rounded-lg p-3 text-xs text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-[#555] leading-relaxed resize-none"
+                        className="w-full bg-white/5 border border-[var(--color-border)] rounded-lg p-3 text-xs text-white focus:border-[#00D97E] outline-none transition-all placeholder:text-[var(--color-muted)] leading-relaxed resize-none"
                         rows={3}
                         disabled={analyzing}
                     />
@@ -275,7 +275,7 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
             </div>
 
             {/* Accordéon Curseurs Avancés */}
-            <div className="border border-[#1a1a1a] rounded-xl overflow-hidden">
+            <div className="border border-[var(--color-border)] rounded-xl overflow-hidden">
                 <button
                     type="button"
                     onClick={() => setShowSliders(!showSliders)}
@@ -285,15 +285,15 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                         <span className="w-1.5 h-3 bg-[#00D97E] rounded-full"></span>
                         <span className="text-xs font-bold text-white uppercase tracking-wider">Ajustements précis des curseurs</span>
                     </div>
-                    {showSliders ? <ChevronUp size={16} className="text-[#888]" /> : <ChevronDown size={16} className="text-[#888]" />}
+                    {showSliders ? <ChevronUp size={16} className="text-[var(--color-muted)]" /> : <ChevronDown size={16} className="text-[var(--color-muted)]" />}
                 </button>
 
                 {showSliders && (
-                    <div className="p-5 border-t border-[#1a1a1a] bg-black/20 grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="p-5 border-t border-[var(--color-border)] bg-black/20 grid grid-cols-1 md:grid-cols-2 gap-5">
                         {/* Politesse */}
                         <div className="space-y-2">
-                            <label className="block text-[10px] font-bold text-[#888] uppercase tracking-wide">Politesse & Vouvoiement</label>
-                            <div className="flex bg-black border border-[#1a1a1a] rounded-xl p-1 gap-1">
+                            <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wide">Politesse & Vouvoiement</label>
+                            <div className="flex bg-black border border-[var(--color-border)] rounded-xl p-1 gap-1">
                                 {[
                                     { v: 'formal', l: '🎩 Vous (Formel)' },
                                     { v: 'informal', l: '💬 Tu (Amical)' },
@@ -303,9 +303,9 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                                         key={opt.v}
                                         type="button"
                                         onClick={() => setConfig({ ...config, persona: 'custom', politeness: opt.v })}
-                                        className={`flex-1 text-center py-2 px-1 rounded-lg text-[10px] font-bold transition-all ${config.politeness === opt.v
+                                        className={`flex-1 text-center py-2 px-1 rounded-lg text-xs font-bold transition-all ${config.politeness === opt.v
                                             ? 'bg-[#00D97E] text-black'
-                                            : 'text-[#888] hover:text-white hover:bg-white/5'
+                                            : 'text-[var(--color-muted)] hover:text-white hover:bg-white/5'
                                             }`}
                                     >
                                         {opt.l}
@@ -316,8 +316,8 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
 
                         {/* Emojis */}
                         <div className="space-y-2">
-                            <label className="block text-[10px] font-bold text-[#888] uppercase tracking-wide">Densité des Emojis</label>
-                            <div className="flex bg-black border border-[#1a1a1a] rounded-xl p-1 gap-1">
+                            <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wide">Densité des Emojis</label>
+                            <div className="flex bg-black border border-[var(--color-border)] rounded-xl p-1 gap-1">
                                 {[
                                     { v: 'none', l: '🚫 Aucun' },
                                     { v: 'medium', l: '😊 Moyen' },
@@ -328,9 +328,9 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                                         key={opt.v}
                                         type="button"
                                         onClick={() => setConfig({ ...config, persona: 'custom', emojiLevel: opt.v })}
-                                        className={`flex-1 text-center py-2 px-1 rounded-lg text-[10px] font-bold transition-all ${config.emojiLevel === opt.v
+                                        className={`flex-1 text-center py-2 px-1 rounded-lg text-xs font-bold transition-all ${config.emojiLevel === opt.v
                                             ? 'bg-[#00D97E] text-black'
-                                            : 'text-[#888] hover:text-white hover:bg-white/5'
+                                            : 'text-[var(--color-muted)] hover:text-white hover:bg-white/5'
                                             }`}
                                     >
                                         {opt.l}
@@ -341,8 +341,8 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
 
                         {/* Slang / Argot */}
                         <div className="space-y-2">
-                            <label className="block text-[10px] font-bold text-[#888] uppercase tracking-wide">Expressions & Argot Local (Nouchi)</label>
-                            <div className="flex bg-black border border-[#1a1a1a] rounded-xl p-1 gap-1">
+                            <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wide">Expressions & Argot Local (Nouchi)</label>
+                            <div className="flex bg-black border border-[var(--color-border)] rounded-xl p-1 gap-1">
                                 {[
                                     { v: 'none', l: '🌍 Neutre' },
                                     { v: 'low', l: '🇨🇮 Léger' },
@@ -353,9 +353,9 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                                         key={opt.v}
                                         type="button"
                                         onClick={() => setConfig({ ...config, persona: 'custom', slangLevel: opt.v })}
-                                        className={`flex-1 text-center py-2 px-1 rounded-lg text-[10px] font-bold transition-all ${config.slangLevel === opt.v
+                                        className={`flex-1 text-center py-2 px-1 rounded-lg text-xs font-bold transition-all ${config.slangLevel === opt.v
                                             ? 'bg-[#00D97E] text-black'
-                                            : 'text-[#888] hover:text-white hover:bg-white/5'
+                                            : 'text-[var(--color-muted)] hover:text-white hover:bg-white/5'
                                             }`}
                                     >
                                         {opt.l}
@@ -366,8 +366,8 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
 
                         {/* Humour */}
                         <div className="space-y-2">
-                            <label className="block text-[10px] font-bold text-[#888] uppercase tracking-wide">Niveau d'Humour</label>
-                            <div className="flex bg-black border border-[#1a1a1a] rounded-xl p-1 gap-1">
+                            <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wide">Niveau d'Humour</label>
+                            <div className="flex bg-black border border-[var(--color-border)] rounded-xl p-1 gap-1">
                                 {[
                                     { v: 'low', l: '💼 Sérieux' },
                                     { v: 'medium', l: '✨ Sympa' },
@@ -377,9 +377,9 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                                         key={opt.v}
                                         type="button"
                                         onClick={() => setConfig({ ...config, persona: 'custom', humorLevel: opt.v })}
-                                        className={`flex-1 text-center py-2 px-1 rounded-lg text-[10px] font-bold transition-all ${config.humorLevel === opt.v
+                                        className={`flex-1 text-center py-2 px-1 rounded-lg text-xs font-bold transition-all ${config.humorLevel === opt.v
                                             ? 'bg-[#00D97E] text-black'
-                                            : 'text-[#888] hover:text-white hover:bg-white/5'
+                                            : 'text-[var(--color-muted)] hover:text-white hover:bg-white/5'
                                             }`}
                                     >
                                         {opt.l}
@@ -390,8 +390,8 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
 
                         {/* Longueur de réponse */}
                         <div className="space-y-2 md:col-span-2">
-                            <label className="block text-[10px] font-bold text-[#888] uppercase tracking-wide">Longueur des réponses</label>
-                            <div className="flex bg-black border border-[#1a1a1a] rounded-xl p-1 gap-1">
+                            <label className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-wide">Longueur des réponses</label>
+                            <div className="flex bg-black border border-[var(--color-border)] rounded-xl p-1 gap-1">
                                 {[
                                     { v: 'short', l: '⚡ Court' },
                                     { v: 'medium', l: '📝 Moyen (Équilibré)' },
@@ -402,9 +402,9 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                                         key={opt.v}
                                         type="button"
                                         onClick={() => setConfig({ ...config, responseLength: opt.v })}
-                                        className={`flex-1 text-center py-2 px-1 rounded-lg text-[10px] font-bold transition-all ${config.responseLength === opt.v
+                                        className={`flex-1 text-center py-2 px-1 rounded-lg text-xs font-bold transition-all ${config.responseLength === opt.v
                                             ? 'bg-[#00D97E] text-black'
-                                            : 'text-[#888] hover:text-white hover:bg-white/5'
+                                            : 'text-[var(--color-muted)] hover:text-white hover:bg-white/5'
                                             }`}
                                     >
                                         {opt.l}
@@ -417,20 +417,20 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
             </div>
 
             {/* WhatsApp Live Preview Widget */}
-            <div className="border border-[#1a1a1a] rounded-xl overflow-hidden shadow-2xl">
+            <div className="border border-[var(--color-border)] rounded-xl overflow-hidden shadow-none">
                 {/* Simulated Header */}
-                <div className="bg-[#075e54]/10 border-b border-[#1a1a1a] px-4 py-3 flex items-center justify-between">
+                <div className="bg-[#075e54]/10 border-b border-[var(--color-border)] px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-[#00D97E] flex items-center justify-center text-black font-extrabold text-sm">
                             {config.botName?.substring(0, 1) || 'A'}
                         </div>
                         <div>
                             <h4 className="text-xs font-bold text-white">{config.botName || 'Assistant'}</h4>
-                            <p className="text-[9px] text-[#00D97E] font-medium">En ligne</p>
+                            <p className="text-xs text-[#00D97E] font-medium">En ligne</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-[#888] uppercase font-bold tracking-widest px-2 py-0.5 bg-black/40 rounded border border-[#1a1a1a]">Aperçu Live</span>
+                        <span className="text-xs text-[var(--color-muted)] uppercase font-bold tracking-widest px-2 py-0.5 bg-black/40 rounded border border-[var(--color-border)]">Aperçu Live</span>
                     </div>
                 </div>
 
@@ -447,7 +447,7 @@ export default function SettingsPersonality({ config, setConfig }: SettingsPerso
                     <div className="flex justify-start">
                         <div className="bg-[#202c33] text-white p-3 rounded-lg text-xs max-w-[80%] rounded-tl-none shadow-md space-y-1">
                             <p className="leading-relaxed whitespace-pre-wrap">{getPreviewMessage()}</p>
-                            <span className="text-[8px] text-[#888] block text-right">Aujourd'hui</span>
+                            <span className="text-xs text-[var(--color-muted)] block text-right">Aujourd'hui</span>
                         </div>
                     </div>
                 </div>

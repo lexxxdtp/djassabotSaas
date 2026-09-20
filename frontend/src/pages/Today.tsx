@@ -1,17 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import {
-    Package,
-    ArrowRight,
-    Activity,
-    Clock,
-    CheckCircle2,
-    WifiOff,
-    CreditCard,
-    Download,
-    Share,
-    TrendingUp,
-} from 'lucide-react';
+import { Package, ArrowRight, ArrowUpRight, Activity, CheckCircle2, CreditCard, Download, MessageSquare, X } from 'lucide-react';
+import PageHeading from '../components/ui/PageHeading';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
 import { deriveDailyMetrics, toUIStatus } from '../utils/overviewMetrics';
@@ -229,242 +219,65 @@ export interface TodayViewProps {
 }
 
 export const TodayView: React.FC<TodayViewProps> = ({
-    ordersAvailable = true,
-    greeting, displayName, dateStr, botStatus, botActive, togglingBot, loading,
-    newOrdersCount, paidOrdersCount, productCount, logs, lastSaleAgo,
-    todayRevenue, todayOrdersCount, yesterdayOrdersCount, revenueDelta,
+    ordersAvailable = true, greeting, displayName, dateStr, botStatus, botActive,
+    togglingBot, loading, newOrdersCount, paidOrdersCount, productCount,
+    logs, todayRevenue, todayOrdersCount, yesterdayOrdersCount, revenueDelta,
     showInstallBanner, isInstallable, isIOS, onToggleBot, onInstall, onDismissInstall,
 }) => {
-    const hasUrgentTasks = newOrdersCount > 0 || paidOrdersCount > 0;
-    const notOperational = botStatus !== 'connected' || productCount === 0 || botActive === false;
-
-    const anim = 'animate-in fade-in slide-in-from-bottom-2 fill-mode-both';
-    const delay = (i: number): React.CSSProperties => ({ animationDuration: '450ms', animationDelay: `${i * 60}ms` });
-
-    return (
-        <div className="space-y-5 pb-4">
-            {/* HEADER */}
-            <div className={`flex items-start justify-between gap-3 ${anim}`} style={delay(0)}>
-                <div>
-                    <h1 className="text-2xl font-bold text-white tracking-tight">{greeting}, {displayName}</h1>
-                    <p className="text-[#888] text-sm mt-0.5 capitalize">{dateStr}</p>
-                </div>
-                <BotStatusBadge status={botStatus} paused={botActive === false} />
+    const ready = botStatus === 'connected' && botActive === true && (productCount ?? 0) > 0;
+    const hasTasks = newOrdersCount > 0 || paidOrdersCount > 0;
+    const steps = [
+        { done: botStatus === 'connected', label: 'Connecter WhatsApp', to: '/dashboard/whatsapp' },
+        { done: (productCount ?? 0) > 0, label: 'Ajouter vos produits et leurs prix', to: '/dashboard/products' },
+        { done: botActive === true, label: 'Configurer et activer le bot', to: '/dashboard/settings' },
+    ];
+    const status = loading || botActive === null ? 'Vérification…' : botStatus === 'connected'
+        ? botActive ? 'Bot actif' : 'Bot en pause' : botStatus === 'connecting' ? 'Connexion en cours' : 'WhatsApp déconnecté';
+    return <div className="home-page">
+        <PageHeading eyebrow="Votre commerce, au quotidien" title={`${greeting}, ${displayName}.`} description={<span className="capitalize">{dateStr}</span>}
+            action={<span className="bot-badge" data-tone={ready ? 'positive' : 'warning'}><span aria-hidden="true" />{status}</span>} />
+        <div className="home-grid">
+            <div className="home-main">
+                <section className="home-revenue" aria-label="Montant des commandes du jour">
+                    <p className="home-revenue-label">Les commandes d’aujourd’hui</p>
+                    <p className="home-revenue-amount">{loading || !ordersAvailable ? '—' : todayRevenue.toLocaleString('fr-FR')}<small>FCFA</small></p>
+                    <div className="home-revenue-context">
+                        {ordersAvailable && !loading ? <span>{todayOrdersCount} commande{todayOrdersCount > 1 ? 's' : ''} · {yesterdayOrdersCount} hier</span> : <span role="status">{loading ? 'Chargement des commandes…' : 'Commandes indisponibles. Nouvelle tentative automatique.'}</span>}
+                        {ordersAvailable && !loading && revenueDelta !== null && <span className={revenueDelta >= 0 ? 'text-[#00D97E]' : 'text-red-300'}>{revenueDelta >= 0 ? '+' : ''}{revenueDelta} % par rapport à hier</span>}
+                    </div>
+                    <p className="home-revenue-note">Livraison incluse, hors annulations. Ce montant ne confirme pas les encaissements.</p>
+                </section>
+                <section>
+                    <div className="home-section-heading"><h2>{!ready && !hasTasks ? 'Votre boutique prend vie' : 'À vous de jouer'}</h2><span>{!ready && !hasTasks ? 'MISE EN ROUTE' : 'À TRAITER'}</span></div>
+                    {loading ? <div className="home-empty" role="status">Nous préparons votre récapitulatif…</div> : !ordersAvailable ? <div className="home-empty" role="status"><h3>Les commandes ne sont pas accessibles.</h3><p>Nous réessayons automatiquement. Vos données ne sont pas effacées.</p></div> : hasTasks ? <div className="grid gap-3">
+                        {newOrdersCount > 0 && <TaskCard to="/dashboard/orders?filter=new" icon={Package} count={newOrdersCount} label="commandes à confirmer" tone="warning" />}
+                        {paidOrdersCount > 0 && <TaskCard to="/dashboard/orders?filter=paid" icon={CreditCard} count={paidOrdersCount} label="commandes payées à livrer" tone="primary" />}
+                    </div> : !ready ? <div className="home-checklist">{steps.map((step,i) => <Link to={step.to} key={step.label} className={step.done ? 'is-done' : ''}><span>{step.done ? <CheckCircle2 size={18} aria-hidden="true" /> : `0${i+1}`}</span><span>{step.label}</span>{!step.done && <ArrowRight size={16} aria-hidden="true" />}</Link>)}</div> : <div className="home-empty"><CheckCircle2 size={27} aria-hidden="true" /><h3>Aucune commande en attente.</h3><p>Les prochaines commandes à traiter apparaîtront ici.</p><Link to="/dashboard/orders" className="app-text-link">Voir les commandes<ArrowUpRight size={16} aria-hidden="true" /></Link></div>}
+                </section>
+                <Link to="/dashboard/analytics" className="app-text-link">Voir mes chiffres en détail<ArrowUpRight size={16} aria-hidden="true" /></Link>
             </div>
-
-            {/* HERO — VENTES DU JOUR (money forward, façon Wave) */}
-            <div className={`relative overflow-hidden bg-[#111] border border-[#1a1a1a] rounded-2xl p-5 ${anim}`} style={delay(1)}>
-                <p className="text-[#888] text-sm">Montant des commandes du jour</p>
-                <p className="text-[38px] leading-none font-bold text-white tracking-tight tabular-nums mt-2">
-                    {ordersAvailable ? todayRevenue.toLocaleString('fr-FR') : '—'}
-                    <span className="text-lg text-[#888] font-semibold ml-1.5">FCFA</span>
-                </p>
-                <div className="flex items-center gap-3 mt-3 text-sm flex-wrap">
-                    {ordersAvailable && revenueDelta !== null && (
-                        <span className={`inline-flex items-center gap-1 font-semibold ${revenueDelta >= 0 ? 'text-[#00D97E]' : 'text-red-400'}`}>
-                            <TrendingUp className={`w-4 h-4 ${revenueDelta < 0 ? 'rotate-180' : ''}`} aria-hidden="true" />
-                            {revenueDelta >= 0 ? '+' : ''}{revenueDelta}% <span className="text-[#888] font-normal">vs hier</span>
-                        </span>
-                    )}
-                    <span className="text-[#888]">
-                        {ordersAvailable ? `${todayOrdersCount} commande(s), ${yesterdayOrdersCount} hier` : 'Commandes indisponibles. Nouvelle tentative automatique.'}
-                    </span>
-                </div>
-                <p className="text-xs text-[#888] mt-2">Hors annulations, livraison incluse. Ce total ne confirme pas les encaissements.</p>
+            <div className="home-side">
+                <section className="app-panel home-bot">
+                    <div className="home-bot-heading"><MessageSquare size={20} aria-hidden="true" /><h2>Votre assistant WhatsApp</h2></div>
+                    <p>{loading || botActive === null ? 'Nous vérifions la disponibilité de votre assistant.' : botStatus !== 'connected' ? 'Connectez votre numéro pour retrouver les conversations de vos clients.' : botActive ? 'Les réponses automatiques sont activées. Vous pouvez reprendre la main à tout moment.' : 'Vous avez la main. Activez les réponses automatiques lorsque votre boutique est prête.'}</p>
+                    {botStatus !== 'connected' ? <Link to="/dashboard/whatsapp" className="app-primary">Connecter WhatsApp<ArrowRight size={17} aria-hidden="true" /></Link> : <button onClick={onToggleBot} disabled={togglingBot || botActive === null} className={botActive ? 'app-secondary' : 'app-primary'}>{togglingBot ? 'Mise à jour…' : botActive ? 'Mettre le bot en pause' : 'Activer les réponses'}</button>}
+                    <Link to="/dashboard/settings" className="app-text-link">Ajuster sa façon de répondre<ArrowUpRight size={15} aria-hidden="true" /></Link>
+                </section>
+                <section className="app-panel">
+                    <div className="home-section-heading"><h2>Ce qui se passe</h2><Activity size={17} aria-hidden="true" /></div>
+                    <div className="home-activity">{loading ? <p role="status" className="text-[var(--color-muted)]">Chargement de l’activité…</p> : logs.length ? logs.slice(0,4).map(log => <article key={log.id}><p>{log.message}</p><time dateTime={log.created_at}>{timeAgo(new Date(log.created_at))}</time></article>) : <p className="text-[var(--color-muted)] text-sm">Les dernières actions de votre boutique apparaîtront ici.</p>}</div>
+                    <Link to="/dashboard/inbox" className="app-text-link mt-4">Ouvrir les conversations<ArrowUpRight size={15} aria-hidden="true" /></Link>
+                </section>
             </div>
-
-            {/* ALERTE BOT DÉCONNECTÉ */}
-            {botStatus === 'disconnected' && !loading && (
-                <Link
-                    to="/dashboard/whatsapp"
-                    className={`flex items-center justify-between gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 active:scale-[0.99] transition-transform focus-visible:ring-2 focus-visible:ring-red-500/30 outline-none cursor-pointer ${anim}`}
-                    style={delay(2)}
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-red-500/20 text-red-400"><WifiOff className="w-5 h-5" aria-hidden="true" /></div>
-                        <div>
-                            <p className="text-white text-sm font-bold">Le bot est déconnecté</p>
-                            <p className="text-red-300/80 text-xs">Reconnectez WhatsApp pour reprendre les ventes.</p>
-                        </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />
-                </Link>
-            )}
-
-            {/* INTERRUPTEUR DU BOT */}
-            {botActive !== null && botStatus !== 'disconnected' && (
-                <div className={`flex items-center justify-between gap-4 p-4 rounded-2xl border ${botActive ? 'bg-[#00D97E]/5 border-[#00D97E]/20' : 'bg-amber-500/10 border-amber-500/20'} ${anim}`} style={delay(2)}>
-                    <div className="flex items-center gap-3 min-w-0">
-                        <div className={`p-2.5 rounded-xl shrink-0 ${botActive ? 'bg-[#00D97E]/10 text-[#00D97E]' : 'bg-amber-500/20 text-amber-500'}`}>
-                            <Activity className="w-5 h-5" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                            <p className="text-white text-sm font-bold">{botActive ? 'Le bot répond à vos clients' : 'Le bot est en pause'}</p>
-                            <p className="text-xs text-[#888] leading-snug">
-                                {botActive ? 'Il vend, négocie et prend les commandes tout seul.' : 'Il lit les messages mais ne répond pas tant que vous ne l\'activez pas.'}
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={onToggleBot}
-                        disabled={togglingBot}
-                        className={`shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold transition-[transform,background-color] active:scale-95 disabled:opacity-50 cursor-pointer ${botActive ? 'bg-[#1a1a1a] text-[#888] hover:text-white' : 'bg-[#00D97E] text-black'}`}
-                    >
-                        {togglingBot ? '…' : botActive ? 'Pause' : 'Activer'}
-                    </button>
-                </div>
-            )}
-
-            {/* À FAIRE MAINTENANT */}
-            <section className={anim} style={delay(3)}>
-                <h2 className="text-[15px] font-semibold text-white mb-3">À faire maintenant</h2>
-
-                {!ordersAvailable ? (
-                    <p role="status" className="text-sm text-[#888]">{loading ? 'Chargement des commandes…' : 'Impossible de vérifier les commandes à traiter. Nouvelle tentative automatique.'}</p>
-                ) : !hasUrgentTasks && !loading && notOperational ? (
-                    <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 space-y-1">
-                        <p className="text-white font-medium text-sm mb-2">3 étapes pour que la boutique vende toute seule :</p>
-                        {[
-                            { done: botStatus === 'connected', label: 'Connecter votre WhatsApp', to: '/dashboard/whatsapp' },
-                            { done: (productCount ?? 0) > 0, label: 'Ajouter un produit (une photo suffit)', to: '/dashboard/products' },
-                            { done: botActive === true, label: 'Activer le bot', to: '/dashboard' },
-                        ].map((item) => (
-                            <Link key={item.label} to={item.to} className={`flex items-center gap-3 p-3 rounded-xl transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none ${item.done ? 'opacity-60' : 'active:bg-[#1a1a1a]'}`}>
-                                <span className={`flex items-center justify-center w-6 h-6 rounded-full border shrink-0 ${item.done ? 'bg-[#00D97E] border-[#00D97E] text-black' : 'border-[#333] text-transparent'}`}>
-                                    <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
-                                </span>
-                                <span className={`text-sm ${item.done ? 'text-[#888] line-through' : 'text-white font-medium'}`}>{item.label}</span>
-                                {!item.done && <ArrowRight className="w-4 h-4 text-[#00D97E] ml-auto shrink-0" aria-hidden="true" />}
-                            </Link>
-                        ))}
-                    </div>
-                ) : !hasUrgentTasks ? (
-                    <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-8 text-center">
-                        <CheckCircle2 className="w-10 h-10 text-[#00D97E] mx-auto mb-3" aria-hidden="true" />
-                        <p className="text-white font-medium">Rien à faire de votre côté.</p>
-                        <p className="text-[#888] text-xs mt-1">Le bot gère tout. Profitez de votre journée.</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 gap-3">
-                        {newOrdersCount > 0 && (
-                            <TaskCard to="/dashboard/orders?filter=new" icon={Package} count={newOrdersCount} label={newOrdersCount > 1 ? 'commandes à confirmer' : 'commande à confirmer'} tone="warning" />
-                        )}
-                        {paidOrdersCount > 0 && (
-                            <TaskCard to="/dashboard/orders?filter=paid" icon={CreditCard} count={paidOrdersCount} label={paidOrdersCount > 1 ? 'prêtes à livrer' : 'prête à livrer'} tone="primary" />
-                        )}
-                    </div>
-                )}
-            </section>
-
-            {/* LE BOT TRAVAILLE */}
-            <section className={anim} style={delay(4)}>
-                <h2 className="text-[15px] font-semibold text-white mb-3">Le bot travaille</h2>
-                <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-5">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <div className="flex items-center gap-1.5 text-[#888] text-xs mb-1.5"><Activity className="w-3.5 h-3.5" aria-hidden="true" /> Activité</div>
-                            <p className="text-2xl font-bold text-white">{logs.length}<span className="text-sm text-[#888] font-normal ml-2">actions</span></p>
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-1.5 text-[#888] text-xs mb-1.5"><Clock className="w-3.5 h-3.5" aria-hidden="true" /> Dernière vente</div>
-                            <p className="text-2xl font-bold text-white">{lastSaleAgo || <span className="text-[#555]">—</span>}</p>
-                        </div>
-                    </div>
-
-                    {logs.length > 0 && (
-                        <div className="mt-5 pt-4 border-t border-[#1a1a1a] space-y-2.5">
-                            {logs.slice(0, 3).map(log => (
-                                <div key={log.id} className="flex items-start gap-3 text-xs">
-                                    <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${log.type === 'sale' ? 'bg-emerald-500' : log.type === 'warning' ? 'bg-amber-500' : log.type === 'action' ? 'bg-[#00D97E]' : 'bg-[#0EA5E9]'}`} />
-                                    <p className="text-[#888] leading-relaxed">{log.message}</p>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    <Link to="/dashboard/inbox" className="mt-4 inline-flex items-center gap-1 text-xs text-[#00D97E]">
-                        Voir les conversations <ArrowRight className="w-3 h-3" aria-hidden="true" />
-                    </Link>
-                </div>
-                <Link to="/dashboard/analytics" className="mt-3 inline-flex items-center gap-1 text-xs text-[#888] hover:text-white transition-colors">
-                    Voir mes chiffres en détail <ArrowRight className="w-3 h-3" aria-hidden="true" />
-                </Link>
-            </section>
-
-            {/* INSTALLER L'APPLI */}
-            {showInstallBanner && (
-                <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-[#111] border border-[#1a1a1a]">
-                    <div className="flex items-center gap-3 min-w-0">
-                        <div className="p-2.5 rounded-xl bg-[#00D97E]/10 text-[#00D97E] shrink-0"><Download className="w-4 h-4" aria-hidden="true" /></div>
-                        <div className="min-w-0">
-                            <p className="text-white text-sm font-bold">Installer l'appli sur l'écran d'accueil</p>
-                            {isIOS ? (
-                                <p className="text-xs text-[#888] flex items-center gap-1 flex-wrap">
-                                    <Share className="w-3 h-3 shrink-0" aria-hidden="true" />
-                                    <span>Bouton <strong className="text-white">Partager</strong> → <strong className="text-white">Sur l'écran d'accueil</strong></span>
-                                </p>
-                            ) : (
-                                <p className="text-xs text-[#888]">Plus rapide qu'un site, comme une vraie app.</p>
-                            )}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                        {isInstallable && !isIOS && (
-                            <button onClick={onInstall} className="bg-[#00D97E] text-black font-bold text-xs px-4 py-2 rounded-lg transition-transform active:scale-95 cursor-pointer">Installer</button>
-                        )}
-                        <button onClick={onDismissInstall} aria-label="Fermer la bannière d'installation" className="text-[#888] hover:text-white text-sm px-2 py-2 cursor-pointer">✕</button>
-                    </div>
-                </div>
-            )}
         </div>
-    );
-};
-
-// ---------- SUB COMPONENTS ----------
-
-const BotStatusBadge = ({ status, paused }: { status: 'disconnected' | 'connecting' | 'connected'; paused?: boolean }) => {
-    const map = {
-        pausedState: { show: status === 'connected' && paused, dot: 'bg-amber-500', text: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20', label: 'En pause', pulse: false },
-        connected: { show: status === 'connected' && !paused, dot: 'bg-[#00D97E]', text: 'text-[#00D97E]', bg: 'bg-[#00D97E]/10 border-[#00D97E]/20', label: 'Bot actif', pulse: true },
-        connecting: { show: status === 'connecting', dot: 'bg-amber-500', text: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20', label: 'Connexion…', pulse: true },
-        off: { show: status === 'disconnected', dot: 'bg-red-500', text: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', label: 'Bot off', pulse: false },
-    };
-    const s = Object.values(map).find(x => x.show) || map.off;
-    return (
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border shrink-0 ${s.bg}`}>
-            <span className={`w-2 h-2 rounded-full ${s.dot} ${s.pulse ? 'animate-pulse' : ''}`} />
-            <span className={`text-[11px] font-bold ${s.text}`}>{s.label}</span>
-        </div>
-    );
+        {showInstallBanner && <section className="home-install"><Download size={21} aria-hidden="true" /><div><h2>Votre boutique, à portée de main.</h2><p>{isIOS ? 'Dans Safari : Partager, puis Sur l’écran d’accueil.' : 'Ajoutez DjassaBot à l’écran d’accueil depuis le menu de votre navigateur.'}</p></div>{isInstallable && !isIOS && <button onClick={onInstall} className="app-secondary">Installer</button>}<button onClick={onDismissInstall} aria-label="Fermer la bannière d’installation" className="text-[var(--color-muted)]"><X size={18} aria-hidden="true" /></button></section>}
+    </div>;
 };
 
 interface TaskCardProps {
-    to: string;
-    icon: React.ElementType;
-    count: number;
-    label: string;
-    tone: 'primary' | 'warning' | 'info';
+    to: string; icon: React.ElementType; count: number; label: string; tone: 'primary' | 'warning' | 'info';
 }
-
-const TaskCard = ({ to, icon: Icon, count, label, tone }: TaskCardProps) => {
-    const tones = {
-        primary: 'bg-[#00D97E]/10 border-[#00D97E]/20 text-[#00D97E]',
-        warning: 'bg-amber-500/10 border-amber-500/20 text-amber-500',
-        info: 'bg-[#0EA5E9]/10 border-[#0EA5E9]/20 text-[#0EA5E9]',
-    } as const;
-    return (
-        <Link to={to} className={`flex items-center justify-between gap-3 p-4 rounded-2xl border transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none cursor-pointer ${tones[tone]}`}>
-            <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-xl bg-black/30 shrink-0"><Icon className="w-5 h-5" aria-hidden="true" /></div>
-                <div className="min-w-0">
-                    <p className="text-2xl font-bold leading-none">{count}</p>
-                    <p className="text-xs text-white/80 mt-1 truncate">{label}</p>
-                </div>
-            </div>
-            <ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" />
-        </Link>
-    );
-};
+const TaskCard = ({ to, icon: Icon, count, label, tone }: TaskCardProps) => <Link to={to} className="app-panel flex items-center gap-4"><Icon size={22} className={tone === 'warning' ? 'text-amber-300' : 'text-[#00D97E]'} aria-hidden="true" /><span className="text-2xl font-semibold tabular-nums">{count}</span><span className="text-sm flex-1">{label}</span><ArrowRight size={18} aria-hidden="true" /></Link>;
 
 // ---------- HELPERS ----------
 

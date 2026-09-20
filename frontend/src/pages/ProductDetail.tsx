@@ -276,7 +276,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
                 <button
                     onClick={onBack}
                     aria-label="Retour aux produits"
-                    className="flex items-center gap-2 text-[#888] hover:text-white transition-colors cursor-pointer"
+                    className="flex items-center gap-2 text-[var(--color-muted)] hover:text-white transition-colors cursor-pointer"
                 >
                     <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                     <span className="text-sm font-medium">Produits</span>
@@ -284,24 +284,30 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
                 <button
                     onClick={onSave}
                     disabled={saving}
-                    className="flex items-center gap-2 bg-[#00D97E] text-black disabled:opacity-60 px-5 py-2.5 rounded-xl text-sm font-bold transition-[transform,background-color] active:scale-95 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none"
+                    className="flex items-center gap-2 bg-[#00D97E] text-black disabled:opacity-60 px-5 py-2.5 rounded-xl text-sm font-bold transition-[transform,background-color] active:scale-[0.99] cursor-pointer focus-visible:ring-2 focus-visible:ring-[#00D97E]/30 outline-none"
                 >
                     {saving ? <span>Enregistrement…</span> : <><Check className="w-4 h-4" aria-hidden="true" /><span>Enregistrer</span></>}
                 </button>
             </div>
 
+            {/* TITRE */}
+            <div className={anim} style={delay(0)}>
+                <p className="app-eyebrow"><span />Fiche produit</p>
+                <h1 className="mt-2 text-xl font-bold text-white truncate">{product.name?.trim() || 'Nouveau produit'}</h1>
+            </div>
+
             {/* PHOTOS */}
             <section className={anim} style={delay(1)}>
-                <div className="relative aspect-square bg-[#111] rounded-2xl overflow-hidden border border-[#1a1a1a]">
+                <div className="relative aspect-square bg-[var(--color-surface)] rounded-[13px] overflow-hidden border border-[var(--color-border)]">
                     {product.images?.[0] ? (
                         <img src={product.images[0]} alt={product.name || 'Photo du produit'} className="w-full h-full object-cover" />
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-[#555] gap-2">
+                        <div className="flex flex-col items-center justify-center h-full text-[var(--color-muted)] gap-2">
                             <ImageIcon className="w-12 h-12" aria-hidden="true" />
                             <span className="text-xs">Aucune photo</span>
                         </div>
                     )}
-                    <label className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-md text-white text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer active:scale-95 transition-transform border border-white/10">
+                    <label className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-md text-white text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer active:scale-[0.99] transition-transform border border-white/10">
                         <ImageIcon className="w-3.5 h-3.5" aria-hidden="true" />
                         {product.images?.[0] ? 'Changer la photo' : 'Ajouter une photo'}
                         <input type="file" className="hidden" accept="image/*" onChange={onImageUpload} />
@@ -310,18 +316,18 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
 
                 <div className="grid grid-cols-4 gap-2 mt-2">
                     {product.images?.slice(1).map((img, idx) => (
-                        <div key={idx} className="relative aspect-square bg-[#111] rounded-xl overflow-hidden border border-[#1a1a1a]">
+                        <div key={idx} className="relative aspect-square bg-[var(--color-surface)] rounded-xl overflow-hidden border border-[var(--color-border)]">
                             <img src={img} alt="" className="w-full h-full object-cover" />
                             <button
                                 onClick={() => onRemoveImage(idx + 1)}
                                 aria-label="Retirer cette photo"
-                                className="absolute top-1 right-1 bg-black/70 text-white p-1 rounded-full active:scale-90 transition-transform"
+                                className="absolute top-1 right-1 bg-black/70 text-white p-1 rounded-full active:scale-[0.99] transition-transform"
                             >
                                 <X className="w-3 h-3" aria-hidden="true" />
                             </button>
                         </div>
                     ))}
-                    <label className="aspect-square bg-[#111] border border-dashed border-[#1a1a1a] rounded-xl flex items-center justify-center cursor-pointer active:scale-95 hover:border-[#00D97E]/40 transition-all text-[#888] hover:text-white">
+                    <label className="aspect-square bg-[var(--color-surface)] border border-dashed border-[var(--color-border)] rounded-xl flex items-center justify-center cursor-pointer active:scale-[0.99] hover:border-[#00D97E]/40 transition-all text-[var(--color-muted)] hover:text-white">
                         <Plus className="w-5 h-5" aria-hidden="true" />
                         <input type="file" className="hidden" multiple accept="image/*" onChange={onImageUpload} />
                     </label>
@@ -329,32 +335,32 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
             </section>
 
             {/* INFOS PRINCIPALES */}
-            <section className={`bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 space-y-4 ${anim}`} style={delay(2)}>
+            <section className={`bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-4 space-y-4 ${anim}`} style={delay(2)}>
                 <div>
-                    <label htmlFor="pd-name" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Nom du produit</label>
+                    <label htmlFor="pd-name" className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Nom du produit</label>
                     <input
                         id="pd-name"
                         type="text"
                         value={product.name}
                         onChange={e => onChange({ name: e.target.value })}
-                        className="w-full bg-black border border-[#1a1a1a] rounded-xl p-3.5 text-white text-base font-semibold focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none transition-colors"
+                        className="w-full bg-black border border-[var(--color-border)] rounded-xl p-3.5 text-white text-base font-semibold focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none transition-colors"
                     />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                     <div>
-                        <label htmlFor="pd-price" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Prix (FCFA)</label>
+                        <label htmlFor="pd-price" className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Prix (FCFA)</label>
                         <input
                             id="pd-price"
                             type="number"
                             inputMode="numeric"
                             value={product.price}
                             onChange={e => onChange({ price: e.target.value })}
-                            className="w-full bg-black border border-[#1a1a1a] rounded-xl p-3.5 text-white tabular-nums focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none transition-colors"
+                            className="w-full bg-black border border-[var(--color-border)] rounded-xl p-3.5 text-white tabular-nums focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none transition-colors"
                         />
                     </div>
                     <div>
-                        <label htmlFor="pd-stock" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">
+                        <label htmlFor="pd-stock" className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">
                             Stock {active && <span className="text-[#00D97E] normal-case">· auto</span>}
                         </label>
                         <input
@@ -366,32 +372,32 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
                             disabled={active}
                             onChange={e => { if (!active) onChange({ stock: Math.max(0, Number(e.target.value) || 0) }); }}
                             className={`w-full border rounded-xl p-3.5 tabular-nums outline-none transition-colors ${active
-                                ? 'bg-[#0a0a0a] border-[#1a1a1a] text-[#666] cursor-not-allowed'
-                                : 'bg-black border-[#1a1a1a] text-white focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10'}`}
+                                ? 'bg-[#0a0a0a] border-[var(--color-border)] text-[var(--color-muted)] cursor-not-allowed'
+                                : 'bg-black border-[var(--color-border)] text-white focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10'}`}
                         />
-                        {active && <p className="text-[11px] text-[#555] mt-1.5">Calculé depuis vos déclinaisons.</p>}
+                        {active && <p className="text-[11px] text-[var(--color-muted)] mt-1.5">Calculé depuis vos déclinaisons.</p>}
                     </div>
                 </div>
 
                 <div>
-                    <label htmlFor="pd-desc" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Description</label>
+                    <label htmlFor="pd-desc" className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Description</label>
                     <textarea
                         id="pd-desc"
                         value={product.description}
                         onChange={e => onChange({ description: e.target.value })}
                         placeholder="Décrivez votre produit en quelques mots…"
-                        className="w-full bg-black border border-[#1a1a1a] rounded-xl p-3.5 text-white text-sm leading-relaxed min-h-[110px] resize-none focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none placeholder:text-[#555] transition-colors"
+                        className="w-full bg-black border border-[var(--color-border)] rounded-xl p-3.5 text-white text-sm leading-relaxed min-h-[110px] resize-none focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none placeholder:text-[var(--color-muted)] transition-colors"
                     />
                 </div>
             </section>
 
             {/* CONSIGNES POUR LE BOT */}
-            <section className={`bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 ${anim}`} style={delay(3)}>
+            <section className={`bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-4 ${anim}`} style={delay(3)}>
                 <div className="flex items-center gap-2 mb-2">
                     <div className="p-1.5 rounded-lg bg-[#00D97E]/10 text-[#00D97E]"><Bot className="w-4 h-4" aria-hidden="true" /></div>
                     <label htmlFor="pd-ai" className="text-sm font-semibold text-white">Consignes pour le bot</label>
                 </div>
-                <p className="text-xs text-[#888] mb-3 leading-relaxed">
+                <p className="text-xs text-[var(--color-muted)] mb-3 leading-relaxed">
                     Des règles spéciales que le bot appliquera pour ce produit lors des ventes.
                 </p>
                 <textarea
@@ -399,10 +405,10 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
                     value={product.aiInstructions || ''}
                     onChange={e => onChange({ aiInstructions: e.target.value })}
                     placeholder="Ex : à partir de 3 articles, proposer -10%. À partir de 5, offrir la livraison."
-                    className="w-full bg-black border border-[#1a1a1a] rounded-xl p-3.5 text-white text-sm leading-relaxed min-h-[90px] resize-none focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none placeholder:text-[#555] transition-colors"
+                    className="w-full bg-black border border-[var(--color-border)] rounded-xl p-3.5 text-white text-sm leading-relaxed min-h-[90px] resize-none focus:border-[#00D97E] focus:ring-2 focus:ring-[#00D97E]/10 outline-none placeholder:text-[var(--color-muted)] transition-colors"
                 />
-                <div className="mt-3 space-y-1.5 text-xs text-[#555]">
-                    <p className="text-[#888] font-medium">Quelques exemples :</p>
+                <div className="mt-3 space-y-1.5 text-xs text-[var(--color-muted)]">
+                    <p className="text-[var(--color-muted)] font-medium">Quelques exemples :</p>
                     <p>— « Si le client en prend 3 ou plus, proposer une remise de 10 % »</p>
                     <p>— « Suggérer l'accessoire assorti à chaque achat »</p>
                     <p>— « Pour une commande avant midi, proposer la livraison le jour même »</p>
@@ -410,13 +416,13 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
             </section>
 
             {/* DÉCLINAISONS */}
-            <section className={`bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 ${anim}`} style={delay(4)}>
+            <section className={`bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-4 ${anim}`} style={delay(4)}>
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-2.5 min-w-0">
                         <div className="p-1.5 rounded-lg bg-[#00D97E]/10 text-[#00D97E] shrink-0 mt-0.5"><Tags className="w-4 h-4" aria-hidden="true" /></div>
                         <div className="min-w-0">
                             <p className="text-sm font-semibold text-white">Déclinaisons</p>
-                            <p className="text-xs text-[#888] leading-relaxed mt-0.5">
+                            <p className="text-xs text-[var(--color-muted)] leading-relaxed mt-0.5">
                                 {variationsEnabled
                                     ? 'Plusieurs versions (taille, couleur…). Le stock total est calculé tout seul.'
                                     : 'Activez si votre produit existe en plusieurs versions (tailles, couleurs, saveurs…).'}
@@ -436,21 +442,21 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
                 </div>
 
                 {variationsEnabled && (
-                    <div className="mt-4 pt-4 border-t border-[#1a1a1a] space-y-3">
+                    <div className="mt-4 pt-4 border-t border-[var(--color-border)] space-y-3">
                         {product.variations && product.variations.length > 0 ? (
                             product.variations.map((variation, varIndex) => (
                                 <VariationCard key={varIndex} variation={variation} varIndex={varIndex} templates={variationTemplates} {...props} />
                             ))
                         ) : (
-                            <div className="text-center py-8 bg-black border border-dashed border-[#1a1a1a] rounded-xl">
+                            <div className="text-center py-8 bg-black border border-dashed border-[var(--color-border)] rounded-xl">
                                 <Tags className="w-8 h-8 mx-auto text-[#444] mb-2" aria-hidden="true" />
-                                <p className="text-[#888] text-sm">Aucune déclinaison pour l'instant.</p>
+                                <p className="text-[var(--color-muted)] text-sm">Aucune déclinaison pour l'instant.</p>
                             </div>
                         )}
                         <button
                             type="button"
                             onClick={props.onAddVariation}
-                            className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl border border-dashed border-[#1a1a1a] text-[#00D97E] text-sm font-semibold active:scale-[0.99] hover:border-[#00D97E]/40 transition-all cursor-pointer"
+                            className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl border border-dashed border-[var(--color-border)] text-[#00D97E] text-sm font-semibold active:scale-[0.99] hover:border-[#00D97E]/40 transition-all cursor-pointer"
                         >
                             <Plus className="w-4 h-4" aria-hidden="true" />
                             Ajouter une déclinaison
@@ -490,14 +496,14 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
                         aria-label="Confirmer la suppression"
                         tabIndex={-1}
                         onClick={e => e.stopPropagation()}
-                        className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300"
+                        className="bg-[var(--color-surface)] border-t md:border border-[var(--color-border)] rounded-t-3xl md:rounded-[13px] w-full max-w-lg shadow-none overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300"
                     >
                         <div className="p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2.5 rounded-xl bg-red-500/10 text-red-400 shrink-0"><Trash2 className="w-5 h-5" aria-hidden="true" /></div>
                                 <div>
                                     <p className="text-white font-bold">Supprimer ce produit ?</p>
-                                    <p className="text-[#888] text-sm mt-0.5">Cette action est définitive.</p>
+                                    <p className="text-[var(--color-muted)] text-sm mt-0.5">Cette action est définitive.</p>
                                 </div>
                             </div>
                             <div className="space-y-2">
@@ -509,7 +515,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = (props) => {
                                 </button>
                                 <button
                                     onClick={() => setConfirmDelete(false)}
-                                    className="w-full px-6 py-3 rounded-xl font-semibold text-sm text-[#888] hover:text-white transition-colors cursor-pointer"
+                                    className="w-full px-6 py-3 rounded-xl font-semibold text-sm text-[var(--color-muted)] hover:text-white transition-colors cursor-pointer"
                                 >
                                     Annuler
                                 </button>
@@ -544,7 +550,7 @@ const VariationCard: React.FC<VariationCardProps> = ({
     };
 
     return (
-        <div className="bg-black border border-[#1a1a1a] rounded-xl p-3.5 space-y-3">
+        <div className="bg-black border border-[var(--color-border)] rounded-xl p-3.5 space-y-3">
             {/* Nom de la déclinaison */}
             <div className="flex items-center gap-2">
                 {showSelector ? (
@@ -552,7 +558,7 @@ const VariationCard: React.FC<VariationCardProps> = ({
                         <select
                             value={variation.name}
                             onChange={e => { if (e.target.value !== '__custom__') onUpdateVariationName(varIndex, e.target.value); }}
-                            className="flex-1 bg-[#111] border border-[#1a1a1a] rounded-lg px-3 py-2.5 text-white text-sm focus:border-[#00D97E] outline-none"
+                            className="flex-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-white text-sm focus:border-[#00D97E] outline-none"
                         >
                             <option value="">Choisir un type…</option>
                             {templates.map((template, idx) => (
@@ -574,14 +580,14 @@ const VariationCard: React.FC<VariationCardProps> = ({
                                     }
                                 }}
                                 onKeyDown={e => { if (e.key === 'Enter' && e.currentTarget.value.trim()) onUpdateVariationName(varIndex, e.currentTarget.value.trim()); }}
-                                className="flex-1 bg-[#111] border border-[#1a1a1a] rounded-lg px-3 py-2.5 text-white text-sm focus:border-[#00D97E] outline-none"
+                                className="flex-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-white text-sm focus:border-[#00D97E] outline-none"
                             />
                         )}
                     </div>
                 ) : (
-                    <div className="flex-1 flex items-center justify-between px-3 py-2.5 bg-[#111] border border-[#1a1a1a] rounded-lg text-white text-sm">
+                    <div className="flex-1 flex items-center justify-between px-3 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-white text-sm">
                         <span className="font-medium">{variation.name}</span>
-                        <button type="button" onClick={() => onUpdateVariationName(varIndex, '')} className="text-xs text-[#888] hover:text-[#00D97E] cursor-pointer">Changer</button>
+                        <button type="button" onClick={() => onUpdateVariationName(varIndex, '')} className="text-xs text-[var(--color-muted)] hover:text-[#00D97E] cursor-pointer">Changer</button>
                     </div>
                 )}
                 <button
@@ -598,27 +604,27 @@ const VariationCard: React.FC<VariationCardProps> = ({
             {variation.options && variation.options.length > 0 && (
                 <div className="space-y-2">
                     {variation.options.map((option, optIndex) => (
-                        <div key={optIndex} className="bg-[#111] border border-[#1a1a1a] rounded-lg p-3 space-y-2.5">
+                        <div key={optIndex} className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-3 space-y-2.5">
                             <div className="flex items-center gap-2">
                                 <input
                                     type="text"
                                     value={option.value}
                                     onChange={e => onUpdateOption(varIndex, optIndex, 'value', e.target.value)}
                                     placeholder="Valeur (ex : XL)"
-                                    className="flex-1 bg-black border border-[#1a1a1a] rounded-lg px-3 py-2 text-white text-sm font-medium focus:border-[#00D97E] outline-none"
+                                    className="flex-1 bg-black border border-[var(--color-border)] rounded-lg px-3 py-2 text-white text-sm font-medium focus:border-[#00D97E] outline-none"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => onRemoveOption(varIndex, optIndex)}
                                     aria-label="Retirer cette option"
-                                    className="p-2 text-[#888] hover:text-red-400 transition-colors shrink-0 cursor-pointer"
+                                    className="p-2 text-[var(--color-muted)] hover:text-red-400 transition-colors shrink-0 cursor-pointer"
                                 >
                                     <X className="w-4 h-4" aria-hidden="true" />
                                 </button>
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                    <label className="block text-[10px] uppercase tracking-wider text-[#555] font-bold mb-1">Stock</label>
+                                    <label className="block text-xs uppercase tracking-wider text-[var(--color-muted)] font-bold mb-1">Stock</label>
                                     <input
                                         type="number"
                                         inputMode="numeric"
@@ -626,23 +632,23 @@ const VariationCard: React.FC<VariationCardProps> = ({
                                         value={option.stock ?? ''}
                                         placeholder="∞"
                                         onChange={e => onUpdateOption(varIndex, optIndex, 'stock', e.target.value ? Math.max(0, Number(e.target.value)) : undefined)}
-                                        className="w-full bg-black border border-[#1a1a1a] rounded-lg px-3 py-2 text-white text-sm tabular-nums focus:border-[#00D97E] outline-none"
+                                        className="w-full bg-black border border-[var(--color-border)] rounded-lg px-3 py-2 text-white text-sm tabular-nums focus:border-[#00D97E] outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] uppercase tracking-wider text-[#555] font-bold mb-1">Prix +/− (F)</label>
+                                    <label className="block text-xs uppercase tracking-wider text-[var(--color-muted)] font-bold mb-1">Prix +/− (F)</label>
                                     <input
                                         type="number"
                                         inputMode="numeric"
                                         value={option.priceModifier ?? 0}
                                         onChange={e => onUpdateOption(varIndex, optIndex, 'priceModifier', Number(e.target.value))}
-                                        className="w-full bg-black border border-[#1a1a1a] rounded-lg px-3 py-2 text-white text-sm tabular-nums focus:border-[#00D97E] outline-none"
+                                        className="w-full bg-black border border-[var(--color-border)] rounded-lg px-3 py-2 text-white text-sm tabular-nums focus:border-[#00D97E] outline-none"
                                     />
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
                                 {option.images && option.images.map((img, imgIdx) => (
-                                    <div key={imgIdx} className="relative w-10 h-10 rounded-lg border border-[#1a1a1a] overflow-hidden">
+                                    <div key={imgIdx} className="relative w-10 h-10 rounded-lg border border-[var(--color-border)] overflow-hidden">
                                         <img src={img} alt="" className="w-full h-full object-cover" />
                                         <button
                                             onClick={() => onUpdateOption(varIndex, optIndex, 'images', option.images?.filter((_, i) => i !== imgIdx))}
@@ -654,12 +660,12 @@ const VariationCard: React.FC<VariationCardProps> = ({
                                     </div>
                                 ))}
                                 {(!option.images || option.images.length < 2) && (
-                                    <label className="w-10 h-10 flex items-center justify-center bg-black border border-dashed border-[#1a1a1a] rounded-lg cursor-pointer hover:border-[#00D97E] hover:text-[#00D97E] text-[#888] transition-colors">
+                                    <label className="w-10 h-10 flex items-center justify-center bg-black border border-dashed border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[#00D97E] hover:text-[#00D97E] text-[var(--color-muted)] transition-colors">
                                         <ImageIcon className="w-4 h-4" aria-hidden="true" />
                                         <input type="file" accept="image/*" multiple className="hidden" onChange={e => onVariationImageUpload(e, varIndex, optIndex)} />
                                     </label>
                                 )}
-                                <span className="text-[11px] text-[#555] ml-1">Photos (2 max)</span>
+                                <span className="text-[11px] text-[var(--color-muted)] ml-1">Photos (2 max)</span>
                             </div>
                         </div>
                     ))}
@@ -674,7 +680,7 @@ const VariationCard: React.FC<VariationCardProps> = ({
                     onChange={e => setNewOption(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitOption(); } }}
                     placeholder="Ajouter une option (ex : XL, Rouge…)"
-                    className="flex-1 bg-[#111] border border-[#1a1a1a] rounded-lg px-3 py-2.5 text-white text-sm focus:border-[#00D97E] outline-none placeholder:text-[#555]"
+                    className="flex-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-white text-sm focus:border-[#00D97E] outline-none placeholder:text-[var(--color-muted)]"
                 />
                 <button
                     type="button"
@@ -694,12 +700,12 @@ const VariationCard: React.FC<VariationCardProps> = ({
 const ProductDetailSkeleton = () => (
     <div className="space-y-5 pb-4">
         <div className="flex items-center justify-between">
-            <div className="h-5 w-24 bg-[#111] rounded animate-pulse" />
-            <div className="h-10 w-32 bg-[#111] rounded-xl animate-pulse" />
+            <div className="h-5 w-24 bg-[var(--color-surface)] rounded animate-pulse" />
+            <div className="h-10 w-32 bg-[var(--color-surface)] rounded-xl animate-pulse" />
         </div>
-        <div className="aspect-square bg-[#111] border border-[#1a1a1a] rounded-2xl animate-pulse" />
-        <div className="h-52 bg-[#111] border border-[#1a1a1a] rounded-2xl animate-pulse" />
-        <div className="h-40 bg-[#111] border border-[#1a1a1a] rounded-2xl animate-pulse" />
+        <div className="aspect-square bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] animate-pulse" />
+        <div className="h-52 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] animate-pulse" />
+        <div className="h-40 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] animate-pulse" />
     </div>
 );
 

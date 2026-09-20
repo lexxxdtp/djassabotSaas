@@ -271,10 +271,10 @@ export default function ProductFormModal({
                 aria-label={productToEdit ? 'Modifier le produit' : 'Nouveau produit'}
                 tabIndex={-1}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#111] border-t sm:border border-[#1a1a1a] w-full sm:max-w-lg max-h-[92vh] sm:max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl shadow-2xl shadow-black/40 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 ease-out"
+                className="bg-[var(--color-surface)] border-t sm:border border-[var(--color-border)] w-full sm:max-w-lg max-h-[92vh] sm:max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-[13px] shadow-none shadow-black/40 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 ease-out"
             >
                 {/* Poignée + en-tête, collés en haut */}
-                <div className="sticky top-0 z-20 bg-[#111]/95 backdrop-blur-sm px-5 pt-3 pb-3 border-b border-[#1a1a1a]">
+                <div className="sticky top-0 z-20 bg-[var(--color-surface)]/95 backdrop-blur-sm px-5 pt-3 pb-3 border-b border-[var(--color-border)]">
                     <div className="sm:hidden mx-auto mb-3 w-10 h-1.5 rounded-full bg-[#333]" />
                     <div className="flex items-center justify-between">
                         <h2 className="text-lg font-bold text-white">
@@ -284,7 +284,7 @@ export default function ProductFormModal({
                             type="button"
                             onClick={onClose}
                             aria-label="Fermer"
-                            className="w-9 h-9 grid place-items-center rounded-full text-[#888] hover:text-white hover:bg-[#1a1a1a] transition-colors"
+                            className="w-9 h-9 grid place-items-center rounded-full text-[var(--color-muted)] hover:text-white hover:bg-[#1a1a1a] transition-colors"
                         >
                             <X size={20} />
                         </button>
@@ -295,7 +295,7 @@ export default function ProductFormModal({
                     {/* PHOTOS — en premier, le geste le plus naturel. Déclenche le pré-remplissage IA. */}
                     <div>
                         {form.images.length === 0 ? (
-                            <label className="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-[#00D97E]/40 rounded-2xl cursor-pointer bg-[#00D97E]/[0.06] hover:bg-[#00D97E]/10 text-[#00D97E] transition-colors active:scale-[0.99]">
+                            <label className="flex flex-col items-center justify-center w-full h-44 border-2 border-dashed border-[#00D97E]/40 rounded-[13px] cursor-pointer bg-[#00D97E]/[0.06] hover:bg-[#00D97E]/10 text-[#00D97E] transition-colors active:scale-[0.99]">
                                 {uploading || aiAnalyzing ? (
                                     <>
                                         <Loader2 className="w-8 h-8 animate-spin" />
@@ -305,7 +305,7 @@ export default function ProductFormModal({
                                     <>
                                         <Camera className="w-9 h-9" strokeWidth={1.75} />
                                         <span className="text-[15px] font-bold mt-2">Ajouter une photo</span>
-                                        {!productToEdit && <span className="text-[12px] text-[#888] mt-1 px-4 text-center">L'IA remplit le nom et la description pour vous</span>}
+                                        {!productToEdit && <span className="text-[12px] text-[var(--color-muted)] mt-1 px-4 text-center">L'IA remplit le nom et la description pour vous</span>}
                                     </>
                                 )}
                                 <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleUpload(e, 'main')} />
@@ -318,20 +318,20 @@ export default function ProductFormModal({
                                 </div>
                                 <div className="grid grid-cols-3 gap-2">
                                     {form.images.map((img, idx) => (
-                                        <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-[#1a1a1a]">
+                                        <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-[var(--color-border)]">
                                             <img src={img} alt="Produit" className="w-full h-full object-cover" />
                                             <button
                                                 type="button"
                                                 onClick={() => setForm({ ...form, images: form.images.filter((_, i) => i !== idx) })}
                                                 aria-label="Retirer la photo"
-                                                className="absolute top-1.5 right-1.5 w-7 h-7 grid place-items-center bg-black/60 backdrop-blur-md text-white rounded-full active:scale-90 hover:bg-red-500 transition-[transform,background-color]"
+                                                className="absolute top-1.5 right-1.5 w-7 h-7 grid place-items-center bg-black/60 backdrop-blur-md text-white rounded-full active:scale-[0.99] hover:bg-red-500 transition-[transform,background-color]"
                                             >
                                                 <X size={14} />
                                             </button>
                                         </div>
                                     ))}
                                     {form.images.length < 5 && (
-                                        <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-[#1a1a1a] rounded-xl cursor-pointer text-[#888] hover:text-[#00D97E] hover:border-[#00D97E]/40 transition-colors active:scale-[0.98]">
+                                        <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-[var(--color-border)] rounded-xl cursor-pointer text-[var(--color-muted)] hover:text-[#00D97E] hover:border-[#00D97E]/40 transition-colors active:scale-[0.98]">
                                             {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-6 h-6" />}
                                             <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleUpload(e, 'main')} />
                                         </label>
@@ -349,7 +349,7 @@ export default function ProductFormModal({
                             type="text"
                             value={form.name}
                             onChange={e => setForm({ ...form, name: e.target.value })}
-                            className="w-full bg-black border border-[#1a1a1a] rounded-xl h-12 px-4 text-white focus:border-[#00D97E]/50 outline-none placeholder:text-[#555] transition-colors"
+                            className="w-full bg-black border border-[var(--color-border)] rounded-xl h-12 px-4 text-white focus:border-[#00D97E]/50 outline-none placeholder:text-[var(--color-muted)] transition-colors"
                             placeholder="Ex : Robe wax fleurie"
                         />
                     </div>
@@ -364,7 +364,7 @@ export default function ProductFormModal({
                                 inputMode="numeric"
                                 value={form.price}
                                 onChange={e => setForm({ ...form, price: e.target.value })}
-                                className="w-full bg-black border border-[#1a1a1a] rounded-xl h-12 px-4 text-white focus:border-[#00D97E]/50 outline-none placeholder:text-[#555] font-mono transition-colors"
+                                className="w-full bg-black border border-[var(--color-border)] rounded-xl h-12 px-4 text-white focus:border-[#00D97E]/50 outline-none placeholder:text-[var(--color-muted)] font-mono transition-colors"
                                 placeholder="5000"
                             />
                         </div>
@@ -380,7 +380,7 @@ export default function ProductFormModal({
                                 disabled={variationsEnabled}
                                 value={form.stock}
                                 onChange={e => setForm({ ...form, stock: Math.max(0, Number(e.target.value) || 0).toString() })}
-                                className={`w-full bg-black border border-[#1a1a1a] rounded-xl h-12 px-4 text-white focus:border-[#00D97E]/50 outline-none placeholder:text-[#555] font-mono transition-colors ${variationsEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full bg-black border border-[var(--color-border)] rounded-xl h-12 px-4 text-white focus:border-[#00D97E]/50 outline-none placeholder:text-[var(--color-muted)] font-mono transition-colors ${variationsEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 placeholder="10"
                             />
                         </div>
@@ -390,11 +390,11 @@ export default function ProductFormModal({
                     <button
                         type="button"
                         onClick={() => setForm({ ...form, manageStock: !form.manageStock })}
-                        className="flex items-center justify-between w-full text-left bg-black border border-[#1a1a1a] rounded-xl p-4 active:scale-[0.99] transition-transform"
+                        className="flex items-center justify-between w-full text-left bg-black border border-[var(--color-border)] rounded-xl p-4 active:scale-[0.99] transition-transform"
                     >
                         <div className="pr-3">
                             <div className="text-white text-sm font-medium">Bloquer la vente si épuisé</div>
-                            <div className="text-[#888] text-xs mt-0.5">
+                            <div className="text-[var(--color-muted)] text-xs mt-0.5">
                                 {form.manageStock ? 'Le bot arrête de vendre à 0 en stock' : 'Vente illimitée, le stock n\'est pas suivi'}
                             </div>
                         </div>
@@ -405,9 +405,9 @@ export default function ProductFormModal({
 
                     {/* Description */}
                     <div>
-                        <label className="block text-sm font-medium text-white mb-2">Description <span className="text-[#555] font-normal text-xs">(optionnel)</span></label>
+                        <label className="block text-sm font-medium text-white mb-2">Description <span className="text-[var(--color-muted)] font-normal text-xs">(optionnel)</span></label>
                         <textarea
-                            className="w-full bg-black border border-[#1a1a1a] rounded-xl p-4 text-white focus:border-[#00D97E]/50 outline-none h-20 placeholder:text-[#555] resize-none transition-colors"
+                            className="w-full bg-black border border-[var(--color-border)] rounded-xl p-4 text-white focus:border-[#00D97E]/50 outline-none h-20 placeholder:text-[var(--color-muted)] resize-none transition-colors"
                             placeholder="Détails du produit…"
                             value={form.description}
                             onChange={e => setForm({ ...form, description: e.target.value })}
@@ -418,7 +418,7 @@ export default function ProductFormModal({
                     <div>
                         <label className="block text-sm font-medium text-[#00D97E] mb-2">🤖 Consignes pour le bot</label>
                         <textarea
-                            className="w-full bg-black border border-[#1a1a1a] rounded-xl p-4 text-white focus:border-[#00D97E]/50 outline-none h-20 placeholder:text-[#555] resize-none text-sm transition-colors"
+                            className="w-full bg-black border border-[var(--color-border)] rounded-xl p-4 text-white focus:border-[#00D97E]/50 outline-none h-20 placeholder:text-[var(--color-muted)] resize-none text-sm transition-colors"
                             placeholder="Ex : si le client prend 3 ou plus, propose -10 %"
                             value={form.aiInstructions}
                             onChange={e => setForm({ ...form, aiInstructions: e.target.value })}
@@ -437,11 +437,11 @@ export default function ProductFormModal({
                     />
 
                     {/* Barre d'action collée en bas */}
-                    <div className="sticky bottom-0 -mx-5 px-5 pt-4 pb-5 bg-[#111]/95 backdrop-blur-sm border-t border-[#1a1a1a] flex gap-3">
+                    <div className="sticky bottom-0 -mx-5 px-5 pt-4 pb-5 bg-[var(--color-surface)]/95 backdrop-blur-sm border-t border-[var(--color-border)] flex gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 h-12 rounded-xl font-bold bg-[#1a1a1a] text-[#888] hover:text-white transition-colors"
+                            className="flex-1 h-12 rounded-xl font-bold bg-[#1a1a1a] text-[var(--color-muted)] hover:text-white transition-colors"
                         >
                             Annuler
                         </button>

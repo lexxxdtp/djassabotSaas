@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Mail, Lock, TrendingUp, Users, Zap } from 'lucide-react';
+import { ArrowRight, Mail, Lock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth, type User, type Tenant } from '../context/AuthContext';
 import { apiClient } from '../utils/apiClient';
@@ -65,74 +65,13 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-black flex">
-
-            {/* ========== GAUCHE : BRANDING (desktop only) ========== */}
-            <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 relative border-r border-[#1a1a1a]">
-                {/* Logo */}
-                <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-lg bg-[#00D97E] flex items-center justify-center">
-                        <span className="text-black font-black text-base">D</span>
-                    </div>
-                    <span className="text-lg font-black tracking-tight text-white">
-                        DJASSA<span className="text-[#00D97E]">BOT</span>
-                    </span>
-                </div>
-
-                {/* Headline */}
-                <div className="space-y-8">
-                    <div className="space-y-3">
-                        <p className="text-[#00D97E] text-[11px] font-bold uppercase tracking-[0.2em]">Commerce IA sur WhatsApp</p>
-                        <h2 className="text-5xl xl:text-6xl font-black text-white leading-[1.05] tracking-tight">
-                            Votre boutique<br />
-                            vend pendant<br />
-                            que vous dormez.
-                        </h2>
-                    </div>
-                    <p className="text-[#888] text-base leading-relaxed max-w-md">
-                        Le premier bot WhatsApp conçu pour les commerçants d'Afrique de l'Ouest.
-                    </p>
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-3 gap-3 pt-4 max-w-md">
-                        {[
-                            { icon: TrendingUp, value: 'Wave · OM', label: 'Paiements' },
-                            { icon: Users, value: '2 min', label: 'Installation' },
-                            { icon: Zap, value: '24/7', label: 'Bot actif' },
-                        ].map((stat) => (
-                            <div key={stat.label} className="rounded-xl border border-[#1a1a1a] bg-[#111] p-4">
-                                <stat.icon className="w-4 h-4 text-[#00D97E] mb-3" />
-                                <div className="text-white font-bold text-xl tracking-tight">{stat.value}</div>
-                                <div className="text-[#888] text-[10px] uppercase tracking-wider mt-0.5">{stat.label}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <p className="text-[#888] text-xs">© 2026 DjassaBot — Abidjan, Côte d'Ivoire 🇨🇮</p>
-            </div>
-
-            {/* ========== DROITE : FORMULAIRE ========== */}
-            <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
-                <div className="w-full max-w-sm">
-
-                    {/* Header mobile uniquement */}
-                    <div className="lg:hidden text-center mb-10">
-                        <div className="w-12 h-12 rounded-xl bg-[#00D97E] flex items-center justify-center mx-auto mb-4">
-                            <span className="text-black font-black text-xl">D</span>
-                        </div>
-                        <h1 className="text-xl font-black text-white tracking-tight">DJASSA<span className="text-[#00D97E]">BOT</span></h1>
-                    </div>
-
-                    <div className="mb-8">
-                        <h2 className="text-2xl font-bold text-white tracking-tight mb-1">Bon retour 👋</h2>
-                        <p className="text-[#888] text-sm">Connectez-vous à votre espace vendeur</p>
-                    </div>
-
+        <div className="auth-form-page auth-login">
+            <p className="app-eyebrow">Heureux de vous retrouver</p>
+            <h1>On reprend ?</h1>
+            <p className="auth-intro">Connectez-vous pour retrouver votre boutique.</p>
                     {/* Erreur */}
                     {error && (
-                        <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl mb-5 text-sm flex items-center gap-2">
+                        <div role="alert" className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl mb-5 text-sm flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
                             {error}
                         </div>
@@ -141,32 +80,32 @@ const Login: React.FC = () => {
                     <form onSubmit={handleLogin} className="space-y-4">
                         {/* Identifiant */}
                         <div>
-                            <label className="block text-[10px] font-bold text-[#888] uppercase tracking-widest mb-2">Email ou Téléphone</label>
+                            <label htmlFor="login-identifier" className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-widest mb-2">Email ou Téléphone</label>
                             <div className="relative">
-                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#555] w-4 h-4" />
+                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-muted)] w-4 h-4" />
                                 <input
-                                    type="text"
+                                    id="login-identifier" autoComplete="username" type="text"
                                     value={identifier}
                                     onChange={(e) => setIdentifier(e.target.value)}
                                     placeholder="email@exemple.com ou 0707XXXXXX"
                                     required
-                                    className="w-full bg-[#111] border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all text-sm"
+                                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all text-sm"
                                 />
                             </div>
                         </div>
 
                         {/* Mot de passe */}
                         <div>
-                            <label className="block text-[10px] font-bold text-[#888] uppercase tracking-widest mb-2">Mot de passe</label>
+                            <label htmlFor="login-password" className="block text-xs font-bold text-[var(--color-muted)] uppercase tracking-widest mb-2">Mot de passe</label>
                             <div className="relative">
-                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#555] w-4 h-4" />
+                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-muted)] w-4 h-4" />
                                 <input
-                                    type="password"
+                                    id="login-password" autoComplete="current-password" type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
                                     required
-                                    className="w-full bg-[#111] border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all text-sm"
+                                    className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] transition-all text-sm"
                                 />
                             </div>
                         </div>
@@ -181,7 +120,7 @@ const Login: React.FC = () => {
                                 role="checkbox"
                                 aria-checked={rememberMe}
                                 onClick={() => setRememberMe(!rememberMe)}
-                                className="flex items-center gap-2 py-2.5 -my-2.5 text-xs text-[#888] hover:text-white transition-colors cursor-pointer"
+                                className="flex items-center gap-2 py-2.5 -my-2.5 text-xs text-[var(--color-muted)] hover:text-white transition-colors cursor-pointer"
                             >
                                 <span
                                     aria-hidden="true"
@@ -200,17 +139,15 @@ const Login: React.FC = () => {
                             disabled={loading}
                             className="w-full mt-3 bg-[#00D97E] hover:bg-[#00D97E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.01] active:scale-[0.99] text-sm"
                         >
-                            {loading ? 'Connexion...' : 'Accéder au Dashboard'}
+                            {loading ? 'Connexion...' : 'Ouvrir ma boutique'}
                             {!loading && <ArrowRight className="w-4 h-4" />}
                         </button>
                     </form>
 
-                    <p className="mt-8 text-center text-sm text-[#888]">
+                    <p className="mt-8 text-center text-sm text-[var(--color-muted)]">
                         Pas de compte ?{' '}
                         <Link to="/signup" className="text-[#00D97E] hover:text-white font-bold transition-colors inline-block py-2 -my-2">Créer un compte</Link>
                     </p>
-                </div>
-            </div>
         </div>
     );
 };

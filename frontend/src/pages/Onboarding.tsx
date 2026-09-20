@@ -164,8 +164,8 @@ const Onboarding: React.FC = () => {
 
     // ============== Render ==============
     return (
-        <div className="min-h-screen bg-black flex items-center justify-center p-4">
-            <div className="bg-[#111] border border-[#1a1a1a] p-6 md:p-8 rounded-2xl w-full max-w-lg shadow-2xl relative overflow-hidden transition-colors">
+        <div className="auth-form-page min-h-screen bg-black flex items-center justify-center p-4">
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 md:p-8 rounded-[13px] w-full max-w-lg shadow-none relative overflow-hidden transition-colors">
                 
                 {/* Progress bar */}
                 {step !== 'done' && (
@@ -191,8 +191,8 @@ const Onboarding: React.FC = () => {
                         <div className="w-14 h-14 mx-auto rounded-xl bg-[#00D97E]/10 border border-[#00D97E]/20 flex items-center justify-center mb-6">
                             <Sparkles className="w-7 h-7 text-[#00D97E]" aria-hidden="true" />
                         </div>
-                        <h1 className="text-2xl font-bold text-white mb-2">Bienvenue ! 🎉</h1>
-                        <p className="text-[#888] mb-8 text-xs md:text-sm">Configurons votre bot ensemble en <strong className="text-white">3 minutes</strong>.</p>
+                        <h1 className="page-title text-2xl font-bold text-white mb-2">Bienvenue ! 🎉</h1>
+                        <p className="text-[var(--color-muted)] mb-8 text-xs md:text-sm">Configurons votre bot ensemble en <strong className="text-white">3 minutes</strong>.</p>
 
                         <div className="space-y-3.5 text-left mb-8">
                             {[
@@ -200,11 +200,11 @@ const Onboarding: React.FC = () => {
                                 { n: '2', title: 'Ajouter votre premier produit', sub: 'Pour que le bot ait un article à proposer' },
                                 { n: '3', title: 'Choisir la personnalité', sub: 'Amical, commercial ou en nouchi 🇨🇮' },
                             ].map(item => (
-                                <div key={item.n} className="flex items-center gap-3.5 bg-black/40 border border-[#1a1a1a] rounded-2xl p-4">
+                                <div key={item.n} className="flex items-center gap-3.5 bg-black/40 border border-[var(--color-border)] rounded-[13px] p-4">
                                     <div className="w-9 h-9 rounded-xl bg-[#00D97E]/10 border border-[#00D97E]/20 flex items-center justify-center text-[#00D97E] font-bold text-xs shrink-0">{item.n}</div>
                                     <div>
                                         <p className="text-white font-bold text-sm">{item.title}</p>
-                                        <p className="text-[#888] text-xs mt-0.5">{item.sub}</p>
+                                        <p className="text-[var(--color-muted)] text-xs mt-0.5">{item.sub}</p>
                                     </div>
                                 </div>
                             ))}
@@ -212,13 +212,13 @@ const Onboarding: React.FC = () => {
 
                         <button
                             onClick={() => setStep('whatsapp')}
-                            className="w-full bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-[transform,background-color] active:scale-95 cursor-pointer text-sm"
+                            className="w-full bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-[transform,background-color] active:scale-[0.99] cursor-pointer text-sm"
                         >
                             C'est parti <ArrowRight className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
                             onClick={() => navigate('/dashboard')}
-                            className="w-full mt-4 text-[#888] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                            className="w-full mt-4 text-[var(--color-muted)] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
                         >
                             Plus tard, accéder au tableau de bord
                         </button>
@@ -229,7 +229,7 @@ const Onboarding: React.FC = () => {
                 {step === 'whatsapp' && (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <h2 className="text-xl font-bold text-white mb-1">Connecter WhatsApp</h2>
-                        <p className="text-[#888] text-xs font-medium mb-6">Étape 1 sur 3</p>
+                        <p className="text-[var(--color-muted)] text-xs font-medium mb-6">Étape 1 sur 3</p>
 
                         {waConnected ? (
                             <div className="text-center py-6 animate-in zoom-in duration-200">
@@ -237,24 +237,24 @@ const Onboarding: React.FC = () => {
                                     <Check className="w-7 h-7 text-[#00D97E]" aria-hidden="true" />
                                 </div>
                                 <h3 className="text-lg font-bold text-white mb-2">WhatsApp connecté ! ✨</h3>
-                                <p className="text-[#888] text-xs mb-6">Votre bot est désormais lié à votre numéro de téléphone.</p>
+                                <p className="text-[var(--color-muted)] text-xs mb-6">Votre bot est désormais lié à votre numéro de téléphone.</p>
                                 <button
                                     onClick={() => setStep('product')}
-                                    className="w-full bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-[transform,background-color] active:scale-95 cursor-pointer text-sm"
+                                    className="w-full bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-[transform,background-color] active:scale-[0.99] cursor-pointer text-sm"
                                 >Continuer <ArrowRight className="w-4 h-4" aria-hidden="true" /></button>
                             </div>
                         ) : (
                             <>
-                                <div className="flex gap-2 p-1.5 bg-black border border-[#1a1a1a] rounded-xl mb-6">
+                                <div className="flex gap-2 p-1.5 bg-black border border-[var(--color-border)] rounded-xl mb-6">
                                     <button
                                         type="button"
                                         onClick={() => setWaMethod('pairing')}
-                                        className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-[background-color,color] flex items-center justify-center gap-1.5 cursor-pointer ${waMethod === 'pairing' ? 'bg-[#00D97E] text-black' : 'text-[#888] hover:text-white'}`}
+                                        className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-[background-color,color] flex items-center justify-center gap-1.5 cursor-pointer ${waMethod === 'pairing' ? 'bg-[#00D97E] text-black' : 'text-[var(--color-muted)] hover:text-white'}`}
                                     ><Keyboard className="w-3.5 h-3.5" aria-hidden="true" /> Code à taper</button>
                                     <button
                                         type="button"
                                         onClick={() => setWaMethod('qr')}
-                                        className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-[background-color,color] flex items-center justify-center gap-1.5 cursor-pointer ${waMethod === 'qr' ? 'bg-[#00D97E] text-black' : 'text-[#888] hover:text-white'}`}
+                                        className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-[background-color,color] flex items-center justify-center gap-1.5 cursor-pointer ${waMethod === 'qr' ? 'bg-[#00D97E] text-black' : 'text-[var(--color-muted)] hover:text-white'}`}
                                     ><Smartphone className="w-3.5 h-3.5" aria-hidden="true" /> QR Code</button>
                                 </div>
 
@@ -262,9 +262,9 @@ const Onboarding: React.FC = () => {
                                     !pairingCode ? (
                                         <div className="space-y-4">
                                             <div>
-                                                <label htmlFor="waPhone" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Numéro de téléphone WhatsApp</label>
+                                                <label htmlFor="waPhone" className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Numéro de téléphone WhatsApp</label>
                                                 <div className="relative">
-                                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#888] font-bold font-mono text-sm border-r border-[#1a1a1a] pr-3 pointer-events-none">+225</div>
+                                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted)] font-bold font-mono text-sm border-r border-[var(--color-border)] pr-3 pointer-events-none">+225</div>
                                                     <input
                                                         id="waPhone"
                                                         type="tel"
@@ -273,24 +273,24 @@ const Onboarding: React.FC = () => {
                                                         value={waPhone}
                                                         onChange={e => setWaPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                                         placeholder="0709483812"
-                                                        className="w-full bg-black border border-[#1a1a1a] rounded-xl py-3 pl-[72px] pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/40 focus:ring-2 focus:ring-[#00D97E]/10 font-mono text-sm transition-[border-color,box-shadow]"
+                                                        className="w-full bg-black border border-[var(--color-border)] rounded-xl py-3 pl-[72px] pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/40 focus:ring-2 focus:ring-[#00D97E]/10 font-mono text-sm transition-[border-color,box-shadow]"
                                                     />
                                                 </div>
                                             </div>
                                             <button
                                                 onClick={requestPairingCode}
                                                 disabled={requestingCode || waPhone.length < 10}
-                                                className="w-full bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-[transform,background-color] active:scale-95 cursor-pointer text-sm mt-2"
+                                                className="w-full bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-[transform,background-color] active:scale-[0.99] cursor-pointer text-sm mt-2"
                                             >
                                                 {requestingCode ? 'Génération…' : 'Recevoir le code'}
                                             </button>
                                         </div>
                                     ) : (
                                         <div className="text-center animate-in zoom-in duration-200">
-                                            <p className="text-xs text-[#888] uppercase tracking-widest mb-3">Votre code de jumelage</p>
+                                            <p className="text-xs text-[var(--color-muted)] uppercase tracking-widest mb-3">Votre code de jumelage</p>
                                             <div className="flex justify-center gap-2 font-mono font-bold text-2xl text-white mb-6">
                                                 {pairingCode.split('').map((c, i) => (
-                                                    <span key={i} className="bg-black py-2.5 px-3 rounded-lg border border-[#1a1a1a] min-w-[38px] inline-block shadow-inner">{c}</span>
+                                                    <span key={i} className="bg-black py-2.5 px-3 rounded-lg border border-[var(--color-border)] min-w-[38px] inline-block shadow-inner">{c}</span>
                                                 ))}
                                             </div>
                                             <div className="bg-[#00D97E]/10 border border-[#00D97E]/20 rounded-xl p-4 text-left text-xs text-[#00D97E]/85 space-y-1.5">
@@ -300,10 +300,10 @@ const Onboarding: React.FC = () => {
                                                 <p>3. Sélectionnez <strong>Connecter un appareil → Avec le numéro</strong></p>
                                                 <p>4. Saisissez ce code</p>
                                             </div>
-                                            <p className="text-xs text-[#888] mt-5 flex items-center justify-center gap-1.5 font-medium">
+                                            <p className="text-xs text-[var(--color-muted)] mt-5 flex items-center justify-center gap-1.5 font-medium">
                                                 <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#00D97E]" /> En attente de connexion…
                                             </p>
-                                            <button onClick={() => { setPairingCode(null); setWaPhone(''); }} className="text-xs text-[#555] hover:text-white mt-4 underline decoration-[#1a1a1a] cursor-pointer">
+                                            <button onClick={() => { setPairingCode(null); setWaPhone(''); }} className="text-xs text-[var(--color-muted)] hover:text-white mt-4 underline decoration-[#1a1a1a] cursor-pointer">
                                                 Essayer un autre numéro
                                             </button>
                                         </div>
@@ -311,32 +311,32 @@ const Onboarding: React.FC = () => {
                                 ) : (
                                     <div className="text-center animate-in zoom-in duration-200">
                                         {qrCode ? (
-                                            <div className="bg-white p-4 rounded-xl inline-block shadow-2xl">
+                                            <div className="bg-white p-4 rounded-xl inline-block shadow-none">
                                                 <QRCode value={qrCode} size={180} />
                                             </div>
                                         ) : (
-                                            <div className="w-48 h-48 mx-auto flex items-center justify-center bg-black border border-[#1a1a1a] rounded-xl shadow-inner">
+                                            <div className="w-48 h-48 mx-auto flex items-center justify-center bg-black border border-[var(--color-border)] rounded-xl shadow-inner">
                                                 <RefreshCw className="w-7 h-7 text-[#00D97E] animate-spin" />
                                             </div>
                                         )}
-                                        <p className="text-xs text-[#888] mt-4 font-medium">Scannez avec WhatsApp depuis un autre appareil</p>
+                                        <p className="text-xs text-[var(--color-muted)] mt-4 font-medium">Scannez avec WhatsApp depuis un autre appareil</p>
                                     </div>
                                 )}
                             </>
                         )}
 
                         {!waConnected && (
-                            <div className="flex gap-2.5 mt-8 border-t border-[#1a1a1a]/60 pt-4">
+                            <div className="flex gap-2.5 mt-8 border-t border-[var(--color-border)]/60 pt-4">
                                 <button 
                                     onClick={goPrev} 
                                     aria-label="Retour"
-                                    className="px-4 bg-black border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white py-3 rounded-xl flex items-center gap-2 cursor-pointer active:scale-95 transition-transform"
+                                    className="px-4 bg-black border border-[var(--color-border)] hover:bg-[#1a1a1a] text-white py-3 rounded-xl flex items-center gap-2 cursor-pointer active:scale-[0.99] transition-transform"
                                 >
                                     <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                                 </button>
                                 <button 
                                     onClick={skipStep} 
-                                    className="flex-1 text-[#888] hover:text-white py-3 rounded-xl text-xs font-semibold cursor-pointer text-center hover:bg-white/5 transition-colors"
+                                    className="flex-1 text-[var(--color-muted)] hover:text-white py-3 rounded-xl text-xs font-semibold cursor-pointer text-center hover:bg-white/5 transition-colors"
                                 >
                                     Plus tard, passer cette étape
                                 </button>
@@ -349,7 +349,7 @@ const Onboarding: React.FC = () => {
                 {step === 'product' && (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <h2 className="text-xl font-bold text-white mb-1">Votre premier produit</h2>
-                        <p className="text-[#888] text-xs font-medium mb-6">Étape 2 sur 3 — pour que le bot ait un article à proposer.</p>
+                        <p className="text-[var(--color-muted)] text-xs font-medium mb-6">Étape 2 sur 3 — pour que le bot ait un article à proposer.</p>
 
                         {productAdded ? (
                             <div className="text-center py-6 animate-in zoom-in duration-200">
@@ -357,17 +357,17 @@ const Onboarding: React.FC = () => {
                                     <Package className="w-7 h-7 text-[#00D97E]" aria-hidden="true" />
                                 </div>
                                 <h3 className="text-lg font-bold text-white mb-2">Produit ajouté ! 📦</h3>
-                                <p className="text-[#888] text-xs mb-6 pr-2 truncate font-mono">{productName} — {parseInt(productPrice).toLocaleString()} FCFA</p>
+                                <p className="text-[var(--color-muted)] text-xs mb-6 pr-2 truncate font-mono">{productName} — {parseInt(productPrice).toLocaleString()} FCFA</p>
                                 <button
                                     onClick={() => setStep('personality')}
-                                    className="w-full bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-[transform,background-color] active:scale-95 cursor-pointer text-sm"
+                                    className="w-full bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-[transform,background-color] active:scale-[0.99] cursor-pointer text-sm"
                                 >Continuer <ArrowRight className="w-4 h-4" aria-hidden="true" /></button>
                             </div>
                         ) : (
                             <>
                                 <div className="space-y-4">
                                     <div>
-                                        <label htmlFor="productName" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Nom du produit</label>
+                                        <label htmlFor="productName" className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Nom du produit</label>
                                         <input
                                             id="productName"
                                             type="text"
@@ -375,11 +375,11 @@ const Onboarding: React.FC = () => {
                                             value={productName}
                                             onChange={e => setProductName(e.target.value)}
                                             placeholder="Ex: Bazin Riche, Mèche Brésilienne…"
-                                            className="w-full bg-black border border-[#1a1a1a] rounded-xl py-3 px-4 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/40 focus:ring-2 focus:ring-[#00D97E]/10 transition-[border-color,box-shadow]"
+                                            className="w-full bg-black border border-[var(--color-border)] rounded-xl py-3 px-4 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/40 focus:ring-2 focus:ring-[#00D97E]/10 transition-[border-color,box-shadow]"
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="productPrice" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Prix (FCFA)</label>
+                                        <label htmlFor="productPrice" className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Prix (FCFA)</label>
                                         <input
                                             id="productPrice"
                                             type="number"
@@ -388,11 +388,11 @@ const Onboarding: React.FC = () => {
                                             value={productPrice}
                                             onChange={e => setProductPrice(e.target.value)}
                                             placeholder="15000"
-                                            className="w-full bg-black border border-[#1a1a1a] rounded-xl py-3 px-4 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/40 focus:ring-2 focus:ring-[#00D97E]/10 transition-[border-color,box-shadow] font-mono"
+                                            className="w-full bg-black border border-[var(--color-border)] rounded-xl py-3 px-4 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/40 focus:ring-2 focus:ring-[#00D97E]/10 transition-[border-color,box-shadow] font-mono"
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="productStock" className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Stock disponible (optionnel)</label>
+                                        <label htmlFor="productStock" className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Stock disponible (optionnel)</label>
                                         <input
                                             id="productStock"
                                             type="number"
@@ -401,24 +401,24 @@ const Onboarding: React.FC = () => {
                                             value={productStock}
                                             onChange={e => setProductStock(e.target.value)}
                                             placeholder="10"
-                                            className="w-full bg-black border border-[#1a1a1a] rounded-xl py-3 px-4 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/40 focus:ring-2 focus:ring-[#00D97E]/10 transition-[border-color,box-shadow] font-mono"
+                                            className="w-full bg-black border border-[var(--color-border)] rounded-xl py-3 px-4 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/40 focus:ring-2 focus:ring-[#00D97E]/10 transition-[border-color,box-shadow] font-mono"
                                         />
-                                        <p className="text-[10px] text-[#555] mt-1.5 font-medium">Laisser vide = stock illimité</p>
+                                        <p className="text-xs text-[var(--color-muted)] mt-1.5 font-medium">Laisser vide = stock illimité</p>
                                     </div>
                                 </div>
 
-                                <div className="flex gap-2.5 mt-8 border-t border-[#1a1a1a]/60 pt-4">
+                                <div className="flex gap-2.5 mt-8 border-t border-[var(--color-border)]/60 pt-4">
                                     <button 
                                         onClick={goPrev} 
                                         aria-label="Retour"
-                                        className="px-4 bg-black border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white py-3 rounded-xl flex items-center gap-2 cursor-pointer active:scale-95 transition-transform"
+                                        className="px-4 bg-black border border-[var(--color-border)] hover:bg-[#1a1a1a] text-white py-3 rounded-xl flex items-center gap-2 cursor-pointer active:scale-[0.99] transition-transform"
                                     >
                                         <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                                     </button>
                                     <button
                                         onClick={saveFirstProduct}
                                         disabled={productSaving}
-                                        className="flex-1 bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-[transform,background-color] active:scale-95 cursor-pointer text-sm"
+                                        className="flex-1 bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-[transform,background-color] active:scale-[0.99] cursor-pointer text-sm"
                                     >
                                         {productSaving ? 'Ajout…' : 'Ajouter ce produit'}
                                         {!productSaving && <ArrowRight className="w-4 h-4" aria-hidden="true" />}
@@ -426,7 +426,7 @@ const Onboarding: React.FC = () => {
                                 </div>
                                 <button 
                                     onClick={skipStep} 
-                                    className="w-full mt-3 text-[#888] hover:text-white text-xs font-semibold py-2 cursor-pointer text-center hover:bg-white/5 transition-colors rounded-xl"
+                                    className="w-full mt-3 text-[var(--color-muted)] hover:text-white text-xs font-semibold py-2 cursor-pointer text-center hover:bg-white/5 transition-colors rounded-xl"
                                 >
                                     Plus tard, passer cette étape
                                 </button>
@@ -439,7 +439,7 @@ const Onboarding: React.FC = () => {
                 {step === 'personality' && (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <h2 className="text-xl font-bold text-white mb-1">Le ton du bot</h2>
-                        <p className="text-[#888] text-sm mb-6">Étape 3 sur 3 — comment votre bot doit-il s'adresser à vos clients ?</p>
+                        <p className="text-[var(--color-muted)] text-sm mb-6">Étape 3 sur 3 — comment votre bot doit-il s'adresser à vos clients ?</p>
 
                         <div className="space-y-3 mb-6">
                             {PERSONALITIES.map(p => {
@@ -449,12 +449,12 @@ const Onboarding: React.FC = () => {
                                         key={p.id}
                                         type="button"
                                         onClick={() => setPersona(p.id)}
-                                        className={`w-full p-4 rounded-2xl border text-left transition-[background-color,border-color,box-shadow] flex items-center gap-3.5 cursor-pointer active:scale-[0.99] ${isSelected ? 'bg-[#00D97E]/5 border-[#00D97E]/20 ring-1 ring-[#00D97E]/20 shadow-lg' : 'bg-black border-[#1a1a1a] hover:border-[#00D97E]/10'}`}
+                                        className={`w-full p-4 rounded-[13px] border text-left transition-[background-color,border-color,box-shadow] flex items-center gap-3.5 cursor-pointer active:scale-[0.99] ${isSelected ? 'bg-[#00D97E]/5 border-[#00D97E]/20 ring-1 ring-[#00D97E]/20 shadow-none' : 'bg-black border-[var(--color-border)] hover:border-[#00D97E]/10'}`}
                                     >
                                         <span className="text-2xl shrink-0">{p.emoji}</span>
                                         <div className="flex-1 min-w-0">
                                             <p className={`font-bold text-sm leading-none ${isSelected ? 'text-[#00D97E]' : 'text-white'}`}>{p.title}</p>
-                                            <p className="text-xs text-[#888] mt-1.5 truncate pr-2">{p.desc}</p>
+                                            <p className="text-xs text-[var(--color-muted)] mt-1.5 truncate pr-2">{p.desc}</p>
                                         </div>
                                         {isSelected && <Check className="w-4 h-4 text-[#00D97E] shrink-0" aria-hidden="true" />}
                                     </button>
@@ -462,18 +462,18 @@ const Onboarding: React.FC = () => {
                             })}
                         </div>
 
-                        <div className="flex gap-2.5 mt-8 border-t border-[#1a1a1a]/60 pt-4">
+                        <div className="flex gap-2.5 mt-8 border-t border-[var(--color-border)]/60 pt-4">
                             <button 
                                 onClick={goPrev} 
                                 aria-label="Retour"
-                                className="px-4 bg-black border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white py-3 rounded-xl flex items-center gap-2 cursor-pointer active:scale-95 transition-transform"
+                                className="px-4 bg-black border border-[var(--color-border)] hover:bg-[#1a1a1a] text-white py-3 rounded-xl flex items-center gap-2 cursor-pointer active:scale-[0.99] transition-transform"
                             >
                                 <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                             </button>
                             <button
                                 onClick={savePersonality}
                                 disabled={personaSaving}
-                                className="flex-1 bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-[transform,background-color] active:scale-95 cursor-pointer text-sm"
+                                className="flex-1 bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-[transform,background-color] active:scale-[0.99] cursor-pointer text-sm"
                             >
                                 {personaSaving ? 'Configuration…' : 'Terminer'}
                                 {!personaSaving && <ArrowRight className="w-4 h-4" aria-hidden="true" />}
@@ -489,7 +489,7 @@ const Onboarding: React.FC = () => {
                             <PartyPopper className="w-8 h-8 text-[#00D97E]" aria-hidden="true" />
                         </div>
                         <h2 className="text-2xl font-bold text-white mb-2">C'est prêt ! 🚀</h2>
-                        <p className="text-[#888] mb-8 max-w-sm mx-auto text-xs md:text-sm">
+                        <p className="text-[var(--color-muted)] mb-8 max-w-sm mx-auto text-xs md:text-sm">
                             Votre bot DjassaBot est maintenant configuré. Il va pouvoir accueillir et vendre automatiquement à vos clients WhatsApp 24h/24.
                         </p>
 
@@ -507,13 +507,13 @@ const Onboarding: React.FC = () => {
                         <div className="flex flex-col gap-2">
                             <button
                                 onClick={() => navigate('/dashboard')}
-                                className="w-full bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-[transform,background-color] active:scale-95 cursor-pointer text-sm"
+                                className="w-full bg-[#00D97E] hover:bg-[#00D97E]/95 text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-[transform,background-color] active:scale-[0.99] cursor-pointer text-sm"
                             >
                                 Accéder au tableau de bord <ArrowRight className="w-4 h-4" aria-hidden="true" />
                             </button>
                             <button
                                 onClick={() => navigate('/dashboard/inbox')}
-                                className="w-full bg-black hover:bg-[#1a1a1a] border border-[#1a1a1a] text-white py-3 rounded-xl flex items-center justify-center gap-2 transition-[transform,background-color] active:scale-95 cursor-pointer text-sm"
+                                className="w-full bg-black hover:bg-[#1a1a1a] border border-[var(--color-border)] text-white py-3 rounded-xl flex items-center justify-center gap-2 transition-[transform,background-color] active:scale-[0.99] cursor-pointer text-sm"
                             >
                                 <MessageCircle className="w-4 h-4" aria-hidden="true" /> Ouvrir les discussions
                             </button>
@@ -525,7 +525,7 @@ const Onboarding: React.FC = () => {
                 {step !== 'done' && (
                     <button
                         onClick={() => { localStorage.clear(); sessionStorage.clear(); navigate('/login'); }}
-                        className="mt-6 text-xs text-[#555] hover:text-[#888] flex items-center gap-1.5 mx-auto cursor-pointer"
+                        className="mt-6 text-xs text-[var(--color-muted)] hover:text-[var(--color-muted)] flex items-center gap-1.5 mx-auto cursor-pointer"
                     >
                         <LogOut className="w-3 h-3" aria-hidden="true" /> Se déconnecter
                     </button>

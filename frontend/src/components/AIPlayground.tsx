@@ -88,22 +88,22 @@ export default function AIPlayground() {
     };
 
     return (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl overflow-hidden flex flex-col h-[500px] shadow-2xl relative">
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] overflow-hidden flex flex-col h-[500px] shadow-none relative">
             {/* Header */}
-            <div className="bg-[#111] border-b border-[#1a1a1a] p-4 flex justify-between items-center z-20">
+            <div className="bg-[var(--color-surface)] border-b border-[var(--color-border)] p-4 flex justify-between items-center z-20">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-[#00D97E] rounded-lg">
                         <Smartphone size={18} className="text-white" />
                     </div>
                     <div>
                         <h3 className="text-white font-bold text-sm tracking-tight">Simulateur WhatsApp</h3>
-                        <p className="text-[#888] text-xs">Réglages enregistrés · aucune commande réelle</p>
+                        <p className="text-[var(--color-muted)] text-xs">Réglages enregistrés · aucune commande réelle</p>
                     </div>
                 </div>
                 <button
                     onClick={handleReset}
                     disabled={loading}
-                    className="p-2 text-[#888] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                    className="p-2 text-[var(--color-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                     title="Effacer la conversation"
                 >
                     <Trash2 size={16} />
@@ -119,16 +119,16 @@ export default function AIPlayground() {
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 relative z-10 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                 {messages.length === 0 && (
                     <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50">
-                        <Bot size={48} className="text-[#555] mb-4" />
-                        <p className="text-[#888] text-sm">Envoyez un message pour commencer à discuter avec votre vendeur IA.</p>
+                        <Bot size={48} className="text-[var(--color-muted)] mb-4" />
+                        <p className="text-[var(--color-muted)] text-sm">Envoyez un message pour commencer à discuter avec votre vendeur IA.</p>
                     </div>
                 )}
 
                 {messages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm ${msg.role === 'user'
+                        <div className={`max-w-[80%] rounded-[13px] px-4 py-3 text-sm shadow-sm ${msg.role === 'user'
                             ? 'bg-[#00D97E] text-black rounded-tr-none'
-                            : 'bg-[#111] text-white rounded-tl-none border border-[#1a1a1a]'
+                            : 'bg-[var(--color-surface)] text-white rounded-tl-none border border-[var(--color-border)]'
                             }`}>
                             {/* Afficher les images si présentes */}
                             {msg.images && msg.images.length > 0 && (
@@ -140,7 +140,7 @@ export default function AIPlayground() {
                                             key={imgIdx}
                                             src={imgUrl}
                                             alt={`Product ${imgIdx + 1}`}
-                                            className="rounded-lg w-full h-auto object-cover max-h-32 cursor-pointer hover:opacity-90 transition-opacity border border-[#1a1a1a]"
+                                            className="rounded-lg w-full h-auto object-cover max-h-32 cursor-pointer hover:opacity-90 transition-opacity border border-[var(--color-border)]"
                                             onClick={() => window.open(imgUrl, '_blank')}
                                             onError={(e) => {
                                                 (e.target as HTMLImageElement).style.display = 'none';
@@ -154,7 +154,7 @@ export default function AIPlayground() {
                                     {line.replace(/\*\*/g, '')}
                                 </p>
                             ))}
-                            <span className="text-[10px] opacity-50 block text-right mt-1">
+                            <span className="text-xs opacity-50 block text-right mt-1">
                                 {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         </div>
@@ -163,7 +163,7 @@ export default function AIPlayground() {
 
                 {loading && (
                     <div className="flex justify-start">
-                        <div className="bg-[#111] rounded-2xl rounded-tl-none px-4 py-3 border border-[#1a1a1a]">
+                        <div className="bg-[var(--color-surface)] rounded-[13px] rounded-tl-none px-4 py-3 border border-[var(--color-border)]">
                             <div className="flex gap-1.5">
                                 <span className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
                                 <span className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
@@ -176,7 +176,7 @@ export default function AIPlayground() {
 
             {/* Input Area */}
             {error && <p role="alert" className="text-sm text-red-400 px-4 py-2 relative z-10">{error}</p>}
-            <form onSubmit={handleSend} className="p-3 bg-[#111] border-t border-[#1a1a1a] flex gap-2 relative z-10">
+            <form onSubmit={handleSend} className="p-3 bg-[var(--color-surface)] border-t border-[var(--color-border)] flex gap-2 relative z-10">
                 <input
                     type="text"
                     value={input}
@@ -184,12 +184,12 @@ export default function AIPlayground() {
                     disabled={loading}
                     onChange={e => setInput(e.target.value)}
                     placeholder="Tapez un message..."
-                    className="flex-1 bg-white/5 border border-[#1a1a1a] rounded-full px-4 py-2 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none placeholder:text-[#555] text-sm"
+                    className="flex-1 bg-white/5 border border-[var(--color-border)] rounded-full px-4 py-2 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none placeholder:text-[var(--color-muted)] text-sm"
                 />
                 <button
                     type="submit"
                     disabled={!input.trim() || loading}
-                    className="w-10 h-10 flex items-center justify-center bg-[#00D97E] hover:bg-[#00D97E]/90 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-black rounded-full transition-all shadow-lg shadow-[#00D97E]/10"
+                    className="w-10 h-10 flex items-center justify-center bg-[#00D97E] hover:bg-[#00D97E]/90 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-black rounded-full transition-all shadow-none shadow-[#00D97E]/10"
                 >
                     <Send size={18} className={loading ? 'opacity-0' : 'ml-0.5'} />
                 </button>

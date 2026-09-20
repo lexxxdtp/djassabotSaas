@@ -70,16 +70,16 @@ export default function SubscriptionExpired() {
     const plansToShow = PLAN_ORDER.map(({ id, recommended }) => ({ plan: resolve(id), recommended: !!recommended }));
 
     return (
-        <div className="min-h-screen bg-black px-4 py-8 flex justify-center">
+        <div className="auth-form-page min-h-screen bg-black px-4 py-8 flex justify-center">
             <div className="w-full max-w-md">
                 {/* Bandeau d'expiration */}
-                <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 mb-6">
+                <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-[13px] p-4 mb-6">
                     <div className="p-2 rounded-xl bg-amber-500/15 text-amber-500 shrink-0">
                         <AlertTriangle className="w-5 h-5" aria-hidden="true" />
                     </div>
                     <div className="min-w-0">
-                        <h1 className="text-white font-bold text-lg leading-tight">Votre abonnement a expiré</h1>
-                        <p className="text-[#888] text-sm mt-1">
+                        <h1 className="page-title text-white font-bold text-lg leading-tight">Votre abonnement a expiré</h1>
+                        <p className="text-[var(--color-muted)] text-sm mt-1">
                             L'accès à votre tableau de bord est en pause. Choisissez un forfait ci-dessous
                             pour reprendre vos ventes.
                         </p>
@@ -99,13 +99,13 @@ export default function SubscriptionExpired() {
 
                 {/* Support + déconnexion */}
                 <div className="mt-4 text-center space-y-3">
-                    <p className="text-xs text-[#555]">
+                    <p className="text-xs text-[var(--color-muted)]">
                         Un souci pour payer ? Écrivez à{' '}
                         <a href="mailto:support@djassabot.com" className="text-[#00D97E] hover:underline">support@djassabot.com</a>
                     </p>
                     <button
                         onClick={logout}
-                        className="text-sm text-[#888] hover:text-white underline underline-offset-4 transition-colors"
+                        className="text-sm text-[var(--color-muted)] hover:text-white underline underline-offset-4 transition-colors"
                     >
                         Se déconnecter
                     </button>

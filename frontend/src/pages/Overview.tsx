@@ -1,3 +1,4 @@
+import PageHeading from '../components/ui/PageHeading';
 import { useState, useEffect, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, ShoppingBag, Receipt, Activity, ArrowRight } from 'lucide-react';
@@ -19,7 +20,7 @@ const STATUS_META: Record<UIStatus, { label: string; color: string }> = {
     NEW: { label: 'Nouvelle', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
     PAID: { label: 'Payée', color: 'text-[#00D97E] bg-[#00D97E]/10 border-[#00D97E]/20' },
     DELIVERED: { label: 'Livrée', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
-    CANCELLED: { label: 'Annulée', color: 'text-[#666] bg-white/5 border-[#1a1a1a]' },
+    CANCELLED: { label: 'Annulée', color: 'text-[var(--color-muted)] bg-white/5 border-[var(--color-border)]' },
 };
 
 // ---------- CONTAINER (data) ----------
@@ -117,21 +118,17 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
     return (
         <div className="space-y-5 pb-4">
-            {/* HEADER */}
-            <div className={anim} style={delay(0)}>
-                <h1 className="text-2xl font-bold text-white tracking-tight">{greeting}</h1>
-                <p className="text-[#888] text-sm mt-0.5">Vos chiffres des 7 derniers jours.</p>
-            </div>
+            <PageHeading eyebrow="Votre activité en un regard" title={greeting} description="Les chiffres de votre boutique sur les sept derniers jours." />
 
             {/* HERO — CHIFFRE D'AFFAIRES 7 JOURS */}
-            <div className={`bg-[#111] border border-[#1a1a1a] rounded-2xl p-5 ${anim}`} style={delay(1)}>
-                <p className="text-[#888] text-sm">Montant des commandes · 7 jours</p>
+            <div className={`bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-5 ${anim}`} style={delay(1)}>
+                <p className="text-[var(--color-muted)] text-sm">Montant des commandes · 7 jours</p>
                 <p className="text-[38px] leading-none font-bold text-white tracking-tight tabular-nums mt-2">
                     {ordersAvailable ? revenue7.toLocaleString('fr-FR') : '—'}
-                    <span className="text-lg text-[#888] font-semibold ml-1.5">FCFA</span>
+                    <span className="text-lg text-[var(--color-muted)] font-semibold ml-1.5">FCFA</span>
                 </p>
-                <p className="text-xs text-[#888] mt-2">Hors annulations, livraison incluse. Calcul selon la date de commande, pas la date de paiement.</p>
-                {!ordersAvailable && <p role="status" className="text-sm text-[#888] mt-2">Commandes indisponibles. Nouvelle tentative automatique.</p>}
+                <p className="text-xs text-[var(--color-muted)] mt-2">Hors annulations, livraison incluse. Calcul selon la date de commande, pas la date de paiement.</p>
+                {!ordersAvailable && <p role="status" className="text-sm text-[var(--color-muted)] mt-2">Commandes indisponibles. Nouvelle tentative automatique.</p>}
                 {ordersAvailable && revenueDelta !== null && (
                     <div className="mt-3">
                         <DeltaChip value={revenueDelta} suffix="vs semaine dernière" />
@@ -141,8 +138,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
             {/* KPI DUO — COMMANDES · PANIER MOYEN */}
             <div className={`grid grid-cols-2 gap-3 ${anim}`} style={delay(2)}>
-                <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4">
-                    <div className="flex items-center gap-1.5 text-[#888] text-xs mb-2">
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-4">
+                    <div className="flex items-center gap-1.5 text-[var(--color-muted)] text-xs mb-2">
                         <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" /> Commandes
                     </div>
                     <p className="text-2xl font-bold text-white tabular-nums">{ordersAvailable ? orders7 : '—'}</p>
@@ -150,23 +147,23 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         <div className="mt-2"><DeltaChip value={ordersDelta} compact /></div>
                     )}
                 </div>
-                <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4">
-                    <div className="flex items-center gap-1.5 text-[#888] text-xs mb-2">
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-4">
+                    <div className="flex items-center gap-1.5 text-[var(--color-muted)] text-xs mb-2">
                         <Receipt className="w-3.5 h-3.5" aria-hidden="true" /> Panier moyen
                     </div>
                     <p className="text-2xl font-bold text-white tabular-nums">
                         {ordersAvailable ? avgBasket.toLocaleString('fr-FR') : '—'}
-                        <span className="text-sm text-[#888] font-semibold ml-1">F</span>
+                        <span className="text-sm text-[var(--color-muted)] font-semibold ml-1">F</span>
                     </p>
-                    <p className="mt-2 text-[11px] text-[#555]">par commande</p>
+                    <p className="mt-2 text-[11px] text-[var(--color-muted)]">par commande</p>
                 </div>
             </div>
 
             {/* GRAPHE DES VENTES */}
             <section className={anim} style={delay(3)}>
                 <h2 className="text-[15px] font-semibold text-white mb-3">Montant des commandes par jour</h2>
-                <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4">
-                    {!ordersAvailable ? <p className="text-sm text-[#888] py-8">Graphique indisponible pour le moment.</p> : hasSales7 ? (
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-4">
+                    {!ordersAvailable ? <p className="text-sm text-[var(--color-muted)] py-8">Graphique indisponible pour le moment.</p> : hasSales7 ? (
                         <div className="h-[200px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
@@ -186,11 +183,11 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         </div>
                     ) : (
                         <div className="h-[200px] flex flex-col items-center justify-center text-center px-6">
-                            <div className="p-3 rounded-2xl bg-[#00D97E]/10 text-[#00D97E] mb-3">
+                            <div className="p-3 rounded-[13px] bg-[#00D97E]/10 text-[#00D97E] mb-3">
                                 <TrendingUp className="w-6 h-6" aria-hidden="true" />
                             </div>
                             <p className="text-white text-sm font-medium">Aucun montant de commande sur ces 7 jours.</p>
-                            <p className="text-[#888] text-xs mt-1">Les commandes annulées ne sont pas comptées.</p>
+                            <p className="text-[var(--color-muted)] text-xs mt-1">Les commandes annulées ne sont pas comptées.</p>
                         </div>
                     )}
                 </div>
@@ -199,9 +196,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             {/* ACTIVITÉ DU BOT */}
             <section className={anim} style={delay(4)}>
                 <h2 className="text-[15px] font-semibold text-white mb-3">Activité en direct</h2>
-                <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-5">
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] p-5">
                     {logs.length === 0 ? (
-                        <div className="flex items-center gap-3 text-[#888] text-sm py-2">
+                        <div className="flex items-center gap-3 text-[var(--color-muted)] text-sm py-2">
                             <Activity className="w-4 h-4 shrink-0" aria-hidden="true" />
                             Aucune activité récente pour le moment.
                         </div>
@@ -210,8 +207,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                             {logs.slice(0, 8).map(log => (
                                 <div key={log.id} className="flex items-start gap-3 text-xs">
                                     <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${log.type === 'sale' ? 'bg-emerald-500' : log.type === 'warning' ? 'bg-amber-500' : log.type === 'action' ? 'bg-[#00D97E]' : 'bg-[#0EA5E9]'}`} />
-                                    <p className="text-[#888] leading-relaxed flex-1">{log.message}</p>
-                                    <span className="text-[#555] tabular-nums shrink-0">
+                                    <p className="text-[var(--color-muted)] leading-relaxed flex-1">{log.message}</p>
+                                    <span className="text-[var(--color-muted)] tabular-nums shrink-0">
                                         {new Date(log.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
@@ -229,9 +226,9 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                         Tout voir <ArrowRight className="w-3 h-3" aria-hidden="true" />
                     </Link>
                 </div>
-                <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl overflow-hidden divide-y divide-[#1a1a1a]">
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] overflow-hidden divide-y divide-[var(--color-border)]">
                     {recentOrders.length === 0 ? (
-                        <div className="text-[#888] text-sm text-center py-8">Aucune commande récente.</div>
+                        <div className="text-[var(--color-muted)] text-sm text-center py-8">Aucune commande récente.</div>
                     ) : (
                         recentOrders.slice(0, 6).map(order => {
                             const meta = STATUS_META[toUIStatus(order.status)];
@@ -239,7 +236,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                                 <div key={order.id} className="flex items-center justify-between gap-3 p-4">
                                     <div className="min-w-0">
                                         <p className="text-sm text-white font-medium truncate">{maskPhone(order.userId)}</p>
-                                        <p className="text-[11px] text-[#555] mt-0.5">
+                                        <p className="text-[11px] text-[var(--color-muted)] mt-0.5">
                                             {order.items.length} article{order.items.length > 1 ? 's' : ''}
                                             <span className="text-[#444]"> · </span>
                                             {new Date(orderDate(order)).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
@@ -247,7 +244,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                                     </div>
                                     <div className="flex items-center gap-3 shrink-0">
                                         <span className="text-sm text-white font-bold tabular-nums">{order.total.toLocaleString('fr-FR')} F</span>
-                                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${meta.color}`}>{meta.label}</span>
+                                        <span className={`px-2 py-0.5 rounded-md text-xs font-bold border ${meta.color}`}>{meta.label}</span>
                                     </div>
                                 </div>
                             );
@@ -267,8 +264,8 @@ const DeltaChip = ({ value, suffix, compact: isCompact }: { value: number; suffi
         <span className={`inline-flex items-center gap-1 text-sm font-semibold ${positive ? 'text-[#00D97E]' : 'text-red-400'}`}>
             <TrendingUp className={`w-4 h-4 ${positive ? '' : 'rotate-180'}`} aria-hidden="true" />
             {positive ? '+' : ''}{value}%
-            {suffix && <span className="text-[#888] font-normal">{suffix}</span>}
-            {isCompact && <span className="text-[#555] font-normal text-xs">7j</span>}
+            {suffix && <span className="text-[var(--color-muted)] font-normal">{suffix}</span>}
+            {isCompact && <span className="text-[var(--color-muted)] font-normal text-xs">7j</span>}
         </span>
     );
 };
@@ -277,8 +274,8 @@ interface TooltipEntry { value: number }
 const SalesTooltip = ({ active, payload, label }: { active?: boolean; payload?: TooltipEntry[]; label?: string }) => {
     if (!active || !payload || payload.length === 0) return null;
     return (
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-xl px-3 py-2 shadow-xl">
-            <p className="text-[10px] text-[#888] uppercase tracking-wider">{label}</p>
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-2 shadow-xl">
+            <p className="text-xs text-[var(--color-muted)] uppercase tracking-wider">{label}</p>
             <p className="text-sm font-bold text-white tabular-nums mt-0.5">{payload[0].value.toLocaleString('fr-FR')} FCFA</p>
         </div>
     );
@@ -287,16 +284,16 @@ const SalesTooltip = ({ active, payload, label }: { active?: boolean; payload?: 
 const OverviewSkeleton = () => (
     <div className="space-y-5 pb-4">
         <div className="space-y-2">
-            <div className="h-7 w-40 bg-[#111] rounded-lg animate-pulse" />
-            <div className="h-4 w-52 bg-[#111] rounded animate-pulse" />
+            <div className="h-7 w-40 bg-[var(--color-surface)] rounded-lg animate-pulse" />
+            <div className="h-4 w-52 bg-[var(--color-surface)] rounded animate-pulse" />
         </div>
-        <div className="h-[116px] bg-[#111] border border-[#1a1a1a] rounded-2xl animate-pulse" />
+        <div className="h-[116px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] animate-pulse" />
         <div className="grid grid-cols-2 gap-3">
-            <div className="h-[96px] bg-[#111] border border-[#1a1a1a] rounded-2xl animate-pulse" />
-            <div className="h-[96px] bg-[#111] border border-[#1a1a1a] rounded-2xl animate-pulse" />
+            <div className="h-[96px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] animate-pulse" />
+            <div className="h-[96px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] animate-pulse" />
         </div>
-        <div className="h-[240px] bg-[#111] border border-[#1a1a1a] rounded-2xl animate-pulse" />
-        <div className="h-[180px] bg-[#111] border border-[#1a1a1a] rounded-2xl animate-pulse" />
+        <div className="h-[240px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] animate-pulse" />
+        <div className="h-[180px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] animate-pulse" />
     </div>
 );
 

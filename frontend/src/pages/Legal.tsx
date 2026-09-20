@@ -1,5 +1,6 @@
+import Brand from '../components/ui/Brand';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Bot } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 /**
@@ -13,31 +14,26 @@ import { usePageTitle } from '../hooks/usePageTitle';
 const LegalLayout = ({ title, updated, children }: { title: string; updated: string; children: React.ReactNode }) => {
     usePageTitle(title);
     return (
-    <div className="min-h-screen bg-black text-white">
-        <header className="border-b border-[#1a1a1a] px-6 py-4">
+    <div className="product-app min-h-screen bg-black text-white">
+        <header className="border-b border-[var(--color-border)] px-6 py-4">
             <div className="max-w-3xl mx-auto flex items-center justify-between">
-                <Link to="/" className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded bg-[#00D97E] flex items-center justify-center">
-                        <Bot className="w-4 h-4 text-black" />
-                    </div>
-                    <span className="font-bold">DjassaBot</span>
-                </Link>
+                <Brand />
                 {/* min-h-11 : 20 px de haut, c'était sous le seuil tactile confortable. */}
-                <Link to="/" className="flex items-center gap-1.5 min-h-11 px-2 -mr-2 text-sm text-[#888] hover:text-white transition-colors">
+                <Link to="/" className="flex items-center gap-1.5 min-h-11 px-2 -mr-2 text-sm text-[var(--color-muted)] hover:text-white transition-colors">
                     <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Retour
                 </Link>
             </div>
         </header>
         <main className="max-w-3xl mx-auto px-6 py-12">
-            <h1 className="text-3xl font-bold tracking-tight mb-2">{title}</h1>
+            <h1 className="page-title text-3xl font-bold tracking-tight mb-2">{title}</h1>
             {/* #555 sur noir = 2,82 de contraste, sous le minimum AA de 4,5. #888 est
                 déjà dans le design system et passe à 5,9. */}
-            <p className="text-[#888] text-sm mb-10">Dernière mise à jour : {updated}</p>
+            <p className="text-[var(--color-muted)] text-sm mb-10">Dernière mise à jour : {updated}</p>
             <div className="space-y-8 text-[#aaa] text-[15px] leading-relaxed [&_h2]:text-white [&_h2]:font-bold [&_h2]:text-lg [&_h2]:mb-2 [&_strong]:text-white">
                 {children}
             </div>
         </main>
-        <footer className="border-t border-[#1a1a1a] py-8 text-center text-[#888] text-xs">
+        <footer className="border-t border-[var(--color-border)] py-8 text-center text-[var(--color-muted)] text-xs">
             © 2026 DjassaBot — Abidjan, Côte d'Ivoire
         </footer>
     </div>

@@ -1,3 +1,4 @@
+import PageHeading from '../components/ui/PageHeading';
 import { useState, useEffect } from 'react';
 import { 
     Bot, Store, User, QrCode, PlayCircle, 
@@ -41,12 +42,12 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, title,
                 aria-modal="true"
                 aria-label={title}
                 tabIndex={-1}
-                className="bg-[#111] border-t md:border border-[#1a1a1a] rounded-t-3xl md:rounded-2xl w-full max-w-lg shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+                className="bg-[var(--color-surface)] border-t md:border border-[var(--color-border)] rounded-t-3xl md:rounded-[13px] w-full max-w-lg shadow-none relative overflow-hidden animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
                 {/* Drag Indicator on Mobile */}
                 <div className="w-12 h-1 bg-[#222] rounded-full mx-auto my-3 md:hidden shrink-0"></div>
 
                 {/* Header */}
-                <div className="px-6 pb-4 flex justify-between items-center border-b border-[#1a1a1a] pt-2 md:pt-6 shrink-0">
+                <div className="px-6 pb-4 flex justify-between items-center border-b border-[var(--color-border)] pt-2 md:pt-6 shrink-0">
                     <div>
                         <h2 className="text-base font-bold text-white">{title}</h2>
                     </div>
@@ -55,12 +56,12 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, title,
                             <button
                                 onClick={onSave}
                                 disabled={saving}
-                                className="bg-[#00D97E] hover:bg-[#00D97E]/95 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-xl text-xs font-bold transition-transform active:scale-95 flex items-center gap-1 shrink-0 cursor-pointer"
+                                className="bg-[#00D97E] hover:bg-[#00D97E]/95 disabled:opacity-50 text-black px-3.5 py-1.5 rounded-xl text-xs font-bold transition-transform active:scale-[0.99] flex items-center gap-1 shrink-0 cursor-pointer"
                             >
                                 {saving ? 'Sauvegarde…' : 'Enregistrer'}
                             </button>
                         )}
-                        <button onClick={onClose} aria-label="Fermer" className="text-[#888] hover:text-white transition-colors bg-[#1a1a1a] p-1.5 rounded-full cursor-pointer">
+                        <button onClick={onClose} aria-label="Fermer" className="text-[var(--color-muted)] hover:text-white transition-colors bg-[#1a1a1a] p-1.5 rounded-full cursor-pointer">
                             <X size={16} aria-hidden="true" />
                         </button>
                     </div>
@@ -332,25 +333,21 @@ export default function Settings() {
     };
 
     const menuItems = [
-        { id: 'identity', label: "Nom & Activation de l'IA", icon: Bot, desc: 'Identité du bot et activation globale' },
-        { id: 'personality', label: 'Personnalité & Ton', icon: Sparkles, desc: 'Niveau de politesse, emojis, humour, nouchi' },
-        { id: 'shop', label: 'Ma Boutique & Horaires', icon: Store, desc: 'Nom, adresse, numéro et heures d\'ouverture' },
-        { id: 'delivery', label: 'Livraison & Règlements', icon: MapPin, desc: 'Frais de livraison, banque et compte Paystack' },
-        { id: 'whatsapp', label: 'Connexion WhatsApp', icon: QrCode, desc: 'Lier votre numéro de téléphone via QR/Pairing code' },
-        { id: 'account', label: 'Mon Compte & Abonnement', icon: User, desc: 'Informations personnelles, forfait et FAQ' },
-        { id: 'test', label: 'Tester mon Bot', icon: PlayCircle, desc: 'Simuler une conversation avec le bot IA' },
+        { id: 'identity', label: "Mon assistant", icon: Bot, desc: 'Choisir son nom et activer ses réponses' },
+        { id: 'personality', label: 'Sa façon de répondre', icon: Sparkles, desc: 'Niveau de politesse, emojis, humour, nouchi' },
+        { id: 'shop', label: 'Ma boutique et ses horaires', icon: Store, desc: 'Nom, adresse, numéro et heures d\'ouverture' },
+        { id: 'delivery', label: 'Livraison et paiements', icon: MapPin, desc: 'Frais de livraison, banque et compte Paystack' },
+        { id: 'whatsapp', label: 'Connexion WhatsApp', icon: QrCode, desc: 'Associer votre numéro avec un code ou un QR code' },
+        { id: 'account', label: 'Mon compte et mon abonnement', icon: User, desc: 'Informations personnelles, forfait et FAQ' },
+        { id: 'test', label: 'Essayer mon assistant', icon: PlayCircle, desc: 'Simuler une conversation avec le bot IA' },
     ];
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
-            {/* HEADER */}
-            <div className="border-b border-[#1a1a1a] pb-4">
-                <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Réglages</h1>
-                <p className="text-[#888] text-xs md:text-sm mt-1">Gérez votre profil, la personnalité du bot et les détails de livraison.</p>
-            </div>
+            <PageHeading eyebrow="Votre façon de vendre" title="Les réglages de la boutique" description="Votre identité, votre assistant et vos règles de livraison." />
 
             {/* SETTINGS LIST MENU (iOS-like) */}
-            <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl overflow-hidden divide-y divide-[#1a1a1a]">
+            <div className="settings-menu bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[13px] overflow-hidden divide-y divide-[var(--color-border)]">
                 {menuItems.map((item) => {
                     const Icon = item.icon;
                     return (
@@ -360,15 +357,15 @@ export default function Settings() {
                             className="w-full flex items-center justify-between p-4 hover:bg-white/[0.02] active:bg-white/[0.04] transition-[background-color] text-left group cursor-pointer"
                         >
                             <div className="flex items-center gap-3.5 min-w-0">
-                                <div className="p-2.5 rounded-xl bg-[#1a1a1a] text-[#888] group-hover:text-[#00D97E] group-hover:bg-[#00D97E]/10 transition-colors shrink-0">
+                                <div className="p-2.5 rounded-xl bg-[#1a1a1a] text-[var(--color-muted)] group-hover:text-[#00D97E] group-hover:bg-[#00D97E]/10 transition-colors shrink-0">
                                     <Icon size={20} aria-hidden="true" />
                                 </div>
                                 <div className="min-w-0">
                                     <h3 className="text-white font-bold text-sm leading-none group-hover:text-[#00D97E] transition-colors">{item.label}</h3>
-                                    <p className="text-[#555] text-xs mt-1 truncate">{item.desc}</p>
+                                    <p className="text-[var(--color-muted)] text-xs mt-1 truncate">{item.desc}</p>
                                 </div>
                             </div>
-                            <ChevronRight size={16} aria-hidden="true" className="text-[#333] group-hover:text-[#555] transition-colors shrink-0" />
+                            <ChevronRight size={16} aria-hidden="true" className="text-[#333] group-hover:text-[var(--color-muted)] transition-colors shrink-0" />
                         </button>
                     );
                 })}
@@ -378,7 +375,7 @@ export default function Settings() {
             <SettingsDrawer
                 isOpen={openDrawer === 'identity'}
                 onClose={() => setOpenDrawer(null)}
-                title="Nom & Activation de l'IA"
+                title="Mon assistant"
                 onSave={handleSave}
                 saving={loading}
             >
@@ -393,7 +390,7 @@ export default function Settings() {
             <SettingsDrawer
                 isOpen={openDrawer === 'personality'}
                 onClose={() => setOpenDrawer(null)}
-                title="Personnalité & Ton"
+                title="Sa façon de répondre"
                 onSave={handleSave}
                 saving={loading}
             >
@@ -404,7 +401,7 @@ export default function Settings() {
             <SettingsDrawer
                 isOpen={openDrawer === 'shop'}
                 onClose={() => setOpenDrawer(null)}
-                title="Ma Boutique & Horaires"
+                title="Ma boutique et ses horaires"
                 onSave={handleSave}
                 saving={loading}
             >
@@ -415,7 +412,7 @@ export default function Settings() {
             <SettingsDrawer
                 isOpen={openDrawer === 'delivery'}
                 onClose={() => setOpenDrawer(null)}
-                title="Livraison & Règlements"
+                title="Livraison et paiements"
                 onSave={handleSave}
                 saving={loading}
             >
@@ -441,23 +438,23 @@ export default function Settings() {
             <SettingsDrawer
                 isOpen={openDrawer === 'test'}
                 onClose={() => setOpenDrawer(null)}
-                title="Tester mon Bot"
+                title="Essayer mon assistant"
             >
                 <div className="space-y-6">
-                    <div className="bg-black border border-[#1a1a1a] rounded-xl p-5">
+                    <div className="bg-black border border-[var(--color-border)] rounded-xl p-5">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-white font-bold text-sm flex items-center gap-2">
                                 <Bot size={16} className="text-[#00D97E]" /> Synthèse IA
                             </h3>
                             {aiSummary && (
-                                <button onClick={handleGenerateSummary} className="text-[10px] text-[#888] hover:text-white">
+                                <button onClick={handleGenerateSummary} className="text-xs text-[var(--color-muted)] hover:text-white">
                                     Regénérer
                                 </button>
                             )}
                         </div>
                         {!aiSummary ? (
                             <div className="text-center py-4">
-                                <p className="text-xs text-[#888] mb-4">Générez une synthèse pour voir ce que l'IA a compris.</p>
+                                <p className="text-xs text-[var(--color-muted)] mb-4">Générez une synthèse pour voir ce que l'IA a compris.</p>
                                 <button
                                     onClick={handleGenerateSummary}
                                     disabled={summarizing}
@@ -469,7 +466,7 @@ export default function Settings() {
                             </div>
                         ) : (
                             <div className="max-h-40 overflow-y-auto">
-                                <p className="text-xs text-[#888] leading-relaxed whitespace-pre-line">{aiSummary}</p>
+                                <p className="text-xs text-[var(--color-muted)] leading-relaxed whitespace-pre-line">{aiSummary}</p>
                             </div>
                         )}
                     </div>
@@ -483,13 +480,13 @@ export default function Settings() {
             <SettingsDrawer
                 isOpen={openDrawer === 'account'}
                 onClose={() => setOpenDrawer(null)}
-                title="Mon Compte & Abonnement"
+                title="Mon compte et mon abonnement"
                 onSave={handleSave}
                 saving={loading}
             >
                 <div className="space-y-6">
                     {/* Profil */}
-                    <div className="bg-black border border-[#1a1a1a] rounded-2xl p-5">
+                    <div className="bg-black border border-[var(--color-border)] rounded-[13px] p-5">
                         <h2 className="text-xs font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider">
                             <span className="w-1 h-4 rounded-full bg-[#00D97E]" />
                             Informations personnelles
@@ -497,41 +494,41 @@ export default function Settings() {
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Nom complet</label>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Nom complet</label>
                                 <input
                                     type="text"
                                     value={userProfile.fullName}
                                     onChange={e => setUserProfile({ ...userProfile, fullName: e.target.value })}
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl p-3 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none transition-all placeholder:text-[#555]"
+                                    className="w-full bg-white/5 border border-[var(--color-border)] rounded-xl p-3 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none transition-all placeholder:text-[var(--color-muted)]"
                                     placeholder="Votre nom"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Date de naissance</label>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Date de naissance</label>
                                 <input
                                     type="date"
                                     value={userProfile.birthDate}
                                     onChange={e => setUserProfile({ ...userProfile, birthDate: e.target.value })}
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl p-3 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none transition-all [&::-webkit-calendar-picker-indicator]:invert"
+                                    className="w-full bg-white/5 border border-[var(--color-border)] rounded-xl p-3 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none transition-all [&::-webkit-calendar-picker-indicator]:invert"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Téléphone</label>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Téléphone</label>
                                 <input
                                     type="text"
                                     value={userProfile.phone}
                                     onChange={e => setUserProfile({ ...userProfile, phone: e.target.value })}
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl p-3 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none transition-all placeholder:text-[#555]"
+                                    className="w-full bg-white/5 border border-[var(--color-border)] rounded-xl p-3 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none transition-all placeholder:text-[var(--color-muted)]"
                                     placeholder="+225..."
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Email (optionnel)</label>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Email (optionnel)</label>
                                 <input
                                     type="email"
                                     value={userProfile.email}
                                     onChange={e => setUserProfile({ ...userProfile, email: e.target.value })}
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl p-3 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none transition-all placeholder:text-[#555]"
+                                    className="w-full bg-white/5 border border-[var(--color-border)] rounded-xl p-3 text-white focus:border-[#00D97E] focus:ring-1 focus:ring-[#00D97E] outline-none transition-all placeholder:text-[var(--color-muted)]"
                                     placeholder="email@exemple.com"
                                 />
                             </div>
@@ -539,20 +536,20 @@ export default function Settings() {
                     </div>
 
                     {/* Abonnement */}
-                    <div className="bg-black border border-[#1a1a1a] rounded-2xl p-5">
+                    <div className="bg-black border border-[var(--color-border)] rounded-[13px] p-5">
                         <h2 className="text-xs font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider">
                             <span className="w-1 h-4 rounded-full bg-[#00D97E]" />
                             Abonnement
                         </h2>
 
-                        <div className="flex items-center justify-between p-4 bg-white/5 border border-[#1a1a1a] rounded-xl mb-6">
+                        <div className="flex items-center justify-between p-4 bg-white/5 border border-[var(--color-border)] rounded-xl mb-6">
                             <div>
-                                <p className="text-[10px] uppercase font-bold tracking-wider text-[#888]">Plan actuel</p>
+                                <p className="text-xs uppercase font-bold tracking-wider text-[var(--color-muted)]">Plan actuel</p>
                                 <p className="text-xl font-bold text-white mt-1">
                                     {tenant?.subscription_tier ? tenant.subscription_tier.charAt(0).toUpperCase() + tenant.subscription_tier.slice(1) : 'Starter'}
                                 </p>
                             </div>
-                            <span className={`text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider ${tenant?.status === 'active' || tenant?.status === 'trial'
+                            <span className={`text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider ${tenant?.status === 'active' || tenant?.status === 'trial'
                                 ? 'bg-[#00D97E]/10 text-[#00D97E] border border-[#00D97E]/20'
                                 : 'bg-red-500/10 text-red-400 border border-red-500/20'
                                 }`}>
@@ -564,7 +561,7 @@ export default function Settings() {
                     </div>
 
                     {/* Support */}
-                    <div className="bg-black border border-[#1a1a1a] rounded-2xl p-5">
+                    <div className="bg-black border border-[var(--color-border)] rounded-[13px] p-5">
                         <h2 className="text-xs font-bold text-white mb-6 flex items-center gap-2 uppercase tracking-wider">
                             <span className="w-1 h-4 rounded-full bg-[#0EA5E9]" />
                             Aide & support
@@ -592,15 +589,15 @@ export default function Settings() {
                                     a: 'Le bot se connecte comme WhatsApp Web. Règle d\'or : n\'envoyez jamais de campagnes à des numéros qui ne vous ont jamais écrit. Le bot espace automatiquement les envois pour protéger votre numéro.'
                                 },
                             ].map(item => (
-                                <details key={item.q} className="group bg-[#111] border border-[#1a1a1a] rounded-xl">
+                                <details key={item.q} className="group bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl">
                                     <summary className="cursor-pointer list-none p-4 text-white font-medium flex items-center justify-between">
                                         {item.q}
-                                        <span className="text-[#555] group-open:rotate-45 transition-transform text-lg leading-none">+</span>
+                                        <span className="text-[var(--color-muted)] group-open:rotate-45 transition-transform text-lg leading-none">+</span>
                                     </summary>
-                                    <p className="px-4 pb-4 text-[#888] leading-relaxed">{item.a}</p>
+                                    <p className="px-4 pb-4 text-[var(--color-muted)] leading-relaxed">{item.a}</p>
                                 </details>
                             ))}
-                            <p className="text-[#888] pt-2">
+                            <p className="text-[var(--color-muted)] pt-2">
                                 Besoin d'aide ? Écrivez-nous : <a href="mailto:support@djassabot.com" className="text-[#00D97E] hover:underline">support@djassabot.com</a>
                             </p>
                         </div>

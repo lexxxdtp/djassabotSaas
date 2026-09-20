@@ -133,15 +133,15 @@ const Signup: React.FC = () => {
         + (/\d/.test(password) ? 1 : 0);
 
     return (
-        <div className="min-h-screen bg-black flex items-center justify-center p-4">
-            <div className="bg-[#111] border border-[#1a1a1a] p-8 rounded-3xl w-full max-w-md shadow-2xl shadow-[#00D97E]/5 backdrop-blur-sm">
+        <div className="auth-form-page min-h-screen bg-black flex items-center justify-center p-4">
+            <div className="bg-[var(--color-surface)] border border-[var(--color-border)] p-8 rounded-3xl w-full max-w-md shadow-none shadow-[#00D97E]/5 backdrop-blur-sm">
                 {/* Header */}
                 <div className="text-center mb-6">
-                    <div className="w-16 h-16 rounded-2xl bg-[#00D97E] flex items-center justify-center mx-auto mb-4">
+                    <div className="w-16 h-16 rounded-[13px] bg-[#00D97E] flex items-center justify-center mx-auto mb-4">
                         <ShoppingBag className="text-white w-8 h-8" />
                     </div>
-                    <h1 className="text-2xl font-bold text-white mb-1 tracking-tight">Créer votre Commerce IA</h1>
-                    <p className="text-[#888] text-sm">Étape {step} sur 3</p>
+                    <h1 className="page-title text-2xl font-bold text-white mb-1 tracking-tight">Créons votre boutique</h1>
+                    <p className="text-[var(--color-muted)] text-sm">Étape {step} sur 3</p>
                 </div>
 
                 {/* Progress bar */}
@@ -176,52 +176,52 @@ const Signup: React.FC = () => {
                         <h2 className="text-white font-bold text-lg">Vos informations personnelles</h2>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Nom complet</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Nom complet</label>
                             <div className="relative">
-                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] w-5 h-5" />
                                 <input
                                     type="text"
                                     value={fullName}
                                     onChange={e => setFullName(e.target.value)}
                                     placeholder="Jean Kouassi"
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                    className="w-full bg-white/5 border border-[var(--color-border)] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Votre numéro WhatsApp</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Votre numéro WhatsApp</label>
                             <div className="relative group">
                                 <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none z-10">
-                                    <Phone className="text-[#888] w-5 h-5" />
-                                    <span className="text-[#888] font-bold font-mono text-sm border-r border-[#333] pr-2">+225</span>
+                                    <Phone className="text-[var(--color-muted)] w-5 h-5" />
+                                    <span className="text-[var(--color-muted)] font-bold font-mono text-sm border-r border-[#333] pr-2">+225</span>
                                 </div>
                                 <input
                                     type="tel"
                                     value={phone}
                                     onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                     placeholder="0709483812"
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-[90px] pr-10 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all font-mono text-lg"
+                                    className="w-full bg-white/5 border border-[var(--color-border)] rounded-xl py-3 pl-[90px] pr-10 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all font-mono text-lg"
                                 />
                                 {phone.length === 10 && (
                                     <Check className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00D97E] w-5 h-5" />
                                 )}
                             </div>
-                            <p className="mt-1 text-xs text-[#555]">10 chiffres — c'est le numéro qui sera lié à votre bot</p>
+                            <p className="mt-1 text-xs text-[var(--color-muted)]">10 chiffres — c'est le numéro qui sera lié à votre bot</p>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">
-                                Votre adresse e-mail <span className="normal-case font-normal text-[#555]">(optionnel)</span>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">
+                                Votre adresse e-mail <span className="normal-case font-normal text-[var(--color-muted)]">(optionnel)</span>
                             </label>
                             <div className="relative group">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] w-5 h-5" />
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={e => setEmail(e.target.value)}
                                     placeholder="votre@email.com"
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                    className="w-full bg-white/5 border border-[var(--color-border)] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                             </div>
                         </div>
@@ -242,21 +242,21 @@ const Signup: React.FC = () => {
                         <h2 className="text-white font-bold text-lg">Votre boutique</h2>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Nom du commerce</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Nom du commerce</label>
                             <div className="relative">
-                                <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
+                                <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] w-5 h-5" />
                                 <input
                                     type="text"
                                     value={businessName}
                                     onChange={e => setBusinessName(e.target.value)}
                                     placeholder="Ma Super Boutique"
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                    className="w-full bg-white/5 border border-[var(--color-border)] rounded-xl py-3 pl-10 pr-4 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Vous vendez quoi ?</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Vous vendez quoi ?</label>
                             <div className="grid grid-cols-2 gap-2.5">
                                 {BUSINESS_TYPES.map(bt => {
                                     const selected = businessType === bt.id;
@@ -265,12 +265,12 @@ const Signup: React.FC = () => {
                                             key={bt.id}
                                             type="button"
                                             onClick={() => setBusinessType(bt.id)}
-                                            className={`relative flex items-center gap-3 p-3.5 rounded-2xl border transition-all active:scale-[0.97] ${selected ? 'bg-[#00D97E]/10 border-[#00D97E]' : 'bg-[#111] border-[#1a1a1a] hover:border-[#333]'}`}
+                                            className={`relative flex items-center gap-3 p-3.5 rounded-[13px] border transition-all active:scale-[0.97] ${selected ? 'bg-[#00D97E]/10 border-[#00D97E]' : 'bg-[var(--color-surface)] border-[var(--color-border)] hover:border-[#333]'}`}
                                         >
                                             <span className={`flex items-center justify-center w-10 h-10 rounded-xl text-xl shrink-0 transition-colors ${selected ? 'bg-[#00D97E]' : 'bg-white/5'}`}>
                                                 {bt.emoji}
                                             </span>
-                                            <span className={`text-sm font-semibold text-left leading-tight ${selected ? 'text-white' : 'text-[#888]'}`}>{bt.label}</span>
+                                            <span className={`text-sm font-semibold text-left leading-tight ${selected ? 'text-white' : 'text-[var(--color-muted)]'}`}>{bt.label}</span>
                                             {selected && (
                                                 <Check className="absolute top-2 right-2 w-4 h-4 text-[#00D97E]" />
                                             )}
@@ -281,28 +281,28 @@ const Signup: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Année de naissance</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Année de naissance</label>
                             <div className="relative">
                                 <select
                                     value={birthYear}
                                     onChange={e => setBirthYear(e.target.value)}
-                                    className="w-full appearance-none bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-4 pr-10 text-white focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                    className="w-full appearance-none bg-white/5 border border-[var(--color-border)] rounded-xl py-3 pl-4 pr-10 text-white focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 >
                                     <option value="" disabled className="bg-black">Sélectionnez une année</option>
                                     {BIRTH_YEARS.map(y => (
                                         <option key={y} value={y} className="bg-black">{y}</option>
                                     ))}
                                 </select>
-                                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
+                                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] w-5 h-5" />
                             </div>
-                            <p className="mt-1 text-xs text-[#555]">Vous devez avoir au moins 18 ans</p>
+                            <p className="mt-1 text-xs text-[var(--color-muted)]">Vous devez avoir au moins 18 ans</p>
                         </div>
 
                         <div className="flex gap-2 pt-2">
                             <button
                                 type="button"
                                 onClick={goBack}
-                                className="px-5 bg-white/5 border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white font-bold py-3.5 rounded-xl transition-all active:scale-[0.97] flex items-center gap-2"
+                                className="px-5 bg-white/5 border border-[var(--color-border)] hover:bg-[#1a1a1a] text-white font-bold py-3.5 rounded-xl transition-all active:scale-[0.97] flex items-center gap-2"
                             ><ArrowLeft className="w-4 h-4" /> Retour</button>
                             <button
                                 type="button"
@@ -319,27 +319,27 @@ const Signup: React.FC = () => {
                         <h2 className="text-white font-bold text-lg">Sécurisez votre compte</h2>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Mot de passe</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Mot de passe</label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] w-5 h-5" />
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-12 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                    className="w-full bg-white/5 border border-[var(--color-border)] rounded-xl py-3 pl-10 pr-12 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888] hover:text-white"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] hover:text-white"
                                 >{showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
                             </div>
 
                             <div className="mt-3 h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                                 <div className={`h-full transition-all duration-300 ${passwordScore === 0 ? 'w-0' : passwordScore === 1 ? 'bg-red-500 w-1/3' : passwordScore === 2 ? 'bg-orange-500 w-2/3' : 'bg-green-500 w-full shadow-[0_0_10px_rgba(34,197,94,0.5)]'}`} />
                             </div>
-                            <div className="grid grid-cols-1 gap-1 text-xs text-[#888] mt-2">
+                            <div className="grid grid-cols-1 gap-1 text-xs text-[var(--color-muted)] mt-2">
                                 <div className={`flex items-center gap-2 ${password.length >= 8 ? 'text-green-400' : ''}`}>
                                     <div className={`w-1.5 h-1.5 rounded-full ${password.length >= 8 ? 'bg-green-400' : 'bg-[#444]'}`} /> 8 caractères min
                                 </div>
@@ -353,30 +353,30 @@ const Signup: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider text-[#888] mb-2">Confirmer</label>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Confirmer</label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888] w-5 h-5" />
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] w-5 h-5" />
                                 <input
                                     type={showConfirmPassword ? 'text' : 'password'}
                                     value={confirmPassword}
                                     onChange={e => setConfirmPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full bg-white/5 border border-[#1a1a1a] rounded-xl py-3 pl-10 pr-12 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
+                                    className="w-full bg-white/5 border border-[var(--color-border)] rounded-xl py-3 pl-10 pr-12 text-white placeholder-[#555] focus:outline-none focus:border-[#00D97E]/50 focus:ring-1 focus:ring-[#00D97E]/30 transition-all"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888] hover:text-white"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] hover:text-white"
                                 >{showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
                             </div>
                         </div>
 
                         {/* Preview: what happens next */}
-                        <div className="bg-[#00D97E]/8 border border-[#00D97E]/20 rounded-xl p-4 text-xs text-[#888]">
+                        <div className="bg-[#00D97E]/8 border border-[#00D97E]/20 rounded-xl p-4 text-xs text-[var(--color-muted)]">
                             <p className="font-bold flex items-center gap-1 mb-2 text-[#00D97E]">
                                 <Sparkles className="w-3.5 h-3.5" /> Après votre inscription :
                             </p>
-                            <ol className="space-y-1 list-decimal list-inside text-[#888]">
+                            <ol className="space-y-1 list-decimal list-inside text-[var(--color-muted)]">
                                 <li>Connectez votre WhatsApp (30 secondes)</li>
                                 <li>Ajoutez vos produits avec prix et stock</li>
                                 <li>Le bot vend pour vous 24h/24</li>
@@ -388,7 +388,7 @@ const Signup: React.FC = () => {
                                 type="button"
                                 onClick={goBack}
                                 disabled={loading}
-                                className="px-5 bg-white/5 border border-[#1a1a1a] hover:bg-[#1a1a1a] text-white font-bold py-3.5 rounded-xl transition-all active:scale-[0.97] flex items-center gap-2 disabled:opacity-50"
+                                className="px-5 bg-white/5 border border-[var(--color-border)] hover:bg-[#1a1a1a] text-white font-bold py-3.5 rounded-xl transition-all active:scale-[0.97] flex items-center gap-2 disabled:opacity-50"
                             ><ArrowLeft className="w-4 h-4" /> Retour</button>
                             <button
                                 type="button"
@@ -403,7 +403,7 @@ const Signup: React.FC = () => {
                     </div>
                 )}
 
-                <p className="mt-6 text-center text-sm text-[#888]">
+                <p className="mt-6 text-center text-sm text-[var(--color-muted)]">
                     Déjà un compte ? <Link to="/login" className="text-[#00D97E] hover:text-[#00D97E]/80 font-bold tracking-wide hover:underline">Se connecter</Link>
                 </p>
             </div>
