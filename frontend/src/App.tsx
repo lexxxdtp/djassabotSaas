@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthLayout from './layouts/AuthLayout';
@@ -80,6 +81,30 @@ function App() {
           </Routes>
         </Suspense>
       </Router>
+      {/* Sans ce point d'ancrage, AUCUN toast de l'application ne s'affichait :
+          neuf écrans appelaient toast.success/error dans le vide (« Produit
+          créé », « Limite du forfait atteinte », « Message non envoyé »…).
+          Le vendeur ne voyait donc ni ses réussites ni ses échecs. */}
+      <Toaster
+        position="top-center"
+        // La barre du haut fait 78 px (68 sur téléphone) : sans ce décalage,
+        // le message recouvrait le logo et devenait illisible.
+        containerStyle={{ top: 88 }}
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'var(--color-surface)',
+            color: 'var(--color-text)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-panel)',
+            fontSize: '14px',
+            maxWidth: 'min(92vw, 420px)',
+          },
+          success: { iconTheme: { primary: '#00D97E', secondary: '#000' } },
+          // Un échec doit rester lisible le temps de le comprendre.
+          error: { duration: 6000, iconTheme: { primary: '#f87171', secondary: '#000' } },
+        }}
+      />
     </AuthProvider>
   );
 }

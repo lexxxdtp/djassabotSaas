@@ -3,6 +3,8 @@
 > **État courant — 20 septembre 2026 :** une seule copie locale, `~/djassabotSaas`. Backend déployé sur le VPS (`1ab30e2`, PM2 stable, API en HTTPS) et frontend Vercel à jour.
 > - **Refonte de l'espace vendeur intégrée** (`b8791c7`, produite par un agent tiers puis reprise ici) : `styles/app.css` porte l'identité en tokens, `layouts/AuthLayout.tsx` pour les écrans d'entrée, `components/ui/` (Brand, PageHeading). Toutes les pages de l'application, les réglages, les produits, les commandes et l'Inbox partagent les mêmes styles ; les pages publiques restent inchangées.
 > - **Recette navigateur** : 15 routes × 4 largeurs (320 à 1280) × 2 scénarios (avec données, catalogue vide) = 120 pages, 0 erreur JavaScript, 0 débordement horizontal ; fenêtres d'édition et tiroirs vérifiés (ouverture, `aria-modal`, fermeture par Échap). Deux défauts corrigés au passage : débordement des cartes de commande à 320 px, titre manquant sur la fiche produit.
+> - **Recette Playwright installée** (`cd frontend && npm run test:e2e`) : 81 parcours vendeurs joués dans un vrai navigateur, en version bureau (1280) et téléphone (iPhone 14 / 320 px) — connexion, commandes, catalogue, conversations, jumelage WhatsApp, réglages, navigation mobile. L'API est simulée par `frontend/e2e/fixtures/faux-serveur.ts` : **rien ne part vers la production**, aucune commande ni stock réel n'est touché, et le faux serveur vérifie aussi ce que le navigateur ENVOIE (statut, corps, types). Rapport : `npm run test:e2e:rapport`.
+> - 🐞 **Trouvé et corrigé par cette recette** : `<Toaster />` n'avait **jamais** été monté. Neuf écrans appelaient `toast.success/error` dans le vide — « Produit créé », « Limite de 50 produits atteinte », « Message non envoyé », « Impossible de mettre à jour le statut », « Paramètres sauvegardés » : aucun de ces messages n'a jamais été affiché au vendeur. Monté dans `App.tsx` avec les jetons du design (décalé de 88 px pour ne pas recouvrir la barre du haut).
 > - ⚠️ **WhatsApp reste à réappairer** : aucune session active (dossiers Baileys vides depuis août). Réglages → WhatsApp → code de jumelage.
 > - Restent ouverts : lots 3 à 5 de l'[audit produit](AUDIT_VIABILITE_2026-09-14.md) et les points de l'[audit de sécurité](AUDIT_SECURITE_2026-09-18.md).
 
@@ -544,7 +546,7 @@ Si `!isAuthenticated` → redirect `/login`.
 **API client** — Utiliser `apiClient` (`utils/apiClient.ts`) qui auto-injecte le token et
 gère 401 → logout. NE PAS utiliser `fetch` direct sauf cas où on a besoin du contrôle bas-niveau.
 
-**Toasts** — `react-hot-toast`, importé là où utilisé, déjà setup dans le layout.
+**Toasts** — `react-hot-toast`. Le `<Toaster />` vit dans `App.tsx` (position haute, décalage 88 px, styles issus des jetons `--color-surface` / `--color-border`). Il a manqué pendant des mois : tous les `toast.*` partaient dans le vide. Ne pas le retirer — la recette `e2e/` échoue si les messages ne s'affichent plus.
 
 ---
 
